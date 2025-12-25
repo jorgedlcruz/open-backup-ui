@@ -2,6 +2,8 @@
 
 A Next.js 15 application providing a unified monitoring dashboard for Veeam Data Protection products through an intuitive web interface.
 
+![VBR Connect Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2025/12/ezgif-656c493097a494bd.gif)
+
 ## Features
 
 ### Veeam Backup & Replication (VBR)
