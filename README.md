@@ -29,10 +29,18 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Session Status**: Success, Warning, Failed, and Running session tracking
 - **Time-based Filtering**: Filter sessions by time range
 
-#### Managed Servers
-- **Infrastructure Overview**: View all managed backup infrastructure servers
-- **Server Details**: Name, type, description, and version information
-- **Server Types**: Backup servers, proxies, repositories, and more
+#### Backup Infrastructure
+- **Backup Proxies**:
+  - **Performance Monitoring**: Track CPU/Memory usage and task slot utilization (concurrent tasks)
+  - **Configuration**: View transport modes, OS type, and details
+  - **Status**: Visual health indicators (Online/Offline) and maintenance mode status
+- **Backup Repositories**:
+  - **Capacity Planning**: Visual capacity bars showing Used vs Free space
+  - **Type Support**: Windows, Linux, NFS, SMB, and Object Storage repository support
+  - **Properties**: Monitor immutability settings, task limits, and overall health
+- **Managed Servers**:
+  - **Infrastructure Overview**: View all managed backup infrastructure servers
+  - **Server Details**: Name, type, description, and version information
 
 #### Inventory Management
 - **Virtual Infrastructure**:
@@ -156,7 +164,9 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
   - `/api/v1/jobs/states` - Advanced job monitoring
   - `/api/v1/backupInfrastructure/jobs/{id}/sessions` - Job sessions
   - `/api/v1/backupInfrastructure/backupServers` - Managed servers
-  - `/api/v1/backupInfrastructure/backupServers/{id}/backupRepositories` - Repositories
+  - `/api/v1/backupInfrastructure/backupProxies` - Backup proxies
+  - `/api/v1/backupInfrastructure/backupRepositories` - Backup repositories
+  - `/api/v1/backupInfrastructure/repositories/states` - Repository states
   - `/api/v1/license` - License information
   - `/api/v1/malware-detection` - Malware events
   - `/api/v1/security/best-practices` - Security best practices
@@ -197,6 +207,8 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   │   │   ├── jobs/                 # Backup jobs endpoint
 │   │   │   ├── sessions/             # Job sessions endpoint
 │   │   │   ├── backupInfrastructure/ # Infrastructure endpoints
+│   │   │   │   ├── proxies/          # Backup proxies
+│   │   │   │   └── repositories/     # Backup repositories
 │   │   │   ├── license/              # License information
 │   │   │   ├── malware-detection/    # Malware events
 │   │   │   └── security/             # Security best practices
@@ -216,7 +228,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   │   │   ├── virtual/              # Virtual infrastructure (VMware/Hyper-V)
 │   │   │   ├── protection-groups/    # Physical & Cloud infrastructure
 │   │   │   └── unstructured/         # Unstructured data (NAS/Object)
-│   │   └── managed-servers/          # Managed servers view
+│   │   └── infrastructure/           # Infrastructure management
+│   │       ├── proxies/              # Backup proxies view
+│   │       ├── repositories/         # Backup repositories view
+│   │       └── managed-servers/      # Managed servers view
 │   ├── vro/                          # VRO monitoring page
 │   ├── vbm/                          # VBM monitoring page
 │   ├── k10/                          # K10 placeholder page
@@ -232,6 +247,8 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   ├── sessions-overview.tsx         # Recent sessions widget
 │   ├── session-tasks-table.tsx       # Session tasks breakdown
 │   ├── job-details-header.tsx        # Job details header component
+│   ├── backup-proxies-table.tsx      # Backup proxies table
+│   ├── backup-repositories-table.tsx # Backup repositories table
 │   ├── managed-servers-table.tsx     # Managed servers table
 │   ├── virtual-infrastructure-table.tsx # Virtual inventory with protection status
 │   ├── protection-groups-table.tsx   # Protection groups inventory

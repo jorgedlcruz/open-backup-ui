@@ -29,14 +29,14 @@ const vbrItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Protected Data",
-    href: "/vbr/protected-data",
-    icon: Shield,
-  },
-  {
     title: "Jobs & Policies",
     href: "/vbr/jobs",
     icon: Briefcase,
+  },
+  {
+    title: "Protected Data",
+    href: "/vbr/protected-data",
+    icon: Shield,
   },
   {
     title: "Inventory",
@@ -61,9 +61,23 @@ const vbrItems = [
     ]
   },
   {
-    title: "Managed Servers",
-    href: "/vbr/managed-servers",
+    title: "Backup Infrastructure",
+    href: "/vbr/infrastructure", // This will likely redirect or we can handle it
     icon: Server,
+    items: [
+      {
+        title: "Backup Proxies",
+        href: "/vbr/infrastructure/proxies",
+      },
+      {
+        title: "Backup Repositories",
+        href: "/vbr/infrastructure/repositories",
+      },
+      {
+        title: "Managed Servers",
+        href: "/vbr/infrastructure/managed-servers",
+      },
+    ]
   },
 ]
 
@@ -75,19 +89,19 @@ const vbmItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Organizations",
-    href: "/vbm/organizations",
-    icon: Server,
+    title: "Backup Jobs",
+    href: "/vbm/jobs",
+    icon: Briefcase,
   },
   {
-    title: "Protected Items",
+    title: "Protected Objects",
     href: "/vbm/protected-items",
     icon: Shield,
   },
   {
-    title: "Backup Jobs",
-    href: "/vbm/jobs",
-    icon: Briefcase,
+    title: "Organizations",
+    href: "/vbm/organizations",
+    icon: Server,
   },
 ]
 

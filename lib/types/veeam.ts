@@ -597,3 +597,116 @@ export interface InventoryFilter {
   };
 }
 
+
+// ============================================
+// Backup Infrastructure Types
+// ============================================
+
+export interface VeeamProxyState {
+  id: string;
+  name: string;
+  description: string;
+  type: string; // "GeneralPurposeProxy", "ViProxy"
+  hostId?: string;
+  hostName?: string;
+  isDisabled: boolean;
+  isOnline: boolean;
+  isOutOfDate: boolean;
+}
+
+export interface ProxyStatesResult {
+  data: VeeamProxyState[];
+  pagination: PaginationResult;
+}
+
+export interface VeeamProxy {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  server: {
+    hostId: string;
+    hostName: string;
+    maxTaskCount: number;
+    transportMode?: string;
+    failoverToNetwork?: boolean;
+    hostToProxyEncryption?: boolean;
+    connectedDatastores?: {
+      autoSelectEnabled: boolean;
+    };
+  };
+  // Enriched fields
+  osType?: string; // from managed server
+  isOnline?: boolean; // from proxy state
+  isDisabled?: boolean; // from proxy state
+  isOutOfDate?: boolean; // from proxy state
+  isVBRLinuxAppliance?: boolean; // from managed server
+}
+
+export interface ProxiesResult {
+  data: VeeamProxy[];
+  pagination: PaginationResult;
+}
+
+export interface VeeamRepository {
+  id: string;
+  name: string;
+  description: string;
+  type: string; // "WinLocal", "Nfs", "WasabiCloud", "LinuxHardened", etc.
+  hostId?: string;
+  repository?: {
+    path?: string;
+    taskLimitEnabled?: boolean;
+    maxTaskCount?: number;
+    advancedSettings?: {
+      perVmBackup?: boolean;
+    };
+  };
+  share?: {
+    sharePath?: string;
+  };
+  bucket?: {
+    bucketName?: string;
+    folderName?: string;
+    immutability?: {
+      isEnabled: boolean;
+      daysCount: number;
+    };
+  };
+  mountServer?: {
+    mountServerSettingsType: string;
+  };
+}
+
+export interface BackupRepositoriesResult {
+  data: VeeamRepository[];
+  pagination: PaginationResult;
+}
+
+export interface VeeamRepositoryState {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  hostName: string;
+  path: string;
+  capacityGB: number;
+  freeGB: number;
+  usedSpaceGB: number;
+  isOnline: boolean;
+  isOutOfDate: boolean;
+}
+
+export interface RepositoryStatesResult {
+  data: VeeamRepositoryState[];
+  pagination: PaginationResult;
+}
+
+export interface VeeamRepositoryEnriched extends VeeamRepositoryState {
+  // Config fields from VeeamRepository
+  maxTaskCount?: number;
+  taskLimitEnabled?: boolean;
+  immutabilityEnabled?: boolean;
+  immutabilityDays?: number;
+  perVmBackup?: boolean;
+}

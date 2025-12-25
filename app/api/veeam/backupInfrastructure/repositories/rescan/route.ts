@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest) {
     if (!API_BASE_URL) {
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
@@ -12,34 +12,29 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
     }
 
-    const { id } = await params; // await params in Next 15+
-
-    const url = `${API_BASE_URL}/api/v1/backupInfrastructure/repositories/${id}`;
+    const body = await request.json();
+    const url = `${API_BASE_URL}/api/v1/backupInfrastructure/repositories/rescan`;
 
     try {
         const response = await fetch(url, {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 'Authorization': authHeader,
                 'x-api-version': '1.3-rev1',
+                'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
+            body: JSON.stringify(body),
         });
 
         if (!response.ok) {
             return new NextResponse(response.statusText, { status: response.status });
         }
 
-        if (response.status === 204) {
-            return new NextResponse(null, { status: 204 });
-        }
-
-        const text = await response.text();
-        if (!text) return new NextResponse(null, { status: 200 });
-
-        return NextResponse.json(JSON.parse(text));
+        const data = await response.json();
+        return NextResponse.json(data);
     } catch (error) {
-        console.error(`Failed to delete repository ${id}:`, error);
+        console.error('Failed to rescan repositories:', error);
         return new NextResponse('Internal Server Error', { status: 500 });
     }
 }

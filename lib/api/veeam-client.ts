@@ -33,6 +33,13 @@ import {
   UnstructuredServersResult,
   VeeamCredential,
   VeeamRepositoryDetailed,
+  VeeamRepository, // New
+  VeeamRepositoryState, // New
+  VeeamRepositoryEnriched, // New
+  VeeamProxy,
+  VeeamProxyState,
+  ProxiesResult,
+  ProxyStatesResult,
   VeeamInventoryItem,
   InventoryResult,
   InventoryFilter,
@@ -391,6 +398,117 @@ class VeeamApiClient {
     } catch (error) {
       console.error('Error fetching repositories:', error);
       // Return empty array instead of throwing to prevent dashboard crash
+      return [];
+    }
+  }
+
+  // ============================================
+  // Backup Proxies
+  // ============================================
+
+  async getBackupProxies(options?: { limit?: number; skip?: number }): Promise<VeeamProxy[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.skip !== undefined) params.append('skip', options.skip.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/backupInfrastructure/proxies?${queryString}` : '/backupInfrastructure/proxies';
+
+      const response = await this.request<ProxiesResult>(endpoint);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching backup proxies:', error);
+      throw error;
+    }
+  }
+
+  async getBackupProxyStates(options?: { limit?: number; skip?: number }): Promise<VeeamProxyState[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.skip !== undefined) params.append('skip', options.skip.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/backupInfrastructure/proxies/states?${queryString}` : '/backupInfrastructure/proxies/states';
+
+      const response = await this.request<ProxyStatesResult>(endpoint);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching backup proxy states:', error);
+      throw error;
+    }
+  }
+
+  async enableBackupProxy(id: string): Promise<void> {
+    try {
+      await this.request(`/backupInfrastructure/proxies/${id}/enable`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error(`Error enabling proxy ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async disableBackupProxy(id: string): Promise<void> {
+    try {
+      await this.request(`/backupInfrastructure/proxies/${id}/disable`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error(`Error disabling proxy ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteBackupProxy(id: string): Promise<void> {
+    try {
+      await this.request(`/backupInfrastructure/proxies/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error(`Error deleting proxy ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getEnrichedBackupProxies(): Promise<VeeamProxy[]> {
+    try {
+      const [proxiesRes, statesRes, serversRes] = await Promise.allSettled([
+        this.getBackupProxies({ limit: 500 }), // Fetch enough to cover basic needs
+        this.getBackupProxyStates({ limit: 500 }),
+        this.getManagedServers({ limit: 500 })
+      ]);
+
+      const proxies = proxiesRes.status === 'fulfilled' ? proxiesRes.value : [];
+      const states = statesRes.status === 'fulfilled' ? statesRes.value : [];
+      const servers = serversRes.status === 'fulfilled' ? serversRes.value : [];
+
+      const stateMap = new Map(states.map(s => [s.id, s]));
+      const serverMap = new Map(servers.map(s => [s.id, s]));
+
+      return proxies.map(proxy => {
+        const state = stateMap.get(proxy.id);
+        const server = serverMap.get(proxy.server.hostId);
+
+        // Calculate final name: Use managed server name if available, especially if hostName is "This server"
+        // User requested extracting "final name" from managed server call.
+        const derivedName = server ? server.name : proxy.name;
+
+        return {
+          ...proxy,
+          name: derivedName, // Use the managed server name as the primary name
+          description: server?.description || proxy.description, // Prefer server description
+          osType: server?.type,
+          isOnline: state?.isOnline,
+          isDisabled: state?.isDisabled,
+          isOutOfDate: state?.isOutOfDate,
+          isVBRLinuxAppliance: server?.isVBRLinuxAppliance
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching enriched proxies:', error);
       return [];
     }
   }
@@ -1499,6 +1617,117 @@ class VeeamApiClient {
     } catch (error) {
       console.error('Error fetching all backup objects:', error);
       return [];
+    }
+  }
+  // ============================================
+  // Backup Infrastructure: Repositories
+  // ============================================
+
+  async getBackupRepositories(): Promise<VeeamRepository[]> {
+    try {
+      // Use internal API route which proxies to /api/v1/backupInfrastructure/repositories
+      const response = await this.request<{ data: VeeamRepository[] }>('/backupInfrastructure/repositories');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get backup repositories:', error);
+      throw error;
+    }
+  }
+
+  async getBackupRepositoryStates(): Promise<VeeamRepositoryState[]> {
+    try {
+      const response = await this.request<{ data: VeeamRepositoryState[] }>('/backupInfrastructure/repositories/states');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get backup repository states:', error);
+      throw error;
+    }
+  }
+
+  async getEnrichedBackupRepositories(): Promise<VeeamRepositoryEnriched[]> {
+    try {
+      const [repos, states] = await Promise.all([
+        this.getBackupRepositories(),
+        this.getBackupRepositoryStates()
+      ]);
+
+      const repoMap = new Map(repos.map(r => [r.id, r]));
+
+      return states.map(state => {
+        const repo = repoMap.get(state.id);
+
+        // Extract config details
+        let taskLimitEnabled = false;
+        let maxTaskCount = 0;
+        let immutabilityEnabled = false;
+        let immutabilityDays = 0;
+        let perVmBackup = false;
+
+        if (repo) {
+          // Task limits are usually in repository object
+          if (repo.repository) {
+            taskLimitEnabled = repo.repository.taskLimitEnabled ?? false;
+            maxTaskCount = repo.repository.maxTaskCount ?? 0;
+            if (repo.repository.advancedSettings) {
+              perVmBackup = repo.repository.advancedSettings.perVmBackup ?? false;
+            }
+          }
+
+          // Immutability in bucket for object storage
+          if (repo.bucket?.immutability) {
+            immutabilityEnabled = repo.bucket.immutability.isEnabled;
+            immutabilityDays = repo.bucket.immutability.daysCount;
+          } else if (repo.type === 'LinuxHardened' && repo.repository) {
+            // Hardened repository immutability often corresponds to 'makeRecentBackupsImmutableDays' 
+            // but the user JSON shows it at the top level of repository object for LinuxHardened?
+            // Wait, checking user JSON: 
+            // "repository": { "makeRecentBackupsImmutableDays": 7, ... }
+            // I need to update my VeeamRepository type to include this field if it's there.
+            // Let's add dynamic access or update type.
+            const anyRepo = repo.repository as any;
+            if (anyRepo.makeRecentBackupsImmutableDays) {
+              immutabilityEnabled = true;
+              immutabilityDays = anyRepo.makeRecentBackupsImmutableDays;
+            }
+          }
+        }
+
+        return {
+          ...state,
+          taskLimitEnabled,
+          maxTaskCount,
+          immutabilityEnabled,
+          immutabilityDays,
+          perVmBackup
+        };
+      });
+
+    } catch (error) {
+      console.error('Failed to get enriched backup repositories:', error);
+      throw error;
+    }
+  }
+
+  async rescanBackupRepository(ids: string[]): Promise<any> {
+    try {
+      return await this.request('/backupInfrastructure/repositories/rescan', {
+        method: 'POST',
+        body: JSON.stringify({ repositoryIds: ids })
+      });
+    } catch (error) {
+      console.error('Failed to rescan backup repository:', error);
+      throw error;
+    }
+  }
+
+  async deleteBackupRepository(id: string): Promise<any> {
+    try {
+      return await this.request(`/backupInfrastructure/repositories/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Failed to delete backup repository:', error);
+      throw error;
     }
   }
 }
