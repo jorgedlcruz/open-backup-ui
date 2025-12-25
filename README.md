@@ -32,6 +32,21 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Server Details**: Name, type, description, and version information
 - **Server Types**: Backup servers, proxies, repositories, and more
 
+#### Inventory Management
+- **Virtual Infrastructure**:
+  - Complete view of VMware vSphere, Microsoft Hyper-V, and Nutanix AHV virtual machines
+  - **Protection Status**: Instantly identify protected vs. unprotected VMs with visual indicators
+  - **Rich Metadata**: Access detailed info including vCenter, Datacenter, Cluster, Guest OS, and DNS names
+  - **Advanced Filtering**: Faceted filtering by protection status, platform, and state
+- **Physical & Cloud Infrastructure**:
+  - **Protection Groups**: Monitor physical agent deployment and status
+  - **Discovered Entities**: Track individual machines/cloud instances with agent status
+  - **Agent Health**: Last connection time, version, and operation mode tracking
+- **Unstructured Data**:
+  - **File Shares**: Monitor protected file servers and NAS devices
+  - **Object Storage**: Track object storage repositories and credential mappings
+  - **IO Control**: View processing limits and configurations
+
 ### Veeam Recovery Orchestrator (VRO)
 - **Recovery Plans Table**: Overview of all orchestration plans
 - **Plan Status**: Monitor plan state and configuration
@@ -131,13 +146,19 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 - **Authentication**: Basic Auth with session tokens
 - **Documentation**: [VBR REST API Reference](https://helpcenter.veeam.com/docs/backup/vbr_rest/reference/vbr-rest-v1-3-rev1.html)
 - **Endpoints Used**:
+  - `/api/v1/inventory` - Virtual infrastructure inventory
+  - `/api/v1/agents/protectionGroups` - Protection groups (Physical/Cloud)
+  - `/api/v1/agents/protectionGroups/{id}/discoveredEntities` - Discovered agent status
+  - `/api/v1/inventory/unstructuredDataServers` - Unstructured data servers
   - `/api/v1/backupInfrastructure/jobs` - Backup jobs list
+  - `/api/v1/jobs/states` - Advanced job monitoring
   - `/api/v1/backupInfrastructure/jobs/{id}/sessions` - Job sessions
   - `/api/v1/backupInfrastructure/backupServers` - Managed servers
   - `/api/v1/backupInfrastructure/backupServers/{id}/backupRepositories` - Repositories
   - `/api/v1/license` - License information
-  - `/api/v1/malware-detection/events` - Malware events
-  - `/api/v1/security/bestPractices` - Security best practices
+  - `/api/v1/malware-detection` - Malware events
+  - `/api/v1/security/best-practices` - Security best practices
+  - `/api/v1/backupObjects` - Backup objects lookup
 
 ### Veeam Recovery Orchestrator
 - **API Version**: v7.21
@@ -154,6 +175,15 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 - **Documentation**: [VBM REST API Reference](https://helpcenter.veeam.com/docs/vbo365/rest/reference/vbo-rest-v8.html)
 - **Endpoints Used**:
   - `/v8/Jobs` - Microsoft 365 backup jobs
+  - `/v8/JobSessions` - Job history and status
+  - `/v8/Organizations` - M365 Organizations
+  - `/v8/ProtectedUsers` - Protected Users inventory
+  - `/v8/ProtectedGroups` - Protected Groups inventory
+  - `/v8/ProtectedSites` - Protected Sites inventory
+  - `/v8/ProtectedTeams` - Protected Teams inventory
+  - `/v8/RestorePoints` - Global restore point search
+  - `/v8/License` - License status
+  - `/v8/Health` - API service health
 
 ## Project Structure
 
@@ -180,6 +210,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   │   ├── jobs/                     # Jobs list and details
 │   │   │   ├── page.tsx              # All jobs view
 │   │   │   └── [id]/                 # Individual job details
+│   │   ├── inventory/                # Inventory management
+│   │   │   ├── virtual/              # Virtual infrastructure (VMware/Hyper-V)
+│   │   │   ├── protection-groups/    # Physical & Cloud infrastructure
+│   │   │   └── unstructured/         # Unstructured data (NAS/Object)
 │   │   └── managed-servers/          # Managed servers view
 │   ├── vro/                          # VRO monitoring page
 │   ├── vbm/                          # VBM monitoring page
@@ -197,6 +231,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   ├── session-tasks-table.tsx       # Session tasks breakdown
 │   ├── job-details-header.tsx        # Job details header component
 │   ├── managed-servers-table.tsx     # Managed servers table
+│   ├── virtual-infrastructure-table.tsx # Virtual inventory with protection status
+│   ├── protection-groups-table.tsx   # Protection groups inventory
+│   ├── discovered-entities-table.tsx # Physical/Cloud agent inventory
+│   ├── unstructured-data-table.tsx   # Unstructured data inventory
 │   ├── recovery-plans-table.tsx      # VRO plans table
 │   ├── vbm-jobs-table.tsx            # VBM jobs table
 │   ├── transfer-rate-chart.tsx       # Transfer rate visualization
