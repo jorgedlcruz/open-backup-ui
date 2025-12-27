@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
 
-async function proxy(request: NextRequest, { params }: { params: { slug: string[] } }) {
+async function proxy(request: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
     try {
         if (!API_BASE_URL) {
             return NextResponse.json(
@@ -19,7 +19,7 @@ async function proxy(request: NextRequest, { params }: { params: { slug: string[
             );
         }
 
-        const slug = params.slug;
+        const { slug } = await params;
         const path = slug.join('/');
         const { searchParams } = new URL(request.url);
         const queryString = searchParams.toString();

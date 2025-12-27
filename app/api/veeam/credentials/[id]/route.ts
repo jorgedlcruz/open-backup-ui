@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         if (!API_BASE_URL) {
             return NextResponse.json(
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             );
         }
 
-        const id = params.id;
+        const { id } = await params;
         const endpoint = `/api/v1/credentials/${id}`;
         const fullUrl = `${API_BASE_URL}${endpoint}`;
 
