@@ -1,4 +1,4 @@
-# VBR Connect MVP
+# Veeam Single-UI
 
 A Next.js 15 application providing a unified monitoring dashboard for Veeam Data Protection products through an intuitive web interface.
 
@@ -31,7 +31,7 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 
 #### Backup Infrastructure
 - **Backup Proxies**:
-  - **Performance Monitoring**: Track CPU/Memory usage and task slot utilization (concurrent tasks)
+  - **Performance Monitoring**: Track concurrent tasks
   - **Configuration**: View transport modes, OS type, and details
   - **Status**: Visual health indicators (Online/Offline) and maintenance mode status
 - **Backup Repositories**:
