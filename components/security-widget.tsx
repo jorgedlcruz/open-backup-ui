@@ -3,12 +3,49 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { ShieldCheck, AlertTriangle } from "lucide-react"
 import { SecurityBestPracticeItem } from "@/lib/types/veeam"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface SecurityWidgetProps {
     items: SecurityBestPracticeItem[]
+    loading?: boolean
 }
 
-export function SecurityWidget({ items }: SecurityWidgetProps) {
+export function SecurityWidget({ items, loading }: SecurityWidgetProps) {
+
+    if (loading) {
+        return (
+            <Card className="col-span-1 md:col-span-2 lg:col-span-1 h-[487px] flex flex-col">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-medium">Security Score</CardTitle>
+                    <CardDescription>Analyze compliance with best practices</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col gap-6">
+                    <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-2 w-full mt-2" />
+                        </div>
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-2 w-full mt-2" />
+                        </div>
+                    </div>
+                    <div className="border-t pt-4 mt-2 flex-1 min-h-0 flex flex-col">
+                        <Skeleton className="h-5 w-32 mb-3" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
+
     const totalItems = items.length
 
     // Status Logic
@@ -21,7 +58,7 @@ export function SecurityWidget({ items }: SecurityWidgetProps) {
     const violations = items.filter(i => i.status?.toLowerCase() !== 'ok')
 
     return (
-        <Card className="col-span-1 md:col-span-2 lg:col-span-1 h-full flex flex-col">
+        <Card className="col-span-1 md:col-span-2 lg:col-span-1 h-[487px] flex flex-col">
             <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium">Security Score</CardTitle>
                 <CardDescription>Analyze compliance with best practices</CardDescription>
@@ -73,10 +110,11 @@ export function SecurityWidget({ items }: SecurityWidgetProps) {
                     </div>
                 </div>
 
+
                 {/* Details List */}
-                <div className="border-t pt-4 mt-2">
+                <div className="border-t pt-4 mt-2 flex-1 min-h-0 flex flex-col overflow-hidden">
                     <h4 className="text-sm font-medium mb-3">Active Issues</h4>
-                    <div className="h-[600px] pr-2 overflow-auto custom-scrollbar">
+                    <ScrollArea className="flex-1 pr-4">
                         {violations.length === 0 ? (
                             <div className="flex items-center text-sm text-green-600 bg-green-50 p-3 rounded-md">
                                 <ShieldCheck className="mr-2 h-4 w-4" />
@@ -99,7 +137,7 @@ export function SecurityWidget({ items }: SecurityWidgetProps) {
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </ScrollArea>
                 </div>
 
             </CardContent>

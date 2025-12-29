@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VBR Connect MVP",
+  title: "Veeam Single-UI",
   description: "Veeam Backup & Replication Management",
 };
 

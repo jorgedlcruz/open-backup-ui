@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, Database, HardDrive, Shield } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
+import { LayoutGrid, Calendar as CalendarIcon } from "lucide-react"
+import { VBRRestorePointsCalendar } from "@/components/vbr-restore-points-calendar"
 
 function RestorePointsContent() {
     const searchParams = useSearchParams()
@@ -21,6 +23,7 @@ function RestorePointsContent() {
     const [restorePoints, setRestorePoints] = useState<VeeamRestorePoint[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid")
 
     useEffect(() => {
         const fetchRestorePoints = async () => {
@@ -91,6 +94,26 @@ function RestorePointsContent() {
                                 Viewing restore points for <span className="font-medium text-foreground">{name || 'Unknown Workload'}</span>
                             </p>
                         </div>
+                        <div className="flex items-center gap-1 rounded-md border bg-muted/50 p-1">
+                            <Button
+                                variant={viewMode === "grid" ? "secondary" : "ghost"}
+                                size="sm"
+                                onClick={() => setViewMode("grid")}
+                                className="h-7 px-2 text-xs"
+                            >
+                                <LayoutGrid className="mr-1.5 h-3.5 w-3.5" />
+                                Grid
+                            </Button>
+                            <Button
+                                variant={viewMode === "calendar" ? "secondary" : "ghost"}
+                                size="sm"
+                                onClick={() => setViewMode("calendar")}
+                                className="h-7 px-2 text-xs"
+                            >
+                                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                                Calendar
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -122,7 +145,13 @@ function RestorePointsContent() {
                     </div>
                 )}
 
-                <VBRRestorePointsTable data={restorePoints} loading={loading} />
+                {viewMode === "grid" ? (
+                    <VBRRestorePointsTable data={restorePoints} loading={loading} />
+                ) : (
+                    <div className="animate-in fade-in zoom-in-95 duration-200">
+                        <VBRRestorePointsCalendar data={restorePoints} />
+                    </div>
+                )}
             </div>
         </div>
     )

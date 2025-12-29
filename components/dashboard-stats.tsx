@@ -11,6 +11,7 @@ interface DashboardStatsProps {
     malwareEvents: MalwareEventModel[]
     totalJobs: number
     activeJobs: number
+    securityItems?: import("@/lib/types/veeam").SecurityBestPracticeItem[]
 }
 
 export function DashboardStats({
@@ -18,7 +19,8 @@ export function DashboardStats({
     license,
     malwareEvents,
     totalJobs,
-    activeJobs
+    activeJobs,
+    securityItems
 }: DashboardStatsProps) {
     // Calculate repository stats
     // const totalCapacity = repositories?.reduce((acc, repo) => acc + (repo.capacity || 0), 0) ?? 0
@@ -36,11 +38,16 @@ export function DashboardStats({
 
     const licensePercentage = licenseTotal > 0 ? (licenseUsed / licenseTotal) * 100 : 0
 
+    // Security stats
+    const passedChecks = securityItems ? securityItems.filter(i => i.status?.toLowerCase() === 'ok').length : 0
+    const totalChecks = securityItems ? securityItems.length : 0
+    const securityPercentage = totalChecks > 0 ? (passedChecks / totalChecks) * 100 : 0
+
     // Malware stats
     const activeMalware = malwareEvents.filter(e => e.status !== 'Resolved').length
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
@@ -113,6 +120,27 @@ export function DashboardStats({
                     <p className="text-xs text-muted-foreground">
                         {activeMalware} unresolved
                     </p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                        Security Score
+                    </CardTitle>
+                    <ShieldAlert className={`h-4 w-4 ${securityPercentage < 50 ? 'text-destructive' : 'text-primary'}`} />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{passedChecks} / {totalChecks}</div>
+                    <p className="text-xs text-muted-foreground">
+                        Passed Checks
+                    </p>
+                    <div className="mt-2 h-1 w-full bg-secondary rounded-full overflow-hidden">
+                        <div
+                            className={`h-full ${securityPercentage < 50 ? 'bg-destructive' : 'bg-primary'}`}
+                            style={{ width: `${securityPercentage}%` }}
+                        />
+                    </div>
                 </CardContent>
             </Card>
         </div>

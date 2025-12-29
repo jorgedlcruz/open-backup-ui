@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Mail, Database } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -47,7 +47,7 @@ const vbrItems = [
         href: "/vbr/inventory/virtual",
       },
       {
-        title: "Physical and Cloud Infrastructure",
+        title: "Physical and Cloud",
         href: "/vbr/inventory/protection-groups",
       },
       {
@@ -144,12 +144,9 @@ const documentationItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const [vbrOpen, setVbrOpen] = React.useState(true)
-  const [vbmOpen, setVbmOpen] = React.useState(true)
-  const [vroOpen, setVroOpen] = React.useState(true)
-  const [k10Open, setK10Open] = React.useState(true)
-  const [documentationOpen, setDocumentationOpen] = React.useState(false)
-  const [inventoryOpen, setInventoryOpen] = React.useState(true)
+  // State for collapsible sub-menus in VBR
+  const [inventoryOpen, setInventoryOpen] = React.useState(false)
+  const [infrastructureOpen, setInfrastructureOpen] = React.useState(false)
 
   return (
     <Sidebar collapsible="icon">
@@ -167,192 +164,142 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {/* VBR Group */}
+        {/* Veeam Backup & Replication Group */}
         <SidebarGroup>
-          <div
-            className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent rounded-md transition-colors"
-            onClick={() => setVbrOpen(!vbrOpen)}
-          >
-            <SidebarGroupLabel className="flex items-center gap-2 flex-1">
-              <Server className="h-4 w-4" />
-              <span>Veeam Backup & Replication</span>
-            </SidebarGroupLabel>
-            <ChevronDown
-              className={`h-4 w-4 mr-2 transition-transform ${vbrOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </div>
-          {vbrOpen && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vbrItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {item.items ? (
-                      <>
-                        <SidebarMenuButton
-                          onClick={() => setInventoryOpen(!inventoryOpen)}
-                          isActive={item.items.some(sub => pathname === sub.href)}
-                          tooltip={item.title}
-                        >
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{item.title}</span>
-                          <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${inventoryOpen ? 'rotate-0' : '-rotate-90'}`} />
-                        </SidebarMenuButton>
-                        {inventoryOpen && (
-                          <SidebarMenuSub>
-                            {item.items.map((subItem) => (
-                              <SidebarMenuSubItem key={subItem.href}>
-                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                  <Link href={subItem.href}>
-                                    <span>{subItem.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        )}
-                      </>
-                    ) : (
-                      <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                        <Link href={item.href!}>
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{item.title}</span>
-                        </Link>
+          <SidebarGroupLabel>Veeam Backup & Replication</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {vbrItems.map((item) => {
+                // Determine if this item is a sub-menu (like Inventory)
+                const isSubMenu = !!item.items
+                // Determine state for this item
+                const isOpen = item.title === "Inventory" ? inventoryOpen : item.title === "Backup Infrastructure" ? infrastructureOpen : false
+                const setOpen = item.title === "Inventory" ? setInventoryOpen : item.title === "Backup Infrastructure" ? setInfrastructureOpen : () => { }
+
+                if (isSubMenu && item.items) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        onClick={() => setOpen(!isOpen)}
+                        tooltip={item.title}
+                        isActive={item.items.some(sub => pathname === sub.href)}
+                      >
+                        {item.icon && <item.icon className="h-4 w-4" />}
+                        <span>{item.title}</span>
+                        <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
                       </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
+                      {isOpen && (
+                        <SidebarMenuSub>
+                          {item.items.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                <Link href={subItem.href}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
+                    </SidebarMenuItem>
+                  )
+                }
 
-        {/* VBM Group */}
-        <SidebarGroup>
-          <div
-            className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent rounded-md transition-colors"
-            onClick={() => setVbmOpen(!vbmOpen)}
-          >
-            <SidebarGroupLabel className="flex items-center gap-2 flex-1">
-              <Mail className="h-4 w-4" />
-              <span>Veeam Backup for M365</span>
-            </SidebarGroupLabel>
-            <ChevronDown
-              className={`h-4 w-4 mr-2 transition-transform ${vbmOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </div>
-          {vbmOpen && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vbmItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
+                // Standard Item
+                return (
+                  <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                      <Link href={item.href}>
+                      <Link href={item.href!}>
                         {item.icon && <item.icon className="h-4 w-4" />}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* VRO Group */}
+        {/* Veeam Backup for M365 Group */}
         <SidebarGroup>
-          <div
-            className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent rounded-md transition-colors"
-            onClick={() => setVroOpen(!vroOpen)}
-          >
-            <SidebarGroupLabel className="flex items-center gap-2 flex-1">
-              <ShieldCheck className="h-4 w-4" />
-              <span>Veeam Recovery Orchestrator</span>
-            </SidebarGroupLabel>
-            <ChevronDown
-              className={`h-4 w-4 mr-2 transition-transform ${vroOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </div>
-          {vroOpen && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vroItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                      <Link href={item.href}>
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
+          <SidebarGroupLabel>Veeam Backup for M365</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {vbmItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                    <Link href={item.href}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* K10 Group */}
+        {/* Veeam Recovery Orchestrator Group */}
         <SidebarGroup>
-          <div
-            className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent rounded-md transition-colors"
-            onClick={() => setK10Open(!k10Open)}
-          >
-            <SidebarGroupLabel className="flex items-center gap-2 flex-1">
-              <ShieldCheck className="h-4 w-4" />
-              <span>Kasten K10</span>
-            </SidebarGroupLabel>
-            <ChevronDown
-              className={`h-4 w-4 mr-2 transition-transform ${k10Open ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </div>
-          {k10Open && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {k10Items.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                      <Link href={item.href}>
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
+          <SidebarGroupLabel>Veeam Recovery Orchestrator</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {vroItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                    <Link href={item.href}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Kasten K10 Group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Kasten K10</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {k10Items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                    <Link href={item.href}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Documentation Group */}
         <SidebarGroup>
-          <div
-            className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent rounded-md transition-colors"
-            onClick={() => setDocumentationOpen(!documentationOpen)}
-          >
-            <SidebarGroupLabel className="flex items-center gap-2 flex-1">
-              <BookOpen className="h-4 w-4" />
-              <span>Documentation</span>
-            </SidebarGroupLabel>
-            <ChevronDown
-              className={`h-4 w-4 mr-2 transition-transform ${documentationOpen ? 'rotate-0' : '-rotate-90'}`}
-            />
-          </div>
-          {documentationOpen && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {documentationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuSubItem key={item.title}>
-                      <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                        <a href={item.href}>
-                          {item.title}
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
+          <SidebarGroupLabel>Documentation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* Documentation items were collapsible before. Let's make them a list or collapsible?
+                   Previous: Collapsible group "Documentation".
+                   New: Group Label "Documentation".
+                   We can just list them.
+               */}
+              {documentationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.href} target="_blank" rel="noopener noreferrer">
+                      <BookOpen className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-border p-4">
