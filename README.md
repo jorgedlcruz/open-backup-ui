@@ -9,8 +9,9 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 ### Veeam Backup & Replication (VBR)
 
 #### Dashboard View
+- **Security Score & Best Practices**: Simplified top-level widget for immediate security posture visibility
+- **Transferred Data Widget**: Visual representation of data transfer rates over time
 - **Real-time Statistics**: Active jobs, success rate, storage usage, protected VMs, and data processed
-- **Security Best Practices**: Monitoring of security configuration compliance
 - **Malware Detection**: Recent malware scan events and alerts
 - **Recent Sessions**: Overview of the latest backup sessions with status and details
 - **Time Range Selection**: 7-day and 30-day views for historical analysis
@@ -23,7 +24,8 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Last/Next Run Tracking**: See when jobs last ran and when they'll run next
 
 #### Job Details View
-- **Session History**: Complete history of all job executions
+- **Enhanced Session History**: Complete history with default filtering for Backup Jobs
+- **Unified Filtering**: Filters apply to both the transfer rate chart and the sessions grid
 - **Task-Level Breakdown**: Detailed task information for each session
 - **Transfer Rates**: Visual representation of backup transfer rates over time
 - **Session Status**: Success, Warning, Failed, and Running session tracking
@@ -48,6 +50,10 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
   - **Protection Status**: Instantly identify protected vs. unprotected VMs with visual indicators
   - **Rich Metadata**: Access detailed info including vCenter, Datacenter, Cluster, Guest OS, and DNS names
   - **Advanced Filtering**: Faceted filtering by protection status, platform, and state
+- **Protected Data**: 
+  - **Rich Grid View**: Detailed list of all protected workloads
+  - **Calendar View**: Toggleable monthly calendar view for restore points visualization
+  - **Restore Points**: Deep dive into restore points with derived type (Full/Incremental) and size data
 - **Physical & Cloud Infrastructure**:
   - **Protection Groups**: Monitor physical agent deployment and status
   - **Discovered Entities**: Track individual machines/cloud instances with agent status
@@ -171,6 +177,9 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
   - `/api/v1/malware-detection` - Malware events
   - `/api/v1/security/best-practices` - Security best practices
   - `/api/v1/backupObjects` - Backup objects lookup
+  - `/api/v1/backups/{id}` - Backup details
+  - `/api/v1/backups/{id}/backupFiles` - Backup files (sizes)
+  - `/api/v1/restorePoints` - Restore points inventory
 
 ### Veeam Recovery Orchestrator
 - **API Version**: v7.21
@@ -243,8 +252,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   ├── app-sidebar.tsx               # Navigation sidebar
 │   ├── backup-jobs-table.tsx         # VBR jobs table
 │   ├── dashboard-stats.tsx           # Dashboard statistics cards
-│   ├── security-widget.tsx           # Security and malware monitoring
-│   ├── sessions-overview.tsx         # Recent sessions widget
+│   ├── security-widget.tsx           # Security compliance widget
+│   ├── storage-capacity-widget.tsx   # Storage capacity widget
+│   ├── sessions-overview.tsx         # Recent sessions widget with chart
+│   ├── transfer-rate-chart.tsx       # Transfer rate visualization
 │   ├── session-tasks-table.tsx       # Session tasks breakdown
 │   ├── job-details-header.tsx        # Job details header component
 │   ├── backup-proxies-table.tsx      # Backup proxies table
@@ -254,9 +265,12 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   ├── protection-groups-table.tsx   # Protection groups inventory
 │   ├── discovered-entities-table.tsx # Physical/Cloud agent inventory
 │   ├── unstructured-data-table.tsx   # Unstructured data inventory
+│   ├── vbr-protected-data-table.tsx  # Protected workloads grid
+│   ├── vbr-restore-points-table.tsx  # Restore points grid
+│   ├── vbr-restore-points-calendar.tsx # Restore points calendar view
 │   ├── recovery-plans-table.tsx      # VRO plans table
 │   ├── vbm-jobs-table.tsx            # VBM jobs table
-│   ├── transfer-rate-chart.tsx       # Transfer rate visualization
+│   ├── global-search.tsx             # Global search component
 │   ├── data-table-faceted-filter.tsx # Advanced table filtering
 │   ├── search-provider.tsx           # Global search context
 │   ├── theme-provider.tsx            # Dark/Light theme provider
@@ -299,14 +313,13 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 ### Application Documentation
 - [Container Deployment Guide](./CONTAINER.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md) - Solutions for common issues including 403 errors
-- [Root README](../README.md)
 
 ## Contributing
 
-This project was developed as part of the Veeam Community Hackathon 2025.
+This project was developed originally as part of the Veeam Community Hackathon 2025. With a limited and static subset of funcionality, it can be found here - https://github.com/VeeamCommunity/veeamcommunity-2025-Team-1/ Since then, many features have been added and the codebase has been refactored to be more maintainable and extensible. 
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) and [DCO.md](../DCO.md) for contribution guidelines.
+If you are interested in contributing to this project, please see [CONTRIBUTING.md](./CONTRIBUTING.md) and [DCO.md](./DCO.md) for contribution guidelines.
 
 ## License
 
-See [LICENSE](../LICENSE) file for details.
+See [LICENSE](./LICENSE) file for details.

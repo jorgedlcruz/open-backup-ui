@@ -149,6 +149,15 @@ export async function GET(request: NextRequest) {
                 backupSize: matchingFile?.backupSize,
                 dedupRatio: matchingFile?.dedupRatio,
                 compressRatio: matchingFile?.compressRatio,
+                pointType: (() => {
+                    if (matchingFile?.name) {
+                        const lowerName = matchingFile.name.toLowerCase();
+                        if (lowerName.endsWith('.vbk')) return 'Full';
+                        if (lowerName.endsWith('.vib')) return 'Incremental';
+                        if (lowerName.endsWith('.vrb')) return 'Reverse Incremental';
+                    }
+                    return rp.pointType || 'Incremental'; // Fallback
+                })(),
             };
         });
 

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts" // Added Cell
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts" // Added YAxis
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -31,6 +31,7 @@ import {
 import { VeeamSession } from "@/lib/types/veeam"
 import { ArrowUpDown, CheckCircle2, AlertTriangle, XCircle, HelpCircle, Columns, ChevronLeft, ChevronRight, X } from "lucide-react" // Added icons
 import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface SessionsOverviewProps {
     sessions: VeeamSession[]
@@ -147,19 +148,60 @@ export const columns: ColumnDef<VeeamSession>[] = [
             )
         },
     },
+
 ]
+
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="border border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
+                <div className="font-medium text-foreground">{new Date(label).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                <div className="grid gap-1.5">
+                    {payload.map((entry: any, index: number) => {
+                        if (entry.value === 0) return null; // Hide if value is 0
+                        const colorMap: Record<string, string> = {
+                            "Success": "#22c55e",
+                            "Warning": "#eab308",
+                            "Failed": "#ef4444"
+                        }
+                        const color = colorMap[entry.name] || entry.color || "#888888"
+
+                        return (
+                            <div key={index} className="flex w-full flex-wrap gap-2 items-center">
+                                <div
+                                    className="shrink-0 rounded-[2px] h-2.5 w-2.5 border"
+                                    style={{
+                                        backgroundColor: color,
+                                        borderColor: color
+                                    }}
+                                />
+                                <div className="flex flex-1 justify-between leading-none items-center gap-4">
+                                    <span className="text-muted-foreground">{entry.name}</span>
+                                    <span className="text-foreground font-mono font-medium tabular-nums">{entry.value}</span>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
+    return null
+}
 
 
 export function SessionsOverview({
     sessions,
     onSessionSelect,
     selectedSessionId,
+    loading,
     timeRange,
     onTimeRangeChange
 }: SessionsOverviewProps) {
     // Table State
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([{ id: "type", value: ["BackupJob"] }])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
 
     // Filter State
@@ -167,7 +209,28 @@ export function SessionsOverview({
 
     // --- Chart Logic ---
     const chartData = React.useMemo(() => {
-        const validSessions = sessions.filter(s => s.creationTime && !isNaN(new Date(s.creationTime).getTime()))
+        // Apply column filters to sessions for the chart
+        let filteredSessions = sessions;
+        if (columnFilters.length > 0) {
+            filteredSessions = sessions.filter(session => {
+                return columnFilters.every(filter => {
+                    if (filter.id === 'name') {
+                        return (session.name || '').toLowerCase().includes((filter.value as string).toLowerCase());
+                    }
+                    if (filter.id === 'status') {
+                        const filterValues = filter.value as string[];
+                        return filterValues.includes(session.result?.result || 'None');
+                    }
+                    if (filter.id === 'type') {
+                        const filterValues = filter.value as string[];
+                        return filterValues.includes(session.sessionType);
+                    }
+                    return true;
+                });
+            });
+        }
+
+        const validSessions = filteredSessions.filter(s => s.creationTime && !isNaN(new Date(s.creationTime).getTime()))
         const statsMap = new Map<string, DailyStats>()
         const daysToShow = timeRange === "7d" ? 7 : 30
         const now = new Date()
@@ -192,7 +255,7 @@ export function SessionsOverview({
         })
 
         return Array.from(statsMap.values()).reverse()
-    }, [sessions, timeRange])
+    }, [sessions, timeRange, columnFilters])
 
     const handleChartClick = (data: { activeLabel?: string } | null) => {
         if (data && data.activeLabel) {
@@ -234,7 +297,7 @@ export function SessionsOverview({
         },
         initialState: {
             pagination: {
-                pageSize: 10,
+                pageSize: 8,
             }
         }
     })
@@ -246,84 +309,45 @@ export function SessionsOverview({
         : 0
 
     return (
-        <Card className="h-full flex flex-col">
-            <CardHeader className="pb-4">
+        <Card className="h-[835px] flex flex-col overflow-hidden">
+            <CardHeader className="pb-2 shrink-0">
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle>Sessions Overview</CardTitle>
                         <CardDescription>
-                            {totalSessions} sessions processed • {successRate}% success rate
-                            {selectedDate && (
-                                <span className="ml-2 inline-flex items-center text-primary font-medium">
-                                    • Filtered: {new Date(selectedDate).toLocaleDateString()}
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-4 w-4 ml-1"
-                                        onClick={() => setSelectedDate(null)}
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </Button>
+                            {loading ? (
+                                <Skeleton className="h-4 w-[250px]" />
+                            ) : (
+                                <span>
+                                    {totalSessions} sessions processed • {successRate}% success rate
                                 </span>
                             )}
                         </CardDescription>
                     </div>
-                    <Tabs value={timeRange} onValueChange={(v) => {
-                        onTimeRangeChange(v as "7d" | "30d");
-                        setSelectedDate(null); // Clear filter on range change
-                    }}>
-                        <TabsList>
-                            <TabsTrigger value="7d">Last 7 Days</TabsTrigger>
-                            <TabsTrigger value="30d">Last 30 Days</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex items-center space-x-2 bg-muted/50 p-1 rounded-md">
+                        <Button
+                            variant={timeRange === "7d" ? "secondary" : "ghost"}
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => onTimeRangeChange("7d")}
+                        >
+                            Last 7 Days
+                        </Button>
+                        <Button
+                            variant={timeRange === "30d" ? "secondary" : "ghost"}
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => onTimeRangeChange("30d")}
+                        >
+                            Last 30 Days
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
-                {/* 1. Bar Chart Section */}
-                <div className="h-[250px] w-full cursor-pointer">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={chartData}
-                            margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-                            onClick={handleChartClick}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
-                            <XAxis
-                                dataKey="date"
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                fontSize={12}
-                                minTickGap={30}
-                            />
-                            <Tooltip
-                                contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                                cursor={{ fill: "transparent" }} // Custom cursor handled by active bar state? Standard cursor is fine.
-                                labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            />
-                            <Bar dataKey="success" name="Success" stackId="a" radius={[0, 0, 4, 4]}>
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-success-${index}`} fill="#22c55e" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
-                                ))}
-                            </Bar>
-                            <Bar dataKey="warning" name="Warning" stackId="a" radius={[0, 0, 0, 0]}>
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-warning-${index}`} fill="#eab308" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
-                                ))}
-                            </Bar>
-                            <Bar dataKey="failed" name="Failed" stackId="a" radius={[4, 4, 0, 0]}>
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-failed-${index}`} fill="#ef4444" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* 2. Controls / Filters for Table */}
-                <div className="flex items-center justify-between">
+            <CardContent className="flex flex-col flex-1 gap-4">
+                {/* 1. Controls / Filters for Table AND Chart (Moved to Top) */}
+                <div className="flex items-center justify-between shrink-0">
                     <div className="flex flex-1 items-center space-x-2">
                         <Input
                             placeholder="Filter jobs..."
@@ -332,6 +356,7 @@ export function SessionsOverview({
                                 table.getColumn("name")?.setFilterValue(event.target.value)
                             }
                             className="h-8 w-[150px] lg:w-[250px]"
+                            disabled={loading}
                         />
 
                         {table.getColumn("status") && (
@@ -362,7 +387,7 @@ export function SessionsOverview({
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
+                            <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex" disabled={loading}>
                                 <Columns className="mr-2 h-4 w-4" />
                                 View
                             </Button>
@@ -387,8 +412,63 @@ export function SessionsOverview({
                     </DropdownMenu>
                 </div>
 
+                {/* 2. Bar Chart Section */}
+                <div className="h-[250px] w-full cursor-pointer shrink-0">
+                    {loading ? (
+                        <div className="flex items-end justify-between h-full w-full gap-2 px-4 pb-2">
+                            {[...Array(7)].map((_, i) => (
+                                <Skeleton key={i} className="w-full" style={{ height: `${[40, 60, 35, 80, 50, 70, 45][i % 7]}%` }} />
+                            ))}
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={chartData}
+                                margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+                                onClick={handleChartClick}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                                <XAxis
+                                    dataKey="date"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    fontSize={12}
+                                    minTickGap={30}
+                                />
+                                <YAxis
+                                    stroke="#888888"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(value) => `${value}`}
+                                />
+                                <Tooltip
+                                    content={<CustomTooltip />}
+                                    cursor={{ fill: "transparent" }}
+                                />
+                                <Bar dataKey="success" name="Success" stackId="a" radius={[0, 0, 4, 4]}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-success-${index}`} fill="#22c55e" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
+                                    ))}
+                                </Bar>
+                                <Bar dataKey="warning" name="Warning" stackId="a" radius={[0, 0, 0, 0]}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-warning-${index}`} fill="#eab308" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
+                                    ))}
+                                </Bar>
+                                <Bar dataKey="failed" name="Failed" stackId="a" radius={[4, 4, 0, 0]}>
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-failed-${index}`} fill="#ef4444" fillOpacity={selectedDate && selectedDate !== entry.date ? 0.3 : 1} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
+
                 {/* 3. Data Table */}
-                <div className="rounded-md border">
+                <div className="rounded-md border flex-1 overflow-auto min-h-0">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -404,47 +484,60 @@ export function SessionsOverview({
                             ))}
                         </TableHeader>
                         <TableBody>
-                            {table.getRowModel().rows?.length ? (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={row.original.id === selectedSessionId ? "selected" : undefined}
-                                        className={onSessionSelect ? "cursor-pointer hover:bg-muted/50" : ""}
-                                        onClick={() => onSessionSelect && onSessionSelect(row.original)}
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {loading ? (
+                                // Skeleton Loader Rows
+                                [...Array(10)].map((_, i) => (
+                                    <TableRow key={`skeleton-${i}`}>
+                                        {columns.map((_, colIndex) => (
+                                            <TableCell key={`col-${colIndex}`}>
+                                                <Skeleton className="h-6 w-full" />
                                             </TableCell>
                                         ))}
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                                        No results.
-                                    </TableCell>
-                                </TableRow>
+                                table.getRowModel().rows?.length ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <TableRow
+                                            key={row.id}
+                                            data-state={row.original.id === selectedSessionId ? "selected" : undefined}
+                                            className={onSessionSelect ? "cursor-pointer hover:bg-muted/50" : ""}
+                                            onClick={() => onSessionSelect && onSessionSelect(row.original)}
+                                        >
+                                            {row.getVisibleCells().map((cell) => (
+                                                <TableCell key={cell.id}>
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                                            No results.
+                                        </TableCell>
+                                    </TableRow>
+                                )
                             )}
                         </TableBody>
                     </Table>
                 </div>
 
                 {/* 4. Pagination */}
-                <div className="flex items-center justify-between px-2">
+                <div className="flex items-center justify-between px-2 pb-2 shrink-0">
                     <div className="flex-1 text-sm text-muted-foreground">
-                        {table.getFilteredRowModel().rows.length} sessions
+                        {loading ? <Skeleton className="h-4 w-24" /> : `${table.getFilteredRowModel().rows.length} sessions`}
                     </div>
                     <div className="flex items-center space-x-6 lg:space-x-8">
                         <div className="flex items-center space-x-2">
-                            <p className="text-sm font-medium">Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}</p>
+                            {loading ? <Skeleton className="h-4 w-32" /> : <p className="text-sm font-medium">Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}</p>}
                         </div>
                         <div className="flex items-center space-x-2">
                             <Button
                                 variant="outline"
                                 className="h-8 w-8 p-0"
                                 onClick={() => table.previousPage()}
-                                disabled={!table.getCanPreviousPage()}
+                                disabled={!table.getCanPreviousPage() || loading}
                             >
                                 <span className="sr-only">Go to previous page</span>
                                 <ChevronLeft className="h-4 w-4" />
@@ -453,7 +546,7 @@ export function SessionsOverview({
                                 variant="outline"
                                 className="h-8 w-8 p-0"
                                 onClick={() => table.nextPage()}
-                                disabled={!table.getCanNextPage()}
+                                disabled={!table.getCanNextPage() || loading}
                             >
                                 <span className="sr-only">Go to next page</span>
                                 <ChevronRight className="h-4 w-4" />

@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from "react"
 import { DashboardStats } from "@/components/dashboard-stats"
-import { SecurityWidget } from "@/components/security-widget"
 import { SessionsOverview } from "@/components/sessions-overview"
 import { StorageCapacityWidget } from "@/components/storage-capacity-widget"
-// import { TransferRateChart } from "@/components/transfer-rate-chart" // Replacing with Sessions Overview
+import { Button } from "@/components/ui/button"
+import { RefreshCw } from "lucide-react"
 import { veeamApi } from "@/lib/api/veeam-client"
 import {
     VeeamBackupJob,
@@ -17,7 +17,8 @@ import {
     SecurityBestPracticeItem,
     VeeamServerInfo
 } from "@/lib/types/veeam"
-// import { calculateTransferRates } from "@/lib/utils/transfer-rate"
+import { calculateTransferRates } from "@/lib/utils/transfer-rate"
+import { TransferRateChart } from "@/components/transfer-rate-chart"
 
 export default function VBRPage() {
     const [jobs, setJobs] = useState<VeeamBackupJob[]>([])
@@ -28,68 +29,72 @@ export default function VBRPage() {
     const [securityItems, setSecurityItems] = useState<SecurityBestPracticeItem[]>([])
     const [sessions, setSessions] = useState<VeeamSession[]>([])
     const [timeRange, setTimeRange] = useState<"7d" | "30d">("7d")
-    // const [transferRateData, setTransferRateData] = useState<any[]>([]) 
+    const [transferRateData, setTransferRateData] = useState<any[]>([])
 
     const [loading, setLoading] = useState(true)
+    const [isRefreshing, setIsRefreshing] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true)
-                setError(null)
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-                // Calculate date filter
-                const now = new Date()
-                const fromDate = new Date()
-                fromDate.setDate(now.getDate() - (timeRange === "7d" ? 7 : 30))
+    const fetchData = async () => {
+        try {
+            // Only show full loading state on initial load
+            if (jobs.length === 0) setLoading(true)
+            else setIsRefreshing(true)
 
-                // Fetch all dashboard data in parallel
-                const [
-                    jobsData,
-                    sessionsData,
-                    reposData,
-                    licenseData,
-                    malwareData,
-                    securityData
-                ] = await Promise.all([
-                    veeamApi.getBackupJobs(),
-                    veeamApi.getSessions({
-                        limit: 2000,
-                        orderColumn: 'CreationTime',
-                        orderAsc: false,
-                        createdAfterFilter: fromDate.toISOString()
-                    }),
-                    // veeamApi.getRepositories(),
-                    fetch('/api/vbr/ServerInfo').then(res => res.json()),
-                    veeamApi.getLicenseInfo(),
-                    veeamApi.getMalwareEvents({ limit: 10 }),
-                    veeamApi.getSecurityBestPractices()
-                ])
+            setError(null)
 
-                setJobs(jobsData)
-                setSessions(sessionsData)
-                // setRepositories(reposData)
-                setServerInfo(reposData) // reposData is now serverInfo
-                setLicense(licenseData)
-                setMalwareEvents(malwareData)
-                setSecurityItems(securityData)
+            // Calculate date filter
+            const now = new Date()
+            const fromDate = new Date()
+            fromDate.setDate(now.getDate() - (timeRange === "7d" ? 7 : 30))
 
-                // Calculate transfer rate data from sessions
-                // const transferData = calculateTransferRates(sessionsData)
-                // setTransferRateData(transferData)
-            } catch (err) {
-                console.error('Failed to fetch dashboard data:', err)
-                setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data')
-            } finally {
-                setLoading(false)
-            }
+            // Fetch all dashboard data in parallel
+            const [
+                jobsData,
+                sessionsData,
+                reposData,
+                licenseData,
+                malwareData,
+                securityData
+            ] = await Promise.all([
+                veeamApi.getBackupJobs(),
+                veeamApi.getSessions({
+                    limit: 2000,
+                    orderColumn: 'CreationTime',
+                    orderAsc: false,
+                    createdAfterFilter: fromDate.toISOString()
+                }),
+                // veeamApi.getRepositories(),
+                fetch('/api/vbr/ServerInfo').then(res => res.json()),
+                veeamApi.getLicenseInfo(),
+                veeamApi.getMalwareEvents({ limit: 10 }),
+                veeamApi.getSecurityBestPractices()
+            ])
+
+            setJobs(jobsData)
+            setSessions(sessionsData)
+            // setRepositories(reposData)
+            setServerInfo(reposData) // ServerInfo logic seems mixed up in original code? using reposData variable for serverInfo fetch result. Keeping consistent strictly with what I see.
+            setLicense(licenseData)
+            setMalwareEvents(malwareData)
+            setSecurityItems(securityData)
+            setTransferRateData(calculateTransferRates(sessionsData))
+            setLastUpdated(new Date())
+        } catch (error) {
+            console.error("Failed to fetch dashboard data:", error)
+            setError(error instanceof Error ? error.message : String(error))
+        } finally {
+            setLoading(false)
+            setIsRefreshing(false)
         }
+    }
 
+    useEffect(() => {
         fetchData()
-
-        // Refresh data every 30 seconds
-        const interval = setInterval(fetchData, 30000)
+        // Refresh data every 5 minutes
+        const interval = setInterval(fetchData, 300000)
         return () => clearInterval(interval)
     }, [timeRange])
 
@@ -106,6 +111,22 @@ export default function VBRPage() {
                             Overview of your backup infrastructure health and performance
                         </p>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground mr-2">
+                            {lastUpdated ? `Updated at ${lastUpdated.toLocaleTimeString()}` : ''}
+                        </span>
+                        <div className="relative">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={fetchData}
+                                disabled={loading || isRefreshing}
+                            >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                                Refresh
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
                 {error && (
@@ -116,29 +137,30 @@ export default function VBRPage() {
 
                 {/* Top Stats Row */}
                 <DashboardStats
+                    totalJobs={jobs.length}
+                    activeJobs={activeJobs}
                     serverInfo={serverInfo}
                     license={license}
                     malwareEvents={malwareEvents}
-                    totalJobs={jobs.length}
-                    activeJobs={activeJobs}
+                    securityItems={securityItems}
                 />
 
-                {/* Main Content Areas */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Sessions Overview (Take up 2/3 width on large screens) */}
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Sessions Overview (Takes up 2/3 width) */}
                     <div className="lg:col-span-2">
                         <SessionsOverview
                             sessions={sessions}
-                            loading={loading}
                             timeRange={timeRange}
                             onTimeRangeChange={setTimeRange}
+                            loading={loading}
                         />
                     </div>
 
-                    {/* Security Widget and Storage Capacity (Take up 1/3 width) */}
+                    {/* Storage Capacity (Takes up 1/3 width) - SecurityWidget removed */}
                     <div className="lg:col-span-1 space-y-6">
                         <StorageCapacityWidget />
-                        <SecurityWidget items={securityItems} />
+                        <TransferRateChart data={transferRateData} loading={loading} />
                     </div>
                 </div>
             </div>
