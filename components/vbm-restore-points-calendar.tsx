@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays } from "date-fns"
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, HardDrive, Database, Clock } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Mail, Globe, Users, Database, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { VeeamRestorePoint } from "@/lib/types/veeam"
+import { VBMRestorePoint } from "@/lib/types/vbm"
 import { cn } from "@/lib/utils"
 import {
     Popover,
@@ -20,11 +20,16 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface VBRRestorePointsCalendarProps {
-    data: VeeamRestorePoint[]
+interface VbmRestorePointsCalendarProps {
+    data: VBMRestorePoint[]
+    lookupData?: {
+        organizations: Record<string, string>,
+        repositories: Record<string, string>,
+        jobs: Record<string, string>
+    }
 }
 
-export function VBRRestorePointsCalendar({ data }: VBRRestorePointsCalendarProps) {
+export function VbmRestorePointsCalendar({ data, lookupData }: VbmRestorePointsCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [view, setView] = useState<"month" | "week" | "day">("month")
 
@@ -43,8 +48,8 @@ export function VBRRestorePointsCalendar({ data }: VBRRestorePointsCalendarProps
     const goToToday = () => setCurrentDate(new Date())
 
     const getPointsForDay = (date: Date) => {
-        return data.filter(rp => isSameDay(new Date(rp.creationTime), date))
-            .sort((a, b) => new Date(a.creationTime).getTime() - new Date(b.creationTime).getTime())
+        return data.filter(rp => isSameDay(new Date(rp.backupTime), date))
+            .sort((a, b) => new Date(a.backupTime).getTime() - new Date(b.backupTime).getTime())
     }
 
     // Helper to get header label
@@ -59,64 +64,53 @@ export function VBRRestorePointsCalendar({ data }: VBRRestorePointsCalendarProps
         return ""
     }
 
-    const formatBytes = (bytes: number) => {
-        if (!bytes) return "0 B"
-        const k = 1024
-        const sizes = ["B", "KB", "MB", "GB", "TB"]
-        const i = Math.floor(Math.log(bytes) / Math.log(k))
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+
+
+    const getContentTypeConfig = (item: VBMRestorePoint) => {
+        if (item.isExchange) return { label: 'Exchange', icon: Mail, className: "bg-blue-100 text-blue-800 border-blue-200 hover:border-blue-300" }
+        if (item.isSharePoint) return { label: 'SharePoint', icon: Globe, className: "bg-teal-100 text-teal-800 border-teal-200 hover:border-teal-300" }
+        if (item.isOneDrive) return { label: 'OneDrive', icon: Database, className: "bg-sky-100 text-sky-800 border-sky-200 hover:border-sky-300" }
+        if (item.isTeams) return { label: 'Teams', icon: Users, className: "bg-indigo-100 text-indigo-800 border-indigo-200 hover:border-indigo-300" }
+        return { label: 'Unknown', icon: Database, className: "bg-gray-100 text-gray-800 border-gray-200" }
     }
 
-    const getBadgeVariant = (type?: string) => {
-        if (!type) return "secondary"
-        const t = type.toLowerCase()
-        if (t.includes('full')) return "default"
-        if (t.includes('reverse')) return "outline"
-        return "secondary"
+    const getCopyTypeBadge = (item: VBMRestorePoint) => {
+        if (item.isLongTermCopy) return <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-50 text-amber-700 border-amber-200">Archive</Badge>
+        if (item.isCopy) return <Badge variant="outline" className="text-[9px] h-4 px-1 bg-purple-50 text-purple-700 border-purple-200">Copy</Badge>
+        return null
     }
 
-    const RestorePointCard = ({ item }: { item: VeeamRestorePoint }) => {
-        const date = new Date(item.creationTime)
+    const RestorePointCard = ({ item }: { item: VBMRestorePoint }) => {
+        const config = getContentTypeConfig(item)
+        const date = new Date(item.backupTime)
 
         return (
-            <div className="group flex flex-col gap-1 rounded border bg-card p-1.5 text-xs shadow-sm hover:shadow-md hover:border-primary/50 transition-all w-full overflow-hidden">
+            <div className={cn(
+                "group flex flex-col gap-1 rounded border p-1.5 text-xs shadow-sm hover:shadow-md transition-all w-full overflow-hidden",
+                config.className
+            )}>
                 <div className="flex items-center justify-between gap-1">
-                    <span className="font-semibold truncate text-[10px] text-primary">
-                        {format(date, 'HH:mm')}
-                    </span>
-                    <Badge variant={getBadgeVariant(item.pointType)} className="h-4 px-1 text-[9px] pointer-events-none">
-                        {item.pointType || 'Inc'}
-                    </Badge>
+                    <div className="flex items-center gap-1 min-w-0">
+                        <config.icon className="h-3 w-3 shrink-0" />
+                        <span className="font-semibold truncate text-[10px]">
+                            {format(date, 'HH:mm')}
+                        </span>
+                    </div>
+                    {getCopyTypeBadge(item)}
                 </div>
 
-                {(item.backupSize || item.dataSize) && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        {item.dataSize && (
-                            <span className="flex items-center gap-0.5" title="Data Size">
-                                <Database className="h-2.5 w-2.5" />
-                                {formatBytes(item.dataSize)}
-                            </span>
-                        )}
-                        {item.backupSize && (
-                            <span className="flex items-center gap-0.5" title="Backup Size">
-                                <HardDrive className="h-2.5 w-2.5" />
-                                {formatBytes(item.backupSize)}
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {item.jobName && (
-                    <div className="truncate text-[9px] text-muted-foreground font-medium" title={item.jobName}>
-                        {item.jobName}
-                    </div>
-                )}
-
-                {item.repositoryName && (
-                    <div className="truncate text-[9px] text-muted-foreground/80" title={item.repositoryName}>
-                        {item.repositoryName}
-                    </div>
-                )}
+                <div className="flex flex-col gap-0.5">
+                    {lookupData?.jobs[item.jobId] && (
+                        <div className="truncate text-[9px] opacity-80 font-medium" title={lookupData.jobs[item.jobId]}>
+                            {lookupData.jobs[item.jobId]}
+                        </div>
+                    )}
+                    {lookupData?.repositories[item.repositoryId] && (
+                        <div className="truncate text-[9px] opacity-70" title={lookupData.repositories[item.repositoryId]}>
+                            {lookupData.repositories[item.repositoryId]}
+                        </div>
+                    )}
+                </div>
             </div>
         )
     }
@@ -274,7 +268,7 @@ export function VBRRestorePointsCalendar({ data }: VBRRestorePointsCalendarProps
                         )}
                     </div>
 
-                    {/* Time Grid - Natural Scrolling handled by Page */}
+                    {/* Time Grid */}
                     <div className="flex divide-x">
                         {/* Time Axis */}
                         <div className="w-16 flex-shrink-0 bg-background border-r">
@@ -294,7 +288,7 @@ export function VBRRestorePointsCalendar({ data }: VBRRestorePointsCalendarProps
                         ).map((date, dayIdx) => (
                             <div key={dayIdx} className="flex-1 relative min-w-0">
                                 {Array.from({ length: 24 }).map((_, hour) => {
-                                    const points = getPointsForDay(date).filter(p => new Date(p.creationTime).getHours() === hour);
+                                    const points = getPointsForDay(date).filter(p => new Date(p.backupTime).getHours() === hour);
                                     const MAX_VISIBLE = 1
                                     const visiblePoints = points.slice(0, MAX_VISIBLE)
                                     const hiddenCount = points.length - MAX_VISIBLE

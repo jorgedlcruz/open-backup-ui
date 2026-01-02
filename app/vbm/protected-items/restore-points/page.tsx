@@ -2,14 +2,17 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { VBMRestorePointsTable } from "@/components/vbm-restore-points-table"
+import { VbmRestorePointsCalendar } from "@/components/vbm-restore-points-calendar"
+import { FacetedFilter } from "@/components/faceted-filter"
 import { veeamApi } from "@/lib/api/veeam-client"
 import { VBMRestorePoint } from "@/lib/types/vbm"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Grid, Calendar, Mail, Globe, Users, Database } from "lucide-react"
 import Link from "next/link"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 function RestorePointsContent() {
     const searchParams = useSearchParams()
@@ -25,6 +28,12 @@ function RestorePointsContent() {
         repositories: Record<string, string>,
         jobs: Record<string, string>
     }>({ organizations: {}, repositories: {}, jobs: {} })
+
+    // View state
+    const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid")
+
+    // Filter state
+    const [selectedStructureTypes, setSelectedStructureTypes] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         const fetchData = async () => {
@@ -74,24 +83,74 @@ function RestorePointsContent() {
         fetchData()
     }, [type, id])
 
+    const getContentType = (item: VBMRestorePoint) => {
+        if (item.isExchange) return "Exchange";
+        if (item.isSharePoint) return "SharePoint";
+        if (item.isOneDrive) return "OneDrive";
+        if (item.isTeams) return "Teams";
+        return "Unknown";
+    }
+
+    // Filter Logic
+    const filteredItems = useMemo(() => {
+        if (selectedStructureTypes.size === 0) return items
+        return items.filter(item => selectedStructureTypes.has(getContentType(item)))
+    }, [items, selectedStructureTypes])
+
+    // Facet Counts
+    const typeCounts = useMemo(() => {
+        const counts: Record<string, number> = { Exchange: 0, SharePoint: 0, OneDrive: 0, Teams: 0, Unknown: 0 }
+        items.forEach(item => {
+            const type = getContentType(item)
+            counts[type] = (counts[type] || 0) + 1
+        })
+        return counts
+    }, [items])
+
     if (!type || !id) {
         return <div className="p-8">Invalid parameters. Missing type or ID.</div>
     }
+
+    const contentTypeOptions = [
+        { label: "Exchange", value: "Exchange", icon: Mail },
+        { label: "SharePoint", value: "SharePoint", icon: Globe },
+        { label: "OneDrive", value: "OneDrive", icon: Database },
+        { label: "Teams", value: "Teams", icon: Users },
+    ]
 
     return (
         <div className="flex-1 overflow-auto bg-background">
             <div className="container mx-auto py-8 px-4">
                 <div className="mb-6">
-                    <Link href="/vbm/protected-items">
-                        <Button variant="ghost" size="sm" className="mb-4 -ml-4">
-                            <ChevronLeft className="mr-2 h-4 w-4" />
-                            Back to Protected Items
-                        </Button>
-                    </Link>
-                    <h1 className="text-3xl font-bold tracking-tight">Restore Points</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Viewing restore points for <span className="font-medium text-foreground">{name || id}</span>
-                    </p>
+                    <div className="flex items-center justify-between mb-4">
+                        <Link href="/vbm/protected-items">
+                            <Button variant="ghost" size="sm" className="-ml-4">
+                                <ChevronLeft className="mr-2 h-4 w-4" />
+                                Back to Protected Items
+                            </Button>
+                        </Link>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">Restore Points</h1>
+                            <p className="text-muted-foreground mt-2">
+                                Viewing restore points for <span className="font-medium text-foreground">{name || id}</span>
+                            </p>
+                        </div>
+                        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "calendar")} className="w-[200px]">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="grid" className="flex items-center gap-2">
+                                    <Grid className="h-4 w-4" />
+                                    Grid
+                                </TabsTrigger>
+                                <TabsTrigger value="calendar" className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4" />
+                                    Calendar
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
                 </div>
 
                 {error && (
@@ -100,7 +159,30 @@ function RestorePointsContent() {
                     </div>
                 )}
 
-                <VBMRestorePointsTable data={items} loading={loading} lookupData={lookupData} />
+                <div className="space-y-4">
+                    <div className="flex items-center">
+                        <FacetedFilter
+                            title="Content Type"
+                            options={contentTypeOptions}
+                            selectedValues={selectedStructureTypes}
+                            onSelect={setSelectedStructureTypes}
+                            counts={typeCounts}
+                        />
+                    </div>
+
+                    {viewMode === 'grid' ? (
+                        <VBMRestorePointsTable
+                            data={filteredItems}
+                            loading={loading}
+                            lookupData={lookupData}
+                        />
+                    ) : (
+                        <VbmRestorePointsCalendar
+                            data={filteredItems}
+                            lookupData={lookupData}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     )
