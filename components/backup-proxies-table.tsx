@@ -33,7 +33,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ChevronDown, Server, Power, PowerOff, Trash2, Edit, Search, RefreshCw } from "lucide-react";
+import { MoreHorizontal, ChevronDown, Server, Power, PowerOff, Trash2, Edit, Search, RefreshCw, ServerCog } from "lucide-react";
 import { VeeamProxy } from "@/lib/types/veeam";
 import { toast } from "sonner";
 import { veeamApi as veeamApiClient } from "@/lib/api/veeam-client";
@@ -110,7 +110,7 @@ export function BackupProxiesTable({ data, isLoading, onRefresh }: BackupProxies
                 return (
                     <div className="flex flex-col">
                         <span className="font-medium flex items-center gap-2">
-                            <Server className="h-4 w-4 text-muted-foreground" />
+                            <ServerCog className="h-4 w-4 text-muted-foreground" />
                             {row.getValue("name")}
                         </span>
                         {description && (

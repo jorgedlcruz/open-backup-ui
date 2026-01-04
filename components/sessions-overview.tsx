@@ -40,6 +40,7 @@ interface SessionsOverviewProps {
     selectedSessionId?: string | null
     timeRange: "7d" | "30d"
     onTimeRangeChange: (range: "7d" | "30d") => void
+    defaultFilterType?: string[]
 }
 
 interface DailyStats {
@@ -204,11 +205,12 @@ export function SessionsOverview({
     selectedSessionId,
     loading,
     timeRange,
-    onTimeRangeChange
+    onTimeRangeChange,
+    defaultFilterType = ["BackupJob"]
 }: SessionsOverviewProps) {
     // Table State
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([{ id: "type", value: ["BackupJob"] }])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([{ id: "type", value: defaultFilterType }])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
 
     // Filter State

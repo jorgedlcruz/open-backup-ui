@@ -15,7 +15,7 @@ import {
     getFacetedUniqueValues,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Server, Computer, Boxes, Building2, PlayCircle, PauseCircle, ShieldCheck, ShieldAlert } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Server, MonitorDot, Boxes, Building2, PlayCircle, PauseCircle, ShieldCheck, ShieldAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -131,7 +131,7 @@ export function VirtualInfrastructureTable() {
             },
             cell: ({ row }) => (
                 <div className="flex items-center gap-2 font-medium">
-                    <Computer className="h-4 w-4 text-muted-foreground" />
+                    <MonitorDot className="h-4 w-4 text-muted-foreground" />
                     {row.getValue("name")}
                 </div>
             ),

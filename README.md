@@ -13,7 +13,7 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Transferred Data Widget**: Visual representation of data transfer rates over time
 - **Real-time Statistics**: Active jobs, success rate, storage usage, protected VMs, and data processed
 - **Malware Detection**: Recent malware scan events and alerts
-- **Recent Sessions**: Overview of the latest backup sessions with status and details
+- **Recent Sessions**: Overview of the latest backup sessions with status and details, defaulting to "BackupJob" type for clarity
 - **Time Range Selection**: 7-day and 30-day views for historical analysis
 
 #### Jobs Management
@@ -52,7 +52,7 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
   - **Advanced Filtering**: Faceted filtering by protection status, platform, and state
 - **Protected Data**: 
   - **Rich Grid View**: Detailed list of all protected workloads
-  - **Calendar View**: Toggleable monthly calendar view for restore points visualization
+  - **Calendar View**: Toggleable monthly calendar view for restore points visualization, highlighting available recovery points by date
   - **Restore Points**: Deep dive into restore points with derived type (Full/Incremental) and size data
 - **Physical & Cloud Infrastructure**:
   - **Protection Groups**: Monitor physical agent deployment and status
@@ -70,10 +70,24 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Search and Filter**: Quick access to specific recovery plans
 
 ### Veeam Backup for Microsoft 365 (VBM)
+- **Dashboard**: M365 specific statistics and session overview (auto-filtered to "Backup" type)
 - **Microsoft 365 Jobs**: Monitor all M365 backup jobs
 - **Job Status Tracking**: Success, warning, and failure states
-- **Last Run Information**: Track when M365 jobs last executed
 - **Job Type Support**: Multiple M365 job types and configurations
+- **Calendar View**: Interactive calendar for visualizing restore points availability
+- **Organizations**: Track multiple M365 organizations and their storage usage
+
+### Administration & Branding
+- **Licensing**: 
+  - Detailed VBR license report generation
+  - Instance and capacity usage breakdown
+  - PDF/HTML report download capabilities
+- **Theme Customizer**:
+  - **Color Presets**: Blue, Green, Orange, Red, Violet, Yellow, and Default
+  - **Radius Control**: Adjust UI corner roundness (0 to 1.0rem)
+  - **Scaling**: Adjust font and element scaling (90% to 110%)
+  - **Mode**: Seamless Dark/Light mode switching
+  - **Cookie Persistence**: Theme settings persist across sessions via server-side cookies
 
 ### Kasten K10
 - **Coming Soon**: Kubernetes backup platform monitoring
@@ -81,7 +95,6 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 ### General Features
 - **Real-time Updates**: Automatic 30-second data refresh across all views
 - **Unified Global Search**: Search across all backup jobs and recovery plans from any page
-- **Theme Support**: Dark/Light mode with automatic system preference detection
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Secure API Proxy**: Server-side API calls protect credentials from client exposure
 - **Interactive Visualizations**: Charts and graphs using Recharts library
@@ -173,7 +186,9 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
   - `/api/v1/backupInfrastructure/backupProxies` - Backup proxies
   - `/api/v1/backupInfrastructure/backupRepositories` - Backup repositories
   - `/api/v1/backupInfrastructure/repositories/states` - Repository states
-  - `/api/v1/license` - License information
+  - `/api/v1/license` - License information overview
+  - `/api/v1/license/instances` - License instance details
+  - `/api/v1/license/capacity` - License capacity details
   - `/api/v1/malware-detection` - Malware events
   - `/api/v1/security/best-practices` - Security best practices
   - `/api/v1/backupObjects` - Backup objects lookup
@@ -210,79 +225,59 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 
 ```
 ├── app/
+│   ├── administration/               # Administration Area
+│   │   ├── branding/                 # Branding settings (Theme Customizer)
+│   │   ├── licensing/                # Licensing reports & status
+│   │   └── layout.tsx                # Administration layout
 │   ├── api/                          # API routes (secure proxy to Veeam APIs)
 │   │   ├── veeam/                    # VBR API routes
 │   │   │   ├── auth/                 # VBR authentication
 │   │   │   ├── jobs/                 # Backup jobs endpoint
 │   │   │   ├── sessions/             # Job sessions endpoint
 │   │   │   ├── backupInfrastructure/ # Infrastructure endpoints
-│   │   │   │   ├── proxies/          # Backup proxies
-│   │   │   │   └── repositories/     # Backup repositories
-│   │   │   ├── license/              # License information
+│   │   │   ├── license/              # License endpoints (inc. reports)
 │   │   │   ├── malware-detection/    # Malware events
 │   │   │   └── security/             # Security best practices
 │   │   ├── vro/                      # VRO API routes
-│   │   │   ├── auth/                 # VRO authentication
-│   │   │   └── plans/                # Recovery plans endpoint
 │   │   └── vbm/                      # VBM API routes
-│   │       ├── auth/                 # VBM authentication
-│   │       └── jobs/                 # Microsoft 365 jobs endpoint
 │   ├── vbr/                          # VBR monitoring pages
-│   │   ├── page.tsx                  # VBR jobs overview
 │   │   ├── dashboard/                # VBR dashboard with stats
 │   │   ├── jobs/                     # Jobs list and details
-│   │   │   ├── page.tsx              # All jobs view
-│   │   │   └── [id]/                 # Individual job details
 │   │   ├── inventory/                # Inventory management
-│   │   │   ├── virtual/              # Virtual infrastructure (VMware/Hyper-V)
-│   │   │   ├── protection-groups/    # Physical & Cloud infrastructure
-│   │   │   └── unstructured/         # Unstructured data (NAS/Object)
-│   │   └── infrastructure/           # Infrastructure management
-│   │       ├── proxies/              # Backup proxies view
-│   │       ├── repositories/         # Backup repositories view
-│   │       └── managed-servers/      # Managed servers view
+│   │   ├── infrastructure/           # Infrastructure management
+│   │   ├── protected-data/           # Restore points & calendar view
+│   │   └── page.tsx                  # Redirects to dashboard
 │   ├── vro/                          # VRO monitoring page
 │   ├── vbm/                          # VBM monitoring page
 │   ├── k10/                          # K10 placeholder page
-│   ├── layout.tsx                    # Root layout with sidebar
+│   ├── layout.tsx                    # Root layout with sidebar & theme provider
 │   └── page.tsx                      # Home (redirects to /vbr/dashboard)
 ├── components/
 │   ├── ui/                           # shadcn/ui components (20+ components)
+│   ├── theme-customizer/             # Branding components (Radius, Mode, Preset)
+│   │   ├── color-mode-selector.tsx
+│   │   ├── content-layout-selector.tsx
+│   │   ├── preset-selector.tsx
+│   │   └── theme-radius-selector.tsx
 │   ├── app-header.tsx                # Application header with search
 │   ├── app-sidebar.tsx               # Navigation sidebar
-│   ├── backup-jobs-table.tsx         # VBR jobs table
+│   ├── active-theme.tsx              # Theme state management component
+│   ├── administration-nav.tsx        # Administration sidebar
 │   ├── dashboard-stats.tsx           # Dashboard statistics cards
-│   ├── security-widget.tsx           # Security compliance widget
-│   ├── storage-capacity-widget.tsx   # Storage capacity widget
 │   ├── sessions-overview.tsx         # Recent sessions widget with chart
 │   ├── transfer-rate-chart.tsx       # Transfer rate visualization
-│   ├── session-tasks-table.tsx       # Session tasks breakdown
 │   ├── job-details-header.tsx        # Job details header component
-│   ├── backup-proxies-table.tsx      # Backup proxies table
-│   ├── backup-repositories-table.tsx # Backup repositories table
-│   ├── managed-servers-table.tsx     # Managed servers table
-│   ├── virtual-infrastructure-table.tsx # Virtual inventory with protection status
-│   ├── protection-groups-table.tsx   # Protection groups inventory
-│   ├── discovered-entities-table.tsx # Physical/Cloud agent inventory
-│   ├── unstructured-data-table.tsx   # Unstructured data inventory
-│   ├── vbr-protected-data-table.tsx  # Protected workloads grid
-│   ├── vbr-restore-points-table.tsx  # Restore points grid
-│   ├── vbr-restore-points-calendar.tsx # Restore points calendar view
-│   ├── recovery-plans-table.tsx      # VRO plans table
-│   ├── vbm-jobs-table.tsx            # VBM jobs table
-│   ├── global-search.tsx             # Global search component
-│   ├── data-table-faceted-filter.tsx # Advanced table filtering
-│   ├── search-provider.tsx           # Global search context
-│   ├── theme-provider.tsx            # Dark/Light theme provider
-│   └── mode-toggle.tsx               # Theme toggle button
+│   ├── vbr-restore-points-calendar.tsx # VBR Calendar View
+│   ├── vbm-restore-points-calendar.tsx # VBM Calendar View
+│   └── ...                           # Various data tables
 ├── lib/
 │   ├── api/
 │   │   └── veeam-client.ts           # API client utilities
 │   ├── types/
-│   │   ├── veeam.ts                  # VBR TypeScript types (comprehensive)
+│   │   ├── veeam.ts                  # VBR TypeScript types
 │   │   └── vbm.ts                    # VBM TypeScript types
 │   └── utils/
-│       ├── utils.ts                  # General utilities (cn, formatters)
+│       ├── utils.ts                  # General utilities
 │       ├── transfer-rate.ts          # Transfer rate calculations
 │       └── rate-limiter.ts           # API rate limiting
 ├── hooks/

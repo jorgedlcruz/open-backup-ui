@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Laptop, Download, Trash } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Server, Download, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -106,7 +106,7 @@ export function DiscoveredEntitiesTable() {
             },
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <Laptop className="h-4 w-4 text-muted-foreground" />
+                    <Server className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">{row.getValue("name")}</span>
                 </div>
             ),

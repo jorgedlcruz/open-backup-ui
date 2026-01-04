@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Share2, Server, Trash, HardDrive } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Share2, Server, Trash, HardDrive, FolderClosed } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -93,7 +93,7 @@ export function UnstructuredDataTable() {
             },
             cell: ({ row }) => {
                 const type = row.original.type
-                let Icon = Share2
+                let Icon = FolderClosed
                 if (type === 'FileServer') Icon = Server
 
                 return (

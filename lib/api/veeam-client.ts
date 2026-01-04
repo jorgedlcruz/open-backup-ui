@@ -12,6 +12,7 @@ import {
   RepositoryModel,
   RepositoriesResult,
   LicenseModel,
+  LicenseReport,
   MalwareEventModel,
   MalwareEventsResult,
   SecurityBestPracticeItem,
@@ -181,21 +182,31 @@ class VeeamApiClient {
       return {} as T;
     }
 
+    const contentType = response.headers.get('content-type');
+
+    // Handle JSON responses
+    if (contentType && contentType.includes('application/json')) {
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text };
+      }
+
+      if (!response.ok) {
+        const errorMessage = data.error || data.message || `API request failed: ${response.status} ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+      return data as T;
+    }
+
+    // Handle Text/HTML responses
     const text = await response.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      data = { error: text };
-    }
-
     if (!response.ok) {
-      const errorMessage = data.error || data.message || `API request failed: ${response.status} ${response.statusText}`;
-      // Throw a proper Error object so that calling code (like catch blocks) can access .message
-      throw new Error(errorMessage);
+      throw new Error(text || `API request failed: ${response.status} ${response.statusText}`);
     }
-
-    return data as T;
+    return text as unknown as T;
   }
 
   async logout(): Promise<void> {
@@ -526,6 +537,56 @@ class VeeamApiClient {
         console.error('Error fetching license info:', error);
       }
       return null;
+    }
+  }
+
+  async revokeLicenseInstance(instanceId: string): Promise<void> {
+    try {
+      await this.request(`/license/instances/${instanceId}/revoke`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error(`Error revoking license instance ${instanceId}:`, error);
+      throw error;
+    }
+  }
+
+  async revokeLicenseCapacity(instanceId: string): Promise<void> {
+    try {
+      await this.request(`/license/capacity/${instanceId}/revoke`, {
+        method: 'POST'
+      });
+    } catch (error) {
+      console.error(`Error revoking license capacity ${instanceId}:`, error);
+      throw error;
+    }
+  }
+
+  async createLicenseReport(): Promise<string> {
+    try {
+      // The API returns the report HTML directly when reportFormat is html
+      // We use application/octet-stream as verified by curl
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await this.request<any>('/license/createReport', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/octet-stream'
+        },
+        body: JSON.stringify({ reportFormat: 'html' })
+      });
+
+      // If the response is an object (unexpectedly parsed as JSON or empty), check if it has error or content
+      if (typeof response === 'object') {
+        if (response.error) return response.error; // In case our request() wrapped it
+        // If it's an empty object, it might be 204 or failed parse.
+        // We can't recover easily if request() swallowed the text.
+        // But let's stringify it just in case it is the JSON report mistakenly returned.
+        return JSON.stringify(response);
+      }
+      return response;
+    } catch (error) {
+      console.error('Error creating license report:', error);
+      throw error;
     }
   }
 

@@ -40,7 +40,10 @@ import {
     ArrowUpDown,
     CheckCircle2,
     XCircle,
-    Columns
+    Columns,
+    UserRoundCog,
+    FolderClosed,
+    MonitorDot
 } from "lucide-react"
 import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 
@@ -53,11 +56,11 @@ const getTypeIcon = (type: string) => {
     switch (type) {
         case 'WindowsHost':
         case 'LinuxHost':
-            return <Server className="h-4 w-4 mr-2" />
+            return <MonitorDot className="h-4 w-4 mr-2" />
         case 'ViHost':
-            return <Monitor className="h-4 w-4 mr-2" />
+            return <Server className="h-4 w-4 mr-2" />
         default:
-            return <HardDrive className="h-4 w-4 mr-2" />
+            return <FolderClosed className="h-4 w-4 mr-2" />
     }
 }
 
@@ -205,7 +208,7 @@ export function ManagedServersTable({ data, loading }: ManagedServersTableProps)
                                 Array.from(new Set(data.map(item => item.type))).map(type => ({
                                     label: type,
                                     value: type,
-                                    icon: getTypeIcon(type).type === Server ? Server : (getTypeIcon(type).type === Monitor ? Monitor : HardDrive) // simple icon mapping for filter
+                                    icon: getTypeIcon(type).type === MonitorDot ? MonitorDot : (getTypeIcon(type).type === Server ? Server : FolderClosed)
                                 }))
                             }
                         />

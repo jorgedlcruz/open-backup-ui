@@ -6,6 +6,10 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ActiveThemeProvider } from "@/components/active-theme";
+import { DEFAULT_THEME } from "@/lib/themes";
+import { cookies } from "next/headers";
+import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,16 +26,36 @@ export const metadata: Metadata = {
   description: "Veeam Backup & Replication Management",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const themeSettings = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    preset: (cookieStore.get("theme_preset")?.value ?? DEFAULT_THEME.preset) as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    scale: (cookieStore.get("theme_scale")?.value ?? DEFAULT_THEME.scale) as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    radius: (cookieStore.get("theme_radius")?.value ?? DEFAULT_THEME.radius) as any,
+    contentLayout: (cookieStore.get("theme_content_layout")?.value ??
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      DEFAULT_THEME.contentLayout) as any
+  };
+
+  const bodyAttributes = Object.fromEntries(
+    Object.entries(themeSettings)
+      .filter(([_, value]) => value)
+      .map(([key, value]) => [`data-theme-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value])
+  );
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={cn(`${geistSans.variable} ${geistMono.variable} antialiased bg-background group/layout font-sans`)}
+        {...bodyAttributes}
       >
         <ThemeProvider
           attribute="class"
@@ -39,14 +63,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <AppHeader />
-              {children}
-            </SidebarInset>
-          </SidebarProvider>
-          <Toaster />
+          <ActiveThemeProvider initialTheme={themeSettings}>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <AppHeader />
+                {children}
+              </SidebarInset>
+            </SidebarProvider>
+            <Toaster />
+          </ActiveThemeProvider>
         </ThemeProvider>
       </body>
     </html>

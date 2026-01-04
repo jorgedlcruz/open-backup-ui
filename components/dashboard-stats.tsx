@@ -31,10 +31,12 @@ export function DashboardStats({
     // License stats
     // Use instanceLicenseSummary if available (newer API), otherwise fall back to top-level fields
     const licenseUsed = license?.instanceLicenseSummary?.usedInstancesNumber ??
-        ((license?.usedInstances || 0) + (license?.usedSockets || 0))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (((license as any)?.usedInstances || 0) + ((license as any)?.usedSockets || 0))
 
     const licenseTotal = license?.instanceLicenseSummary?.licensedInstancesNumber ??
-        ((license?.licensedInstances || 0) + (license?.licensedSockets || 0))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (((license as any)?.licensedInstances || 0) + ((license as any)?.licensedSockets || 0))
 
     const licensePercentage = licenseTotal > 0 ? (licenseUsed / licenseTotal) * 100 : 0
 

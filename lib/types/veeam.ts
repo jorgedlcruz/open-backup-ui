@@ -217,21 +217,80 @@ export interface TransferRateDataPoint {
 }
 
 // License Types
+// License Types
+export interface LicenseObject {
+  type: string;
+  count: number;
+  multiplier: number;
+  usedInstancesNumber: number;
+}
+
+export interface LicenseWorkload {
+  platformType: string;
+  name: string;
+  displayName: string;
+  hostName: string;
+  usedInstancesNumber: number;
+  type: string;
+  instanceId: string;
+  canBeRevoked: boolean;
+}
+
 export interface LicenseInstanceSummary {
+  package: string;
   licensedInstancesNumber: number;
   usedInstancesNumber: number;
   newInstancesNumber: number;
   rentalInstancesNumber: number;
+  objects: LicenseObject[];
+  workload: LicenseWorkload[];
 }
 
 export interface LicenseModel {
-  licensedSockets: number;
-  usedSockets: number; // Keep these for compatibility if needed, or make optional
-  licensedInstances: number; // These might be deprecated in favor of summary
-  usedInstances: number;
-  type: string;
   status: string;
-  instanceLicenseSummary?: LicenseInstanceSummary;
+  type: string;
+  edition: string;
+  cloudConnect: string;
+  expirationDate: string;
+  licensedTo: string;
+  instanceLicenseSummary: LicenseInstanceSummary;
+  supportId: string;
+  autoUpdateEnabled: boolean;
+  freeAgentInstanceConsumptionEnabled: boolean;
+  IsMultiSection: boolean;
+  proactiveSupportEnabled: boolean;
+}
+
+export interface LicenseReportProduct {
+  productVersion: string;
+  edition: string;
+  package: string;
+  installationId: string;
+  data: Array<{
+    instances: {
+      supportId: string;
+      licenseId: string;
+      licenseType: string;
+      counters: Array<{
+        counterType: string;
+        multiplier: string;
+        instancesInGrace: string;
+        numberOfObjects: number;
+        numberOfNewObjects: number;
+        numberOfRentalObjects: number;
+        numberOfRemovedObjects: number;
+        consumedInstances: string;
+        newInstances: string;
+        rentalInstances: string;
+        removedInstances: string;
+        reasonForRemoval: string;
+      }>;
+    };
+  }>;
+}
+
+export interface LicenseReport {
+  products: LicenseReportProduct[];
 }
 
 // Repository Types

@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, Settings, FileKey, Palette, Blocks, UserRoundCog } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -142,6 +142,30 @@ const documentationItems = [
   },
 ]
 
+// Administration Group
+const adminItems = [
+  {
+    title: "Licensing",
+    href: "/administration/licensing",
+    icon: FileKey,
+  },
+  {
+    title: "Data Sources",
+    href: "/administration/data-sources",
+    icon: Blocks,
+  },
+  {
+    title: "Branding",
+    href: "/administration/branding",
+    icon: Palette,
+  },
+  {
+    title: "Account",
+    href: "/administration/account",
+    icon: UserRoundCog,
+  },
+]
+
 export function AppSidebar() {
   const pathname = usePathname()
   // State for collapsible sub-menus in VBR
@@ -150,18 +174,25 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex h-16 items-center justify-center group-data-[collapsible=icon]:h-12">
-          <Image
-            src="/logo.webp"
-            alt="VBR Connect"
-            width={120}
-            height={40}
-            className="object-contain w-full h-full group-data-[collapsible=icon]:hidden"
-            priority
-          />
-          <LayoutDashboard className="hidden group-data-[collapsible=icon]:block w-6 h-6 text-primary" />
-        </div>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Image
+                  src="/logo.webp"
+                  alt="VBR Connect"
+                  width={24}
+                  height={24}
+                  className="size-4"
+                />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Veeam SingleUI</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         {/* Veeam Backup & Replication Group */}
@@ -278,6 +309,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Administration Group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                    <Link href={item.href}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Documentation Group */}
         <SidebarGroup>
           <SidebarGroupLabel>Documentation</SidebarGroupLabel>
@@ -304,7 +354,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-border p-4">
         <div className="text-center text-sm text-muted-foreground">
-          Created by Team-1 2025
+          Crafted with ❤️ for the Community
         </div>
       </SidebarFooter>
     </Sidebar>

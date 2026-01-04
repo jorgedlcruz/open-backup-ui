@@ -220,6 +220,7 @@ export default function VBMDashboardPage() {
                             loading={loadingSessions}
                             timeRange={timeRange}
                             onTimeRangeChange={setTimeRange}
+                            defaultFilterType={["Backup"]}
                         />
                     </div>
 

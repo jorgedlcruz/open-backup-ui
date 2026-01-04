@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { VeeamTaskSession } from "@/lib/types/veeam"
-import { Activity, Monitor } from "lucide-react"
+import { Activity, Server, MonitorDot } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 interface SessionTasksTableProps {
@@ -65,42 +65,53 @@ export function SessionTasksTable({ tasks, loading }: SessionTasksTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {tasks.map((task) => (
-                            <TableRow key={task.id} className="group">
-                                <TableCell className="font-medium">
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-2">
-                                            <Monitor className="h-4 w-4 text-muted-foreground" />
-                                            {task.name}
+                        {tasks.map((task) => {
+                            // Assuming 'isVm' can be determined from task.name or another property if available
+                            // For this example, we'll assume a simple check based on name or a placeholder.
+                            // In a real application, you'd likely have a 'type' property on VeeamTaskSession.
+                            const isVm = task.name.toLowerCase().includes('vm'); // Placeholder logic
+
+                            return (
+                                <TableRow key={task.id} className="group">
+                                    <TableCell className="font-medium">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                {isVm ? (
+                                                    <MonitorDot className="h-4 w-4 text-blue-500" />
+                                                ) : (
+                                                    <Server className="h-4 w-4 text-muted-foreground" />
+                                                )}
+                                                {task.name}
+                                            </div>
+                                            {task.progress.bottleneck && (
+                                                <span className="text-[10px] text-muted-foreground ml-6">
+                                                    Bottleneck: {task.progress.bottleneck}
+                                                </span>
+                                            )}
                                         </div>
-                                        {task.progress.bottleneck && (
-                                            <span className="text-[10px] text-muted-foreground ml-6">
-                                                Bottleneck: {task.progress.bottleneck}
-                                            </span>
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {task.result.result === 'Success' && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Success</Badge>}
-                                    {task.result.result === 'Warning' && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Warning</Badge>}
-                                    {task.result.result === 'Failed' && <Badge variant="destructive">Failed</Badge>}
-                                    {(!task.result.result || task.result.result === 'None') && <Badge variant="secondary">In Progress</Badge>}
-                                </TableCell>
-                                <TableCell className="text-right text-xs">
-                                    <div>{formatBytes(task.progress.processedSize)}</div>
-                                    <div className="text-muted-foreground text-[10px]">Read: {formatBytes(task.progress.readSize)}</div>
-                                </TableCell>
-                                <TableCell className="text-right text-xs font-mono">
-                                    {task.progress.processingRate}
-                                </TableCell>
-                                <TableCell className="text-right text-xs font-mono">
-                                    {task.progress.duration}
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                    </TableCell>
+                                    <TableCell>
+                                        {task.result.result === 'Success' && <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Success</Badge>}
+                                        {task.result.result === 'Warning' && <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Warning</Badge>}
+                                        {task.result.result === 'Failed' && <Badge variant="destructive">Failed</Badge>}
+                                        {(!task.result.result || task.result.result === 'None') && <Badge variant="secondary">In Progress</Badge>}
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs">
+                                        <div>{formatBytes(task.progress.processedSize)}</div>
+                                        <div className="text-muted-foreground text-[10px]">Read: {formatBytes(task.progress.readSize)}</div>
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs font-mono">
+                                        {task.progress.processingRate}
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs font-mono">
+                                        {task.progress.duration}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </ScrollArea>
-        </Card>
+        </Card >
     )
 }

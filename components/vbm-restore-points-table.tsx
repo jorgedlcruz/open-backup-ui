@@ -3,7 +3,7 @@
 import * as React from "react"
 import {
     ColumnDef,
-    Column,
+
     flexRender,
     getCoreRowModel,
     useReactTable,
@@ -25,15 +25,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { VBMRestorePoint } from "@/lib/types/vbm"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowUpDown, Mail, Globe, Users, Database, Filter } from "lucide-react"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-// import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
+import { ArrowUpDown, Mail, Globe, Users, Database } from "lucide-react"
 
 interface VBMRestorePointsTableProps {
     data: VBMRestorePoint[]
@@ -207,19 +199,7 @@ export function VBMRestorePointsTable({ data, loading, lookupData }: VBMRestoreP
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center py-4">
-                {/* Filter for Content Type */}
-                <DataTableFacetedFilter
-                    column={table.getColumn("type")}
-                    title="Content Type"
-                    options={[
-                        { label: "Exchange", value: "Exchange", icon: Mail },
-                        { label: "SharePoint", value: "SharePoint", icon: Globe },
-                        { label: "OneDrive", value: "OneDrive", icon: Database },
-                        { label: "Teams", value: "Teams", icon: Users },
-                    ]}
-                />
-            </div>
+
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
@@ -259,136 +239,10 @@ export function VBMRestorePointsTable({ data, loading, lookupData }: VBMRestoreP
             <div className="text-xs text-muted-foreground">
                 Showing {table.getRowModel().rows.length} restore points
             </div>
-            ```
         </div>
     )
 }
 
-function DataTableFacetedFilter({
-    column,
-    title,
-    options,
-}: {
-    column?: Column<VBMRestorePoint, unknown>
-    title: string
-    options: {
-        label: string
-        value: string
-        icon?: React.ComponentType<{ className?: string }>
-    }[]
-}) {
-    const facets = column?.getFacetedUniqueValues()
-    const selectedValues = new Set(column?.getFilterValue() as string[])
 
-    return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 border-dashed">
-                    <Filter className="mr-2 h-4 w-4" />
-                    {title}
-                    {selectedValues?.size > 0 && (
-                        <>
-                            <Separator orientation="vertical" className="mx-2 h-4" />
-                            <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
-                                {selectedValues.size}
-                            </Badge>
-                            <div className="hidden space-x-1 lg:flex">
-                                {selectedValues.size > 2 ? (
-                                    <Badge variant="secondary" className="rounded-sm px-1 font-normal">
-                                        {selectedValues.size} selected
-                                    </Badge>
-                                ) : (
-                                    options
-                                        .filter((option) => selectedValues.has(option.value))
-                                        .map((option) => (
-                                            <Badge
-                                                variant="secondary"
-                                                key={option.value}
-                                                className="rounded-sm px-1 font-normal"
-                                            >
-                                                {option.label}
-                                            </Badge>
-                                        ))
-                                )}
-                            </div>
-                        </>
-                    )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
-                <div className="p-1">
-                    <div className="px-2 py-1.5 text-sm font-semibold">Filter {title}</div>
-                    <Separator className="my-1" />
-                    {options.map((option) => {
-                        const isSelected = selectedValues.has(option.value)
-                        return (
-                            <div
-                                key={option.value}
-                                className="flex items-center space-x-2 px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                                onClick={() => {
-                                    if (isSelected) {
-                                        selectedValues.delete(option.value)
-                                    } else {
-                                        selectedValues.add(option.value)
-                                    }
-                                    const filterValues = Array.from(selectedValues)
-                                    column?.setFilterValue(
-                                        filterValues.length ? filterValues : undefined
-                                    )
-                                }}
-                            >
-                                <div
-                                    className={`
-                        mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary
-                        ${isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible"}
-                    `}
-                                >
-                                    <CheckIcon className="h-4 w-4" />
-                                </div>
-                                {option.icon && (
-                                    <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                )}
-                                <span>{option.label}</span>
-                                {facets?.get(option.value) && (
-                                    <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                                        {facets.get(option.value)}
-                                    </span>
-                                )}
-                            </div>
-                        )
-                    })}
-                    {selectedValues.size > 0 && (
-                        <>
-                            <Separator className="my-1" />
-                            <div
-                                className="flex items-center justify-center p-1 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm"
-                                onClick={() => column?.setFilterValue(undefined)}
-                            >
-                                Clear filters
-                            </div>
-                        </>
-                    )}
-                </div>
-            </PopoverContent>
-        </Popover>
-    )
-}
 
-function CheckIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <polyline points="20 6 9 17 4 12" />
-        </svg>
-    )
-}
+
