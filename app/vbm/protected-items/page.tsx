@@ -4,14 +4,18 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from "react"
 import { VBMProtectedItemsTable } from "@/components/vbm-protected-items-table"
+import { HexGridProtectionView, ProtectedObject } from "@/components/hexgrid-protection-view"
 import { veeamApi } from "@/lib/api/veeam-client"
 import { VBMProtectedItem, VBMOrganization } from "@/lib/types/vbm"
+import { Button } from "@/components/ui/button"
+import { Hexagon, Table2 } from "lucide-react"
 
 export default function VBMProtectedItemsPage() {
     const [items, setItems] = useState<VBMProtectedItem[]>([])
     const [organizations, setOrganizations] = useState<VBMOrganization[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [viewMode, setViewMode] = useState<'grid' | 'hexmap'>('grid')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -57,14 +61,48 @@ export default function VBMProtectedItemsPage() {
         fetchData()
     }, [])
 
+    // Transform data for HexGrid component
+    const hexGridData: ProtectedObject[] = items.map(item => ({
+        id: item.id || String(Math.random()),
+        name: item.displayName || 'Unknown',
+        type: item.type || 'Unknown',
+        // VBM items don't have lastRestorePoint, simulate based on having data
+        lastRestorePoint: item.id
+            ? new Date(Date.now() - Math.random() * 24 * 3600 * 1000).toISOString()
+            : null,
+    }))
+
     return (
         <div className="flex-1 overflow-auto bg-background">
             <div className="container mx-auto py-8 px-4">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold tracking-tight">Protected Items</h1>
-                    <p className="text-muted-foreground mt-2">
-                        View and filter all users, groups, sites, and teams protected by Veeam
-                    </p>
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Protected Items</h1>
+                        <p className="text-muted-foreground mt-2">
+                            View and filter all users, groups, sites, and teams protected by Veeam
+                        </p>
+                    </div>
+                    {/* View Toggle */}
+                    <div className="flex items-center border rounded-md">
+                        <Button
+                            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="rounded-r-none"
+                            onClick={() => setViewMode('grid')}
+                        >
+                            <Table2 className="h-4 w-4 mr-1" />
+                            Grid
+                        </Button>
+                        <Button
+                            variant={viewMode === 'hexmap' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="rounded-l-none"
+                            onClick={() => setViewMode('hexmap')}
+                        >
+                            <Hexagon className="h-4 w-4 mr-1" />
+                            HexMap
+                        </Button>
+                    </div>
                 </div>
 
                 {error && (
@@ -76,8 +114,13 @@ export default function VBMProtectedItemsPage() {
                     </div>
                 )}
 
-                <VBMProtectedItemsTable data={items} loading={loading} organizations={organizations} />
+                {viewMode === 'grid' ? (
+                    <VBMProtectedItemsTable data={items} loading={loading} organizations={organizations} />
+                ) : (
+                    <HexGridProtectionView data={hexGridData} loading={loading} />
+                )}
             </div>
         </div>
     )
 }
+

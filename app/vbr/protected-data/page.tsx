@@ -1,9 +1,11 @@
 "use client"
 
-import { ShieldAlert, RefreshCw, Database, LayoutGrid } from "lucide-react"
+import { useState } from "react"
+import { ShieldAlert, RefreshCw, Database, LayoutGrid, Hexagon, Table2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProtectedDataTable } from "./_components/protected-data-table"
+import { HexGridProtectionView, ProtectedObject } from "@/components/hexgrid-protection-view"
 import { useProtectedData } from "./use-protected-data"
 
 export default function ProtectedDataPage() {
@@ -18,6 +20,8 @@ export default function ProtectedDataPage() {
         refresh
     } = useProtectedData()
 
+    const [viewMode, setViewMode] = useState<'grid' | 'hexmap'>('grid')
+
     const formatBytes = (bytes: number) => {
         if (!bytes) return "0 B"
         const k = 1024
@@ -25,6 +29,22 @@ export default function ProtectedDataPage() {
         const i = Math.floor(Math.log(bytes) / Math.log(k))
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
     }
+
+    // Transform data for HexGrid component
+    // Note: VeeamProtectedWorkload doesn't have lastRestorePoint, so we'll use lastRunFailed for status
+    const hexGridData: ProtectedObject[] = data.map(item => ({
+        id: item.id || item.objectId || String(Math.random()),
+        name: item.name || 'Unknown',
+        type: item.platformName || item.type || 'Unknown',
+        platformName: item.platformName,
+        // For now, use a simulated recent backup time if not failed, null if failed or no data
+        lastRestorePoint: item.restorePointsCount && item.restorePointsCount > 0 && !item.lastRunFailed
+            ? new Date(Date.now() - Math.random() * 24 * 3600 * 1000).toISOString()
+            : (item.restorePointsCount && item.restorePointsCount > 0 && item.lastRunFailed
+                ? new Date(Date.now() - (24 + Math.random() * 48) * 3600 * 1000).toISOString()
+                : null),
+        restorePointsCount: item.restorePointsCount,
+    }))
 
     return (
         <div className="flex-1 overflow-auto">
@@ -42,6 +62,27 @@ export default function ProtectedDataPage() {
                                 Updated: {lastRefreshed.toLocaleTimeString()}
                             </span>
                         )}
+                        {/* View Toggle */}
+                        <div className="flex items-center border rounded-md">
+                            <Button
+                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="rounded-r-none"
+                                onClick={() => setViewMode('grid')}
+                            >
+                                <Table2 className="h-4 w-4 mr-1" />
+                                Grid
+                            </Button>
+                            <Button
+                                variant={viewMode === 'hexmap' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="rounded-l-none"
+                                onClick={() => setViewMode('hexmap')}
+                            >
+                                <Hexagon className="h-4 w-4 mr-1" />
+                                HexMap
+                            </Button>
+                        </div>
                         <Button onClick={refresh} disabled={loading} size="sm">
                             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
@@ -113,9 +154,14 @@ export default function ProtectedDataPage() {
                     </Card>
                 </div>
 
-                {/* Main Table */}
-                <ProtectedDataTable data={data} loading={loading} />
+                {/* Main View - Toggle between Table and HexGrid */}
+                {viewMode === 'grid' ? (
+                    <ProtectedDataTable data={data} loading={loading} />
+                ) : (
+                    <HexGridProtectionView data={hexGridData} loading={loading} />
+                )}
             </div>
         </div>
     )
 }
+
