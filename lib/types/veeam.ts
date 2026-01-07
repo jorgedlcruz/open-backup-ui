@@ -769,3 +769,41 @@ export interface VeeamRepositoryEnriched extends VeeamRepositoryState {
   immutabilityDays?: number;
   perVmBackup?: boolean;
 }
+
+// ============================================
+// Identity Management Types
+// ============================================
+
+export interface VeeamRole {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface VeeamUser {
+  id: string;
+  name: string;
+  type: string; // "InternalUser", "WindowsUser", "WindowsGroup", "LinuxUser"
+  roles: VeeamRole[];
+  isServiceAccount: boolean;
+  enabled?: boolean; // Sometimes API might return this
+}
+
+export interface UsersResult {
+  data: VeeamUser[];
+  pagination: PaginationResult;
+}
+
+export interface RolesResult {
+  data: VeeamRole[];
+  pagination: PaginationResult;
+}
+
+export interface RolePermissionsResult {
+  roleId: string;
+  permissions: string[];
+}
+
+export interface SecuritySettings {
+  mfaEnabled: boolean;
+}

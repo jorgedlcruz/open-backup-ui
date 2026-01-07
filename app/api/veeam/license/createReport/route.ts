@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         try {
             const reqBody = await request.json();
             if (reqBody) body = reqBody;
-        } catch (e) {
+        } catch {
             // ignore if empty body
         }
 

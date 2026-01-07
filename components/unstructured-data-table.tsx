@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Share2, Server, Trash, HardDrive, FolderClosed } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, RefreshCw, Server, Trash, HardDrive, FolderClosed, Columns } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -85,6 +85,7 @@ export function UnstructuredDataTable() {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Name
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -216,7 +217,6 @@ export function UnstructuredDataTable() {
         <div className="w-full space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter servers..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -234,7 +234,8 @@ export function UnstructuredDataTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

@@ -16,16 +16,15 @@ import {
 import {
     ArrowUpDown,
     Check,
-    ChevronDown,
     MoreHorizontal,
     Search,
     RefreshCw,
     RotateCw,
     Trash2,
+    Columns,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -102,34 +101,13 @@ export function BackupRepositoriesTable() {
 
     const columns: ColumnDef<VeeamRepositoryEnriched>[] = [
         {
-            id: "select",
-            header: ({ table }) => (
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                />
-            ),
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                />
-            ),
-            enableSorting: false,
-            enableHiding: false,
-        },
-        {
             accessorKey: "name",
             header: ({ column }) => {
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Name
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -165,6 +143,7 @@ export function BackupRepositoriesTable() {
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Capacity
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -203,6 +182,7 @@ export function BackupRepositoriesTable() {
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Usage
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -250,6 +230,7 @@ export function BackupRepositoriesTable() {
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Tasks
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -368,7 +349,6 @@ export function BackupRepositoriesTable() {
         <div className="w-full space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 items-center space-x-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter repositories..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -410,7 +390,8 @@ export function BackupRepositoriesTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

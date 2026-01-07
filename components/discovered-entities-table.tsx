@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Server, Download, Trash } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Search, RefreshCw, Server, Download, Trash, Columns } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -259,7 +259,8 @@ export function DiscoveredEntitiesTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

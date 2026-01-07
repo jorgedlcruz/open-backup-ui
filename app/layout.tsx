@@ -46,7 +46,7 @@ export default async function RootLayout({
 
   const bodyAttributes = Object.fromEntries(
     Object.entries(themeSettings)
-      .filter(([_, value]) => value)
+      .filter(([, value]) => value)
       .map(([key, value]) => [`data-theme-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, value])
   );
 
@@ -65,7 +65,10 @@ export default async function RootLayout({
         >
           <ActiveThemeProvider initialTheme={themeSettings}>
             <SidebarProvider>
-              <AppSidebar />
+              <AppSidebar
+                vb365Configured={!!process.env.VBM_API_URL}
+                vroConfigured={!!process.env.VRO_API_URL}
+              />
               <SidebarInset>
                 <AppHeader />
                 {children}

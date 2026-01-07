@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from "react"
-import { BackupJobsTable } from "@/components/backup-jobs-table"
+import { BackupJobsTable } from "./_components/backup-jobs-table"
 import { veeamApi } from "@/lib/api/veeam-client"
 import { VeeamBackupJob } from "@/lib/types/veeam"
 
@@ -31,7 +31,7 @@ export default function VBRJobsPage() {
         fetchJobs()
 
         // Refresh data every 30 seconds
-        const interval = setInterval(fetchJobs, 30000)
+        const interval = setInterval(fetchJobs, 60000)
         return () => clearInterval(interval)
     }, [fetchJobs])
 

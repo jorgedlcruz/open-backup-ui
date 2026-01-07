@@ -2,7 +2,7 @@
 
 A Next.js 15 application providing a unified monitoring dashboard for Veeam Data Protection products through an intuitive web interface.
 
-![VBR Connect Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2025/12/ezgif-656c493097a494bd.gif)
+![Veeam Single-UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/ezgif-668cdc4ebc95a18c.gif)
 
 ## Features
 
@@ -13,8 +13,10 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Transferred Data Widget**: Visual representation of data transfer rates over time
 - **Real-time Statistics**: Active jobs, success rate, storage usage, protected VMs, and data processed
 - **Malware Detection**: Recent malware scan events and alerts
-- **Recent Sessions**: Overview of the latest backup sessions with status and details, defaulting to "BackupJob" type for clarity
-- **Time Range Selection**: 7-day and 30-day views for historical analysis
+- **Recent Sessions**: Overview of the latest backup sessions with status and details
+  - **Time Range Dropdown**: Quick selection for 7-day, 14-day, and 30-day views
+  - **Export Capability**: Export filtered session data to CSV or JSON format
+  - **Type Filtering**: Auto-filters to "BackupJob" type for clarity
 
 #### Jobs Management
 - **Comprehensive Jobs Table**: All backup jobs with status, type, and schedule information
@@ -51,8 +53,12 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
   - **Rich Metadata**: Access detailed info including vCenter, Datacenter, Cluster, Guest OS, and DNS names
   - **Advanced Filtering**: Faceted filtering by protection status, platform, and state
 - **Protected Data**: 
-  - **Rich Grid View**: Detailed list of all protected workloads
-  - **Calendar View**: Toggleable monthly calendar view for restore points visualization, highlighting available recovery points by date
+  - **Rich Grid View**: Detailed list of all protected workloads with sortable columns
+  - **HexGrid Visualization**: Toggleable hexagonal protection map with RPO-based coloring
+    - Green (Protected within RPO), Orange (Unprotected/Outside RPO)
+    - Hover effects and click-to-detail dialog
+    - Filters by type and status with search capability
+  - **Calendar View**: Toggleable monthly calendar view for restore points visualization
   - **Restore Points**: Deep dive into restore points with derived type (Full/Incremental) and size data
 - **Physical & Cloud Infrastructure**:
   - **Protection Groups**: Monitor physical agent deployment and status
@@ -76,18 +82,29 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Job Type Support**: Multiple M365 job types and configurations
 - **Calendar View**: Interactive calendar for visualizing restore points availability
 - **Organizations**: Track multiple M365 organizations and their storage usage
+- **Backup Infrastructure**:
+  - **Backup Proxies**: Status, CPU/Memory usage, version, roles, and actions (rescan, maintenance mode)
+  - **Backup Repositories**: Capacity visualization, retention settings, immutability, encryption status
 
 ### Administration & Branding
 - **Licensing**: 
-  - Detailed VBR license report generation
-  - Instance and capacity usage breakdown
-  - PDF/HTML report download capabilities
+  - **Tabbed Interface**: Toggle between VBR and VB365 license views
+  - **VBR License**: Detailed license report generation with PDF/HTML download
+  - **VB365 License**: Licensed users table with revoke capability
+  - **Instance and Capacity Usage**: Breakdown by workload type
+  - **PDF Report Generation**: Download license overview reports
 - **Theme Customizer**:
   - **Color Presets**: Blue, Green, Orange, Red, Violet, Yellow, and Default
   - **Radius Control**: Adjust UI corner roundness (0 to 1.0rem)
   - **Scaling**: Adjust font and element scaling (90% to 110%)
   - **Mode**: Seamless Dark/Light mode switching
   - **Cookie Persistence**: Theme settings persist across sessions via server-side cookies
+- **Identity Management**:
+  - **User Directory**: View and filter users with metadata
+- **Security Settings**:
+  - **MFA Enforcement**: Toggle with real-time API sync
+  - **Service Accounts**: Per-user management with role assignment
+  - **RBAC Roles**: View and manage role-based permissions
 
 ### Kasten K10
 - **Coming Soon**: Kubernetes backup platform monitoring
@@ -99,7 +116,10 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - **Secure API Proxy**: Server-side API calls protect credentials from client exposure
 - **Interactive Visualizations**: Charts and graphs using Recharts library
 - **Data Tables**: Sortable, filterable tables with TanStack Table
+  - **Standardized Headers**: Consistent column toggle and search across all tables
+  - **Column Visibility**: Hide/show columns via dropdown menu
 - **Toast Notifications**: User-friendly error and success messages
+- **Environment-Based Visibility**: VBM, VRO sections auto-hide when not configured
 
 ## Getting Started
 
@@ -191,6 +211,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
   - `/api/v1/license/capacity` - License capacity details
   - `/api/v1/malware-detection` - Malware events
   - `/api/v1/security/best-practices` - Security best practices
+  - `/api/v1/security/settings` - MFA and security settings
+  - `/api/v1/accounts/users` - User accounts management
+  - `/api/v1/roles` - RBAC role definitions
+  - `/api/v1/roles/{id}/permissions` - Role permissions
   - `/api/v1/backupObjects` - Backup objects lookup
   - `/api/v1/backups/{id}` - Backup details
   - `/api/v1/backups/{id}/backupFiles` - Backup files (sizes)
@@ -218,7 +242,11 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
   - `/v8/ProtectedSites` - Protected Sites inventory
   - `/v8/ProtectedTeams` - Protected Teams inventory
   - `/v8/RestorePoints` - Global restore point search
-  - `/v8/License` - License status
+  - `/v8/License` - License status and info
+  - `/v8/LicensedUsers` - Licensed user management (GET/DELETE)
+  - `/v8/Proxies` - Backup proxy servers
+  - `/v8/BackupRepositories` - Backup repository management
+  - `/v8/Reports/GenerateLicenseOverview` - PDF report generation
   - `/v8/Health` - API service health
 
 ## Project Structure
@@ -240,6 +268,10 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   │   │   └── security/             # Security best practices
 │   │   ├── vro/                      # VRO API routes
 │   │   └── vbm/                      # VBM API routes
+│   │       ├── LicensedUsers/        # Licensed user management
+│   │       ├── Proxies/              # Proxy servers
+│   │       ├── Reports/              # PDF report generation
+│   │       └── ...                   # Other VBM endpoints
 │   ├── vbr/                          # VBR monitoring pages
 │   │   ├── dashboard/                # VBR dashboard with stats
 │   │   ├── jobs/                     # Jobs list and details
@@ -248,7 +280,14 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   │   ├── protected-data/           # Restore points & calendar view
 │   │   └── page.tsx                  # Redirects to dashboard
 │   ├── vro/                          # VRO monitoring page
-│   ├── vbm/                          # VBM monitoring page
+│   ├── vbm/                          # VBM monitoring pages
+│   │   ├── dashboard/                # VBM dashboard with stats
+│   │   ├── jobs/                     # M365 backup jobs list
+│   │   ├── protected-items/          # Protected objects view
+│   │   ├── organizations/            # M365 organizations
+│   │   └── infrastructure/           # Backup infrastructure
+│   │       ├── proxies/              # Backup proxies page
+│   │       └── repositories/         # Backup repositories page
 │   ├── k10/                          # K10 placeholder page
 │   ├── layout.tsx                    # Root layout with sidebar & theme provider
 │   └── page.tsx                      # Home (redirects to /vbr/dashboard)
@@ -269,6 +308,7 @@ See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and run
 │   ├── job-details-header.tsx        # Job details header component
 │   ├── vbr-restore-points-calendar.tsx # VBR Calendar View
 │   ├── vbm-restore-points-calendar.tsx # VBM Calendar View
+│   ├── hexgrid-protection-view.tsx   # HexGrid protection visualization
 │   └── ...                           # Various data tables
 ├── lib/
 │   ├── api/

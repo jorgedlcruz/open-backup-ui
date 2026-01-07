@@ -12,6 +12,7 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -29,7 +30,7 @@ import {
     getPaginationRowModel // Added
 } from "@tanstack/react-table"
 import { VeeamSession } from "@/lib/types/veeam"
-import { ArrowUpDown, CheckCircle2, AlertTriangle, XCircle, HelpCircle, Columns, ChevronLeft, ChevronRight } from "lucide-react" // Added icons
+import { ArrowUpDown, CheckCircle2, AlertTriangle, XCircle, HelpCircle, Columns, ChevronLeft, ChevronRight, ChevronDown, FolderUp, FileJson, FileSpreadsheet, CalendarDays } from "lucide-react" // Added icons
 import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -61,7 +62,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="-ml-4"
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Status
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -99,6 +100,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Job Name
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -115,6 +117,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Type
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -133,6 +136,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent"
                 >
                     Time
                     <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -317,6 +321,51 @@ export function SessionsOverview({
         ? Math.round((sessions.filter(s => s.result?.result === 'Success').length / totalSessions) * 100)
         : 0
 
+    // Export Functions
+    const getExportData = () => {
+        return table.getFilteredRowModel().rows.map(row => {
+            const session = row.original;
+            const dateObj = session.creationTime ? new Date(session.creationTime) : null;
+            return {
+                status: session.result?.result || 'None',
+                jobName: session.name || '',
+                type: session.sessionType || '',
+                date: dateObj ? dateObj.toLocaleDateString() : '',
+                time: dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '',
+            };
+        });
+    };
+
+    const exportToCSV = () => {
+        const data = getExportData();
+        if (data.length === 0) return;
+
+        const headers = ['Status', 'Job Name', 'Type', 'Date', 'Time'];
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row =>
+                [row.status, `"${row.jobName}"`, row.type, row.date, row.time].join(',')
+            )
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `sessions_export_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    };
+
+    const exportToJSON = () => {
+        const data = getExportData();
+        if (data.length === 0) return;
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `sessions_export_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+    };
+
     return (
         <Card className="h-[835px] flex flex-col overflow-hidden">
             <CardHeader className="pb-2 shrink-0">
@@ -333,23 +382,50 @@ export function SessionsOverview({
                             )}
                         </CardDescription>
                     </div>
-                    <div className="flex items-center space-x-2 bg-muted/50 p-1 rounded-md">
-                        <Button
-                            variant={timeRange === "7d" ? "secondary" : "ghost"}
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => onTimeRangeChange("7d")}
-                        >
-                            Last 7 Days
-                        </Button>
-                        <Button
-                            variant={timeRange === "30d" ? "secondary" : "ghost"}
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => onTimeRangeChange("30d")}
-                        >
-                            Last 30 Days
-                        </Button>
+                    <div className="flex items-center gap-2">
+                        {/* Time Range Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-7" disabled={loading}>
+                                    <CalendarDays className="h-4 w-4 mr-2" />
+                                    {timeRange === "7d" ? "Last 7 Days" : "Last 30 Days"}
+                                    <ChevronDown className="h-4 w-4 ml-2" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuCheckboxItem
+                                    checked={timeRange === "7d"}
+                                    onCheckedChange={() => onTimeRangeChange("7d")}
+                                >
+                                    Last 7 Days
+                                </DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem
+                                    checked={timeRange === "30d"}
+                                    onCheckedChange={() => onTimeRangeChange("30d")}
+                                >
+                                    Last 30 Days
+                                </DropdownMenuCheckboxItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        {/* Export Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-7" disabled={loading}>
+                                    <FolderUp className="h-4 w-4" />
+                                    <span className="hidden lg:inline ml-2">Export</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={exportToCSV}>
+                                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                    Export as CSV
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={exportToJSON}>
+                                    <FileJson className="mr-2 h-4 w-4" />
+                                    Export as JSON
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </CardHeader>
@@ -398,7 +474,7 @@ export function SessionsOverview({
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex" disabled={loading}>
                                 <Columns className="mr-2 h-4 w-4" />
-                                View
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[150px]">

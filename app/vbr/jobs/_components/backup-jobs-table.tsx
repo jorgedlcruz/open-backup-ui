@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -46,7 +47,7 @@ import {
   PauseCircle,
   HelpCircle,
   MoreHorizontal,
-  ChevronDown,
+  Columns,
   ArrowUpDown
 } from "lucide-react"
 import { toast } from "sonner"
@@ -106,6 +107,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Job Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -133,6 +135,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Type
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -140,6 +143,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
         )
       },
       cell: ({ row }) => <div className="text-sm">{row.getValue("type")}</div>,
+      filterFn: (row, id, value) => value.includes(row.getValue(id)),
     },
     {
       accessorKey: "repositoryName",
@@ -148,6 +152,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Repository
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -159,6 +164,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           {row.original.repositoryName || '-'}
         </div>
       ),
+      filterFn: (row, id, value) => value.includes(row.getValue(id)),
     },
     {
       accessorKey: "lastResult",
@@ -167,6 +173,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Last Result
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -188,6 +195,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Last Run
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -206,6 +214,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Next Run
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -226,6 +235,7 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 h-auto hover:bg-transparent -ml-2"
           >
             Status
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -384,24 +394,55 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
   }
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4 gap-2">
-        {table.getColumn("lastResult") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("lastResult")}
-            title="Last Result"
-            options={[
-              { label: "Success", value: "Success", icon: CheckCircle2 },
-              { label: "Warning", value: "Warning", icon: AlertTriangle },
-              { label: "Failed", value: "Failed", icon: XCircle },
-              { label: "None", value: "None", icon: HelpCircle },
-            ]}
+    <div className="w-full space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-1 items-center space-x-2">
+          <Input
+            placeholder="Filter jobs..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("name")?.setFilterValue(event.target.value)
+            }
+            className="h-8 w-[150px] lg:w-[250px]"
           />
-        )}
+          {table.getColumn("type") && (
+            <DataTableFacetedFilter
+              column={table.getColumn("type")}
+              title="Type"
+              options={Array.from(new Set(data.map(j => j.type))).sort().map(type => ({
+                label: type,
+                value: type,
+              }))}
+            />
+          )}
+          {table.getColumn("repositoryName") && (
+            <DataTableFacetedFilter
+              column={table.getColumn("repositoryName")}
+              title="Repository"
+              options={Array.from(new Set(data.map(j => j.repositoryName).filter(Boolean))).sort().map(repo => ({
+                label: repo as string,
+                value: repo as string,
+              }))}
+            />
+          )}
+          {table.getColumn("lastResult") && (
+            <DataTableFacetedFilter
+              column={table.getColumn("lastResult")}
+              title="Last Result"
+              options={[
+                { label: "Success", value: "Success", icon: CheckCircle2 },
+                { label: "Warning", value: "Warning", icon: AlertTriangle },
+                { label: "Failed", value: "Failed", icon: XCircle },
+                { label: "None", value: "None", icon: HelpCircle },
+              ]}
+            />
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
+              <Columns className="mr-2 h-4 w-4" />
+              Columns
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

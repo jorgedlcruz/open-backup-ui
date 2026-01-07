@@ -12,7 +12,6 @@ import {
   RepositoryModel,
   RepositoriesResult,
   LicenseModel,
-  LicenseReport,
   MalwareEventModel,
   MalwareEventsResult,
   SecurityBestPracticeItem,
@@ -44,9 +43,15 @@ import {
   VeeamInventoryItem,
   InventoryResult,
   VeeamBackupObject,
-  BackupObjectsResult
+  BackupObjectsResult,
+  VeeamUser,
+  VeeamRole,
+  UsersResult,
+  RolesResult,
+  RolePermissionsResult,
+  SecuritySettings
 } from '@/lib/types/veeam';
-import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse } from '@/lib/types/vbm';
+import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 
 interface TokenResponse {
@@ -99,7 +104,13 @@ class VeeamApiClient {
     }
 
     try {
-      const response = await fetch('/api/veeam/auth', {
+      let authUrl = '/api/veeam/auth';
+      if (typeof window === 'undefined') {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        authUrl = `${baseUrl}${authUrl}`;
+      }
+
+      const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +143,13 @@ class VeeamApiClient {
     }
 
     try {
-      const response = await fetch('/api/veeam/auth', {
+      let authUrl = '/api/veeam/auth';
+      if (typeof window === 'undefined') {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        authUrl = `${baseUrl}${authUrl}`;
+      }
+
+      const response = await fetch(authUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,10 +180,18 @@ class VeeamApiClient {
     }
   }
 
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  private async request<T>(endpoint: string, options?: RequestInit & { apiPrefix?: string }): Promise<T> {
     const token = await this.authenticate();
 
-    const url = `/api/veeam${endpoint}`;
+    const prefix = options?.apiPrefix ?? '/api/veeam';
+    let url = `${prefix}${endpoint}`;
+
+    if (typeof window === 'undefined') {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      if (url.startsWith('/')) {
+        url = `${baseUrl}${url}`;
+      }
+    }
 
     const response = await fetch(url, {
       ...options,
@@ -246,7 +271,25 @@ class VeeamApiClient {
 
   async getBackupJobById(id: string): Promise<VeeamBackupJob> {
     try {
-      return await this.request<VeeamBackupJob>(`/jobs/${id}`);
+      // Fetch both basic job info and enriched state data
+      const [basicJob, statesResponse] = await Promise.all([
+        this.request<VeeamBackupJob>(`/jobs/${id}`),
+        this.request<JobsResult>(`/jobs/states?idFilter=${id}`)
+      ]);
+
+      // Merge state data if available
+      const stateJob = statesResponse.data?.find(j => j.id === id);
+      if (stateJob) {
+        return {
+          ...basicJob,
+          ...stateJob,
+          // Ensure basic fields aren't overwritten with undefined
+          name: basicJob.name || stateJob.name,
+          type: basicJob.type || stateJob.type,
+        };
+      }
+
+      return basicJob;
     } catch (error) {
       console.error(`Error fetching backup job ${id}:`, error);
       throw error;
@@ -637,19 +680,10 @@ class VeeamApiClient {
 
   async getProtectedData(): Promise<VeeamProtectedWorkload[]> {
     try {
-      const token = await this.authenticate();
-      const response = await fetch('/api/vbr/protected-data', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await this.request<{ data: VeeamProtectedWorkload[] }>('/protected-data', {
+        apiPrefix: '/api/vbr'
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch protected data: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching protected data:', error);
       throw error;
@@ -658,19 +692,10 @@ class VeeamApiClient {
 
   async getBackupFiles(backupId: string): Promise<VeeamBackupFile[]> {
     try {
-      const token = await this.authenticate();
-      const response = await fetch(`/api/vbr/backups/${backupId}/files`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await this.request<{ data: VeeamBackupFile[] }>(`/backups/${backupId}/files`, {
+        apiPrefix: '/api/vbr'
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch backup files: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data || [];
+      return response.data || [];
     } catch (error) {
       console.error(`Error fetching backup files for ${backupId}:`, error);
       throw error;
@@ -681,26 +706,30 @@ class VeeamApiClient {
 
   async getVBRRestorePoints(params: { objectId?: string, backupId?: string }): Promise<VeeamRestorePoint[]> {
     try {
-      const token = await this.authenticate();
       const query = new URLSearchParams();
       if (params.objectId) query.append('objectId', params.objectId);
       if (params.backupId) query.append('backupId', params.backupId);
 
-      const response = await fetch(`/api/vbr/restore-points?${query.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const endpoint = query.toString() ? `/restore-points?${query.toString()}` : '/restore-points';
+
+      const response = await this.request<{ data: VeeamRestorePoint[] }>(endpoint, {
+        apiPrefix: '/api/vbr'
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch restore points: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      return result.data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching VBR restore points:', error);
       throw error;
+    }
+  }
+
+  async getStorageCapacity(): Promise<{ totalBackupSize: number, fileCount: number } | null> {
+    try {
+      return await this.request<{ totalBackupSize: number, fileCount: number }>('/StorageCapacity', {
+        apiPrefix: '/api/vbr'
+      });
+    } catch (error) {
+      console.error('Error fetching storage capacity:', error);
+      return null;
     }
   }
 
@@ -1487,6 +1516,148 @@ class VeeamApiClient {
     return this.requestVBM<VBMLicense>('/License')
   }
 
+  async getVB365LicensedUsers(options?: { limit?: number; offset?: number }): Promise<VB365LicensedUser[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.offset !== undefined) params.append('offset', options.offset.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/LicensedUsers?${queryString}` : '/LicensedUsers';
+
+      const response = await this.requestVBM<VB365LicensedUsersResponse>(endpoint);
+      return response.results || [];
+    } catch (error) {
+      console.error('Error fetching VB365 licensed users:', error);
+      return [];
+    }
+  }
+
+  async revokeVB365License(userId: string): Promise<void> {
+    try {
+      const token = this.vbmToken;
+      const response = await fetch(`/api/vbm/LicensedUsers/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to revoke license: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error revoking VB365 license:', error);
+      throw error;
+    }
+  }
+
+  async generateVB365LicenseReport(startTime: string, endTime: string): Promise<Blob> {
+    try {
+      const token = this.vbmToken;
+      const response = await fetch('/api/vbm/Reports/LicenseOverview', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          startTime,
+          endTime,
+          format: 'PDF',
+          timezone: 'GMT'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate report: ${response.status}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Error generating VB365 license report:', error);
+      throw error;
+    }
+  }
+
+  async getVB365Proxies(options?: { limit?: number; offset?: number }): Promise<VB365Proxy[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.offset !== undefined) params.append('offset', options.offset.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/Proxies?${queryString}` : '/Proxies';
+
+      const response = await this.requestVBM<VB365ProxiesResponse>(endpoint);
+      return response.results || [];
+    } catch (error) {
+      console.error('Error fetching VB365 proxies:', error);
+      return [];
+    }
+  }
+
+  async rescanVB365Proxy(proxyId: string): Promise<void> {
+    try {
+      const token = this.vbmToken;
+      const response = await fetch(`/api/vbm/Proxies/${encodeURIComponent(proxyId)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'rescan' })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to rescan proxy: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error rescanning VB365 proxy:', error);
+      throw error;
+    }
+  }
+
+  async setVB365ProxyMaintenanceMode(proxyId: string, enabled: boolean): Promise<void> {
+    try {
+      const token = this.vbmToken;
+      const response = await fetch(`/api/vbm/Proxies/${encodeURIComponent(proxyId)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: enabled ? 'enableMaintenance' : 'disableMaintenance' })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to set maintenance mode: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error setting VB365 proxy maintenance mode:', error);
+      throw error;
+    }
+  }
+
+  async getVB365Repositories(options?: { limit?: number; offset?: number }): Promise<VB365Repository[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.offset !== undefined) params.append('offset', options.offset.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/BackupRepositories?${queryString}` : '/BackupRepositories';
+
+      const response = await this.requestVBM<VB365RepositoriesResponse>(endpoint);
+      return response.results || [];
+    } catch (error) {
+      console.error('Error fetching VB365 repositories:', error);
+      return [];
+    }
+  }
+
   async getVBMHealth(): Promise<VBMHealth> {
     return this.requestVBM<VBMHealth>('/Health')
   }
@@ -1795,6 +1966,113 @@ class VeeamApiClient {
       });
     } catch (error) {
       console.error('Failed to delete backup repository:', error);
+      throw error;
+    }
+  }
+
+
+  // ============================================
+  // Identity Management
+  // ============================================
+
+  async getUsers(options?: { skip?: number; limit?: number }): Promise<VeeamUser[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit) params.append('limit', options.limit.toString());
+      if (options?.skip) params.append('skip', options.skip.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/security/users?${queryString}` : '/security/users';
+
+      const response = await this.request<UsersResult>(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await this.request(`/security/users/${id}`, { method: 'DELETE' });
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async updateUserRoles(id: string, roles: VeeamRole[]): Promise<void> {
+    try {
+      await this.request(`/security/users/${id}/roles`, {
+        method: 'PUT',
+        body: JSON.stringify({ roles })
+      });
+    } catch (error) {
+      console.error(`Error updating roles for user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async resetMFA(id: string): Promise<void> {
+    try {
+      await this.request(`/security/users/${id}/resetMFA`, { method: 'POST' });
+    } catch (error) {
+      console.error(`Error resetting MFA for user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async changeServiceAccountMode(id: string, isServiceAccountEnable: boolean): Promise<void> {
+    try {
+      await this.request(`/security/users/${id}/changeServiceAccountMode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isServiceAccountEnable })
+      });
+    } catch (error) {
+      console.error(`Error changing service account mode for user ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getRoles(): Promise<VeeamRole[]> {
+    try {
+      const response = await this.request<RolesResult>('/security/roles?limit=500');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      throw error;
+    }
+  }
+
+  async getRolePermissions(roleId: string): Promise<string[]> {
+    try {
+      const response = await this.request<RolePermissionsResult>(`/security/roles/${roleId}/permissions`);
+      return response.permissions;
+    } catch (error) {
+      console.error(`Error fetching permissions for role ${roleId}:`, error);
+      throw error;
+    }
+  }
+
+  async getSecuritySettings(): Promise<SecuritySettings> {
+    try {
+      return await this.request<SecuritySettings>('/security/settings');
+    } catch (error) {
+      console.error('Error fetching security settings:', error);
+      throw error;
+    }
+  }
+
+  async updateSecuritySettings(settings: SecuritySettings): Promise<void> {
+    try {
+      await this.request('/security/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+    } catch (error) {
+      console.error('Error updating security settings:', error);
       throw error;
     }
   }

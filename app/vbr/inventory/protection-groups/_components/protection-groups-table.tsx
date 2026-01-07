@@ -13,7 +13,7 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Play, Ban } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, RefreshCw, Play, Ban, Columns } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -96,6 +96,7 @@ export function ProtectionGroupsTable() {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Name
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -196,7 +197,6 @@ export function ProtectionGroupsTable() {
         <div className="w-full space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter protection groups..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -214,7 +214,8 @@ export function ProtectionGroupsTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

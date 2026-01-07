@@ -15,7 +15,7 @@ import {
     getFacetedUniqueValues,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Search, RefreshCw, Server, MonitorDot, Boxes, Building2, PlayCircle, PauseCircle, ShieldCheck, ShieldAlert } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Search, RefreshCw, Server, MonitorDot, Boxes, Building2, PlayCircle, PauseCircle, ShieldCheck, ShieldAlert, Columns } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -123,6 +123,7 @@ export function VirtualInfrastructureTable() {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Object Name
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -260,6 +261,7 @@ export function VirtualInfrastructureTable() {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Size
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -377,7 +379,6 @@ export function VirtualInfrastructureTable() {
         <div className="w-full space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 items-center space-x-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter VMs..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -448,7 +449,8 @@ export function VirtualInfrastructureTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

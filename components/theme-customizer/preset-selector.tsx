@@ -9,7 +9,7 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+
 
 export function PresetSelector() {
     const { theme, setTheme } = useThemeConfig();
@@ -20,8 +20,7 @@ export function PresetSelector() {
     };
 
     return (
-        <div className="flex flex-col gap-4">
-            <Label>Theme preset:</Label>
+        <div className="flex flex-col gap-2 pt-2">
             <Select value={theme.preset} onValueChange={(value) => handlePreset(value)}>
                 <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a theme" />

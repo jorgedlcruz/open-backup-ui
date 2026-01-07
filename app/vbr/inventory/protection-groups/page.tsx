@@ -1,6 +1,6 @@
 "use client"
 
-import { ProtectionGroupsTable } from "@/components/protection-groups-table"
+import { ProtectionGroupsTable } from "./_components/protection-groups-table"
 
 export default function ProtectionGroupsPage() {
     return (

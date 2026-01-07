@@ -62,7 +62,7 @@ export const columns: ColumnDef<VBMOrganization>[] = [
             <Button
                 variant="ghost"
                 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="-ml-4"
+                className="!p-0 hover:!bg-transparent"
             >
                 Name
                 <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -237,7 +237,7 @@ export function VBMOrganizationsTable({ data, loading }: VBMOrganizationsTablePr
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
                             <Columns className="mr-2 h-4 w-4" />
-                            View
+                            Columns
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">

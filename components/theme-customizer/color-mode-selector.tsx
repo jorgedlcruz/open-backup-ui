@@ -23,20 +23,19 @@ export function ColorModeSelector() {
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            <Label htmlFor="roundedCorner">Color mode:</Label>
+        <div className="flex pt-2">
             <ToggleGroup
                 value={theme}
                 type="single"
                 onValueChange={(value) => value && setTheme(value)}
-                className="*:border-input w-full gap-4 *:rounded-md *:border">
-                <ToggleGroupItem variant="outline" value="light">
+                className="gap-2 justify-start">
+                <ToggleGroupItem variant="outline" value="light" className="w-[80px]">
                     Light
                 </ToggleGroupItem>
                 <ToggleGroupItem
                     variant="outline"
                     value="dark"
-                    className="data-[variant=outline]:border-l-1">
+                    className="w-[80px]">
                     Dark
                 </ToggleGroupItem>
             </ToggleGroup>

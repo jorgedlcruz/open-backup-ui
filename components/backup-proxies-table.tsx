@@ -33,7 +33,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, ChevronDown, Server, Power, PowerOff, Trash2, Edit, Search, RefreshCw, ServerCog } from "lucide-react";
+import { MoreHorizontal, Power, PowerOff, Trash2, Edit, Search, RefreshCw, ServerCog, Columns } from "lucide-react";
 import { VeeamProxy } from "@/lib/types/veeam";
 import { toast } from "sonner";
 import { veeamApi as veeamApiClient } from "@/lib/api/veeam-client";
@@ -266,7 +266,6 @@ export function BackupProxiesTable({ data, isLoading, onRefresh }: BackupProxies
         <div className="w-full space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 items-center space-x-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Filter proxies..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -302,7 +301,8 @@ export function BackupProxiesTable({ data, isLoading, onRefresh }: BackupProxies
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="ml-auto">
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                                <Columns className="mr-2 h-4 w-4" />
+                                Columns
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

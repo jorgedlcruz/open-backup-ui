@@ -15,12 +15,10 @@ import {
 } from "@tanstack/react-table"
 import {
     ArrowUpDown,
-    ChevronDown,
-    Search,
     Shield,
     AlertTriangle,
     CheckCircle2,
-    Table as TableIcon,
+    Columns,
     SlidersHorizontal
 } from "lucide-react"
 
@@ -29,7 +27,6 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -77,7 +74,7 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="-ml-4"
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Workload Name
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -117,6 +114,7 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                        className="!p-0 hover:!bg-transparent"
                     >
                         Points
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -205,26 +203,22 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
     return (
         <div className="w-full space-y-4">
             {/* Filters Toolbar */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-card p-4 rounded-lg border shadow-sm">
-                <div className="flex flex-1 items-center gap-2">
-                    <div className="relative flex-1 md:max-w-sm">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search all columns..."
-                            value={globalFilter ?? ""}
-                            onChange={(event) => setGlobalFilter(event.target.value)}
-                            className="pl-9 bg-background/50"
-                        />
-                    </div>
-
+            <div className="flex items-center justify-between">
+                <div className="flex flex-1 items-center space-x-2">
+                    <Input
+                        placeholder="Filter protected data..."
+                        value={globalFilter ?? ""}
+                        onChange={(event) => setGlobalFilter(event.target.value)}
+                        className="h-8 w-[150px] lg:w-[250px]"
+                    />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="shrink-0">
-                                <SlidersHorizontal className="h-4 w-4" />
+                            <Button variant="outline" size="sm" className="h-8 border-dashed">
+                                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                                Status
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                             <DropdownMenuCheckboxItem
                                 checked={(table.getColumn("lastRunFailed")?.getFilterValue() as boolean) === false}
                                 onCheckedChange={(val) => table.getColumn("lastRunFailed")?.setFilterValue(val ? false : undefined)}
@@ -240,36 +234,33 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="ml-auto">
-                                <TableIcon className="mr-2 h-4 w-4" />
-                                Columns <ChevronDown className="ml-2 h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => {
-                                    return (
-                                        <DropdownMenuCheckboxItem
-                                            key={column.id}
-                                            className="capitalize"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) =>
-                                                column.toggleVisibility(!!value)
-                                            }
-                                        >
-                                            {column.id}
-                                        </DropdownMenuCheckboxItem>
-                                    )
-                                })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
+                            <Columns className="mr-2 h-4 w-4" />
+                            Columns
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => {
+                                return (
+                                    <DropdownMenuCheckboxItem
+                                        key={column.id}
+                                        className="capitalize"
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(!!value)
+                                        }
+                                    >
+                                        {column.id}
+                                    </DropdownMenuCheckboxItem>
+                                )
+                            })}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             {/* Table */}

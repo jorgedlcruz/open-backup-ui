@@ -39,7 +39,6 @@ import { veeamApi } from "@/lib/api/veeam-client"
 import { toast } from "sonner"
 import {
   MoreHorizontal,
-  ChevronDown,
   ArrowUpDown,
   PlayCircle,
   PauseCircle,
@@ -47,7 +46,8 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Building2
+  Building2,
+  Columns
 } from "lucide-react"
 import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 
@@ -104,6 +104,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="!p-0 hover:!bg-transparent"
           >
             Job Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -319,7 +320,8 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+              <Columns className="mr-2 h-4 w-4" />
+              Columns
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
