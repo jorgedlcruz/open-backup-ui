@@ -259,6 +259,11 @@ export interface LicenseModel {
   freeAgentInstanceConsumptionEnabled: boolean;
   IsMultiSection: boolean;
   proactiveSupportEnabled: boolean;
+  // Fallback properties for older API versions or flat structures
+  usedInstances?: number;
+  usedSockets?: number;
+  licensedInstances?: number;
+  licensedSockets?: number;
 }
 
 export interface LicenseReportProduct {

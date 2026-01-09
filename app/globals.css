@@ -1084,3 +1084,111 @@ body {
         @apply !bg-black/20 backdrop-blur-sm;
     }
 }
+
+/* GridStack Dashboard Styles */
+.grid-stack {
+    background: transparent;
+}
+
+.grid-stack-item {
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.grid-stack-item.ui-draggable-dragging {
+    z-index: 100;
+    opacity: 0.9;
+}
+
+.grid-stack-item-content {
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+}
+
+.grid-stack-placeholder {
+    border: 2px dashed hsl(var(--primary) / 0.5) !important;
+    border-radius: var(--radius);
+    background: hsl(var(--primary) / 0.1) !important;
+}
+
+/* Widget Container - card-like appearance */
+.widget-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+/* Widget Header - drag handle area */
+.widget-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: hsl(var(--muted) / 0.3);
+    border-bottom: 1px solid hsl(var(--border));
+    cursor: grab;
+    user-select: none;
+}
+
+.widget-header:active {
+    cursor: grabbing;
+}
+
+.gs-drag-handle {
+    cursor: grab;
+}
+
+.gs-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Widget Body - content area */
+.widget-body {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+}
+
+/* Widget drop animation */
+.widget-dropping {
+    animation: widget-grow 0.3s ease-out forwards;
+}
+
+@keyframes widget-grow {
+    from {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* GridStack resize handles */
+.ui-resizable-handle {
+    background: transparent;
+}
+
+.ui-resizable-se {
+    cursor: se-resize;
+    width: 12px;
+    height: 12px;
+    right: 2px;
+    bottom: 2px;
+}
+
+.ui-resizable-e {
+    cursor: e-resize;
+}
+
+.ui-resizable-s {
+    cursor: s-resize;
+}
+
+/* Resize handle indicator */
