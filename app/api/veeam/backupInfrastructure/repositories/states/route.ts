@@ -1,28 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.VEEAM_API_URL;
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export async function GET(request: NextRequest) {
-    if (!API_BASE_URL) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-        return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
-    }
-
-    const limit = 500;
-    const url = `${API_BASE_URL}/api/v1/backupInfrastructure/repositories/states?limit=${limit}`;
-
     try {
-        const response = await fetch(url, {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+        if (!baseUrl && !sourceId) {
+            return NextResponse.json({ error: 'Server configuration error: No configured Data Source' }, { status: 500 });
+        }
+
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
+            return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
+        }
+
+        const limit = 500;
+        const url = `${baseUrl}/api/v1/backupInfrastructure/repositories/states?limit=${limit}`;
+
+        let response = await fetch(url, {
             headers: {
-                'Authorization': authHeader,
+                'Authorization': `Bearer ${token}`,
                 'x-api-version': '1.3-rev1',
                 'Accept': 'application/json',
             },
         });
+
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log('[RepoStates] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${newToken}`,
+                        'x-api-version': '1.3-rev1',
+                        'Accept': 'application/json',
+                    },
+                });
+            }
+        }
 
         if (!response.ok) {
             if (response.status === 404) {

@@ -1,24 +1,39 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { VeeamRestorePoint, VeeamBackup, VeeamBackupFile } from '@/lib/types/veeam';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export const dynamic = 'force-dynamic';
 
-const API_BASE_URL = process.env.VEEAM_API_URL;
-
 export async function GET(request: NextRequest) {
     try {
-        if (!API_BASE_URL) {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
+                { error: 'Authorization required' },
                 { status: 401 }
             );
         }
@@ -37,7 +52,7 @@ export async function GET(request: NextRequest) {
 
         // Headers common for all requests
         const headers = {
-            'Authorization': authHeader,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'x-api-version': '1.3-rev1',
@@ -53,20 +68,33 @@ export async function GET(request: NextRequest) {
 
         if (objectId) {
             console.log(`Fetching restore points for objectId: ${objectId} using /backupObjects endpoint...`);
-            url = `${API_BASE_URL}/api/v1/backupObjects/${objectId}/restorePoints?${rpQueryParams.toString()}`;
+            url = `${baseUrl}/api/v1/backupObjects/${objectId}/restorePoints?${rpQueryParams.toString()}`;
         } else if (backupId) {
             console.log(`Fetching restore points for backupId: ${backupId} using filter...`);
             rpQueryParams.append('filter', `backupId eq "${backupId}"`);
-            url = `${API_BASE_URL}/api/v1/restorePoints?${rpQueryParams.toString()}`;
+            url = `${baseUrl}/api/v1/restorePoints?${rpQueryParams.toString()}`;
         } else {
             // Should verify fallback safety
             return NextResponse.json({ data: [] });
         }
 
-        const rpResponse = await fetch(url, {
+        let rpResponse = await fetch(url, {
             method: 'GET',
             headers,
         });
+
+        // Auto-refresh mechanism
+        if (rpResponse.status === 401 && sourceId) {
+            console.log('[RestorePoints] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                headers['Authorization'] = `Bearer ${newToken}`;
+                rpResponse = await fetch(url, {
+                    method: 'GET',
+                    headers,
+                });
+            }
+        }
 
         if (!rpResponse.ok) {
             console.error(`Failed to fetch restore points from ${url}:`, await rpResponse.text());
@@ -95,12 +123,9 @@ export async function GET(request: NextRequest) {
         await Promise.all(uniqueBackupIds.map(async (bId) => {
             try {
                 // Fetch Backup Details
-                const backupRes = await fetch(`${API_BASE_URL}/api/v1/backups/${bId}`, { headers });
+                const backupRes = await fetch(`${baseUrl}/api/v1/backups/${bId}`, { headers });
                 if (backupRes.ok) {
                     const backupData: VeeamBackup & { repositoryName?: string, repositoryId?: string } = await backupRes.json();
-                    // Depending on API version, repositoryName might be directly on backup object or we might need to fetch it.
-                    // Based on user provided JSON in prompt, /backups result has repositoryName.
-                    // Let's assume GET /backups/{id} also returns it.
                     backupInfoMap.set(bId, {
                         jobName: backupData.name,
                         repositoryName: backupData.repositoryName || 'Unknown'
@@ -108,8 +133,7 @@ export async function GET(request: NextRequest) {
                 }
 
                 // Fetch Backup Files for this backup
-                // We need this to match files to restore points for Size info
-                const filesRes = await fetch(`${API_BASE_URL}/api/v1/backups/${bId}/backupFiles?limit=200`, { headers });
+                const filesRes = await fetch(`${baseUrl}/api/v1/backups/${bId}/backupFiles?limit=200`, { headers });
                 if (filesRes.ok) {
                     const filesData = await filesRes.json();
                     backupFilesMap.set(bId, filesData.data);
@@ -125,16 +149,8 @@ export async function GET(request: NextRequest) {
             const backupInfo = backupInfoMap.get(rp.backupId);
 
             // Try to find the matching file.
-            // Logic: A restore point roughly corresponds to a Backup File created around the same time or linked via IDs.
-            // However, API linking isn't always direct 1:1 in ID references between RP and File.
-            // BackupFile has 'restorePointIds' array? Let's check the user provided JSON.
-            // Yes! User JSON for BackupFiles: "restorePointIds": ["..."]
-            // So we can find the file that contains this restore point ID.
-
             const backupFiles = backupFilesMap.get(rp.backupId) || [];
             const matchingFile = backupFiles.find(file => {
-                // The user JSON shows backupFile has restorePointIds array.
-                // We need to check if VeeamBackupFile type has it, if not we treat it as unknown/any for now
                 const fileWithRps = file as unknown as { restorePointIds?: string[] };
                 return fileWithRps.restorePointIds && fileWithRps.restorePointIds.includes(rp.id);
             });
@@ -143,7 +159,6 @@ export async function GET(request: NextRequest) {
                 ...rp,
                 jobName: backupInfo?.jobName,
                 repositoryName: backupInfo?.repositoryName,
-                // If we found a file, use its stats
                 fileName: matchingFile?.name,
                 dataSize: matchingFile?.dataSize,
                 backupSize: matchingFile?.backupSize,

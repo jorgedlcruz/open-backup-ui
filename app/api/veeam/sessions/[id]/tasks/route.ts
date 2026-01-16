@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.VEEAM_API_URL?.replace(/['"]/g, '').replace(/[\\/\s]+$/, '');
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        if (!API_BASE_URL) {
+        const { id } = await params;
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL?.replace(/['\"]/g, '').replace(/[\\/\\s]+$/, '');
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const { id } = await params;
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        // Try to get token from tokenManager first
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        // Fallback to authorization header
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
+                { error: 'Authorization required' },
                 { status: 401 }
             );
         }
@@ -29,10 +47,10 @@ export async function GET(
             ? `/api/v1/sessions/${id}/taskSessions?${queryString}`
             : `/api/v1/sessions/${id}/taskSessions`;
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
             method: 'GET',
             headers: {
-                'Authorization': authHeader,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'x-api-version': '1.3-rev1',

@@ -4,6 +4,26 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 
 ![Veeam Single-UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/ezgif-668cdc4ebc95a18c.gif)
 
+## What's New in v0.2.0
+
+### 🚀 Redesigned Authentication Experience
+- **New Landing Page**: Beautiful onboarding experience with animated feature carousel
+- **Dynamic Credentials**: Add and manage data sources directly from the UI—no `.env` files required!
+- **Auto-Connect**: Credentials are securely stored and encrypted; just click "Connect" on subsequent visits
+- **Multi-Source Support**: Connect VBR, VB365, Veeam ONE, and VRO from a single interface
+
+### 🛠️ Data Sources Management
+- **Administration > Data Sources**: New dedicated page to view, add, edit, and remove data sources
+- **Real-time Status**: See connection status (Connected/Ready/Setup) at a glance
+- **Platform Types**: Full support for VBR, VB365, Veeam ONE, VRO, and Kasten K10
+
+### 📊 Veeam ONE Integration
+- **Report Catalog**: Browse and run Veeam ONE reports directly from the UI
+- **Saved Reports**: Access previously generated reports
+- **Dynamic Configuration**: Veeam ONE credentials persist and auto-connect like VBR/VB365
+
+---
+
 ## Features
 
 ### Veeam Backup & Replication (VBR)
@@ -87,6 +107,12 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
   - **Backup Repositories**: Capacity visualization, retention settings, immutability, encryption status
 
 ### Administration & Branding
+- **Data Sources** (NEW in v0.2.0):
+  - **Centralized Management**: Add, edit, and remove Veeam data sources from the UI
+  - **Multi-Platform**: VBR, VB365, Veeam ONE, VRO, and Kasten K10 support
+  - **Connection Status**: Real-time status indicators (Connected/Ready/Setup)
+  - **Secure Storage**: Credentials encrypted using AES-256 and stored locally
+  - **Auto-Connect**: One-click re-authentication for stored credentials
 - **Licensing**: 
   - **Tabbed Interface**: Toggle between VBR and VB365 license views
   - **VBR License**: Detailed license report generation with PDF/HTML download
@@ -128,35 +154,74 @@ A Next.js 15 application providing a unified monitoring dashboard for Veeam Data
 - Node.js 20.x or later
 - npm, yarn, pnpm, or bun package manager
 - Access to at least one Veeam product REST API:
-  - Veeam Backup & Replication REST API (v1.3-rev1) - **Required**
-  - Veeam Recovery Orchestrator REST API (v7.21) - Optional
-  - Veeam Backup for Microsoft 365 REST API (v8) - Optional
+  - Veeam Backup & Replication REST API (v1.3-rev1)
+  - Veeam Backup for Microsoft 365 REST API (v8)
+  - Veeam ONE REST API (v12.3)
+  - Veeam Recovery Orchestrator REST API (v7.21)
 
-### Environment Variables
+### Quick Start (Recommended)
 
-Create a `.env.local` file in the root directory:
+1. Install dependencies and start the application:
+
+```bash
+npm install
+npm run dev
+```
+
+2. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+3. **Add your first data source** using the Landing Page:
+   - Click **"Add Your First Data Source"**
+   - Select platform type (VBR, VB365, Veeam ONE, etc.)
+   - Enter the server hostname/IP and port
+   - Click **"Add Source"**, then **"Connect"**
+   - Enter your credentials and authenticate
+
+4. Once connected, click **"Continue to Dashboard"** to access the monitoring interface
+
+> 💡 **Credentials are encrypted and stored locally.** On your next visit, just click "Connect All Sources" to auto-authenticate!
+
+### Managing Data Sources
+
+After initial setup, you can manage your data sources from **Administration > Data Sources**:
+- View all configured platforms with connection status
+- Add new data sources
+- Edit existing source URLs and names
+- Remove data sources
+- Re-authenticate when credentials expire
+
+### Environment Variables (Legacy/Advanced)
+
+> ⚠️ **Deprecated for v0.2.0+**: We recommend using the UI-based Data Sources management instead of environment variables. Environment variables are still supported for backward compatibility and CI/CD deployments.
+
+If you prefer environment-based configuration, create a `.env.local` file:
 
 ```env
-# Veeam Backup & Replication (Required)
+# Veeam Backup & Replication
 VEEAM_API_URL=https://your-vbr-server:9419
 VEEAM_USERNAME=your-username
 VEEAM_PASSWORD=your-password
 
-# Veeam Recovery Orchestrator (Optional)
-VRO_API_URL=https://your-vro-server:9898
-VRO_USERNAME=your-vro-username
-VRO_PASSWORD=your-vro-password
-
-# Veeam Backup for Microsoft 365 (Optional)
+# Veeam Backup for Microsoft 365
 VBM_API_URL=https://your-vbm-server:4443
 VBM_USERNAME=your-vbm-username
 VBM_PASSWORD=your-vbm-password
+
+# Veeam ONE
+VEEAM_ONE_API_URL=https://your-vone-server:1239
+VEEAM_ONE_USERNAME=your-vone-username
+VEEAM_ONE_PASSWORD=your-vone-password
+
+# Veeam Recovery Orchestrator
+VRO_API_URL=https://your-vro-server:9898
+VRO_USERNAME=your-vro-username
+VRO_PASSWORD=your-vro-password
 
 # Allow self-signed certificates (development only)
 NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 
-**Note**: VBR configuration is required. VRO and VBM are optional - their respective pages will display an error message if not configured.
+**Note**: Environment variables take precedence over UI-configured sources. If both are configured, the env var source will be used.
 
 ### Development
 

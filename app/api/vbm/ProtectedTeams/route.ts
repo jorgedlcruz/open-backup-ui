@@ -1,58 +1,40 @@
 // API Route for Veeam Backup for Microsoft 365 Protected Teams
-// This route proxies requests to the VBM365 API
+import { NextResponse } from 'next/server';
+import { getVB365Config, refreshVB365Token } from '@/lib/server/vb365-helper';
 
-import { NextRequest, NextResponse } from 'next/server';
-
-const VBM_API_URL = process.env.VBM_API_URL;
-
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
     try {
-        if (!VBM_API_URL) {
-            return NextResponse.json(
-                { error: 'Server configuration error: Missing VBM_API_URL' },
-                { status: 500 }
-            );
-        }
+        const config = await getVB365Config();
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
-            return NextResponse.json(
-                { error: 'Authorization header required' },
-                { status: 401 }
-            );
+        if (!config) {
+            return NextResponse.json({ error: 'No VB365 data source configured' }, { status: 500 });
         }
 
         const { searchParams } = new URL(request.url);
         const endpoint = `/v8/ProtectedTeams?${searchParams.toString()}`;
-        const fullUrl = `${VBM_API_URL}${endpoint}`;
+        const fullUrl = `${config.baseUrl}${endpoint}`;
 
-        console.log('[VBM TEAMS] Fetching from:', fullUrl);
-
-        const response = await fetch(fullUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': authHeader,
-                'Accept': 'application/json',
-            },
+        let response = await fetch(fullUrl, {
+            headers: { 'Authorization': `Bearer ${config.token}`, 'Accept': 'application/json' },
         });
 
+        if (response.status === 401) {
+            const newToken = await refreshVB365Token();
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' },
+                });
+            }
+        }
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[VBM TEAMS] API error:', response.status, errorText);
-            return NextResponse.json(
-                { error: `VBM365 API error: ${response.status} - ${errorText}` },
-                { status: response.status }
-            );
+            return NextResponse.json({ error: `VBM365 API error: ${response.status}` }, { status: response.status });
         }
 
         const data = await response.json();
         return NextResponse.json(data);
-
     } catch (error) {
         console.error('[VBM TEAMS] Error:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to fetch VBM teams' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Failed to fetch VBM teams' }, { status: 500 });
     }
 }

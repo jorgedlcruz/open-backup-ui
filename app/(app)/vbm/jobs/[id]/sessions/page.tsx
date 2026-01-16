@@ -23,9 +23,6 @@ import {
     SheetContent,
     SheetTitle,
 } from "@/components/ui/sheet"
-// import { ScrollArea } from "@/components/ui/scroll-area"
-// import { Separator } from "@/components/ui/separator"
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function VBMJobSessionsPage() {
     const params = useParams()
@@ -94,7 +91,7 @@ export default function VBMJobSessionsPage() {
             <div className="container mx-auto py-8 px-4">
                 <div className="mb-6">
                     <Button variant="ghost" asChild className="mb-4 pl-0 hover:bg-transparent">
-                        <Link href="/vbm" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+                        <Link href="/vbm/jobs" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="h-4 w-4" />
                             Back to Jobs
                         </Link>

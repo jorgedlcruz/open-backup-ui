@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { AppHeader } from "@/components/app-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cn } from "@/lib/utils";
-import { SectionNamesProvider } from "@/lib/context/section-names-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +15,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
@@ -32,7 +33,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // ... (keep existing logic)
   const cookieStore = await cookies();
+  const headersList = await headers();
+
+  // Check if we're on the connect page (no sidebar needed)
+  const pathname = headersList.get("x-pathname") || "";
+  const isConnectPage = pathname === "/connect" || pathname.startsWith("/connect");
+
   const themeSettings = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     preset: (cookieStore.get("theme_preset")?.value ?? DEFAULT_THEME.preset) as any,
@@ -55,30 +63,18 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={cn(`${geistSans.variable} ${geistMono.variable} antialiased bg-background group/layout font-sans`)}
+        className={cn(`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased bg-background group/layout font-sans`)}
+        data-connect-page={isConnectPage ? "true" : undefined}
         {...bodyAttributes}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <ActiveThemeProvider initialTheme={themeSettings}>
-            <SectionNamesProvider>
-              <SidebarProvider>
-                <AppSidebar
-                  vbrConfigured={!!process.env.VEEAM_API_URL}
-                  vb365Configured={!!process.env.VBM_API_URL}
-                  vroConfigured={!!process.env.VRO_API_URL}
-                  veeamOneConfigured={!!process.env.VEEAM_ONE_API_URL}
-                />
-                <SidebarInset>
-                  <AppHeader />
-                  {children}
-                </SidebarInset>
-              </SidebarProvider>
-            </SectionNamesProvider>
+            {children}
             <Toaster />
           </ActiveThemeProvider>
         </ThemeProvider>

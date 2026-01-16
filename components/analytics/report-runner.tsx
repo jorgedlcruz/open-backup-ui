@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { startReportSession, getReportSessionStatus } from "@/app/analytics/actions"
+import { startReportSession, getReportSessionStatus } from "@/app/(app)/analytics/actions"
 import { Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { v4 as uuidv4 } from 'uuid'

@@ -1,5 +1,6 @@
 import { VeeamOneReportTemplate, VeeamOneTag, VeeamOneGridNode, VeeamOneReportParameter } from '@/lib/types/veeam-one';
 import { MOCK_PROTECTED_VMS_SUMMARY, MOCK_PROTECTED_VMS_CHART, MOCK_LAST_BACKUP_AGE_CHART, MOCK_VM_DETAILS_TABLE } from './mock-report-data';
+import { configStore } from "@/lib/server/config-store";
 import process from 'process';
 
 interface TokenResponse {
@@ -8,19 +9,54 @@ interface TokenResponse {
     expires_in: number;
 }
 
+interface DynamicConfig {
+    url: string;
+    username: string;
+    password: string;
+}
+
 class VeeamOneClient {
     private token: string | null = null;
     private tokenExpiry: Date | null = null;
-    private apiUrl: string;
     private connectionId: string | null = null;
     private sessionCookie: string | null = null;  // Reporter_SessionId cookie from auth
 
     constructor() {
-        this.apiUrl = process.env.VEEAM_ONE_API_URL || '';
-        // Ensure no trailing slash
-        if (this.apiUrl.endsWith('/')) {
-            this.apiUrl = this.apiUrl.slice(0, -1);
+        // No-op, config is resolved dynamically
+    }
+
+    private getDynamicConfig(): DynamicConfig | null {
+        // Priority 1: Env Vars
+        if (process.env.VEEAM_ONE_API_URL && process.env.VEEAM_ONE_USERNAME && process.env.VEEAM_ONE_PASSWORD) {
+            let url = process.env.VEEAM_ONE_API_URL;
+            if (url.endsWith('/')) url = url.slice(0, -1);
+            return {
+                url,
+                username: process.env.VEEAM_ONE_USERNAME!,
+                password: process.env.VEEAM_ONE_PASSWORD!
+            };
         }
+
+        // Priority 2: Config Store - find source ID first, then get full details with password
+        const sources = configStore.getAll();
+        const oneSourceSummary = sources.find(s => s.platform === 'one');
+        if (oneSourceSummary) {
+            // Use getById to retrieve the DECRYPTED password
+            const fullSource = configStore.getById(oneSourceSummary.id);
+            if (fullSource && fullSource.password) {
+                return {
+                    url: `${fullSource.protocol}://${fullSource.host}:${fullSource.port}`,
+                    username: fullSource.username,
+                    password: fullSource.password
+                };
+            }
+        }
+
+        return null;
+    }
+
+    public isConfigured(): boolean {
+        return !!this.getDynamicConfig();
     }
 
     private async getConnectionId(): Promise<string> {
@@ -29,12 +65,15 @@ class VeeamOneClient {
             return this.connectionId;
         }
 
+        const config = this.getDynamicConfig();
+        if (!config) return '';
+
         // Get token first
         const token = await this.authenticate();
 
         try {
             // Call SignalR negotiate endpoint to establish session and get connectionId
-            const response = await fetch(`${this.apiUrl}/notifications/negotiate?negotiateVersion=1`, {
+            const response = await fetch(`${config.url}/notifications/negotiate?negotiateVersion=1`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -86,8 +125,9 @@ class VeeamOneClient {
             this.sessionCookie = null;
         }
 
-        if (!this.apiUrl) {
-            console.warn('VEEAM_ONE_API_URL not configured');
+        const config = this.getDynamicConfig();
+        if (!config) {
+            console.warn('Veeam ONE not configured');
             return '';
         }
 
@@ -103,11 +143,11 @@ class VeeamOneClient {
                 `--${boundary}`,
                 'Content-Disposition: form-data; name="username"',
                 '',
-                process.env.VEEAM_ONE_USERNAME || '',
+                config.username,
                 `--${boundary}`,
                 'Content-Disposition: form-data; name="password"',
                 '',
-                process.env.VEEAM_ONE_PASSWORD || '',
+                config.password,
                 `--${boundary}`,
                 'Content-Disposition: form-data; name="ui_login"',
                 '',
@@ -116,7 +156,7 @@ class VeeamOneClient {
                 ''
             ];
 
-            const response = await fetch(`${this.apiUrl}/api/token`, {
+            const response = await fetch(`${config.url}/api/token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -188,12 +228,15 @@ class VeeamOneClient {
     }
 
     private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+        const config = this.getDynamicConfig();
+        if (!config) throw new Error("Veeam ONE not configured");
+
         const token = await this.authenticate();
 
         // Ensure connectionId is available
         const connId = await this.getConnectionId();
 
-        const url = `${this.apiUrl}${path}`;
+        const url = `${config.url}${path}`;
 
 
 

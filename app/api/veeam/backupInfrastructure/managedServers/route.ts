@@ -2,22 +2,38 @@
 // This route proxies requests to the Veeam API for managed servers data
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.VEEAM_API_URL?.replace(/['"]/g, '').replace(/[\\/\s]+$/, '');
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export async function GET(request: NextRequest) {
     try {
-        if (!API_BASE_URL) {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL?.replace(/['"]/g, '').replace(/[\\/\s]+$/, '');
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
+                { error: 'Authorization required' },
                 { status: 401 }
             );
         }
@@ -26,16 +42,34 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const queryString = searchParams.toString();
         const endpoint = queryString ? `/api/v1/backupInfrastructure/managedServers?${queryString}` : '/api/v1/backupInfrastructure/managedServers';
+        const fullUrl = `${baseUrl}${endpoint}`;
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        let response = await fetch(fullUrl, {
             method: 'GET',
             headers: {
-                'Authorization': authHeader,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'x-api-version': '1.3-rev1',
             },
         });
+
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log('[ManagedServers] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${newToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'x-api-version': '1.3-rev1',
+                    },
+                });
+            }
+        }
 
         if (!response.ok) {
             const errorText = await response.text();

@@ -2,6 +2,9 @@
 // This route handles authentication with the Veeam API server-side to avoid CORS issues
 
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { getChunkedCookie } from '@/lib/utils/cookie-manager';
+import { tokenManager } from '@/lib/server/token-manager';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
 const API_USERNAME = process.env.VEEAM_USERNAME;
@@ -19,9 +22,45 @@ interface TokenResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const cookieToken = getChunkedCookie(cookieStore, 'veeam_vbr_token');
+    const sourceId = cookieStore.get('veeam_source_id')?.value;
+
+    // 1. If we have a sourceId, use TokenManager (Preferred)
+    if (sourceId) {
+      const token = await tokenManager.getToken(sourceId);
+      if (token) {
+        console.log('[AUTH] Returning session token from TokenManager');
+        return NextResponse.json({
+          access_token: token,
+          token_type: 'bearer',
+          refresh_token: 'managed_by_server',
+          expires_in: 900, // 15 mins
+          '.issued': new Date().toISOString(),
+          '.expires': new Date(Date.now() + 900 * 1000).toISOString(),
+          username: 'SessionUser'
+        } as TokenResponse);
+      }
+    }
+
+    // 2. Fallback: If we have a legacy valid session cookie
+    if (cookieToken) {
+      console.log('[AUTH] Returning existing session token from cookie');
+      return NextResponse.json({
+        access_token: cookieToken,
+        token_type: 'bearer',
+        refresh_token: 'dummy_refresh_token',
+        expires_in: 3600,
+        '.issued': new Date().toISOString(),
+        '.expires': new Date(Date.now() + 3600 * 1000).toISOString(),
+        username: 'SessionUser'
+      } as TokenResponse);
+    }
+
+    // 3. Fallback: Env Var-based Auth (Legacy)
     if (!API_BASE_URL || !API_USERNAME || !API_PASSWORD) {
       return NextResponse.json(
-        { error: 'Server configuration error: Missing required environment variables' },
+        { error: 'Server configuration error: Missing required environment variables and no active session.' },
         { status: 500 }
       );
     }

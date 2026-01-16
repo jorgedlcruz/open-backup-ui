@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function ReportCatalogPage() {
     // Check if Veeam ONE is configured
-    if (!process.env.VEEAM_ONE_API_URL) {
+    if (!veeamOneClient.isConfigured()) {
         return (
             <div className="container mx-auto py-8 px-4 flex flex-col h-full space-y-6">
                 <div>

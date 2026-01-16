@@ -204,7 +204,6 @@ const adminItems = [
     title: "Data Sources",
     href: "/administration/data-sources",
     icon: Blocks,
-    badge: "Coming",
   },
   {
     title: "Branding",

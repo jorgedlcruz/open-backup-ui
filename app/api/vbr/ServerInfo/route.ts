@@ -1,48 +1,39 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
-import { NextResponse } from 'next/server';
-
-// Env vars
-const API_BASE_URL = process.env.VEEAM_API_URL;
-const API_USERNAME = process.env.VEEAM_USERNAME;
-const API_PASSWORD = process.env.VEEAM_PASSWORD;
-
-// Helper to get token (server-side only)
-async function getVeeamToken(): Promise<string | null> {
-    if (!API_BASE_URL || !API_USERNAME || !API_PASSWORD) return null;
+export async function GET(request: NextRequest) {
     try {
-        const body = new URLSearchParams({
-            grant_type: 'Password',
-            username: API_USERNAME,
-            password: API_PASSWORD,
-        }).toString();
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
 
-        const response = await fetch(`${API_BASE_URL}/api/oauth2/token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json',
-                'x-api-version': '1.3-rev1',
-            },
-            body,
-        });
+        if (!baseUrl && !sourceId) {
+            return NextResponse.json(
+                { error: 'Server configuration error: No configured Data Source' },
+                { status: 500 }
+            );
+        }
 
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data.access_token;
-    } catch (e) {
-        console.error('Token fetch error:', e);
-        return null;
-    }
-}
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
 
-export async function GET() {
-    try {
-        if (!API_BASE_URL) throw new Error('Missing VEEAM_API_URL');
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
 
-        const token = await getVeeamToken();
-        if (!token) throw new Error('Failed to acquire Veeam token');
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/serverInfo`, {
+        const fullUrl = `${baseUrl}/api/v1/serverInfo`;
+        let response = await fetch(fullUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
@@ -50,15 +41,35 @@ export async function GET() {
             }
         });
 
-        if (!response.ok) throw new Error(`Failed to fetch server info: ${response.status}`);
-        const data = await response.json();
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log('[ServerInfo] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${newToken}`,
+                        'Accept': 'application/json',
+                        'x-api-version': '1.3-rev1',
+                    }
+                });
+            }
+        }
 
+        if (!response.ok) {
+            if (response.status === 401) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+            throw new Error(`Failed to fetch server info: ${response.status}`);
+        }
+
+        const data = await response.json();
         return NextResponse.json(data);
 
     } catch (error) {
         console.error('Error fetching server info:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch server info' },
+            { error: error instanceof Error ? error.message : 'Failed to fetch server info' },
             { status: 500 }
         );
     }

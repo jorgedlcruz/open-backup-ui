@@ -1,44 +1,74 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export const dynamic = 'force-dynamic';
-
-const API_BASE_URL = process.env.VEEAM_API_URL;
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        if (!API_BASE_URL) {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
+                { error: 'Authorization required' },
                 { status: 401 }
             );
         }
 
         const { id } = await params;
-        const headers = {
-            'Authorization': authHeader,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-api-version': '1.3-rev1',
-        };
+        const fullUrl = `${baseUrl}/api/v1/backups/${id}/backupFiles?limit=500`;
 
-        // Fetch backup files for the specific backup ID
-        // Note: The user provided example uses /backups/{id}/backupFiles
-        const response = await fetch(`${API_BASE_URL}/api/v1/backups/${id}/backupFiles?limit=500`, {
+        let response = await fetch(fullUrl, {
             method: 'GET',
-            headers,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-api-version': '1.3-rev1',
+            },
         });
+
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log(`[BackupFiles ${id}] 401 received, refreshing token...`);
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${newToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'x-api-version': '1.3-rev1',
+                    },
+                });
+            }
+        }
 
         if (!response.ok) {
             const errorText = await response.text();

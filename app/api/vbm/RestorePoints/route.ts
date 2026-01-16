@@ -2,39 +2,42 @@
 // This route proxies requests to the VBM365 API
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const VBM_API_URL = process.env.VBM_API_URL;
+import { getVB365Config, refreshVB365Token } from '@/lib/server/vb365-helper';
 
 export async function GET(request: NextRequest) {
     try {
-        if (!VBM_API_URL) {
-            return NextResponse.json(
-                { error: 'Server configuration error: Missing VBM_API_URL' },
-                { status: 500 }
-            );
-        }
+        const config = await getVB365Config();
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        if (!config) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
-                { status: 401 }
+                { error: 'No VB365 data source configured' },
+                { status: 500 }
             );
         }
 
         const { searchParams } = new URL(request.url);
         const endpoint = `/v8/RestorePoints?${searchParams.toString()}`;
-        const fullUrl = `${VBM_API_URL}${endpoint}`;
+        const fullUrl = `${config.baseUrl}${endpoint}`;
 
         console.log('[VBM RESTORE POINTS] Fetching from:', fullUrl);
 
-        const response = await fetch(fullUrl, {
+        let response = await fetch(fullUrl, {
             method: 'GET',
             headers: {
-                'Authorization': authHeader,
+                'Authorization': `Bearer ${config.token}`,
                 'Accept': 'application/json',
             },
         });
+
+        // On 401, refresh token and retry
+        if (response.status === 401) {
+            const newToken = await refreshVB365Token();
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' },
+                });
+            }
+        }
 
         if (!response.ok) {
             const errorText = await response.text();

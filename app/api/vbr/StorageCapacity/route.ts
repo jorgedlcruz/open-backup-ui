@@ -1,61 +1,64 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 import { VeeamBackupFile } from '@/lib/types/veeam';
 
-// Env vars
-const API_BASE_URL = process.env.VEEAM_API_URL;
-const API_USERNAME = process.env.VEEAM_USERNAME;
-const API_PASSWORD = process.env.VEEAM_PASSWORD;
-
-// Helper to get token (server-side only)
-async function getVeeamToken(): Promise<string | null> {
-    if (!API_BASE_URL || !API_USERNAME || !API_PASSWORD) return null;
+export async function GET(request: NextRequest) {
     try {
-        const body = new URLSearchParams({
-            grant_type: 'Password',
-            username: API_USERNAME,
-            password: API_PASSWORD,
-        }).toString();
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
 
-        const response = await fetch(`${API_BASE_URL}/api/oauth2/token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json',
-                'x-api-version': '1.3-rev1',
-                // Ignore self-signed certs if needed (VEEAM_IGNORE_SSL_ERRORS=true)
-            },
-            body,
-        });
-
-        if (!response.ok) {
-            console.error('Token fetch failed:', response.status);
-            return null;
+        if (!baseUrl && !sourceId) {
+            return NextResponse.json(
+                { error: 'Server configuration error: No configured Data Source' },
+                { status: 500 }
+            );
         }
-        const data = await response.json();
-        return data.access_token;
-    } catch (e) {
-        console.error('Token fetch error:', e);
-        return null;
-    }
-}
 
-export async function GET() {
-    try {
-        if (!API_BASE_URL) throw new Error('Missing VEEAM_API_URL');
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
 
-        const token = await getVeeamToken();
-        if (!token) throw new Error('Failed to acquire Veeam token');
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         console.log('[StorageCapacity] Fetching backups...');
 
         // 1. Fetch Backups directly
-        const backupsRes = await fetch(`${API_BASE_URL}/api/v1/backups?limit=500`, {
+        let backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
                 'x-api-version': '1.3-rev1',
             }
         });
+
+        // Auto-refresh mechanism
+        if (backupsRes.status === 401 && sourceId) {
+            console.log('[StorageCapacity] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                token = newToken; // Update local token variable used for subsequent calls
+                backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'x-api-version': '1.3-rev1',
+                    }
+                });
+            }
+        }
 
         if (!backupsRes.ok) throw new Error(`Failed to fetch backups: ${backupsRes.status}`);
         const backupsData = await backupsRes.json();
@@ -65,14 +68,24 @@ export async function GET() {
         // 2. Fetch files for each backup
         const backupFilesPromises: (() => Promise<VeeamBackupFile[]>)[] = backups.map((backup: { id: string }) => async () => {
             try {
-                const filesRes = await fetch(`${API_BASE_URL}/api/v1/backups/${backup.id}/backupFiles?limit=500`, {
+                // Determine token to use (in case it was refreshed)
+                const currentToken = token as string;
+                const filesRes = await fetch(`${baseUrl}/api/v1/backups/${backup.id}/backupFiles?limit=500`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${currentToken}`,
                         'Accept': 'application/json',
                         'x-api-version': '1.3-rev1',
                     }
                 });
-                if (!filesRes.ok) return [];
+                if (!filesRes.ok) {
+                    if (filesRes.status === 401) {
+                        // If token expired mid-process (unlikely given we just refreshed, but possible if long running)
+                        // We fail gracefully here rather than complexity of re-refreshing loop in map
+                        console.warn(`Token expired while fetching files for backup ${backup.id}`);
+                        return [];
+                    }
+                    return [];
+                }
                 const filesData = await filesRes.json();
                 return filesData.data || [];
             } catch (e) {

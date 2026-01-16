@@ -1,26 +1,54 @@
 // API Route for Veeam Backup for Microsoft 365 Authentication
-// This route proxies authentication requests to VBM API
+// This route handles authentication with the VBM API server-side (same pattern as VBR)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { RateLimiter } from '@/lib/utils/rate-limiter';
+import { cookies } from 'next/headers';
+import { getChunkedCookie } from '@/lib/utils/cookie-manager';
+import { tokenManager } from '@/lib/server/token-manager';
 
 const VBM_API_URL = process.env.VBM_API_URL;
 const VBM_USERNAME = process.env.VBM_USERNAME;
 const VBM_PASSWORD = process.env.VBM_PASSWORD;
 
-// VBM API has a rate limit of 1 request per second
-const rateLimiter = new RateLimiter(1);
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const cookieToken = getChunkedCookie(cookieStore, 'veeam_vb365_token');
+    const sourceId = cookieStore.get('veeam_vb365_source_id')?.value;
+
+    // 1. If we have a sourceId, use TokenManager (Preferred)
+    if (sourceId) {
+      const token = await tokenManager.getToken(sourceId);
+      if (token) {
+        console.log('[VBM AUTH] Returning session token from TokenManager');
+        return NextResponse.json({
+          access_token: token,
+          token_type: 'bearer',
+          expires_in: 900, // 15 mins
+        } as TokenResponse);
+      }
+    }
+
+    // 2. Fallback: If we have a legacy valid session cookie
+    if (cookieToken) {
+      console.log('[VBM AUTH] Returning existing session token from cookie');
+      return NextResponse.json({
+        access_token: cookieToken,
+        token_type: 'bearer',
+        expires_in: 3600,
+      } as TokenResponse);
+    }
+
+    // 3. Fallback: Env Var-based Auth (Legacy)
     if (!VBM_API_URL || !VBM_USERNAME || !VBM_PASSWORD) {
-      console.error('[VBM AUTH] Missing configuration:', {
-        hasUrl: !!VBM_API_URL,
-        hasUsername: !!VBM_USERNAME,
-        hasPassword: !!VBM_PASSWORD,
-      });
       return NextResponse.json(
-        { error: 'Server configuration error: Missing VBM credentials' },
+        { error: 'No VB365 session. Please add and connect a VB365 data source.' },
         { status: 500 }
       );
     }
@@ -28,61 +56,49 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { grant_type, refresh_token } = body;
 
-    console.log('[VBM AUTH] Authentication request, grant_type:', grant_type);
+    console.log('[VBM AUTH] Authentication request via env vars, grant_type:', grant_type);
 
-    // Use rate limiter to ensure we don't exceed API quota (1 req/sec)
-    const data = await rateLimiter.execute(async () => {
-      let authBody: Record<string, string>;
-      
-      if (grant_type === 'refresh_token' && refresh_token) {
-        authBody = {
-          grant_type: 'refresh_token',
-          refresh_token: refresh_token,
-          disable_antiforgery_token: 'true',
-        };
-      } else {
-        authBody = {
-          grant_type: 'password',
-          username: VBM_USERNAME,
-          password: VBM_PASSWORD,
-          disable_antiforgery_token: 'true',
-        };
-      }
+    let authBody: Record<string, string>;
 
-      const authUrl = `${VBM_API_URL}/v8/token`;
-      console.log('[VBM AUTH] Authenticating with VBM at:', authUrl);
+    if (grant_type === 'refresh_token' && refresh_token) {
+      authBody = {
+        grant_type: 'refresh_token',
+        refresh_token: refresh_token,
+      };
+    } else {
+      authBody = {
+        grant_type: 'password',
+        username: VBM_USERNAME,
+        password: VBM_PASSWORD,
+      };
+    }
 
-      // Create FormData for application/x-www-form-urlencoded as per VBM API spec
-      const formData = new URLSearchParams();
-      Object.entries(authBody).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      const response = await fetch(authUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: formData.toString(),
-      });
-
-      console.log('[VBM AUTH] Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[VBM AUTH] Authentication failed:', errorText);
-        throw new Error(`VBM authentication failed: ${response.status} - ${errorText}`);
-      }
-
-      const responseData = await response.json();
-      console.log('[VBM AUTH] Authentication successful (antiforgery token disabled)');
-      
-      return responseData;
+    const authUrl = `${VBM_API_URL}/v7/Token`;
+    const formData = new URLSearchParams();
+    Object.entries(authBody).forEach(([key, value]) => {
+      formData.append(key, value);
     });
-    
-    // Return the authentication data
-    // Note: antiforgery token is disabled via disable_antiforgery_token parameter
+
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: formData.toString(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[VBM AUTH] Authentication failed:', errorText);
+      return NextResponse.json(
+        { error: `VBM authentication failed: ${response.status} - ${errorText}` },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    console.log('[VBM AUTH] Authentication successful via env vars');
     return NextResponse.json(data);
 
   } catch (error) {

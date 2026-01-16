@@ -1,10 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { BackupObjectsResult, VeeamProtectedWorkload } from '@/lib/types/veeam';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export const dynamic = 'force-dynamic'; // Prevent caching so data is fresh
-
-const API_BASE_URL = process.env.VEEAM_API_URL;
 
 // Simple in-memory cache
 let cachedData: {
@@ -16,17 +15,33 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(request: NextRequest) {
     try {
-        if (!API_BASE_URL) {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
             return NextResponse.json(
-                { error: 'Authorization header required' },
+                { error: 'Authorization required' },
                 { status: 401 }
             );
         }
@@ -41,21 +56,34 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ data: cachedData.data });
         }
 
-        // Common headers for Veeam API
-        const headers = {
-            'Authorization': authHeader,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-api-version': '1.3-rev1',
-        };
-
         // Use the optimized /backupObjects endpoint
-        // This gives us a flat list of all protected workloads
         console.log('Fetching protected objects from /backupObjects...');
-        const response = await fetch(`${API_BASE_URL}/api/v1/backupObjects?limit=1000`, { // Large limit to get most/all
+        let response = await fetch(`${baseUrl}/api/v1/backupObjects?limit=1000`, {
             method: 'GET',
-            headers,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-api-version': '1.3-rev1',
+            },
         });
+
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log('[ProtectedData] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                response = await fetch(`${baseUrl}/api/v1/backupObjects?limit=1000`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${newToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'x-api-version': '1.3-rev1',
+                    },
+                });
+            }
+        }
 
         if (!response.ok) {
             console.error('Failed to fetch backup objects:', await response.text());
@@ -66,11 +94,8 @@ export async function GET(request: NextRequest) {
         const objects = result.data;
 
         // Map to VeeamProtectedWorkload
-        // We might not have Job Name or Repository Name here directly, but that's expected/accepted per the plan.
         const protectedWorkloads: VeeamProtectedWorkload[] = objects.map(obj => ({
             ...obj,
-            // ID from backupObjects is the object ID we use for referencing
-            // It also has restorePointsCount and lastRunFailed
         }));
 
         // Sort by name

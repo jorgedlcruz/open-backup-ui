@@ -1,31 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
+// API Route for Veeam Backup for Microsoft 365 Proxies
+import { NextResponse } from 'next/server';
+import { getVB365Config, refreshVB365Token } from '@/lib/server/vb365-helper';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
     try {
-        const token = request.headers.get('Authorization');
-        const apiUrl = process.env.VBM_API_URL || 'https://127.0.0.1:4443';
+        const config = await getVB365Config();
 
-        const searchParams = request.nextUrl.searchParams;
+        if (!config) {
+            return NextResponse.json({ error: 'No VB365 data source configured' }, { status: 500 });
+        }
+
+        const { searchParams } = new URL(request.url);
         const query = searchParams.toString();
         const endpoint = `/v8/Proxies${query ? `?${query}` : ''}`;
-        const fullUrl = `${apiUrl}${endpoint}`;
+        const fullUrl = `${config.baseUrl}${endpoint}`;
 
-        console.log('[VBM PROXIES] Fetching from:', fullUrl);
-
-        const response = await fetch(fullUrl, {
-            headers: {
-                'Authorization': token || '',
-                'Accept': 'application/json'
-            }
+        let response = await fetch(fullUrl, {
+            headers: { 'Authorization': `Bearer ${config.token}`, 'Accept': 'application/json' },
         });
 
+        if (response.status === 401) {
+            const newToken = await refreshVB365Token();
+            if (newToken) {
+                response = await fetch(fullUrl, {
+                    headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' },
+                });
+            }
+        }
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[VBM PROXIES] API error:', response.status, errorText);
-            return NextResponse.json(
-                { error: `VBM API error: ${response.status} - ${errorText}` },
-                { status: response.status }
-            );
+            return NextResponse.json({ error: `VBM API error: ${response.status}` }, { status: response.status });
         }
 
         const data = await response.json();

@@ -49,7 +49,7 @@ export default async function ReportDetailsPage({ params }: ReportPageProps) {
     const { id: taskId } = await params
 
     // Check if Veeam ONE is configured
-    if (!process.env.VEEAM_ONE_API_URL) {
+    if (!veeamOneClient.isConfigured()) {
         return (
             <div className="container mx-auto py-8 px-4 flex flex-col h-full space-y-6">
                 <div className="flex items-center gap-4">

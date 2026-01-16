@@ -2,39 +2,79 @@
 // This route proxies requests to the Veeam API for specific job operations
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.VEEAM_API_URL;
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!API_BASE_URL) {
+    const cookieStore = await cookies();
+    const sourceId = cookieStore.get('veeam_source_id')?.value;
+    const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+    const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+    if (!baseUrl && !sourceId) {
       return NextResponse.json(
-        { error: 'Server configuration error: Missing VEEAM_API_URL' },
+        { error: 'Server configuration error: No configured Data Source' },
         { status: 500 }
       );
     }
 
-    const { id } = await params;
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    let token: string | null = null;
+    if (sourceId) {
+      token = await tokenManager.getToken(sourceId);
+    }
+
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { error: 'Authorization required' },
         { status: 401 }
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${id}`, {
+    const { id } = await params;
+
+    // Explicit check to prevent treating 'states' as an ID, though Next.js routing should handle this if a parallel route existed.
+    if (id === 'states') {
+      // Pass through to standard API if it exists on backend, otherwise it will 404 from Veeam
+    }
+
+    const url = `${baseUrl}/api/v1/jobs/${id}`;
+    let response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'x-api-version': '1.3-rev1',
       },
     });
+
+    // Auto-refresh mechanism
+    if (response.status === 401 && sourceId) {
+      console.log(`[JOB ${id}] 401 received, refreshing token...`);
+      const newToken = await tokenManager.refreshToken(sourceId);
+      if (newToken) {
+        response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${newToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-api-version': '1.3-rev1',
+          },
+        });
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -61,22 +101,38 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!API_BASE_URL) {
+    const cookieStore = await cookies();
+    const sourceId = cookieStore.get('veeam_source_id')?.value;
+    const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+    const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+    if (!baseUrl && !sourceId) {
       return NextResponse.json(
-        { error: 'Server configuration error: Missing VEEAM_API_URL' },
+        { error: 'Server configuration error: No configured Data Source' },
         { status: 500 }
       );
     }
 
-    const { id } = await params;
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    let token: string | null = null;
+    if (sourceId) {
+      token = await tokenManager.getToken(sourceId);
+    }
+
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { error: 'Authorization required' },
         { status: 401 }
       );
     }
 
+    const { id } = await params;
     const body = await request.json();
     const { action } = body; // 'start', 'stop', 'retry', 'disable', 'enable'
 
@@ -87,15 +143,33 @@ export async function POST(
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/jobs/${id}/${action}`, {
+    const url = `${baseUrl}/api/v1/jobs/${id}/${action}`;
+    let response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'x-api-version': '1.3-rev1',
       },
     });
+
+    // Auto-refresh mechanism
+    if (response.status === 401 && sourceId) {
+      console.log(`[JOB ${id} ACTION] 401 received, refreshing token...`);
+      const newToken = await tokenManager.refreshToken(sourceId);
+      if (newToken) {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${newToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-api-version': '1.3-rev1',
+          },
+        });
+      }
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

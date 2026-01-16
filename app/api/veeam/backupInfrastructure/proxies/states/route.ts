@@ -1,40 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const API_BASE_URL = process.env.VEEAM_API_URL;
+import { cookies } from 'next/headers';
+import { tokenManager } from '@/lib/server/token-manager';
 
 async function proxy(request: NextRequest) {
     try {
-        if (!API_BASE_URL) {
+        const cookieStore = await cookies();
+        const sourceId = cookieStore.get('veeam_source_id')?.value;
+        const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+        const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+        if (!baseUrl && !sourceId) {
             return NextResponse.json(
-                { error: 'Server configuration error: Missing VEEAM_API_URL' },
+                { error: 'Server configuration error: No configured Data Source' },
                 { status: 500 }
             );
         }
 
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader) {
-            return NextResponse.json(
-                { error: 'Authorization header required' },
-                { status: 401 }
-            );
+        let token: string | null = null;
+        if (sourceId) {
+            token = await tokenManager.getToken(sourceId);
+        }
+
+        if (!token) {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
+        }
+
+        if (!token) {
+            return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
         const queryString = searchParams.toString();
         const endpoint = queryString ? `/api/v1/backupInfrastructure/proxies/states?${queryString}` : `/api/v1/backupInfrastructure/proxies/states`;
-        const fullUrl = `${API_BASE_URL}${endpoint}`;
+        const fullUrl = `${baseUrl}${endpoint}`;
 
         const options: RequestInit = {
             method: request.method,
             headers: {
-                'Authorization': authHeader,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'x-api-version': '1.3-rev1',
             },
         };
 
-        const response = await fetch(fullUrl, options);
+        let response = await fetch(fullUrl, options);
+
+        // Auto-refresh mechanism
+        if (response.status === 401 && sourceId) {
+            console.log('[ProxyStates] 401 received, refreshing token...');
+            const newToken = await tokenManager.refreshToken(sourceId);
+            if (newToken) {
+                options.headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${newToken}`
+                };
+                response = await fetch(fullUrl, options);
+            }
+        }
 
         if (response.status === 204) {
             return new NextResponse(null, { status: 204 });

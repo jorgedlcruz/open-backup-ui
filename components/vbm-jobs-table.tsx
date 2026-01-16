@@ -113,7 +113,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
       },
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <Link href={`/vb365/jobs/${row.original.id}/sessions`} className="font-medium hover:underline text-primary">
+          <Link href={`/vbm/jobs/${row.original.id}/sessions`} className="font-medium hover:underline text-primary">
             {row.getValue("name")}
           </Link>
           <span
@@ -258,7 +258,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={`/vb365/jobs/${job.id}/sessions`}>
+                <Link href={`/vbm/jobs/${job.id}/sessions`}>
                   View Sessions
                 </Link>
               </DropdownMenuItem>
