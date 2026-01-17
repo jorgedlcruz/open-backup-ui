@@ -14,6 +14,11 @@ export const THEMES = [
         colors: ["oklch(0.33 0 0)"]
     },
     {
+        name: "Beeam Sunrise",
+        value: "beeam-sunrise",
+        colors: ["oklch(0.78 0.22 145)"] // Viridis #00D15F
+    },
+    {
         name: "Underground",
         value: "underground",
         colors: ["oklch(0.5315 0.0694 156.19)"]

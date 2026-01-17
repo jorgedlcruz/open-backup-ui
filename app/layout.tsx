@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope } from "next/font/google";
+import { Geist, Geist_Mono, Manrope, Roboto } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -23,9 +23,21 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Veeam Single-UI",
   description: "Veeam Backup & Replication Management",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
+  },
 };
 
 export default async function RootLayout({
@@ -63,7 +75,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={cn(`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased bg-background group/layout font-sans`)}
+        className={cn(`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${roboto.variable} antialiased bg-background group/layout font-sans`)}
         data-connect-page={isConnectPage ? "true" : undefined}
         {...bodyAttributes}
       >

@@ -722,6 +722,40 @@ class VeeamApiClient {
     }
   }
 
+  /**
+   * Fetch workload details from inventory by name.
+   * Returns VM metadata like Guest OS, IP, DNS Name, vCenter, ESXi host, etc.
+   * Also resolves Datacenter and Cluster names from URN objectIds.
+   */
+  async getInventoryWorkloadDetails(params: { name?: string; objectId?: string }): Promise<{
+    workload: VeeamInventoryItem | null;
+    vCenter: string | null;
+    datacenterName?: string | null;
+    clusterName?: string | null;
+    esxHostName?: string | null;
+  }> {
+    try {
+      const response = await fetch('/api/veeam/inventory/lookup-by-objectid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.warn('Workload not found in inventory:', errData);
+        return { workload: null, vCenter: null };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching workload details:', error);
+      return { workload: null, vCenter: null };
+    }
+  }
+
   async getStorageCapacity(): Promise<{ totalBackupSize: number, fileCount: number } | null> {
     try {
       return await this.request<{ totalBackupSize: number, fileCount: number }>('/StorageCapacity', {

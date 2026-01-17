@@ -168,6 +168,160 @@ body {
     }
 }
 
+/* Beeam Sunrise - Veeam Corporate Theme */
+[data-theme-preset="beeam-sunrise"] {
+    /* Base grays: Fog (#F0F0F0) to Dark Mineral (#505861) to Black */
+    --base-50: oklch(0.965 0.002 250);
+    /* Fog #F0F0F0 */
+    --base-100: oklch(0.94 0.003 250);
+    --base-200: oklch(0.88 0.005 250);
+    --base-300: oklch(0.75 0.008 250);
+    /* French Grey #ADACAF */
+    --base-400: oklch(0.58 0.012 250);
+    --base-500: oklch(0.48 0.015 250);
+    /* Dark Mineral #505861 */
+    --base-600: oklch(0.40 0.012 250);
+    --base-700: oklch(0.32 0.010 250);
+    --base-800: oklch(0.24 0.008 250);
+    --base-900: oklch(0.16 0.006 250);
+    --base-950: oklch(0.10 0.004 250);
+    --base-1000: oklch(0.05 0.002 250);
+    /* Black #000000 */
+
+    /* Primary - Viridis #00D15F (Veeam Green) - using exact hex values */
+    --primary-50: #e6fff0;
+    --primary-100: #b3ffdb;
+    --primary-200: #9CFFA3;
+    /* Lime */
+    --primary-300: #32F26F;
+    /* Mint */
+    --primary-400: #00D15F;
+    /* Viridis - EXACT */
+    --primary-500: #00b852;
+    --primary-600: #009945;
+    --primary-700: #007F49;
+    /* Pine */
+    --primary-800: #006639;
+    --primary-900: #004d2b;
+    --primary-950: #00331c;
+    --primary-1000: #001a0e;
+
+    /* Secondary - Neutral grays (same as base for clean UI) */
+    --secondary-50: var(--base-50);
+    --secondary-100: var(--base-100);
+    --secondary-200: var(--base-200);
+    --secondary-300: var(--base-300);
+    --secondary-400: var(--base-400);
+    --secondary-500: var(--base-500);
+    --secondary-600: var(--base-600);
+    --secondary-700: var(--base-700);
+    --secondary-800: var(--base-800);
+    --secondary-900: var(--base-900);
+    --secondary-950: var(--base-950);
+    --secondary-1000: var(--base-1000);
+
+    /* Light mode settings */
+    --background: var(--color-white);
+    --foreground: var(--base-800);
+    --card: var(--color-white);
+    --card-foreground: var(--base-800);
+    --popover: var(--color-white);
+    --popover-foreground: var(--base-800);
+    --primary: var(--primary-400);
+    /* Viridis green for primary buttons */
+    --primary-foreground: var(--color-white);
+    --secondary: var(--base-100);
+    /* Neutral gray for secondary elements */
+    --secondary-foreground: var(--base-800);
+    --muted: var(--base-50);
+    /* Fog for muted backgrounds */
+    --muted-foreground: var(--base-500);
+    --accent: var(--base-100);
+    /* Neutral accent */
+    --accent-foreground: var(--base-800);
+    --destructive: #ED2B3D;
+    /* Ignis - EXACT */
+    --border: var(--base-200);
+    --input: var(--base-200);
+    --ring: var(--primary-400);
+    /* Viridis for focus rings */
+
+    /* Charts: Viridis, Mint (success), Sol (warning), Ignis (error), Casia */
+    --chart-1: #00D15F;
+    /* Viridis - Primary */
+    --chart-2: #32F26F;
+    /* Mint - Success */
+    --chart-3: #FFD839;
+    /* Sol - Warning */
+    --chart-4: #ED2B3D;
+    /* Ignis - Error */
+    --chart-5: #8e71f4;
+    /* Casia */
+
+    --radius: 0.5rem;
+
+    /* Sidebar with Viridis green accents */
+    --sidebar: var(--base-50);
+    /* Fog background */
+    --sidebar-foreground: var(--base-800);
+    --sidebar-primary: var(--primary-400);
+    /* Viridis for active items */
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--primary-400);
+    /* Viridis for hover/accent */
+    --sidebar-accent-foreground: var(--color-white);
+    --sidebar-border: var(--base-200);
+    --sidebar-ring: var(--primary-400);
+
+    /* Roboto font for everything */
+    --text-family: var(--font-roboto), sans-serif;
+    --display-family: var(--font-roboto), sans-serif;
+    --display-weight: 500;
+
+    @variant dark {
+        --background: var(--base-950);
+        --foreground: var(--base-200);
+        --card: var(--base-900);
+        --card-foreground: var(--base-200);
+        --popover: var(--base-900);
+        --popover-foreground: var(--base-200);
+        --primary: var(--primary-400);
+        /* Viridis green */
+        --primary-foreground: var(--base-950);
+        --secondary: var(--base-800);
+        --secondary-foreground: var(--base-200);
+        --muted: var(--base-800);
+        --muted-foreground: var(--base-400);
+        --accent: var(--base-800);
+        --accent-foreground: var(--base-200);
+        --destructive: #FF4D5E;
+        /* Ignis lighter for dark */
+        --border: var(--base-800);
+        --input: var(--base-700);
+        --ring: var(--primary-400);
+        --chart-1: #00D15F;
+        /* Viridis */
+        --chart-2: #32F26F;
+        /* Mint */
+        --chart-3: #FFD839;
+        /* Sol */
+        --chart-4: #FF4D5E;
+        /* Ignis */
+        --chart-5: #8e71f4;
+        /* Casia */
+        --sidebar: var(--base-900);
+        --sidebar-foreground: var(--base-200);
+        --sidebar-primary: var(--primary-400);
+        /* Viridis for menu */
+        --sidebar-primary-foreground: var(--base-950);
+        --sidebar-accent: var(--primary-400);
+        /* Viridis for hover */
+        --sidebar-accent-foreground: var(--base-950);
+        --sidebar-border: var(--base-800);
+        --sidebar-ring: var(--primary-400);
+    }
+}
+
 [data-theme-preset="rose-garden"] {
     --base-50: oklch(0.9851 0.001 33.69);
     --base-100: oklch(0.9567 0.0021 34.31);
@@ -1081,6 +1235,6 @@ body {
     [data-slot="dialog-overlay"],
     [data-slot="sheet-overlay"],
     [data-slot="drawer-overlay"] {
-        @apply !bg-black/20 backdrop-blur-sm;
+        @apply !bg-black/20 backdrop-blur-[1px];
     }
 }

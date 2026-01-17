@@ -45,7 +45,7 @@ export const columns: ColumnDef<VeeamRestorePoint>[] = [
             <Button
                 variant="ghost"
                 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="-ml-4"
+                className="!p-0 hover:!bg-transparent"
             >
                 Created
                 <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -55,7 +55,7 @@ export const columns: ColumnDef<VeeamRestorePoint>[] = [
             const date = new Date(row.getValue("creationTime"));
             return (
                 <div className="flex flex-col">
-                    <span className="font-medium">{date.toLocaleDateString()}</span>
+                    <span className="font-medium text-sm">{date.toLocaleDateString()}</span>
                     <span className="text-muted-foreground text-xs">{date.toLocaleTimeString()}</span>
                 </div>
             )
@@ -64,48 +64,50 @@ export const columns: ColumnDef<VeeamRestorePoint>[] = [
     {
         accessorKey: "jobName",
         header: "Job Name",
-        cell: ({ row }) => <div className="text-sm font-medium">{row.getValue("jobName") || '-'}</div>
+        cell: ({ row }) => <div className="text-sm font-medium truncate max-w-[200px]" title={row.getValue("jobName") as string}>{row.getValue("jobName") || '-'}</div>
     },
     {
         accessorKey: "pointType",
         header: "Type",
         cell: ({ row }) => {
-            // Priority: pointType string, or check isGfs logic
             const type = row.original.pointType;
-            if (type) return <Badge variant="outline">{type}</Badge>
+            if (type) return <Badge variant="outline" className="font-normal">{type}</Badge>
 
-            // Fallback to old logic if type is missing
             const isGfs = (row.original as unknown as { isGfs?: boolean }).isGfs
-            return <Badge variant={isGfs ? "default" : "secondary"}>{isGfs ? "Full (GFS)" : "Incremental"}</Badge>
+            return <Badge variant={isGfs ? "default" : "secondary"} className="font-normal whitespace-nowrap">{isGfs ? "Full (GFS)" : "Incremental"}</Badge>
         }
     },
     {
         accessorKey: "dataSize",
         header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="w-full justify-end"
-            >
-                Data Size
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="text-right">
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent justify-end"
+                >
+                    Data Size
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
         ),
-        cell: ({ row }) => <div className="text-right font-mono">{formatBytes(row.getValue("dataSize"))}</div>
+        cell: ({ row }) => <div className="text-right font-mono text-xs">{formatBytes(row.getValue("dataSize"))}</div>
     },
     {
         accessorKey: "backupSize",
         header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="w-full justify-end"
-            >
-                Backup Size
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="text-right">
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    className="!p-0 hover:!bg-transparent justify-end"
+                >
+                    Backup Size
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
         ),
-        cell: ({ row }) => <div className="text-right font-mono">{formatBytes(row.getValue("backupSize"))}</div>
+        cell: ({ row }) => <div className="text-right font-mono text-xs">{formatBytes(row.getValue("backupSize"))}</div>
     },
     {
         accessorKey: "dedupRatio",
@@ -114,18 +116,18 @@ export const columns: ColumnDef<VeeamRestorePoint>[] = [
             const dedup = row.original.dedupRatio
             const comp = row.original.compressRatio
             if (!dedup && !comp) return <span className="text-muted-foreground">-</span>;
-            return <div className="text-xs text-muted-foreground">{dedup}% / {comp}%</div>
+            return <div className="text-xs text-muted-foreground whitespace-nowrap">{dedup}% / {comp}%</div>
         }
     },
     {
         accessorKey: "fileName",
         header: "File Name",
-        cell: ({ row }) => <div className="text-xs text-muted-foreground truncate max-w-[200px]" title={row.getValue("fileName") as string}>{row.getValue("fileName") || '-'}</div>
+        cell: ({ row }) => <div className="text-xs text-muted-foreground truncate max-w-[150px]" title={row.getValue("fileName") as string}>{row.getValue("fileName") || '-'}</div>
     },
     {
         accessorKey: "repositoryName",
         header: "Repository",
-        cell: ({ row }) => <div className="text-xs text-muted-foreground truncate max-w-[150px]">{row.getValue("repositoryName") || '-'}</div>
+        cell: ({ row }) => <div className="text-xs text-muted-foreground truncate max-w-[120px]" title={row.getValue("repositoryName") as string}>{row.getValue("repositoryName") || '-'}</div>
     },
 ]
 
@@ -171,7 +173,7 @@ export function VBRRestorePointsTable({ data, loading }: VBRRestorePointsTablePr
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
+                            <TableRow key={headerGroup.id} className="hover:bg-transparent">
                                 {headerGroup.headers.map((header) => (
                                     <TableHead key={header.id}>
                                         {header.isPlaceholder
@@ -185,9 +187,9 @@ export function VBRRestorePointsTable({ data, loading }: VBRRestorePointsTablePr
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="hover:bg-muted/50">
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
+                                        <TableCell key={cell.id} className="py-3">
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}

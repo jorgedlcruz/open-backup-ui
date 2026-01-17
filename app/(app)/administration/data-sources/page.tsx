@@ -181,10 +181,22 @@ function DataSourcesContent() {
             }
         }
 
+        // Also call delete on server to remove from configStore
+        try {
+            await fetch(`/api/auth/${deletingSource.type}`, { method: 'DELETE' })
+        } catch (e) {
+            console.error('Failed to remove from server:', e)
+        }
+
         removeDataSource(deletingSource.id)
         setDeletingSource(null)
         setDeleteDialogOpen(false)
         toast.success("Data source removed")
+
+        // Redirect to /connect if no sources remain
+        if (dataSources.length <= 1) {
+            router.push('/connect')
+        }
     }
 
     const openAuthDialog = (source: DataSource) => {
@@ -398,16 +410,18 @@ function DataSourcesContent() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(Object.keys(platformInfo) as PlatformType[]).map((type) => (
-                                        <SelectItem key={type} value={type}>
-                                            <div className="flex items-center gap-2">
-                                                <span style={{ color: platformInfo[type].color }}>
-                                                    {platformIcons[type]}
-                                                </span>
-                                                <span>{platformInfo[type].name}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
+                                    {(Object.keys(platformInfo) as PlatformType[])
+                                        .filter(type => type !== 'one') // Exclude alias
+                                        .map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                <div className="flex items-center gap-2">
+                                                    <span style={{ color: platformInfo[type].color }}>
+                                                        {platformIcons[type]}
+                                                    </span>
+                                                    <span>{platformInfo[type].name}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -421,7 +435,14 @@ function DataSourcesContent() {
                                     </div>
                                     <Input
                                         className="pl-[4.5rem]"
-                                        placeholder="vbr.example.com"
+                                        placeholder={{
+                                            vbr: 'vbr.example.com',
+                                            vb365: 'vb365.example.com',
+                                            vro: 'vro.example.com',
+                                            'veeam-one': 'vone.example.com',
+                                            one: 'vone.example.com',
+                                            kasten: 'k10.example.com'
+                                        }[newSourceType] || 'server.example.com'}
                                         value={newSourceHostname}
                                         onChange={(e) => setNewSourceHostname(e.target.value)}
                                     />

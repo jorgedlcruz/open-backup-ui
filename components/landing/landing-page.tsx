@@ -736,22 +736,24 @@ export function LandingPage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {(Object.keys(platformInfo) as PlatformType[]).map((type) => {
-                                                const isConfigured = dataSources.some(ds => ds.type === type)
-                                                return (
-                                                    <SelectItem key={type} value={type} disabled={isConfigured}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span style={{ color: platformInfo[type].color }}>
-                                                                {platformIcons[type]}
-                                                            </span>
-                                                            <span>
-                                                                {platformInfo[type].name}
-                                                                {isConfigured && " (Configured)"}
-                                                            </span>
-                                                        </div>
-                                                    </SelectItem>
-                                                )
-                                            })}
+                                            {(Object.keys(platformInfo) as PlatformType[])
+                                                .filter(type => type !== 'one') // Exclude alias
+                                                .map((type) => {
+                                                    const isConfigured = dataSources.some(ds => ds.type === type || (type === 'veeam-one' && ds.type === 'one'))
+                                                    return (
+                                                        <SelectItem key={type} value={type} disabled={isConfigured}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span style={{ color: platformInfo[type].color }}>
+                                                                    {platformIcons[type]}
+                                                                </span>
+                                                                <span>
+                                                                    {platformInfo[type].name}
+                                                                    {isConfigured && " (Configured)"}
+                                                                </span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    )
+                                                })}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -766,7 +768,14 @@ export function LandingPage() {
                                         </div>
                                         <Input
                                             className="h-12 pl-[4.5rem]"
-                                            placeholder="vbr.example.com"
+                                            placeholder={{
+                                                vbr: 'vbr.example.com',
+                                                vb365: 'vb365.example.com',
+                                                vro: 'vro.example.com',
+                                                'veeam-one': 'vone.example.com',
+                                                one: 'vone.example.com',
+                                                kasten: 'k10.example.com'
+                                            }[newSourceType] || 'server.example.com'}
                                             value={newSourceHostname}
                                             onChange={(e) => setNewSourceHostname(e.target.value)}
                                         />
