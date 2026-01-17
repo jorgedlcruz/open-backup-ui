@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -209,6 +209,11 @@ const adminItems = [
     title: "Branding",
     href: "/administration/branding",
     icon: Palette,
+  },
+  {
+    title: "Telemetry",
+    href: "/administration/telemetry",
+    icon: Activity,
   },
   {
     title: "Identity",

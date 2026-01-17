@@ -167,20 +167,20 @@ function RestorePointsContent() {
                     </Link>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">{name || 'Unknown Workload'}</h1>
-                            <p className="text-muted-foreground mt-2 flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <h1 className="text-3xl font-bold tracking-tight">{name || 'Unknown Workload'}</h1>
                                 {workloadDetails?.type && (
-                                    <span className="inline-flex items-center gap-1">
-                                        <MonitorCheck className="h-4 w-4" />
+                                    <Badge variant="outline" className="gap-1.5 font-normal text-muted-foreground py-1">
+                                        <MonitorCheck className="h-3.5 w-3.5" />
                                         {workloadDetails.type}
-                                    </span>
+                                    </Badge>
                                 )}
                                 {workloadDetails?.platform && (
-                                    <span className="text-sm px-2 py-0.5 bg-muted rounded">
+                                    <Badge variant="secondary" className="font-normal py-1">
                                         {workloadDetails.platform}
-                                    </span>
+                                    </Badge>
                                 )}
-                            </p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-1 rounded-md border bg-muted/50 p-1">
                             <Button
@@ -301,7 +301,7 @@ function RestorePointsContent() {
                                                 <Cpu className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                                 <div>
                                                     <p className="text-xs text-muted-foreground font-medium mb-0.5">Guest OS</p>
-                                                    <p className="text-sm font-medium">{guestOs}</p>
+                                                    <p className="text-sm font-mono text-foreground/80">{guestOs}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -379,7 +379,7 @@ function RestorePointsContent() {
                     </div>
 
                     {/* Right Main Area - Snapshots */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 min-w-0">
 
                         {error && (
                             <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg">

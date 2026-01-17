@@ -19,7 +19,9 @@ import {
     EyeOff,
     LayoutGrid,
     Sun,
-    Moon
+    Moon,
+    Activity,
+    CloudOff
 } from "lucide-react"
 import { useDataSources, PlatformType, DataSource, platformInfo } from "@/lib/context/data-sources-context"
 import { Button } from "@/components/ui/button"
@@ -29,6 +31,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { isTelemetryDisabled, enableTelemetry, disableTelemetry } from "@/lib/telemetry"
+import posthog from "posthog-js"
 
 const platformIcons: Record<PlatformType, React.ReactNode> = {
     vbr: <Server className="h-6 w-6" />,
@@ -307,9 +311,13 @@ export function LandingPage() {
     const { dataSources, addDataSource, removeDataSource, updateDataSource, setAuthenticated } = useDataSources()
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
+    const [telemetryEnabled, setTelemetryEnabled] = useState(true)
 
     // After mounting, we have access to the theme
-    useEffect(() => setMounted(true), [])
+    useEffect(() => {
+        setMounted(true)
+        setTelemetryEnabled(!isTelemetryDisabled())
+    }, [])
 
     // UI State
     const [viewMode, setViewMode] = useState<"list" | "add">("list")
@@ -515,31 +523,68 @@ export function LandingPage() {
             {/* Right Form Section (Moved from Left to Right) */}
             <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12 bg-background relative z-10 overflow-hidden">
 
-                {/* Theme Toggle (Top Right) */}
-                <div className="absolute top-8 right-8 z-20">
+                {/* Top Right Controls */}
+                <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
                     {mounted && (
-                        <div className="border rounded-lg p-1 flex items-center gap-1 bg-background/50 backdrop-blur-sm">
-                            <button
-                                onClick={() => setTheme("light")}
-                                className={cn(
-                                    "p-1.5 rounded-md transition-all",
-                                    theme === "light" ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <Sun className="h-4 w-4" />
-                                <span className="sr-only">Light Mode</span>
-                            </button>
-                            <button
-                                onClick={() => setTheme("dark")}
-                                className={cn(
-                                    "p-1.5 rounded-md transition-all",
-                                    theme === "dark" ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                )}
-                            >
-                                <Moon className="h-4 w-4" />
-                                <span className="sr-only">Dark Mode</span>
-                            </button>
-                        </div>
+                        <>
+                            {/* Telemetry Toggle */}
+                            <div className="border rounded-lg p-1 flex items-center gap-1 bg-background/50 backdrop-blur-sm" title="Telemetry Settings">
+                                <button
+                                    onClick={() => {
+                                        enableTelemetry()
+                                        setTelemetryEnabled(true)
+                                        if (posthog) posthog.opt_in_capturing()
+                                    }}
+                                    title="Telemetry Enabled"
+                                    className={cn(
+                                        "p-1.5 rounded-md transition-all",
+                                        telemetryEnabled ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Activity className="h-4 w-4" />
+                                    <span className="sr-only">Enable Telemetry</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        disableTelemetry()
+                                        setTelemetryEnabled(false)
+                                        if (posthog) posthog.opt_out_capturing()
+                                    }}
+                                    title="Telemetry Disabled"
+                                    className={cn(
+                                        "p-1.5 rounded-md transition-all",
+                                        !telemetryEnabled ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <CloudOff className="h-4 w-4" />
+                                    <span className="sr-only">Disable Telemetry</span>
+                                </button>
+                            </div>
+
+                            {/* Theme Toggle */}
+                            <div className="border rounded-lg p-1 flex items-center gap-1 bg-background/50 backdrop-blur-sm">
+                                <button
+                                    onClick={() => setTheme("light")}
+                                    className={cn(
+                                        "p-1.5 rounded-md transition-all",
+                                        theme === "light" ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Sun className="h-4 w-4" />
+                                    <span className="sr-only">Light Mode</span>
+                                </button>
+                                <button
+                                    onClick={() => setTheme("dark")}
+                                    className={cn(
+                                        "p-1.5 rounded-md transition-all",
+                                        theme === "dark" ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <Moon className="h-4 w-4" />
+                                    <span className="sr-only">Dark Mode</span>
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
 
