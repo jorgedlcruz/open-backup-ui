@@ -46,7 +46,10 @@ export async function POST(request: NextRequest) {
         // Get the host from the request headers to build absolute URLs for internal calls
         const headersList = await headers();
         const host = headersList.get('host') || 'localhost:3000';
-        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+
+        // Determine protocol: default to https in production unless running locally
+        const isLocal = host.includes('localhost') || host.includes('127.0.0.1') || host.startsWith('192.168.') || host.startsWith('10.');
+        const protocol = (process.env.NODE_ENV === 'production' && !isLocal) ? 'https' : 'http';
         const baseInternalUrl = `${protocol}://${host}`;
 
         // Forward cookies for authentication
