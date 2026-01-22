@@ -13,7 +13,7 @@
 
 A Next.js 15 application providing a unified monitoring dashboard for data protection environments through an intuitive web interface.
 
-![Open Backup UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/ezgif-668cdc4ebc95a18c.gif)
+![Open Backup UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/open-backup-ui-connect.png)
 
 ## What's New in v0.2.0
 
