@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -211,6 +211,11 @@ const adminItems = [
     icon: Palette,
   },
   {
+    title: "Telemetry",
+    href: "/administration/telemetry",
+    icon: Activity,
+  },
+  {
     title: "Identity",
     icon: UserRoundCog,
     items: [
@@ -267,14 +272,14 @@ export function AppSidebar({
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Image
                   src="/logo.webp"
-                  alt="Veeam Single-UI"
+                  alt="Open Backup UI"
                   width={24}
                   height={24}
                   className="size-4"
                 />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Veeam Single-UI</span>
+                <span className="truncate font-semibold">Open Backup UI</span>
               </div>
             </SidebarMenuButton>
             <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground" />

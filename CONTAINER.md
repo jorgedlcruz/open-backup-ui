@@ -1,6 +1,6 @@
 # Container Deployment Guide
 
-This guide covers building and running Veeam Single-UI as a container using Podman or Docker.
+This guide covers building and running Open Backup UI as a container using Podman or Docker.
 
 ## Prerequisites
 
@@ -11,12 +11,12 @@ This guide covers building and running Veeam Single-UI as a container using Podm
 ## Build the Container
 
 ```bash
-podman build -t veeam-single-ui:latest .
+podman build -t open-backup-ui:latest .
 ```
 
 Or with Docker:
 ```bash
-docker build -t veeam-single-ui:latest .
+docker build -t open-backup-ui:latest .
 ```
 
 ## Run the Container
@@ -25,20 +25,20 @@ docker build -t veeam-single-ui:latest .
 
 ```bash
 podman run -d \
-  --name veeam-single-ui --replace \
+  --name open-backup-ui --replace \
   -p 3000:3000 \
   -e VEEAM_API_URL="https://your-vbr-server:9419" \
   -e VEEAM_USERNAME="your-username" \
   -e VEEAM_PASSWORD="your-password" \
   -e NODE_TLS_REJECT_UNAUTHORIZED=0 \
-  veeam-single-ui:latest
+  open-backup-ui:latest
 ```
 
 ### Full Run with All Products
 
 ```bash
 podman run -d \
-  --name veeam-single-ui --replace \
+  --name open-backup-ui --replace \
   -p 3000:3000 \
   -e VEEAM_API_URL="https://your-vbr-server:9419" \
   -e VEEAM_USERNAME="your-username" \
@@ -50,7 +50,7 @@ podman run -d \
   -e VBM_USERNAME="your-vbm-username" \
   -e VBM_PASSWORD="your-vbm-password" \
   -e NODE_TLS_REJECT_UNAUTHORIZED=0 \
-  veeam-single-ui:latest
+  open-backup-ui:latest
 ```
 
 ## Environment Variables
@@ -106,19 +106,19 @@ NODE_TLS_REJECT_UNAUTHORIZED=0
 Run with environment file:
 ```bash
 podman run -d \
-  --name veeam-single-ui --replace \
+  --name open-backup-ui --replace \
   -p 3000:3000 \
   --env-file .env.local \
-  veeam-single-ui:latest
+  open-backup-ui:latest
 ```
 
 With Docker:
 ```bash
 docker run -d \
-  --name veeam-single-ui --rm \
+  --name open-backup-ui --rm \
   -p 3000:3000 \
   --env-file .env.local \
-  veeam-single-ui:latest
+  open-backup-ui:latest
 ```
 
 **Important Notes:**
@@ -130,22 +130,22 @@ docker run -d \
 
 ### View logs
 ```bash
-podman logs veeam-single-ui
+podman logs open-backup-ui
 ```
 
 ### Stop container
 ```bash
-podman stop veeam-single-ui
+podman stop open-backup-ui
 ```
 
 ### Start container
 ```bash
-podman start veeam-single-ui
+podman start open-backup-ui
 ```
 
 ### Remove container
 ```bash
-podman rm veeam-single-ui
+podman rm open-backup-ui
 ```
 
 ## Access the Application
@@ -159,16 +159,16 @@ Scan the container image for vulnerabilities using Trivy:
 
 ```bash
 # Export image and scan (workaround for podman socket issues)
-podman save localhost/veeam-single-ui:latest -o /tmp/veeam-single-ui.tar
-trivy image --input /tmp/veeam-single-ui.tar
+podman save localhost/open-backup-ui:latest -o /tmp/open-backup-ui.tar
+trivy image --input /tmp/open-backup-ui.tar
 
 # Alternative: Scan directly if podman socket is available
-trivy image localhost/veeam-single-ui:latest
+trivy image localhost/open-backup-ui:latest
 ```
 
 To scan only for vulnerabilities (faster):
 ```bash
-trivy image --scanners vuln --input /tmp/veeam-single-ui.tar
+trivy image --scanners vuln --input /tmp/open-backup-ui.tar
 ```
 
 ## Image Details
@@ -182,7 +182,7 @@ trivy image --scanners vuln --input /tmp/veeam-single-ui.tar
 ## Troubleshooting
 
 ### Container won't start
-1. Check logs: `podman logs veeam-single-ui`
+1. Check logs: `podman logs open-backup-ui`
 2. Verify environment variables are set correctly
 3. Ensure VBR API URL is accessible from container
 4. Check if required environment variables (VEEAM_*) are present
@@ -190,7 +190,7 @@ trivy image --scanners vuln --input /tmp/veeam-single-ui.tar
 ### API connection errors
 1. Verify network connectivity:
    ```bash
-   podman exec veeam-single-ui ping your-vbr-server
+   podman exec open-backup-ui ping your-vbr-server
    ```
 2. Check if `NODE_TLS_REJECT_UNAUTHORIZED=0` is set for self-signed certificates
 3. Verify credentials are correct and have appropriate permissions
@@ -203,7 +203,7 @@ trivy image --scanners vuln --input /tmp/veeam-single-ui.tar
 ### Port conflicts
 If port 3000 is already in use, map to a different port:
 ```bash
-podman run -d --name veeam-single-ui --replace -p 8080:3000 ... veeam-single-ui:latest
+podman run -d --name open-backup-ui --replace -p 8080:3000 ... open-backup-ui:latest
 ```
 Then access at http://localhost:8080
 
@@ -214,22 +214,22 @@ Then access at http://localhost:8080
 4. For VRO, ensure domain prefix is correct (e.g., `DOMAIN\username`)
 
 ### Build failures
-1. Ensure you're in the `veeam-single-ui` directory
+1. Ensure you're in the `open-backup-ui` directory
 2. Check Docker/Podman daemon is running
 3. Verify internet connectivity for npm package downloads
 4. Clear build cache:
    ```bash
-   podman build --no-cache -t veeam-single-ui:latest .
+   podman build --no-cache -t open-backup-ui:latest .
    ```
 
 ### Performance issues
 1. Check container resource limits:
    ```bash
-   podman stats veeam-single-ui
+   podman stats open-backup-ui
    ```
 2. Allocate more resources if needed:
    ```bash
-   podman run -d --name veeam-single-ui --memory=2g --cpus=2 ...
+   podman run -d --name open-backup-ui --memory=2g --cpus=2 ...
    ```
 3. Monitor Veeam API response times
 4. Consider adjusting auto-refresh intervals in the application

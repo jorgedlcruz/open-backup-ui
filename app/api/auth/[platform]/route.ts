@@ -390,15 +390,50 @@ export async function DELETE(
         const config = platformConfigs[platform as Platform]
         const cookieStore = await cookies()
 
-        if (platform === 'vbr') {
-            const sourceId = cookieStore.get('veeam_source_id')?.value;
-            if (sourceId) {
-                configStore.delete(sourceId); // Remove from server store
-            }
-            cookieStore.delete('veeam_source_id');
-            cookieStore.delete('veeam_vbr_token_url');
+        // Determine the source ID cookie name based on platform
+        let sourceIdCookieName: string
+        let urlCookieName: string
+
+        switch (platform) {
+            case 'vbr':
+                sourceIdCookieName = 'veeam_source_id'
+                urlCookieName = 'veeam_vbr_token_url'
+                break
+            case 'vb365':
+                sourceIdCookieName = 'veeam_vb365_source_id'
+                urlCookieName = 'veeam_vb365_token_url'
+                break
+            case 'veeam-one':
+            case 'one':
+                sourceIdCookieName = 'veeam_one_source_id'
+                urlCookieName = 'veeam_one_token_url'
+                break
+            case 'vro':
+                sourceIdCookieName = 'veeam_vro_source_id'
+                urlCookieName = 'veeam_vro_token_url'
+                break
+            default:
+                sourceIdCookieName = `veeam_${platform}_source_id`
+                urlCookieName = `veeam_${platform}_token_url`
         }
 
+        // Remove from server config store
+        const sourceId = cookieStore.get(sourceIdCookieName)?.value
+        if (sourceId) {
+            configStore.delete(sourceId)
+        }
+
+        // Also try to find and delete by platform type from configStore
+        const allSources = configStore.getAll()
+        const platformName = platform === 'veeam-one' ? 'one' : platform
+        const matchingSource = allSources.find(s => s.platform === platformName)
+        if (matchingSource) {
+            configStore.delete(matchingSource.id)
+        }
+
+        // Clear cookies
+        cookieStore.delete(sourceIdCookieName)
+        cookieStore.delete(urlCookieName)
         await deleteChunkedCookie(cookieStore, config.tokenCookie)
         cookieStore.delete(`${config.tokenCookie}_url`)
 

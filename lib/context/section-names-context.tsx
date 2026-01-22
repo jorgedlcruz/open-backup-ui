@@ -25,7 +25,7 @@ interface SectionNamesContextType {
 
 const SectionNamesContext = createContext<SectionNamesContextType | null>(null)
 
-const STORAGE_KEY = "veeam-single-ui-section-names"
+const STORAGE_KEY = "open-backup-ui-section-names"
 
 export function SectionNamesProvider({ children }: { children: React.ReactNode }) {
     const [sectionNames, setSectionNames] = useState<Record<SectionKey, string>>(defaultSectionNames)

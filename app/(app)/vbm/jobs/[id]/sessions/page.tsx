@@ -2,12 +2,12 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { veeamApi } from "@/lib/api/veeam-client"
 import { VBMJobSession } from "@/lib/types/vbm"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, AlertCircle, Clock, Database, Info, Activity } from "lucide-react"
+import { ArrowLeft, AlertCircle, Clock, Database, Info, Activity, ChevronUp, ChevronDown, X } from "lucide-react"
 import Link from "next/link"
 import {
     Table,
@@ -23,6 +23,7 @@ import {
     SheetContent,
     SheetTitle,
 } from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
 
 export default function VBMJobSessionsPage() {
     const params = useParams()
@@ -31,8 +32,9 @@ export default function VBMJobSessionsPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    // Sheet state
+    // Sheet state with index tracking
     const [selectedSession, setSelectedSession] = useState<VBMJobSession | null>(null)
+    const [selectedIndex, setSelectedIndex] = useState<number>(-1)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
 
     useEffect(() => {
@@ -54,10 +56,27 @@ export default function VBMJobSessionsPage() {
         }
     }, [jobId])
 
-    const handleSessionClick = (session: VBMJobSession) => {
+    const handleSessionClick = (session: VBMJobSession, index: number) => {
         setSelectedSession(session)
+        setSelectedIndex(index)
         setIsSheetOpen(true)
     }
+
+    const navigateToPrevious = useCallback(() => {
+        if (selectedIndex > 0) {
+            const newIndex = selectedIndex - 1
+            setSelectedIndex(newIndex)
+            setSelectedSession(sessions[newIndex])
+        }
+    }, [selectedIndex, sessions])
+
+    const navigateToNext = useCallback(() => {
+        if (selectedIndex < sessions.length - 1) {
+            const newIndex = selectedIndex + 1
+            setSelectedIndex(newIndex)
+            setSelectedSession(sessions[newIndex])
+        }
+    }, [selectedIndex, sessions])
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -84,6 +103,16 @@ export default function VBMJobSessionsPage() {
 
     const formatRate = (bytesPerSec: number) => {
         return formatBytes(bytesPerSec) + '/s';
+    }
+
+    const calculateDuration = (startTime?: string, endTime?: string) => {
+        if (!startTime || !endTime) return "N/A"
+        const start = new Date(startTime).getTime()
+        const end = new Date(endTime).getTime()
+        const diff = Math.max(0, end - start)
+        const minutes = Math.floor(diff / 60000)
+        const seconds = Math.floor((diff % 60000) / 1000)
+        return `${minutes}m ${seconds}s`
     }
 
     return (
@@ -141,11 +170,11 @@ export default function VBMJobSessionsPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                sessions.map((session) => (
+                                sessions.map((session, index) => (
                                     <TableRow
                                         key={session.id}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => handleSessionClick(session)}
+                                        className={`cursor-pointer transition-colors ${isSheetOpen && selectedIndex === index ? 'bg-primary/10 hover:bg-primary/15' : 'hover:bg-muted/50'}`}
+                                        onClick={() => handleSessionClick(session, index)}
                                     >
                                         <TableCell>{getStatusBadge(session.status)}</TableCell>
                                         <TableCell>{session.jobType}</TableCell>
@@ -160,16 +189,7 @@ export default function VBMJobSessionsPage() {
                                                 : "-"}
                                         </TableCell>
                                         <TableCell>
-                                            {session.creationTime && session.endTime
-                                                ? (() => {
-                                                    const start = new Date(session.creationTime).getTime()
-                                                    const end = new Date(session.endTime).getTime()
-                                                    const diff = Math.max(0, end - start)
-                                                    const minutes = Math.floor(diff / 60000)
-                                                    const seconds = Math.floor((diff % 60000) / 1000)
-                                                    return `${minutes}m ${seconds}s`
-                                                })()
-                                                : "-"}
+                                            {calculateDuration(session.creationTime, session.endTime)}
                                         </TableCell>
                                         <TableCell>
                                             {session.statistics?.transferredDataBytes
@@ -191,11 +211,52 @@ export default function VBMJobSessionsPage() {
                 <SheetContent className="w-[600px] sm:w-[800px] overflow-y-auto p-0 gap-0 border-l border-border bg-background">
                     {selectedSession && (
                         <div className="flex flex-col h-full">
-                            {/* Header Section */}
+                            {/* Sticky Header with Navigation */}
+                            <div className="sticky top-0 z-10 border-b border-border bg-background p-4">
+                                <div className="flex items-center justify-between gap-2">
+                                    <SheetTitle className="text-lg font-semibold truncate text-left">
+                                        Session {selectedIndex + 1} of {sessions.length}
+                                    </SheetTitle>
+                                    <div className="flex h-7 items-center gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            disabled={selectedIndex <= 0}
+                                            onClick={navigateToPrevious}
+                                        >
+                                            <ChevronUp className="h-5 w-5" />
+                                            <span className="sr-only">Previous</span>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            disabled={selectedIndex >= sessions.length - 1}
+                                            onClick={navigateToNext}
+                                        >
+                                            <ChevronDown className="h-5 w-5" />
+                                            <span className="sr-only">Next</span>
+                                        </Button>
+                                        <Separator orientation="vertical" className="mx-1 h-4" />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                            onClick={() => setIsSheetOpen(false)}
+                                        >
+                                            <X className="h-5 w-5" />
+                                            <span className="sr-only">Close</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Session Info Header */}
                             <div className="p-6 border-b border-border bg-muted/10">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="space-y-1">
-                                        <SheetTitle className="text-xl font-semibold tracking-tight">Session Details</SheetTitle>
+                                        <div className="text-sm font-medium">Session ID</div>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-mono">
                                             <span>{selectedSession.id}</span>
                                         </div>
@@ -209,17 +270,7 @@ export default function VBMJobSessionsPage() {
                                     <div className="space-y-1">
                                         <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Duration</span>
                                         <div className="text-sm font-mono font-medium text-foreground">
-                                            {selectedSession.creationTime && selectedSession.endTime
-                                                ? (() => {
-                                                    const start = new Date(selectedSession.creationTime).getTime()
-                                                    const end = new Date(selectedSession.endTime).getTime()
-                                                    const diff = Math.max(0, end - start)
-                                                    const minutes = Math.floor(diff / 60000)
-                                                    const seconds = Math.floor((diff % 60000) / 1000)
-                                                    return `${minutes}m ${seconds}s`
-                                                })()
-                                                : "N/A"
-                                            }
+                                            {calculateDuration(selectedSession.creationTime, selectedSession.endTime)}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
@@ -246,11 +297,15 @@ export default function VBMJobSessionsPage() {
                                     <div className="px-6 py-3 space-y-3">
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground w-1/3">Start Time</span>
-                                            <span className="font-mono text-foreground text-right">{new Date(selectedSession.creationTime).toLocaleString()}</span>
+                                            <span className="font-mono text-foreground text-right">
+                                                {selectedSession.creationTime ? new Date(selectedSession.creationTime).toLocaleString() : 'N/A'}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground w-1/3">End Time</span>
-                                            <span className="font-mono text-foreground text-right">{selectedSession.endTime ? new Date(selectedSession.endTime).toLocaleString() : 'Running'}</span>
+                                            <span className="font-mono text-foreground text-right">
+                                                {selectedSession.endTime ? new Date(selectedSession.endTime).toLocaleString() : 'Running'}
+                                            </span>
                                         </div>
                                     </div>
                                 </section>

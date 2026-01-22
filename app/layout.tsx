@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope } from "next/font/google";
+import { Geist, Geist_Mono, Manrope, Roboto } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -7,6 +7,7 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import { DEFAULT_THEME } from "@/lib/themes";
 import { cookies, headers } from "next/headers";
 import { cn } from "@/lib/utils";
+import { PostHogProvider } from "@/components/providers/posthog-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,9 +24,23 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Veeam Single-UI",
-  description: "Veeam Backup & Replication Management",
+  title: "Open Backup UI",
+  description: "Unified monitoring dashboard for data protection environments",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default async function RootLayout({
@@ -63,7 +78,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={cn(`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased bg-background group/layout font-sans`)}
+        className={cn(`${geistSans.variable} ${geistMono.variable} ${manrope.variable} ${roboto.variable} antialiased bg-background group/layout font-sans`)}
         data-connect-page={isConnectPage ? "true" : undefined}
         {...bodyAttributes}
       >
@@ -74,8 +89,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <ActiveThemeProvider initialTheme={themeSettings}>
-            {children}
-            <Toaster />
+            <PostHogProvider>
+              {children}
+              <Toaster />
+            </PostHogProvider>
           </ActiveThemeProvider>
         </ThemeProvider>
       </body>

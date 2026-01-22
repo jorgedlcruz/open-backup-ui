@@ -1,4 +1,5 @@
 import { VeeamOneReportTemplate, VeeamOneTag, VeeamOneGridNode, VeeamOneReportParameter } from '@/lib/types/veeam-one';
+import { TriggeredAlarmItem, AlarmHistoryItem, AlarmTemplate, ResolveAlarmRequest, AlarmsApiResponse } from '@/lib/types/veeam-one-alarms';
 import { MOCK_PROTECTED_VMS_SUMMARY, MOCK_PROTECTED_VMS_CHART, MOCK_LAST_BACKUP_AGE_CHART, MOCK_VM_DETAILS_TABLE } from './mock-report-data';
 import { configStore } from "@/lib/server/config-store";
 import process from 'process';
@@ -300,12 +301,18 @@ class VeeamOneClient {
                 throw new Error(`API Request failed: ${response.status} ${path} - ${text}`);
             }
 
-            // Handle 204
+            // Handle 204 or empty response
             if (response.status === 204) {
                 return {} as T;
             }
 
-            return await response.json();
+            // Check for empty body (some APIs return 200 with no content)
+            const text = await response.text();
+            if (!text || text.trim() === '') {
+                return {} as T;
+            }
+
+            return JSON.parse(text) as T;
         } catch (error) {
             console.error(`[VeeamOneClient] Request Error ${path}: `, error);
             throw error;
@@ -600,6 +607,82 @@ class VeeamOneClient {
         } catch (e) {
             console.error("Error fetching report link", e);
             return null;
+        }
+    }
+
+    // --- ALARMS API ---
+
+    async getTriggeredChildAlarms(
+        offset: number = 0,
+        limit: number = 200,
+        filter?: string,
+        groupBy?: string,
+        sort?: string
+    ): Promise<AlarmsApiResponse<TriggeredAlarmItem>> {
+        try {
+            const queryParams = new URLSearchParams({
+                Offset: offset.toString(),
+                Limit: limit.toString()
+            });
+
+            if (filter) queryParams.append('Filter', filter);
+            if (groupBy) queryParams.append('GroupBy', groupBy);
+            if (sort) queryParams.append('Sort', sort);
+
+            return await this.request<AlarmsApiResponse<TriggeredAlarmItem>>(`/api/v2.3/alarms/triggeredChildAlarms?${queryParams.toString()}`);
+        } catch (e) {
+            console.error("Error fetching triggered child alarms", e);
+            return { items: [], totalCount: 0 };
+        }
+    }
+
+    async getTriggeredAlarmsHistory(
+        offset: number = 0,
+        limit: number = 200,
+        filter?: string,
+        groupBy?: string
+    ): Promise<AlarmsApiResponse<AlarmHistoryItem>> {
+        try {
+            const queryParams = new URLSearchParams({
+                Offset: offset.toString(),
+                Limit: limit.toString()
+            });
+
+            if (filter) queryParams.append('Filter', filter);
+            if (groupBy) queryParams.append('GroupBy', groupBy);
+
+            return await this.request<AlarmsApiResponse<AlarmHistoryItem>>(`/api/v2.3/alarms/triggeredAlarmsHistory?${queryParams.toString()}`);
+        } catch (e) {
+            console.error("Error fetching triggered alarms history", e);
+            return { items: [], totalCount: 0 };
+        }
+    }
+
+    async getAlarmTemplate(templateId: number | string): Promise<AlarmTemplate | null> {
+        try {
+            return await this.request<AlarmTemplate>(`/api/v2.3/alarms/templates/${templateId}`);
+        } catch (e) {
+            console.error(`Error fetching alarm template ${templateId}`, e);
+            return null;
+        }
+    }
+
+    async resolveAlarms(childAlarmIds: number[], comment: string = "Resolved via Web UI"): Promise<boolean> {
+        try {
+            const body: ResolveAlarmRequest = {
+                comment,
+                triggeredChildAlarmIds: childAlarmIds,
+                resolveType: 'Resolve'
+            };
+
+            await this.request('/api/v2.3/alarms/triggeredChildAlarms/resolve', {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            return true;
+        } catch (e) {
+            console.error("Error resolving alarms", e);
+            return false;
         }
     }
 }

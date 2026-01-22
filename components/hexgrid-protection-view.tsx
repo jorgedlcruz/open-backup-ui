@@ -26,7 +26,8 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Search, Clock, Server, Monitor, Cloud, HardDrive, Database, Filter, User, Users, Globe, MessageSquare } from "lucide-react"
+import { Search, Clock, Server, Monitor, Cloud, HardDrive, Database, Filter, User, Users, Globe, MessageSquare, ArrowUpRight } from "lucide-react"
+import Link from "next/link"
 
 // =======================================================
 // Color Scheme:
@@ -456,6 +457,17 @@ export function HexGridProtectionView({ data, loading }: HexGridProtectionViewPr
                                     <span className="font-medium">{selectedHex.restorePointsCount}</span>
                                 </div>
                             )}
+                            <div className="pt-2 flex justify-end">
+                                <Link
+                                    href={`/vbr/protected-data/restore-points?objectId=${selectedHex.id}&name=${encodeURIComponent(selectedHex.name)}`}
+                                    passHref
+                                >
+                                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-muted-foreground hover:text-foreground">
+                                        Details
+                                        <ArrowUpRight className="h-3.5 w-3.5" />
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
                     )}
                 </DialogContent>
