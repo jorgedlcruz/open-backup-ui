@@ -14,7 +14,7 @@ if (!fs.existsSync(DATA_DIR)) {
 // --- Encryption Key Management ---
 
 const LEGACY_DEFAULT_KEY = 'default-secure-key-32-chars-long!!';
-const KEY_FILE_PATH = path.join(os.homedir(), '.veeam-single-ui-key');
+const KEY_FILE_PATH = path.join(os.homedir(), '.open-backup-ui-key');
 
 function getEncryptionKey(): string {
     // 1. Prefer Environment Variable (Validation/Override)

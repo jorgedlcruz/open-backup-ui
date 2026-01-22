@@ -31,13 +31,15 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Veeam Single-UI",
-  description: "Veeam Backup & Replication Management",
+  title: "Open Backup UI",
+  description: "Unified monitoring dashboard for data protection environments",
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/favicon.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 

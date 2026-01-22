@@ -41,7 +41,7 @@ interface DataSourcesContextType {
 
 const DataSourcesContext = createContext<DataSourcesContextType | null>(null)
 
-const STORAGE_KEY = "veeam-single-ui-data-sources"
+const STORAGE_KEY = "open-backup-ui-data-sources"
 
 // Generate unique ID
 function generateId(): string {

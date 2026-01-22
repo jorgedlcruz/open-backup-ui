@@ -272,14 +272,14 @@ export function AppSidebar({
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Image
                   src="/logo.webp"
-                  alt="Veeam Single-UI"
+                  alt="Open Backup UI"
                   width={24}
                   height={24}
                   className="size-4"
                 />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Veeam Single-UI</span>
+                <span className="truncate font-semibold">Open Backup UI</span>
               </div>
             </SidebarMenuButton>
             <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground" />

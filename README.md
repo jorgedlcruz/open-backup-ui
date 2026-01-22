@@ -1,162 +1,156 @@
-# Veeam Single-UI
+# Open Backup UI
 
 > [!IMPORTANT]
 > **Disclaimer (community project, not supported)**
 >
-> This repository is an independent, community-maintained project and **is not an official Veeam product**.
-> It is **not supported by Veeam Support** and there are **no SLAs**. Use at your own risk and test in a lab environment first.
+> This repository is an independent, community-maintained project and **is not an official product of any vendor**.
+> It is provided **as-is**, with **no support obligations** and **no SLAs**. Use at your own risk and test in a lab environment first.
 >
-> This project is **not affiliated with, endorsed by, or sponsored by Veeam Software**.
-> “Veeam” and other Veeam marks are trademarks of Veeam Software. This repository uses publicly documented product APIs and makes no claim to any Veeam intellectual property.
+> This project is **not affiliated with, endorsed by, or sponsored by any vendor**.
+> Any vendor and product names referenced in this repository are used **for identification purposes only** and may be trademarks of their respective owners. No trademark rights are granted by this repository.
 >
 > **Security note:** Do not use this project against production systems unless you have reviewed the code and your security team has approved it. Do not upload logs, screenshots, or configuration files that contain credentials or customer data.
 
-A Next.js 15 application providing a unified monitoring dashboard for Veeam Data Protection products through an intuitive web interface.
+A Next.js 15 application providing a unified monitoring dashboard for data protection environments through an intuitive web interface.
 
-![Veeam Single-UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/ezgif-668cdc4ebc95a18c.gif)
+![Open Backup UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/ezgif-668cdc4ebc95a18c.gif)
 
 ## What's New in v0.2.0
 
-### 🚀 Redesigned Authentication Experience
-- **New Landing Page**: Beautiful onboarding experience with animated feature carousel
-- **Dynamic Credentials**: Add and manage data sources directly from the UI—no `.env` files required!
-- **Auto-Connect**: Credentials are securely stored and encrypted; just click "Connect" on subsequent visits
-- **Multi-Source Support**: Connect VBR, VB365, Veeam ONE, and VRO from a single interface
+### Redesigned authentication experience
+- **New landing page**: Onboarding experience with animated feature carousel
+- **Dynamic credentials**: Add and manage data sources directly from the UI, no `.env` files required
+- **Auto-connect**: Credentials are stored locally (encrypted); click **Connect** on subsequent visits
+- **Multi-source support**: Connect multiple platforms from a single interface
 
-### 🛠️ Data Sources Management
-- **Administration > Data Sources**: New dedicated page to view, add, edit, and remove data sources
-- **Real-time Status**: See connection status (Connected/Ready/Setup) at a glance
-- **Platform Types**: Full support for VBR, VB365, Veeam ONE, VRO, and Kasten K10
+### Data sources management
+- **Administration > Data Sources**: View, add, edit, and remove data sources
+- **Real-time status**: See connection status (Connected/Ready/Setup) at a glance
+- **Platform types**: Multi-platform support (see Compatibility)
 
-### 📊 Veeam ONE Integration
-- **Report Catalog**: Browse and run Veeam ONE reports directly from the UI
-- **Saved Reports**: Access previously generated reports
-- **Dynamic Configuration**: Veeam ONE credentials persist and auto-connect like VBR/VB365
+### Monitoring and reporting integration
+- **Report catalog**: Browse and run reporting endpoints directly from the UI
+- **Saved reports**: Access previously generated reports
+- **Dynamic configuration**: Persisted credentials and auto-connect across supported platforms
 
 ---
 
 ## Features
 
-### Veeam Backup & Replication (VBR)
+### Backup platform monitoring (REST API)
+#### Dashboard view
+- **Security posture and best practices**: Simplified top-level widget for immediate visibility
+- **Transferred data widget**: Visual representation of data transfer rates over time
+- **Real-time statistics**: Active jobs, success rate, storage usage, protected workloads, and data processed
+- **Malware events**: Recent scan events and alerts (when available)
+- **Recent sessions**: Overview of the latest sessions with status and details
+  - **Time range dropdown**: 7-day, 14-day, and 30-day views
+  - **Export capability**: Export filtered session data to CSV or JSON
+  - **Type filtering**: Default filtering to backup job sessions for clarity
 
-#### Dashboard View
-- **Security Score & Best Practices**: Simplified top-level widget for immediate security posture visibility
-- **Transferred Data Widget**: Visual representation of data transfer rates over time
-- **Real-time Statistics**: Active jobs, success rate, storage usage, protected VMs, and data processed
-- **Malware Detection**: Recent malware scan events and alerts
-- **Recent Sessions**: Overview of the latest backup sessions with status and details
-  - **Time Range Dropdown**: Quick selection for 7-day, 14-day, and 30-day views
-  - **Export Capability**: Export filtered session data to CSV or JSON format
-  - **Type Filtering**: Auto-filters to "BackupJob" type for clarity
+#### Jobs management
+- **Comprehensive jobs table**: All jobs with status, type, and schedule information
+- **Advanced filtering**: Filter by job status (Running, Success, Warning, Failed)
+- **Job details**: Click any job to view detailed session history
+- **Search capability**: Quick search across job names
+- **Last/next run tracking**: See when jobs last ran and when they will run next
 
-#### Jobs Management
-- **Comprehensive Jobs Table**: All backup jobs with status, type, and schedule information
-- **Advanced Filtering**: Filter by job status (Running, Success, Warning, Failed)
-- **Job Details**: Click any job to view detailed session history
-- **Search Capability**: Quick search across all job names
-- **Last/Next Run Tracking**: See when jobs last ran and when they'll run next
+#### Job details view
+- **Enhanced session history**: Complete history with default filtering for backup jobs
+- **Unified filtering**: Filters apply to both the transfer rate chart and the sessions grid
+- **Task-level breakdown**: Detailed task information for each session
+- **Transfer rates**: Visual representation of transfer rates over time
+- **Session status**: Success, Warning, Failed, and Running session tracking
+- **Time-based filtering**: Filter sessions by time range
 
-#### Job Details View
-- **Enhanced Session History**: Complete history with default filtering for Backup Jobs
-- **Unified Filtering**: Filters apply to both the transfer rate chart and the sessions grid
-- **Task-Level Breakdown**: Detailed task information for each session
-- **Transfer Rates**: Visual representation of backup transfer rates over time
-- **Session Status**: Success, Warning, Failed, and Running session tracking
-- **Time-based Filtering**: Filter sessions by time range
-
-#### Backup Infrastructure
-- **Backup Proxies**:
-  - **Performance Monitoring**: Track concurrent tasks
+#### Backup infrastructure
+- **Backup proxies**:
+  - **Performance monitoring**: Track concurrent tasks
   - **Configuration**: View transport modes, OS type, and details
-  - **Status**: Visual health indicators (Online/Offline) and maintenance mode status
-- **Backup Repositories**:
-  - **Capacity Planning**: Visual capacity bars showing Used vs Free space
-  - **Type Support**: Windows, Linux, NFS, SMB, and Object Storage repository support
+  - **Status**: Health indicators (Online/Offline) and maintenance mode status
+- **Backup repositories**:
+  - **Capacity planning**: Visual capacity bars showing Used vs Free space
+  - **Type support**: Windows, Linux, NFS, SMB, and object storage repository support
   - **Properties**: Monitor immutability settings, task limits, and overall health
-- **Managed Servers**:
-  - **Infrastructure Overview**: View all managed backup infrastructure servers
-  - **Server Details**: Name, type, description, and version information
+- **Managed servers**:
+  - **Infrastructure overview**: View managed infrastructure servers
+  - **Server details**: Name, type, description, and version information
 
-#### Inventory Management
-- **Virtual Infrastructure**:
+#### Inventory management
+- **Virtual infrastructure**:
   - Complete view of VMware vSphere, Microsoft Hyper-V, and Nutanix AHV virtual machines
-  - **Protection Status**: Instantly identify protected vs. unprotected VMs with visual indicators
-  - **Rich Metadata**: Access detailed info including vCenter, Datacenter, Cluster, Guest OS, and DNS names
-  - **Advanced Filtering**: Faceted filtering by protection status, platform, and state
-- **Protected Data**: 
-  - **Rich Grid View**: Detailed list of all protected workloads with sortable columns
-  - **HexGrid Visualization**: Toggleable hexagonal protection map with RPO-based coloring
-    - Green (Protected within RPO), Orange (Unprotected/Outside RPO)
+  - **Protection status**: Identify protected vs unprotected VMs with indicators
+  - **Rich metadata**: vCenter, datacenter, cluster, guest OS, and DNS names
+  - **Advanced filtering**: Faceted filtering by protection status, platform, and state
+- **Protected data**:
+  - **Rich grid view**: Detailed list of protected workloads with sortable columns
+  - **HexGrid visualization**: Toggleable hexagonal protection map with RPO-based coloring
+    - Green (protected within RPO), Orange (unprotected or outside RPO)
     - Hover effects and click-to-detail dialog
-    - Filters by type and status with search capability
-  - **Calendar View**: Toggleable monthly calendar view for restore points visualization
-  - **Restore Points**: Deep dive into restore points with derived type (Full/Incremental) and size data
-- **Physical & Cloud Infrastructure**:
-  - **Protection Groups**: Monitor physical agent deployment and status
-  - **Discovered Entities**: Track individual machines/cloud instances with agent status
-  - **Agent Health**: Last connection time, version, and operation mode tracking
-- **Unstructured Data**:
-  - **File Shares**: Monitor protected file servers and NAS devices
-  - **Object Storage**: Track object storage repositories and credential mappings
-  - **IO Control**: View processing limits and configurations
+    - Filters by type and status with search
+  - **Calendar view**: Monthly calendar view for restore point visualization
+  - **Restore points**: Deep dive into restore points with derived type (Full/Incremental) and size data
+- **Physical and cloud infrastructure**:
+  - **Protection groups**: Monitor agent deployment and status
+  - **Discovered entities**: Track individual machines or cloud instances with agent status
+  - **Agent health**: Last connection time, version, and operation mode tracking
+- **Unstructured data**:
+  - **File shares**: Monitor protected file servers and NAS devices
+  - **Object storage**: Track object storage repositories and credential mappings
+  - **IO control**: View processing limits and configurations
 
-### Veeam Recovery Orchestrator (VRO)
-- **Recovery Plans Table**: Overview of all orchestration plans
-- **Plan Status**: Monitor plan state and configuration
-- **Plan Details**: Name, description, and VM counts
-- **Search and Filter**: Quick access to specific recovery plans
+### Orchestration platform monitoring (REST API)
+- **Plans table**: Overview of orchestration plans
+- **Plan status**: Monitor plan state and configuration
+- **Plan details**: Name, description, and workload counts
+- **Search and filter**: Quick access to specific plans
 
-### Veeam Backup for Microsoft 365 (VBM)
-- **Dashboard**: M365 specific statistics and session overview (auto-filtered to "Backup" type)
-- **Microsoft 365 Jobs**: Monitor all M365 backup jobs
-- **Job Status Tracking**: Success, warning, and failure states
-- **Job Type Support**: Multiple M365 job types and configurations
-- **Calendar View**: Interactive calendar for visualizing restore points availability
-- **Organizations**: Track multiple M365 organizations and their storage usage
-- **Backup Infrastructure**:
-  - **Backup Proxies**: Status, CPU/Memory usage, version, roles, and actions (rescan, maintenance mode)
-  - **Backup Repositories**: Capacity visualization, retention settings, immutability, encryption status
+### SaaS backup platform monitoring (REST API)
+- **Dashboard**: Platform-specific statistics and session overview (default filtering to backup sessions)
+- **Jobs**: Monitor jobs, history, and status
+- **Calendar view**: Visualize restore points availability
+- **Organizations/tenants**: Track organizations and their storage usage
+- **Backup infrastructure**:
+  - **Proxies**: Status, CPU/Memory usage, version, roles, and actions (when available)
+  - **Repositories**: Capacity visualization, retention settings, immutability, encryption status (when available)
 
-### Administration & Branding
-- **Data Sources** (NEW in v0.2.0):
-  - **Centralized Management**: Add, edit, and remove Veeam data sources from the UI
-  - **Multi-Platform**: VBR, VB365, Veeam ONE, VRO, and Kasten K10 support
-  - **Connection Status**: Real-time status indicators (Connected/Ready/Setup)
-  - **Secure Storage**: Credentials encrypted using AES-256 and stored locally
-  - **Auto-Connect**: One-click re-authentication for stored credentials
-- **Licensing**: 
-  - **Tabbed Interface**: Toggle between VBR and VB365 license views
-  - **VBR License**: Detailed license report generation with PDF/HTML download
-  - **VB365 License**: Licensed users table with revoke capability
-  - **Instance and Capacity Usage**: Breakdown by workload type
-  - **PDF Report Generation**: Download license overview reports
-- **Theme Customizer**:
-  - **Color Presets**: Blue, Green, Orange, Red, Violet, Yellow, and Default
-  - **Radius Control**: Adjust UI corner roundness (0 to 1.0rem)
+### Administration
+- **Data sources**:
+  - **Centralized management**: Add, edit, and remove data sources from the UI
+  - **Multi-platform**: Multiple vendor platforms supported (see Compatibility)
+  - **Connection status**: Real-time status indicators (Connected/Ready/Setup)
+  - **Secure storage**: Credentials encrypted using AES-256 and stored locally
+  - **Auto-connect**: One-click re-authentication for stored credentials
+- **Licensing**:
+  - **Tabbed interface**: Toggle between supported platforms
+  - **License overview**: Detailed reporting with PDF/HTML download (where APIs allow)
+  - **Usage breakdown**: Breakdown by workload type (where APIs allow)
+- **Theme customizer**:
+  - **Color presets**: Blue, Green, Orange, Red, Violet, Yellow, and Default
+  - **Radius control**: Adjust UI corner roundness (0 to 1.0rem)
   - **Scaling**: Adjust font and element scaling (90% to 110%)
-  - **Mode**: Seamless Dark/Light mode switching
-  - **Cookie Persistence**: Theme settings persist across sessions via server-side cookies
-- **Identity Management**:
-  - **User Directory**: View and filter users with metadata
-- **Security Settings**:
-  - **MFA Enforcement**: Toggle with real-time API sync
-  - **Service Accounts**: Per-user management with role assignment
-  - **RBAC Roles**: View and manage role-based permissions
+  - **Mode**: Dark/Light mode switching
+  - **Cookie persistence**: Theme settings persist across sessions via server-side cookies
+- **Identity management**:
+  - **User directory**: View and filter users with metadata (where APIs allow)
+- **Security settings**:
+  - **MFA enforcement**: Toggle with real-time API sync (where APIs allow)
+  - **Service accounts**: Per-user management with role assignment (where APIs allow)
+  - **RBAC roles**: View and manage role-based permissions (where APIs allow)
 
-### Kasten K10
-- **Coming Soon**: Kubernetes backup platform monitoring
+### Kubernetes platform
+- **Coming soon**: Kubernetes backup platform monitoring
 
-### General Features
-- **Real-time Updates**: Automatic 30-second data refresh across all views
-- **Unified Global Search**: Search across all backup jobs and recovery plans from any page
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Secure API Proxy**: Server-side API calls protect credentials from client exposure
-- **Interactive Visualizations**: Charts and graphs using Recharts library
-- **Data Tables**: Sortable, filterable tables with TanStack Table
-  - **Standardized Headers**: Consistent column toggle and search across all tables
-  - **Column Visibility**: Hide/show columns via dropdown menu
-- **Toast Notifications**: User-friendly error and success messages
-- **Environment-Based Visibility**: VBM, VRO sections auto-hide when not configured
+### General features
+- **Real-time updates**: Automatic 30-second data refresh across supported views
+- **Unified global search**: Search across jobs and plans from any page
+- **Responsive design**: Optimized for desktop, tablet, and mobile devices
+- **Secure API proxy**: Server-side API calls protect credentials from client exposure
+- **Interactive visualizations**: Charts and graphs using Recharts
+- **Data tables**: Sortable, filterable tables with TanStack Table
+  - **Standardized headers**: Consistent column toggle and search across tables
+  - **Column visibility**: Hide/show columns via dropdown menu
+- **Toast notifications**: Error and success messages
 
 ## Getting Started
 

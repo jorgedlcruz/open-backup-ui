@@ -598,7 +598,7 @@ export function LandingPage() {
                         {/* Header Row */}
                         <div className="flex items-center gap-3 mb-6 pt-4">
                             <Shield className="h-7 w-7 text-[#00b336]" />
-                            <span className="text-lg font-bold">Veeam Single-UI</span>
+                            <span className="text-lg font-bold">Open Backup UI</span>
                         </div>
 
                         {/* Title + Actions Row */}
