@@ -40,9 +40,19 @@ export function VirtualMachineSelector({ platform, selectedVMs, onSelectionChang
 
             const items = await veeamApi.getInventory({ nameFilter: query })
 
+            // Build platform aliases so 'vmware' matches items with platform='vSphere', etc.
+            const platformAliases: Record<string, string[]> = {
+                vmware: ['vsphere', 'vmware', 'vcenter'],
+                hyperv: ['hyperv', 'hyper-v', 'scvmm'],
+            }
+            const normalizedPlatform = platform?.toLowerCase()
+            const allowedPlatforms = normalizedPlatform
+                ? (platformAliases[normalizedPlatform] ?? [normalizedPlatform])
+                : null
+
             setInventory(items.filter(i =>
                 ['VirtualMachine', 'VirtualApp', 'ResourcePool', 'HostSystem', 'ClusterComputeResource', 'Datacenter', 'Folder'].includes(i.type) &&
-                (!platform || !i.platform || i.platform.toLowerCase() === platform.toLowerCase())
+                (!allowedPlatforms || !i.platform || allowedPlatforms.some(p => i.platform.toLowerCase().includes(p)))
             ))
 
         } catch (err) {
