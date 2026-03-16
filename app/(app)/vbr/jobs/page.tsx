@@ -38,11 +38,13 @@ export default function VBRJobsPage() {
     return (
         <div className="flex-1 overflow-auto">
             <div className="container mx-auto py-8 px-4">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold tracking-tight">Veeam Backup Jobs</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Monitor and manage your backup jobs
-                    </p>
+                <div className="mb-6 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Veeam Backup Jobs</h1>
+                        <p className="text-muted-foreground mt-2">
+                            Monitor and manage your backup jobs
+                        </p>
+                    </div>
                 </div>
 
                 {error && (

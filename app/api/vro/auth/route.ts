@@ -3,6 +3,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const VRO_API_URL = process.env.VRO_API_URL;
 const VRO_USERNAME = process.env.VRO_USERNAME;
 const VRO_PASSWORD = process.env.VRO_PASSWORD;

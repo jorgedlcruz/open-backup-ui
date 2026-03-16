@@ -6,6 +6,8 @@ import { cookies } from 'next/headers';
 import { getChunkedCookie } from '@/lib/utils/cookie-manager';
 import { tokenManager } from '@/lib/server/token-manager';
 
+export const dynamic = 'force-dynamic';
+
 const API_BASE_URL = process.env.VEEAM_API_URL;
 const API_USERNAME = process.env.VEEAM_USERNAME;
 const API_PASSWORD = process.env.VEEAM_PASSWORD;

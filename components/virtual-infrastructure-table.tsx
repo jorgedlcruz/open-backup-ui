@@ -115,6 +115,18 @@ export function VirtualInfrastructureTable() {
         fetchData()
     }, [fetchData])
 
+    const handleQuickBackup = React.useCallback(async (item: VeeamInventoryItem) => {
+        try {
+            toast.promise(veeamApi.quickBackupVSphere(item), {
+                loading: 'Initiating Quick Backup...',
+                success: 'Quick Backup initiated successfully',
+                error: (err) => `Failed to initiate Quick Backup: ${err.message || 'Unknown error'}`
+            });
+        } catch (error) {
+            console.error("Quick backup trigger failed:", error);
+        }
+    }, [])
+
     const columns = React.useMemo<ColumnDef<VeeamInventoryItem>[]>(() => [
         {
             accessorKey: "name",
@@ -274,7 +286,10 @@ export function VirtualInfrastructureTable() {
             id: "actions",
             enableHiding: false,
             cell: ({ row }) => {
-                const item = row.original
+                const item = row.original;
+                // Identify VMware VMs by ensuring it's a VirtualMachine and not explicitly Hyper-V
+                const isVmware = item.type === "VirtualMachine" &&
+                    !item.urn?.toLowerCase().includes('hyperv');
 
                 return (
                     <DropdownMenu>
@@ -286,6 +301,11 @@ export function VirtualInfrastructureTable() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            {isVmware && (
+                                <DropdownMenuItem onClick={() => handleQuickBackup(item)}>
+                                    Quick Backup
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.objectId)}>
                                 Copy Object ID
                             </DropdownMenuItem>
@@ -294,9 +314,10 @@ export function VirtualInfrastructureTable() {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                )
+                );
             },
-        },
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     ], [datacenterMap, clusterMap, protectedIds])
 
     const table = useReactTable({

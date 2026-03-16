@@ -35,6 +35,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { VeeamBackupJob } from "@/lib/types/veeam"
 import { veeamApi } from "@/lib/api/veeam-client"
@@ -48,7 +52,23 @@ import {
   HelpCircle,
   MoreHorizontal,
   Columns,
-  ArrowUpDown
+  ArrowUpDown,
+  PlusIcon,
+  Monitor,
+  Server,
+  Cloud,
+  File,
+  Copy,
+  RefreshCw,
+  FolderOpen,
+  Filter,
+  MonitorCheck,
+  Building,
+  HardDrive,
+  Laptop,
+  Terminal,
+  LayoutGrid,
+  Database
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -293,7 +313,10 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
           try {
             switch (action) {
               case 'start':
-                await veeamApi.startJob(job.id);
+                const startPayload = job.type === 'BackupCopy'
+                  ? { performActiveFull: false, startChainedJobs: false, syncRestorePoints: "Latest" }
+                  : undefined;
+                await veeamApi.startJob(job.id, startPayload);
                 toast.success('Job started successfully');
                 break;
               case 'stop':
@@ -397,6 +420,217 @@ export function BackupJobsTable({ data, loading = false, onRefresh }: BackupJobs
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Create Job
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <HardDrive className="mr-2 h-4 w-4 text-green-600" />
+                  <span>Backup</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-56">
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Server className="mr-2 h-4 w-4 text-green-600" />
+                        <span>Virtual machine...</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem asChild>
+                            <Link href="/vbr/jobs/create" className="cursor-pointer w-full flex items-center">
+                              <Server className="mr-2 h-4 w-4 text-blue-500" />
+                              <span className="ml-2">VMware vSphere</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/vbr/jobs/create?platform=hyperv" className="cursor-pointer w-full flex items-center">
+                              <Server className="mr-2 h-4 w-4 text-blue-500" />
+                              <span className="ml-2">Microsoft Hyper-V</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuItem disabled>
+                      <Monitor className="mr-2 h-4 w-4 text-orange-500" />
+                      Windows computer...
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      <Terminal className="mr-2 h-4 w-4 text-yellow-500" />
+                      Linux computer...
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      <Laptop className="mr-2 h-4 w-4 text-gray-500" />
+                      Mac computer...
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      <Terminal className="mr-2 h-4 w-4 text-green-800" />
+                      Unix computer...
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <LayoutGrid className="mr-2 h-4 w-4 text-gray-400" />
+                        <span>Application</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem disabled>Oracle Database</DropdownMenuItem>
+                          <DropdownMenuItem disabled>SAP HANA</DropdownMenuItem>
+                          <DropdownMenuItem disabled>Microsoft SQL Server</DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuItem disabled>
+                      <LayoutGrid className="mr-2 h-4 w-4 text-green-500" />
+                      Object storage...
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      <FolderOpen className="mr-2 h-4 w-4 text-gray-500" />
+                      File share...
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Building className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>Microsoft Entra ID...</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem asChild>
+                            <Link href="/vbr/jobs/create-entraid?type=tenant" className="cursor-pointer">
+                              Tenant
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/vbr/jobs/create-entraid?type=audit" className="cursor-pointer">
+                              Logs
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Cloud className="mr-2 h-4 w-4 text-orange-400" />
+                        <span>AWS</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent className="w-48">
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <Server className="mr-2 h-4 w-4 text-orange-400" />
+                              <span>EC2</span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem disabled>EC2...</DropdownMenuItem>
+                                <DropdownMenuItem disabled>EC2 SLA-Based...</DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                          <DropdownMenuItem disabled><Database className="mr-2 h-4 w-4 text-blue-400" /> RDS...</DropdownMenuItem>
+                          <DropdownMenuItem disabled><HardDrive className="mr-2 h-4 w-4 text-green-400" /> EFS...</DropdownMenuItem>
+                          <DropdownMenuItem disabled><Database className="mr-2 h-4 w-4 text-purple-400" /> DynamoDB...</DropdownMenuItem>
+                          <DropdownMenuItem disabled><HardDrive className="mr-2 h-4 w-4 text-green-500" /> FSx...</DropdownMenuItem>
+                          <DropdownMenuItem disabled><Database className="mr-2 h-4 w-4 text-red-500" /> Redshift...</DropdownMenuItem>
+                          <DropdownMenuItem disabled><Database className="mr-2 h-4 w-4 text-red-400" /> Redshift Serverless...</DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Cloud className="mr-2 h-4 w-4 text-blue-600" />
+                        <span>Microsoft Azure</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem disabled>Virtual machine...</DropdownMenuItem>
+                          <DropdownMenuItem disabled>SQL databases...</DropdownMenuItem>
+                          <DropdownMenuItem disabled>Azure files...</DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Copy className="mr-2 h-4 w-4 text-green-500" />
+                  <span>Replication</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem disabled><Server className="mr-2 h-4 w-4 text-blue-500" /> VMware vSphere</DropdownMenuItem>
+                    <DropdownMenuItem disabled><Server className="mr-2 h-4 w-4 text-blue-500" /> Microsoft Hyper-V</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <RefreshCw className="mr-2 h-4 w-4 text-green-500" />
+                  <span>CDP policy</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem disabled><Server className="mr-2 h-4 w-4 text-blue-500" /> VMware vSphere</DropdownMenuItem>
+                    <DropdownMenuItem disabled><RefreshCw className="mr-2 h-4 w-4 text-green-500" /> Universal CDP</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem disabled>
+                <MonitorCheck className="mr-2 h-4 w-4 text-green-500" />
+                SureBackup...
+              </DropdownMenuItem>
+
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Copy className="mr-2 h-4 w-4 text-green-500" />
+                  <span>Backup copy...</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem asChild>
+                      <Link href="/vbr/jobs/create-backup-copy" className="cursor-pointer">Image-level backup</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>Storage copy</DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuItem disabled>
+                <Copy className="mr-2 h-4 w-4 text-gray-500" />
+                VM copy...
+              </DropdownMenuItem>
+
+              <DropdownMenuItem disabled>
+                <File className="mr-2 h-4 w-4 text-green-500" />
+                File copy...
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem disabled>
+                <Filter className="mr-2 h-4 w-4 text-green-500" />
+                Add view...
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Input
             placeholder="Filter jobs..."
             value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}

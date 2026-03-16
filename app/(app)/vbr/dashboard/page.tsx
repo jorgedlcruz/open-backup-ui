@@ -57,7 +57,7 @@ export default function VBRPage() {
             const [
                 jobsData,
                 sessionsData,
-                reposData,
+                serverInfoData,
                 licenseData,
                 malwareData,
                 securityData
@@ -69,8 +69,7 @@ export default function VBRPage() {
                     orderAsc: false,
                     createdAfterFilter: fromDate.toISOString()
                 }),
-                // veeamApi.getRepositories(),
-                fetch('/api/vbr/ServerInfo').then(res => res.json()),
+                veeamApi.getServerInfo(),
                 veeamApi.getLicenseInfo(),
                 veeamApi.getMalwareEvents({ limit: 10 }),
                 veeamApi.getSecurityBestPractices()
@@ -78,8 +77,7 @@ export default function VBRPage() {
 
             setJobs(jobsData)
             setSessions(sessionsData)
-            // setRepositories(reposData)
-            setServerInfo(reposData) // ServerInfo logic seems mixed up in original code? using reposData variable for serverInfo fetch result. Keeping consistent strictly with what I see.
+            setServerInfo(serverInfoData)
             setLicense(licenseData)
             setMalwareEvents(malwareData)
             setSecurityItems(securityData)

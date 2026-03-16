@@ -3,6 +3,8 @@ import { cookies } from "next/headers"
 import { getChunkedCookie, deleteChunkedCookie } from "@/lib/utils/cookie-manager"
 import { configStore } from "@/lib/server/config-store"
 
+export const dynamic = 'force-dynamic';
+
 const platformTokenCookies = {
     vbr: "veeam_vbr_token",
     vb365: "veeam_vb365_token",
