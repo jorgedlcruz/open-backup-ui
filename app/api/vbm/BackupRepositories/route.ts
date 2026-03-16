@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { getVB365Config, refreshVB365Token } from '@/lib/server/vb365-helper';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     try {
         const config = await getVB365Config();

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
 
         const fullUrl = `${baseUrl}/api/v1/serverInfo`;
         let response = await fetch(fullUrl, {
+            cache: 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
             const newToken = await tokenManager.refreshToken(sourceId);
             if (newToken) {
                 response = await fetch(fullUrl, {
+                    cache: 'no-store',
                     headers: {
                         'Authorization': `Bearer ${newToken}`,
                         'Accept': 'application/json',

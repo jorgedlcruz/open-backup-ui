@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { veeamOneClient } from '@/lib/api/veeam-one-client'
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
     try {
         const { taskId, sectionId, sessionId, resourceId } = await request.json()

@@ -134,7 +134,7 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { action } = body; // 'start', 'stop', 'retry', 'disable', 'enable'
+    const { action, requestPayload } = body; // accept optional requestPayload
 
     if (!action || !['start', 'stop', 'retry', 'disable', 'enable'].includes(action)) {
       return NextResponse.json(
@@ -152,6 +152,8 @@ export async function POST(
         'Accept': 'application/json',
         'x-api-version': '1.3-rev1',
       },
+      // Pass the payload if it exists
+      body: requestPayload ? JSON.stringify(requestPayload) : undefined
     });
 
     // Auto-refresh mechanism
@@ -167,6 +169,7 @@ export async function POST(
             'Accept': 'application/json',
             'x-api-version': '1.3-rev1',
           },
+          body: requestPayload ? JSON.stringify(requestPayload) : undefined
         });
       }
     }

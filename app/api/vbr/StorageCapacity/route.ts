@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
 import { VeeamBackupFile } from '@/lib/types/veeam';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest) {
 
         // 1. Fetch Backups directly
         let backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
+            cache: 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
@@ -51,6 +54,7 @@ export async function GET(request: NextRequest) {
             if (newToken) {
                 token = newToken; // Update local token variable used for subsequent calls
                 backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
+                    cache: 'no-store',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json',
@@ -71,6 +75,7 @@ export async function GET(request: NextRequest) {
                 // Determine token to use (in case it was refreshed)
                 const currentToken = token as string;
                 const filesRes = await fetch(`${baseUrl}/api/v1/backups/${backup.id}/backupFiles?limit=500`, {
+                    cache: 'no-store',
                     headers: {
                         'Authorization': `Bearer ${currentToken}`,
                         'Accept': 'application/json',

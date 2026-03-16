@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -88,6 +90,100 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching backup jobs:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to fetch backup jobs' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const sourceId = cookieStore.get('veeam_source_id')?.value;
+    const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
+    const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+
+    if (!baseUrl && !sourceId) {
+      return NextResponse.json(
+        { error: 'Server configuration error: No configured Data Source' },
+        { status: 500 }
+      );
+    }
+
+    let token: string | null = null;
+    if (sourceId) {
+      token = await tokenManager.getToken(sourceId);
+    }
+
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authorization required' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const apiVersion = request.headers.get('x-api-version') || '1.3-rev1';
+    const fullUrl = `${baseUrl}/api/v1/jobs`;
+
+    let response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-api-version': apiVersion,
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 401 && sourceId) {
+      console.log('[JOBS] 401 received on POST, refreshing token...');
+      const newToken = await tokenManager.refreshToken(sourceId);
+      if (newToken) {
+        response = await fetch(fullUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${newToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'x-api-version': apiVersion,
+          },
+          body: JSON.stringify(body)
+        });
+      }
+    }
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: await response.text() };
+      }
+      console.error("[JOB CREATION] 400 Bad Request returned by Veeam.");
+      console.error("Payload sent:", JSON.stringify(body, null, 2));
+      console.error("Veeam Error Details:", JSON.stringify(errorData, null, 2));
+
+      return NextResponse.json(
+        { error: `Failed to create backup job`, details: errorData },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+
+  } catch (error) {
+    console.error('Error creating backup job:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create backup job' },
       { status: 500 }
     );
   }

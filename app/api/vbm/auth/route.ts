@@ -6,6 +6,8 @@ import { cookies } from 'next/headers';
 import { getChunkedCookie } from '@/lib/utils/cookie-manager';
 import { tokenManager } from '@/lib/server/token-manager';
 
+export const dynamic = 'force-dynamic';
+
 const VBM_API_URL = process.env.VBM_API_URL;
 const VBM_USERNAME = process.env.VBM_USERNAME;
 const VBM_PASSWORD = process.env.VBM_PASSWORD;

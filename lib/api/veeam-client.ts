@@ -49,7 +49,8 @@ import {
   UsersResult,
   RolesResult,
   RolePermissionsResult,
-  SecuritySettings
+  SecuritySettings,
+  VeeamServerInfo
 } from '@/lib/types/veeam';
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
@@ -296,11 +297,11 @@ class VeeamApiClient {
     }
   }
 
-  async startJob(id: string): Promise<void> {
+  async startJob(id: string, payload?: Record<string, unknown>): Promise<void> {
     try {
       await this.request(`/jobs/${id}`, {
         method: 'POST',
-        body: JSON.stringify({ action: 'start' }),
+        body: JSON.stringify({ action: 'start', requestPayload: payload }),
       });
     } catch (error) {
       console.error(`Error starting job ${id}:`, error);
@@ -403,6 +404,65 @@ class VeeamApiClient {
       return await this.request<VeeamSession>(`/sessions/${id}`);
     } catch (error) {
       console.error(`Error fetching session ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createBackupJob(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    try {
+      return await this.request('/jobs', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error('Error creating backup job:', error);
+      throw error;
+    }
+  }
+
+  async validateJobName(name: string): Promise<boolean> {
+    try {
+      const jobs = await this.getBackupJobs();
+      // Returns true if the name does NOT exist already (case-insensitive)
+      return !jobs.some(job => job.name.toLowerCase() === name.toLowerCase());
+    } catch (error) {
+      console.error('Error validating job name locally:', error);
+      // In case of error, default to false or handle it upstream
+      return false;
+    }
+  }
+
+  async getBackupCopySourceJobs(): Promise<VeeamBackupJob[]> {
+    try {
+      const allJobs = await this.getBackupJobs();
+
+      const eligibleTypes = ['VSphereBackup', 'HyperVBackup', 'BackupCopy'];
+
+      return allJobs.filter(job => {
+        // Must be of the correct type
+        if (!eligibleTypes.includes(job.type)) {
+          return false;
+        }
+
+        // Cannot be a cloud target or storage snapshot (if those properties exist or we infer them)
+        // For the public API, these properties aren't always explicitly on the root object
+        // but we filter them as best effort based on type
+        return true;
+      });
+    } catch (error) {
+      console.error('Error fetching source jobs for backup copy locally:', error);
+      throw error;
+    }
+  }
+
+  async quickBackupVSphere(item: VeeamInventoryItem): Promise<void> {
+    try {
+      await this.request('/jobs/quickBackup/vSphere', {
+        method: 'POST',
+        body: JSON.stringify(item),
+      });
+    } catch (error) {
+      console.error('Error initiating quick backup:', error);
       throw error;
     }
   }
@@ -756,6 +816,17 @@ class VeeamApiClient {
     }
   }
 
+  async getServerInfo(): Promise<VeeamServerInfo | null> {
+    try {
+      return await this.request<VeeamServerInfo>('/ServerInfo', {
+        apiPrefix: '/api/vbr'
+      });
+    } catch (error) {
+      console.error('Error fetching server info:', error);
+      return null;
+    }
+  }
+
   async getStorageCapacity(): Promise<{ totalBackupSize: number, fileCount: number } | null> {
     try {
       return await this.request<{ totalBackupSize: number, fileCount: number }>('/StorageCapacity', {
@@ -975,11 +1046,15 @@ class VeeamApiClient {
   // Virtual Infrastructure Inventory
   // ============================================
 
-  async getInventory(): Promise<VeeamInventoryItem[]> {
+  async getInventory(options?: { nameFilter?: string }): Promise<VeeamInventoryItem[]> {
     try {
       // 1. Get root objects (vCenters/Servers)
       // We fetch the root nodes first.
-      const rootResponse = await this.request<InventoryResult>('/inventory?limit=5000', {
+      const rootParams = new URLSearchParams()
+      rootParams.append('limit', '5000')
+      if (options?.nameFilter) rootParams.append('nameFilter', options.nameFilter)
+
+      const rootResponse = await this.request<InventoryResult>(`/inventory?${rootParams.toString()}`, {
         method: 'POST',
         body: JSON.stringify({})
       });
@@ -1000,7 +1075,11 @@ class VeeamApiClient {
           // Use the item's name (e.g., vcsa.jorgedelacruz.es) to fetch its children
           if (!target.name) return [];
 
-          const drillResponse = await this.request<InventoryResult>(`/inventory/${target.name}?limit=5000`, {
+          const drillParams = new URLSearchParams()
+          drillParams.append('limit', '5000')
+          if (options?.nameFilter) drillParams.append('nameFilter', options.nameFilter)
+
+          const drillResponse = await this.request<InventoryResult>(`/inventory/${target.name}?${drillParams.toString()}`, {
             method: 'POST',
             body: JSON.stringify({}) // Fetch everything for this host
           });

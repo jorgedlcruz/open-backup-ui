@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Database, ArrowDownToLine, Zap } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { veeamApi } from "@/lib/api/veeam-client"
 
 interface StorageCapacityData {
     totalBackupSize: number
@@ -32,17 +33,9 @@ export function StorageCapacityWidget() {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                // First, check if we have results, if not, it might be calculating
-                const res = await fetch('/api/vbr/StorageCapacity')
-                if (!res.ok) throw new Error('Failed to fetch storage data')
-                const json = await res.json()
-
-                if (json.totalBackupSize === 0 && json.backupCount > 0) {
-                    // If we have backups but 0 size, it might be weird, but let's accept it for now.
-                    // Or if json returns empty default structure
-                }
-
-                setData(json)
+                const json = await veeamApi.getStorageCapacity()
+                if (!json) throw new Error('Failed to fetch storage data')
+                setData(json as StorageCapacityData)
             } catch (err) {
                 console.error(err)
                 setError("Failed to load storage capacity")
