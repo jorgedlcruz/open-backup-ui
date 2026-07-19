@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -33,6 +33,11 @@ const vbrItems = [
     title: "Dashboard",
     href: "/vbr/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Threat Center",
+    href: "/vbr/threat-center",
+    icon: ShieldAlert,
   },
   {
     title: "Jobs & Policies",
@@ -209,6 +214,11 @@ const adminItems = [
     title: "Branding",
     href: "/administration/branding",
     icon: Palette,
+  },
+  {
+    title: "AI Integrations",
+    href: "/administration/ai-settings",
+    icon: Sparkles,
   },
   {
     title: "Telemetry",
