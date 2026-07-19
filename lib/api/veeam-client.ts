@@ -50,7 +50,9 @@ import {
   RolesResult,
   RolePermissionsResult,
   SecuritySettings,
-  VeeamServerInfo
+  VeeamServerInfo,
+  AuthorizationEvent,
+  AuthorizationEventsResult
 } from '@/lib/types/veeam';
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
@@ -65,7 +67,7 @@ interface TokenResponse {
   username: string;
 }
 
-class VeeamApiClient {
+export class VeeamApiClient {
   private token: string | null = null;
   private refreshToken: string | null = null;
   private tokenExpiry: Date | null = null;
@@ -83,6 +85,11 @@ class VeeamApiClient {
   // Rate limiting and debouncing for VBM (1 request per second limit)
   private vbmRateLimiter = new RateLimiter(1);
   private vbmAuthDebouncer = new AuthDebouncer<string>(3000); // Cache auth for 3 seconds
+
+  public setToken(token: string) {
+    this.token = token;
+    this.tokenExpiry = new Date(Date.now() + 86400000); // 24 hours expiry for injected token
+  }
 
   private async authenticate(): Promise<string> {
     // Check if token exists and is still valid (with 5 minute buffer)
@@ -723,6 +730,26 @@ class VeeamApiClient {
       } else {
         console.error('Error fetching security best practices:', error);
       }
+      return [];
+    }
+  }
+
+  async getAuthorizationEvents(options?: {
+    limit?: number;
+    skip?: number;
+  }): Promise<AuthorizationEvent[]> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (options?.skip !== undefined) params.append('skip', options.skip.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/authorization/events?${queryString}` : '/authorization/events';
+
+      const response = await this.request<AuthorizationEventsResult>(endpoint);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching authorization events:', error);
       return [];
     }
   }

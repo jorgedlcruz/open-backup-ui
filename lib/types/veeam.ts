@@ -794,6 +794,23 @@ export interface UsersResult {
   pagination: PaginationResult;
 }
 
+export interface AuthorizationEvent {
+  id: string;
+  state: string; // 'Approved', 'Info', etc.
+  name: string;
+  description: string;
+  creationTime: string;
+  createdBy: string;
+  expirationTime?: string;
+  processedBy?: string;
+  processedTime?: string;
+}
+
+export interface AuthorizationEventsResult {
+  data: AuthorizationEvent[];
+  pagination: PaginationResult;
+}
+
 export interface RolesResult {
   data: VeeamRole[];
   pagination: PaginationResult;

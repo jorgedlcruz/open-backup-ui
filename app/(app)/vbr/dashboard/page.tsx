@@ -6,8 +6,9 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { SessionsOverview } from "@/components/sessions-overview"
 import { StorageCapacityWidget } from "@/components/storage-capacity-widget"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Sparkles } from "lucide-react"
 import { veeamApi } from "@/lib/api/veeam-client"
 import {
     VeeamBackupJob,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/types/veeam"
 import { calculateTransferRates } from "@/lib/utils/transfer-rate"
 import { TransferRateChart } from "@/components/transfer-rate-chart"
+import { AiHealthSummary } from "@/components/ai-health-summary"
 
 export default function VBRPage() {
     const [jobs, setJobs] = useState<VeeamBackupJob[]>([])
@@ -137,8 +139,18 @@ export default function VBRPage() {
                     </div>
                 )}
 
-                {/* Top Stats Row */}
-                <DashboardStats
+                <Tabs defaultValue="overview" className="space-y-6">
+                    <TabsList className="bg-muted/50 p-1">
+                        <TabsTrigger value="overview" className="px-6">Overview</TabsTrigger>
+                        <TabsTrigger value="ai-insights" className="px-6 flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                            <Sparkles className="h-4 w-4" />
+                            AI Insights
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="overview" className="space-y-6 outline-none">
+                        {/* Top Stats Row */}
+                        <DashboardStats
                     totalJobs={jobs.length}
                     activeJobs={activeJobs}
                     serverInfo={serverInfo}
@@ -165,6 +177,12 @@ export default function VBRPage() {
                         <TransferRateChart data={transferRateData} loading={loading} />
                     </div>
                 </div>
+                </TabsContent>
+
+                <TabsContent value="ai-insights" className="outline-none">
+                    <AiHealthSummary />
+                </TabsContent>
+                </Tabs>
             </div>
         </div>
     )

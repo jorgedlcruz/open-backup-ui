@@ -35,7 +35,7 @@ const vbrItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Threat Center",
+    title: "Ransomware Detection",
     href: "/vbr/threat-center",
     icon: ShieldAlert,
   },
