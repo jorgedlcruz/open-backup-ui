@@ -1,0 +1,13 @@
+'use client'
+import { useState } from 'react'
+import { protectionColors as colors, protectionTextColors, protectionStatusLabel } from '@/lib/protected-data/colors'
+import { Empty,Pager } from '@/components/investigation/shared'
+import { freshness,coverage,name,countLabel,type Row } from '@/lib/vbm-protected/model'
+import styles from '@/components/protected-data/protected-data-operations.module.css'
+export function HexMap({rows,hours,now,mode,onSelect}:{rows:Row[];hours:number;now:number;mode:'rpo'|'coverage';onSelect:(row:Row)=>void}) {
+  const [page,setPage]=useState(0),current=Math.min(page,Math.max(0,Math.ceil(rows.length/240)-1)),shown=rows.slice(current*240,(current+1)*240)
+  const status=(row:Row)=>mode==='rpo' ? freshness(row.summary,hours,now):coverage(row.summary)
+  const labels=mode==='rpo' ? ['Within threshold','Outside threshold','No restore points','Unknown']:['Restore points available','No restore points','Unknown']
+  const columns=Math.max(1,Math.ceil(Math.sqrt(shown.length*1.5))),height=Math.ceil(shown.length/columns)*31+16,width=columns*36+20
+  return <><div className={styles.legend}>{labels.map(label=><span key={label} style={{display:'inline-flex',gap:7,alignItems:'center'}}><i style={{background:colors[label]}}/>{protectionStatusLabel(label)} <strong>{rows.filter(row=>status(row)===label).length}</strong></span>)}</div>{shown.length ? <div className={styles.map}><svg viewBox={`-22 -23 ${width} ${height}`} role="group" aria-label="Microsoft 365 protected objects HexMap">{shown.map((row,index)=>{const line=Math.floor(index/columns),value=status(row);return <g key={row.key} transform={`translate(${index%columns*36+(line%2 ? 18:0)},${line*31})`} role="button" tabIndex={0} className={styles.hex} style={{fill:colors[value]}} aria-label={`${name(row)}, ${row.type}, ${protectionStatusLabel(value)}, ${countLabel(row.summary)} restore points`} onClick={()=>onSelect(row)} onKeyDown={event=>{if(event.key==='Enter' || event.key===' '){event.preventDefault();onSelect(row)}}}><title>{name(row)} · {row.type} · {protectionStatusLabel(value)} · {countLabel(row.summary)} retained restore points</title><polygon points="0,-20 17.32,-10 17.32,10 0,20 -17.32,10 -17.32,-10"/>{shown.length<=80 && <text style={{fill:protectionTextColors[value]}} textAnchor="middle" dominantBaseline="middle">{countLabel(row.summary)}</text>}</g>})}</svg></div>:<Empty>No objects match these filters.</Empty>}<Pager page={current} count={rows.length} size={240} onChange={setPage} label="HexMap objects"/><p className={styles.summary}>One hexagon per typed protected object. Numbers show retained restore points; + means a lower bound. Select a hexagon to investigate.</p></>
+}

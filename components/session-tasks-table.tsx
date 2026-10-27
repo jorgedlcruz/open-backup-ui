@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { SortableGrid } from '@/components/ui/sortable-grid'
+
 import {
     Table,
     TableBody,
@@ -54,7 +56,7 @@ export function SessionTasksTable({ tasks, loading }: SessionTasksTableProps) {
                 </CardTitle>
             </CardHeader>
             <ScrollArea className="flex-1">
-                <Table>
+                <SortableGrid rows={tasks} columns={[{id:'name',value:r=>r.name},{id:'status',value:r=>r.result?.result},{id:'size',value:r=>r.progress?.processedSize},{id:'rate',value:r=>r.progress?.processingRate},{id:'duration',value:r=>r.progress?.duration}]}>{(tasks)=>(<Table>
                     <TableHeader className="bg-muted/50">
                         <TableRow>
                             <TableHead>Object Name</TableHead>
@@ -110,7 +112,7 @@ export function SessionTasksTable({ tasks, loading }: SessionTasksTableProps) {
                             );
                         })}
                     </TableBody>
-                </Table>
+                </Table>)}</SortableGrid>
             </ScrollArea>
         </Card >
     )

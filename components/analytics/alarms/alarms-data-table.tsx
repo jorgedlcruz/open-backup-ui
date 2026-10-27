@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
+
 import {
     ColumnDef,
     Row,
@@ -28,9 +31,11 @@ export function AlarmsDataTable<TData>({
     onRowClick,
     pageSize = 20
 }: DataTableProps<TData>) {
+    const [sorting,setSorting] = React.useState<import('@tanstack/react-table').SortingState>([])
     const table = useReactTable({
+        state: {sorting}, onSortingChange: setSorting,
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         initialState: {
             pagination: {
                 pageIndex: 0,
@@ -60,20 +65,12 @@ export function AlarmsDataTable<TData>({
                                 className="border-y border-border"
                             >
                                 {headerGroup.headers.map((header) => (
-                                    <th
-                                        key={header.id}
-                                        className={cn(
+                                    <SortableTableHead key={header.id} className={cn(
                                             "border-b px-4 py-3 text-left text-sm font-semibold",
                                             "text-foreground",
                                             "border-border",
                                             "whitespace-nowrap"
-                                        )}
-                                    >
-                                        {flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
-                                    </th>
+                                        )} header={header}/>
                                 ))}
                             </tr>
                         ))}

@@ -1,0 +1,8 @@
+.menu { font-family:var(--text-family); width:280px; max-width:calc(100vw - 24px); }
+.title { display:block; font-size:var(--ops-text,13px); font-weight:600; margin-bottom:18px; }
+.menu fieldset { display:flex; flex-direction:column; gap:12px; }
+.menu legend,.order > span { color:var(--muted-foreground); font-size:var(--ops-caption,11px); margin-bottom:12px; }
+.menu fieldset label { display:flex; align-items:center; gap:9px; font-size:var(--ops-small,12px); }
+.menu input { accent-color:var(--primary); }
+.order { display:flex; flex-direction:column; margin-top:20px; }
+.order select { background:var(--popover); color:var(--foreground); font-size:var(--ops-small,12px); border:1px solid var(--input); border-radius:var(--ops-control-radius,6px); padding:8px; }

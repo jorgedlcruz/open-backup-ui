@@ -1,0 +1,23 @@
+.group { border-bottom:1px solid var(--border); min-width:0; }
+.group:last-child { border-bottom:0; }
+.group > summary { list-style:none; display:flex; gap:8px; align-items:center; cursor:pointer; padding:14px 0; font-size:12px; font-weight:600; color:var(--foreground); }
+.group > summary::-webkit-details-marker { display:none; }
+.group > summary > span { flex:1; }
+.group > summary > small { color:var(--primary); font-size:10px; font-variant-numeric:tabular-nums; }
+.group > summary > svg { color:var(--muted-foreground); transition:transform .15s; }
+.group[open] > summary > svg { transform:rotate(180deg); }
+.body { padding:0 0 16px; }
+.body > label { display:flex; flex-direction:column; gap:7px; margin-bottom:10px; font-size:11px; color:var(--muted-foreground); }
+.body > label:has(> input[type=checkbox]) { flex-direction:row; align-items:center; color:var(--foreground); }
+.options { display:flex; flex-direction:column; max-height:250px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; border:1px solid var(--border); border-radius:6px; }
+.option { display:flex; align-items:center; gap:8px; min-height:34px; padding:7px 9px; border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent); cursor:pointer; font-size:11px; line-height:1.4; color:var(--muted-foreground); }
+.option:last-child { border-bottom:0; }
+.option:hover { background:var(--accent); color:var(--accent-foreground); }
+.option[data-selected=true] { color:var(--foreground); background:color-mix(in srgb,var(--primary) 8%,transparent); }
+.option > span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.option > small { font-size:10px; color:var(--muted-foreground); font-variant-numeric:tabular-nums; }
+.option input { width:13px; height:13px; flex-shrink:0; accent-color:var(--primary); }
+.search { display:flex; gap:7px; align-items:center; margin-bottom:8px; color:var(--muted-foreground); }
+.search input { background:var(--background); color:var(--foreground); width:100%; min-width:0; border:1px solid var(--border); padding:7px 8px; border-radius:5px; font-size:11px; }
+.empty { padding:10px; color:var(--muted-foreground); font-size:11px; }
+@media(prefers-reduced-motion:reduce) { .group > summary > svg {transition:none;} }

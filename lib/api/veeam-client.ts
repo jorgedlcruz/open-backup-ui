@@ -24,7 +24,6 @@ import {
   VeeamBackupFile,
   BackupsResult,
   VeeamProtectedWorkload,
-  VeeamRestorePoint,
   VeeamProtectionGroup,
   ProtectionGroupsResult,
   VeeamDiscoveredEntity,
@@ -56,6 +55,7 @@ import {
 } from '@/lib/types/veeam';
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
+import { applicationApiUrl } from './application-url';
 
 interface TokenResponse {
   access_token: string;
@@ -86,6 +86,12 @@ export class VeeamApiClient {
   private vbmRateLimiter = new RateLimiter(1);
   private vbmAuthDebouncer = new AuthDebouncer<string>(3000); // Cache auth for 3 seconds
 
+  private serverHeaders: Record<string, string> = {};
+
+  public setServerHeaders(headers: Record<string, string>) {
+    this.serverHeaders = headers;
+  }
+
   public setToken(token: string) {
     this.token = token;
     this.tokenExpiry = new Date(Date.now() + 86400000); // 24 hours expiry for injected token
@@ -112,16 +118,14 @@ export class VeeamApiClient {
     }
 
     try {
-      let authUrl = '/api/veeam/auth';
-      if (typeof window === 'undefined') {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        authUrl = `${baseUrl}${authUrl}`;
-      }
+      const authUrl = applicationApiUrl('/api/veeam/auth');
 
       const response = await fetch(authUrl, {
         method: 'POST',
+        redirect: 'error',
         headers: {
           'Content-Type': 'application/json',
+          ...this.serverHeaders,
         },
         body: JSON.stringify({ grant_type: 'password' }),
       });
@@ -151,16 +155,14 @@ export class VeeamApiClient {
     }
 
     try {
-      let authUrl = '/api/veeam/auth';
-      if (typeof window === 'undefined') {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        authUrl = `${baseUrl}${authUrl}`;
-      }
+      const authUrl = applicationApiUrl('/api/veeam/auth');
 
       const response = await fetch(authUrl, {
         method: 'POST',
+        redirect: 'error',
         headers: {
           'Content-Type': 'application/json',
+          ...this.serverHeaders,
         },
         body: JSON.stringify({
           grant_type: 'refresh_token',
@@ -192,20 +194,15 @@ export class VeeamApiClient {
     const token = await this.authenticate();
 
     const prefix = options?.apiPrefix ?? '/api/veeam';
-    let url = `${prefix}${endpoint}`;
-
-    if (typeof window === 'undefined') {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      if (url.startsWith('/')) {
-        url = `${baseUrl}${url}`;
-      }
-    }
+    const url = applicationApiUrl(`${prefix}${endpoint}`);
 
     const response = await fetch(url, {
       ...options,
+      redirect: 'error',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        ...this.serverHeaders,
         ...options?.headers,
       },
     });
@@ -247,6 +244,58 @@ export class VeeamApiClient {
     this.token = null;
     this.refreshToken = null;
     this.tokenExpiry = null;
+  }
+
+  async getProtectionTopology(signal?: AbortSignal): Promise<import('@/lib/topology/model').TopologySnapshot> {
+    return this.request('/topology', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getWorkloadResilience(id: string, signal?: AbortSignal): Promise<import('@/lib/resilience/model').WorkloadEvidence> {
+    return this.request(`/workloads/${encodeURIComponent(id)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getOperationsSnapshot(range: import('@/lib/operations/model').Range, signal?: AbortSignal): Promise<import('@/lib/operations/model').OperationsSnapshot> {
+    return this.request(`/operations?range=${range}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getJobInvestigation(id: string, range: import('@/lib/investigation/model').HistoryRange, signal?: AbortSignal): Promise<import('@/lib/investigation/model').JobInvestigation> {
+    return this.request(`/investigation/jobs/${encodeURIComponent(id)}?range=${range}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getRepositoryInvestigation(id: string, signal?: AbortSignal): Promise<import('@/lib/repositories/model').RepositorySnapshot> {
+    return this.request(`/repositories/${encodeURIComponent(id)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getRepositoryInventory(signal?: AbortSignal): Promise<import('@/lib/repositories/inventory').RepositoryInventory> {
+    return this.request('/repositories', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getProxyInventory(signal?: AbortSignal): Promise<import('@/lib/proxies/model').ProxyInventory> {
+    return this.request('/proxies', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getManagedServerInventory(signal?: AbortSignal): Promise<import('@/lib/managed-servers/model').ServerInventory> {
+    return this.request('/managed-servers', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getVirtualInventory(signal?: AbortSignal): Promise<import('@/lib/virtual-infrastructure/model').VirtualSnapshot> {
+    return this.request('/virtual-infrastructure', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getUnstructuredInventory(signal?: AbortSignal): Promise<import('@/lib/unstructured-data/model').Snapshot> {
+    return this.request('/unstructured-data', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getProtectionInventory(id?: string, signal?: AbortSignal): Promise<import('@/lib/protection-groups/model').ProtectionInventory> {
+    return this.request(`/protection-groups${id ? `/${encodeURIComponent(id)}` : ''}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getSessionInvestigation(id: string, signal?: AbortSignal): Promise<import('@/lib/investigation/model').SessionInvestigation> {
+    return this.request(`/investigation/sessions/${encodeURIComponent(id)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getTaskInvestigation(sessionId: string, taskId: string, signal?: AbortSignal): Promise<import('@/lib/investigation/model').TaskInvestigation> {
+    return this.request(`/investigation/sessions/${encodeURIComponent(sessionId)}/tasks/${encodeURIComponent(taskId)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
   async getBackupJobs(options?: {
@@ -650,6 +699,14 @@ export class VeeamApiClient {
     }
   }
 
+  async getLicensing(platform: import('@/lib/licensing/model').Platform, signal?: AbortSignal): Promise<import('@/lib/licensing/model').Snapshot> {
+    return platform === 'vbr' ? this.request('/licensing', { apiPrefix: '/api/vbr', signal, cache: 'no-store' }) : this.requestVBM('/licensing', { signal, cache: 'no-store' });
+  }
+
+  async revokeLicenseSocket(hostId: string): Promise<void> {
+    await this.request(`/license/sockets/${encodeURIComponent(hostId)}/revoke`, { method: 'POST' });
+  }
+
   async revokeLicenseInstance(instanceId: string): Promise<void> {
     try {
       await this.request(`/license/instances/${instanceId}/revoke`, {
@@ -777,6 +834,14 @@ export class VeeamApiClient {
     }
   }
 
+  async getProtectedDataOperations(recoveryTimes: boolean, signal?: AbortSignal, refresh = false): Promise<import('@/lib/protected-data/model').Snapshot> {
+    return this.request(`/protected-data?operations=true&recoveryTimes=${recoveryTimes}${refresh ? '&refresh=true' : ''}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async getRansomwareOperations(signal?: AbortSignal): Promise<import('@/lib/ransomware/model').Snapshot> {
+    return this.request('/ransomware', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
   async getBackupFiles(backupId: string): Promise<VeeamBackupFile[]> {
     try {
       const response = await this.request<{ data: VeeamBackupFile[] }>(`/backups/${backupId}/files`, {
@@ -791,24 +856,16 @@ export class VeeamApiClient {
 
 
 
-  async getVBRRestorePoints(params: { objectId?: string, backupId?: string }): Promise<VeeamRestorePoint[]> {
-    try {
-      const query = new URLSearchParams();
-      if (params.objectId) query.append('objectId', params.objectId);
-      if (params.backupId) query.append('backupId', params.backupId);
-
-      const endpoint = query.toString() ? `/restore-points?${query.toString()}` : '/restore-points';
-
-      const response = await this.request<{ data: VeeamRestorePoint[] }>(endpoint, {
-        apiPrefix: '/api/vbr'
-      });
-      return response.data || [];
-    } catch (error) {
-      console.error('Error fetching VBR restore points:', error);
-      throw error;
-    }
+  async getRestorePointEvidence(params: { objectId?: string; backupId?: string }, signal?: AbortSignal): Promise<import('@/lib/restore-points/model').RestorePointSnapshot> {
+    const query = new URLSearchParams();
+    if (params.objectId) query.set('objectId', params.objectId);
+    if (params.backupId) query.set('backupId', params.backupId);
+    return this.request(`/restore-points?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
+  async getVBRRestorePoints(params: { objectId?: string; backupId?: string }): Promise<import('@/lib/restore-points/model').RestorePoint[]> {
+    return (await this.getRestorePointEvidence(params)).data;
+  }
   /**
    * Fetch workload details from inventory by name.
    * Returns VM metadata like Guest OS, IP, DNS Name, vCenter, ESXi host, etc.
@@ -1134,152 +1191,6 @@ export class VeeamApiClient {
 
 
 
-  // Cache for global search
-  private searchInventory: { id: string; name: string; type: string; url: string; description: string; searchStr: string }[] = [];
-  private inventoryLastUpdated: number = 0;
-  private readonly INVENTORY_TTL = 30 * 60 * 1000; // 30 minutes
-
-  private async ensureInventory(): Promise<void> {
-    const now = Date.now();
-    if (this.searchInventory.length > 0 && (now - this.inventoryLastUpdated < this.INVENTORY_TTL)) {
-      return;
-    }
-
-    try {
-      // Fetch everything without filters
-
-
-
-      const [
-        vbrJobsRes,
-        vbrObjectsRes,
-        vbmJobsRes,
-        vbmUsersRes,
-        vbmGroupsRes,
-        vbmSitesRes,
-        vbmTeamsRes
-      ] = await Promise.allSettled([
-
-        this.getBackupJobs({}), // No filter
-        this.getProtectedData(),
-        this.requestVBM<VBMJobsResponse>('/jobs?limit=5000'),
-        this.requestVBM<VBMProtectedUsersResponse>('/ProtectedUsers?limit=5000'),
-        this.requestVBM<VBMProtectedGroupsResponse>('/ProtectedGroups?limit=5000'),
-        this.requestVBM<VBMProtectedSitesResponse>('/ProtectedSites?limit=5000'),
-        this.requestVBM<VBMProtectedTeamsResponse>('/ProtectedTeams?limit=5000')
-      ]);
-
-      const newInventory: { id: string; name: string; type: string; url: string; description: string; searchStr: string }[] = [];
-
-      // Process VBR Jobs
-      if (vbrJobsRes.status === 'fulfilled') {
-        vbrJobsRes.value.forEach(job => {
-          newInventory.push({
-            id: job.id,
-            name: job.name,
-            type: 'VBR Job',
-            url: `/vbr/jobs/${job.id}`,
-            description: job.type,
-            searchStr: (job.name || '').toLowerCase()
-          });
-        });
-      }
-
-      // Process VBR Workloads
-      if (vbrObjectsRes.status === 'fulfilled') {
-        vbrObjectsRes.value.forEach(obj => {
-          newInventory.push({
-            id: obj.id,
-            name: obj.name,
-            type: 'VBR Workload',
-            url: `/vbr/protected-data/restore-points?objectId=${obj.id}&name=${encodeURIComponent(obj.name)}`,
-            description: obj.platformName,
-            searchStr: (obj.name || '').toLowerCase()
-          });
-        });
-      }
-
-      // Process VBM Jobs
-      if (vbmJobsRes.status === 'fulfilled') {
-        const jobs = vbmJobsRes.value.results || [];
-        jobs.forEach((job) => {
-          newInventory.push({
-            id: job.id,
-            name: job.name,
-            type: 'VB365 Job',
-            url: `/vb365/jobs/${job.id}/sessions`,
-            description: job.description,
-            searchStr: (job.name || '').toLowerCase()
-          });
-        });
-      }
-
-      // Helper for VBM Items
-      interface VBMItem {
-        id: string;
-        name?: string;
-        displayName?: string;
-        url?: string;
-        email?: string;
-        description?: string;
-      }
-      const processVbmItems = (res: PromiseSettledResult<{ results?: VBMItem[] }>, type: string) => {
-        if (res.status === 'fulfilled') {
-          const items = res.value.results || [];
-          items.forEach((item) => {
-            const displayName = item.displayName || item.name || item.url || '';
-            const searchTerms = [
-              displayName,
-              item.email,
-              item.description
-            ].filter(Boolean).join(' ').toLowerCase();
-
-            newInventory.push({
-              id: item.id,
-              name: displayName,
-              type: 'VB365 Item',
-              url: `/vbm/protected-items/restore-points?type=${type}&id=${item.id}&name=${encodeURIComponent(displayName)}`,
-              description: `${type} • ${item.email || item.description || ''}`,
-              searchStr: searchTerms
-            });
-          });
-        }
-      };
-
-      processVbmItems(vbmUsersRes, 'User');
-      processVbmItems(vbmGroupsRes, 'Group');
-      processVbmItems(vbmSitesRes, 'Site');
-      processVbmItems(vbmTeamsRes, 'Team');
-
-      this.searchInventory = newInventory;
-      this.inventoryLastUpdated = now;
-
-    } catch (error) {
-      console.error('Error building search inventory:', error);
-      // Keep old inventory if update fails
-    }
-  }
-
-  async globalSearch(query: string): Promise<{ id: string; name: string; type: string; url: string; description: string; searchStr: string }[]> {
-    if (!query || query.length < 2) return [];
-
-    // Ensure we have data
-    await this.ensureInventory();
-
-    const lowerQuery = query.toLowerCase();
-
-    // Perform filtering in memory
-    const results = this.searchInventory.filter(item =>
-      item.searchStr.includes(lowerQuery)
-    );
-
-    // Sort by name
-    results.sort((a, b) => a.name.localeCompare(b.name));
-
-    // Limit results
-    return results.slice(0, 20);
-  }
-
   // ============================================
   // Veeam Recovery Orchestrator (VRO) Methods
   // ============================================
@@ -1564,6 +1475,38 @@ export class VeeamApiClient {
     });
   }
 
+  async getVBMDashboard(days: 7|30, signal?: AbortSignal): Promise<import('@/lib/vbm-dashboard/model').Snapshot> {
+    return this.requestVBM(`/operations?days=${days}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMProtectedOperations(signal?: AbortSignal): Promise<import('@/lib/vbm-protected/model').Inventory> {
+    return this.requestVBM('/protected-operations', { signal, cache: 'no-store' });
+  }
+
+  async getVBMOrganizationOperations(organizationId?: string, signal?: AbortSignal): Promise<import('@/lib/vbm-organizations/model').Snapshot> {
+    return this.requestVBM(`/organization-operations${organizationId ? `?${new URLSearchParams({ organizationId })}` : ''}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMRepositoryOperations(repositoryId?: string, signal?: AbortSignal): Promise<import('@/lib/vbm-repositories/model').Snapshot> {
+    return this.requestVBM(`/repository-operations${repositoryId ? `?${new URLSearchParams({ repositoryId })}` : ''}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMProxyOperations(proxyId?: string, signal?: AbortSignal): Promise<import('@/lib/vbm-proxies/model').Snapshot> {
+    return this.requestVBM(`/proxy-operations${proxyId ? `?${new URLSearchParams({ proxyId })}` : ''}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMProtectedDetail(type: string, id: string, signal?: AbortSignal): Promise<import('@/lib/vbm-protected/model').Detail> {
+    return this.requestVBM(`/protected-operations?${new URLSearchParams({ type, id })}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMJobOperations(window: import('@/lib/vbm-jobs/model').Window, jobId?: string, signal?: AbortSignal): Promise<import('@/lib/vbm-jobs/model').JobsSnapshot> {
+    return this.requestVBM(`/investigation/jobs${jobId ? `/${encodeURIComponent(jobId)}` : ''}?days=${window}`, { signal, cache: 'no-store' });
+  }
+
+  async getVBMSessionInvestigation(id: string, jobId: string, signal?: AbortSignal): Promise<import('@/lib/vbm-jobs/model').SessionDetail> {
+    return this.requestVBM(`/investigation/sessions/${encodeURIComponent(id)}?jobId=${encodeURIComponent(jobId)}`, { signal, cache: 'no-store' });
+  }
+
   async getVBMJobs(options?: {
     offset?: number;
     limit?: number;
@@ -1707,12 +1650,13 @@ export class VeeamApiClient {
           startTime,
           endTime,
           format: 'PDF',
-          timezone: 'GMT'
+          timezone: 'UTC'
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate report: ${response.status}`);
+        const failure = await response.json().catch(() => null);
+        throw new Error(typeof failure?.error === 'string' ? failure.error : `Failed to generate report: ${response.status}`);
       }
 
       return await response.blob();
@@ -1740,45 +1684,11 @@ export class VeeamApiClient {
   }
 
   async rescanVB365Proxy(proxyId: string): Promise<void> {
-    try {
-      const token = this.vbmToken;
-      const response = await fetch(`/api/vbm/Proxies/${encodeURIComponent(proxyId)}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: 'rescan' })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to rescan proxy: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error rescanning VB365 proxy:', error);
-      throw error;
-    }
+    await this.requestVBM(`/Proxies/${encodeURIComponent(proxyId)}`, { method: 'POST', body: JSON.stringify({ action: 'rescan' }) });
   }
 
-  async setVB365ProxyMaintenanceMode(proxyId: string, enabled: boolean): Promise<void> {
-    try {
-      const token = this.vbmToken;
-      const response = await fetch(`/api/vbm/Proxies/${encodeURIComponent(proxyId)}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action: enabled ? 'enableMaintenance' : 'disableMaintenance' })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to set maintenance mode: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error setting VB365 proxy maintenance mode:', error);
-      throw error;
-    }
+  async setVB365ProxyMaintenanceMode(proxyId: string, enabled: boolean, credentials?: import('@/lib/vbm-proxies/actions').ProxyCredentials): Promise<void> {
+    await this.requestVBM(`/Proxies/${encodeURIComponent(proxyId)}`, { method: 'POST', body: JSON.stringify({ action: enabled ? 'enableMaintenance' : 'disableMaintenance', credentials }) });
   }
 
   async getVB365Repositories(options?: { limit?: number; offset?: number }): Promise<VB365Repository[]> {

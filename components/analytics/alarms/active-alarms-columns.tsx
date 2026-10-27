@@ -3,19 +3,7 @@
 import { format, parseISO } from "date-fns"
 import { ColumnDef } from "@tanstack/react-table"
 import { TriggeredAlarmItem } from "@/lib/types/veeam-one-alarms"
-import {
-    ArrowUpDown,
-    Activity,
-    AlertCircle,
-    CheckCircle2,
-    HardDrive,
-    Info,
-    Monitor,
-    Server,
-    XCircle,
-    Cloud,
-    LayoutGrid
-} from "lucide-react"
+import { Activity, AlertCircle, CheckCircle2, HardDrive, Info, Monitor, Server, XCircle, Cloud, LayoutGrid } from "lucide-react"
 
 // Helper for Object Type Icons
 const getObjectTypeIcon = (type: string | undefined) => {
@@ -32,17 +20,7 @@ const getObjectTypeIcon = (type: string | undefined) => {
 export const columns: ColumnDef<TriggeredAlarmItem>[] = [
     {
         accessorKey: "time",
-        header: ({ column }) => {
-            return (
-                <div
-                    className="flex items-center space-x-1 cursor-pointer hover:text-foreground"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    <span>Time Period</span>
-                    <ArrowUpDown className="h-3 w-3" />
-                </div>
-            )
-        },
+        header: "Time Period",
         cell: ({ row }) => {
             const dateStr = row.getValue("time") as string
             if (!dateStr) return <span className="text-muted-foreground">-</span>
@@ -76,6 +54,7 @@ export const columns: ColumnDef<TriggeredAlarmItem>[] = [
     },
     {
         id: "objectType",
+        accessorFn: row => row.entityType,
         header: "Object Type",
         cell: ({ row }) => {
             return (

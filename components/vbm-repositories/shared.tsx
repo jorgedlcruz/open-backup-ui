@@ -1,0 +1,18 @@
+'use client'
+import { RefreshCw,Lock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Notice } from '@/components/investigation/shared'
+import { formatBytes } from '@/lib/restore-points/model'
+import { type Row,type Snapshot } from '@/lib/vbm-repositories/model'
+import { useOrganizationRefresh } from '@/components/vbm-organizations/shared'
+import { cn } from '@/lib/utils'
+import ops from '@/components/operations/operations.module.css'
+import shared from '@/components/vbm-dashboard/vbm-dashboard.module.css'
+import styles from './repositories.module.css'
+export { useOrganizationRefresh as useRepositoryRefresh }
+export function Refresh({state,loading}:{state:ReturnType<typeof useOrganizationRefresh>;loading:boolean}) {return <div className={shared.actions}><label className={styles.auto}><input type="checkbox" checked={state.automatic} onChange={event=>state.setAutomatic(event.target.checked)}/>Auto-refresh · 30s</label><Button size="sm" variant="outline" disabled={loading} onClick={state.refresh}><RefreshCw size={14} className={loading ? 'animate-spin':''}/>Refresh</Button></div>}
+export function EvidenceNotices({data,error,loading}:{data:Snapshot;error:string|null;loading:boolean}) {return <>{error && <Notice error>{error} Showing the previous snapshot.</Notice>}{loading && <p className={shared.refreshing} role="status">Refreshing · previous repository evidence remains visible.</p>}{!!data.warnings.length && <details className={ops.warnings}><summary>{data.warnings.length} data coverage notices</summary><ul>{data.warnings.map((warning,index)=><li key={index}>{warning}</li>)}</ul></details>}</>}
+export function Meter({value,label}:{value:Row['cap']['disk'];label:string}) {return <div className={styles.capacity}>{value ? <><strong>{formatBytes(value.total)}</strong><div className={ops.capacityBar} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,value.percent)} aria-valuetext={`${value.percent.toFixed(1)}% used`}><span className={value.percent>=90 ? ops.dangerBar:value.percent>=80 ? ops.warningBar:ops.successBar} style={{width:`${Math.min(100,value.percent)}%`}}/></div><p className={shared.sub}>{value.percent.toFixed(1)}% used · {formatBytes(value.free)} free</p><p className={shared.sub}>{formatBytes(value.used)} used</p></>:<span className={ops.neutral}>Not reported</span>}</div>}
+export function LockStatus({row}:{row:Row}) {return <><span className={cn(ops.badge,row.lock.state==='enabled' ? ops.success:row.lock.state==='disabled' ? ops.warning:ops.neutral)}><Lock size={11}/>{row.lock.label}</span>{row.lock.period && <p className={shared.sub}>{row.lock.period}</p>}{row.lock.state==='enabled' && <p className={cn(shared.sub,row.lock.mode==='Governance' && ops.warning)}>{row.lock.mode}</p>}</>}
+export function Encryption({row}:{row:Row}) {const value=row.repository.objectStorageEncryptionEnabled;return <span className={cn(ops.badge,!row.repository.objectStorage ? ops.neutral:value===true ? ops.success:value===false ? ops.warning:ops.neutral)}>{!row.repository.objectStorage ? 'Not applicable':value===true ? 'Enabled':value===false ? 'Disabled':'Unknown'}</span>}
+export function RepositoryCapacity({row}:{row:Row}) {return <><p className={shared.sub}>{row.cap.scope}</p>{row.repository.objectStorage?.sizeLimitEnabled===false ? <span>No quota configured</span>:<Meter value={row.cap.primary} label={`${row.repository.name || row.repository.id} ${row.cap.scope} utilization`}/ >}{row.repository.objectStorage && row.cap.disk && <p className={shared.sub}>Disk: {row.cap.disk.percent.toFixed(1)}% used · {formatBytes(row.cap.disk.free)} free</p>}</>}

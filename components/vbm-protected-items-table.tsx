@@ -1,48 +1,38 @@
 "use client"
+import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
-import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getSortedRowModel,
-    SortingState,
-    ColumnFiltersState,
-    getFilteredRowModel,
-    VisibilityState,
-    getFacetedRowModel,
-    getFacetedUniqueValues
-} from "@tanstack/react-table"
-import Link from "next/link"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+
+import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 import { Input } from "@/components/ui/input"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { VBMProtectedItem, VBMOrganization } from "@/lib/types/vbm"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-    User,
-    Users,
-    Globe,
-    MessageSquare,
-    ArrowUpDown,
-    Building2,
-    Columns
-} from "lucide-react"
-import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
+Table,
+TableBody,
+TableCell,
+TableHead,
+TableHeader,
+TableRow,
+} from "@/components/ui/table"
+import { VBMOrganization,VBMProtectedItem } from "@/lib/types/vbm"
+import {
+ColumnDef,
+ColumnFiltersState,
+flexRender,
+getCoreRowModel,
+getFacetedRowModel,
+getFacetedUniqueValues,
+getFilteredRowModel,
+getSortedRowModel,
+SortingState,
+useReactTable,
+VisibilityState
+} from "@tanstack/react-table"
+import { Building2,Globe,MessageSquare,User,Users } from "lucide-react"
+import Link from "next/link"
 
 interface VBMProtectedItemsTableProps {
     data: VBMProtectedItem[]
@@ -69,16 +59,7 @@ const cleanOrgName = (fullOrgId: string) => {
 export const columns: ColumnDef<VBMProtectedItem>[] = [
     {
         accessorKey: "displayName",
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="!p-0 hover:!bg-transparent"
-            >
-                Name
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
+        header: "Name",
         cell: ({ row }) => (
             <div className="flex items-center font-medium">
                 {getTypeIcon(row.original.type)}
@@ -118,6 +99,7 @@ export const columns: ColumnDef<VBMProtectedItem>[] = [
     },
     {
         id: "details",
+        accessorFn: row => row.type === 'Site' ? row.url : row.type === 'Team' ? row.description : row.mailboxes?.[0]?.email,
         header: "Details",
         cell: ({ row }) => {
             const item = row.original;
@@ -151,7 +133,7 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
 
     const table = useReactTable({
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -167,7 +149,7 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
         },
     })
 
-    if (loading) {
+    if (loading && data.length === 0) {
         return (
             <div className="rounded-md border">
                 <Table>
@@ -199,18 +181,14 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex flex-1 items-center space-x-2">
-                    <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                         placeholder="Filter protected items..."
                         value={(table.getColumn("displayName")?.getFilterValue() as string) ?? ""}
                         onChange={(event) =>
                             table.getColumn("displayName")?.setFilterValue(event.target.value)
                         }
                         className="h-8 w-[150px] lg:w-[250px]"
-                    />
-                    {table.getColumn("type") && (
-                        <DataTableFacetedFilter
+                    /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={<FilterFields>{table.getColumn("type") && <><DataTableFacetedFilter
                             column={table.getColumn("type")}
                             title="Type"
                             options={[
@@ -219,10 +197,8 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
                                 { label: "Site", value: "Site", icon: Globe },
                                 { label: "Team", value: "Team", icon: MessageSquare },
                             ]}
-                        />
-                    )}
-                    {table.getColumn("backedUpOrganizationId") && (
-                        <DataTableFacetedFilter
+                        /></>}
+{table.getColumn("backedUpOrganizationId") && <><DataTableFacetedFilter
                             column={table.getColumn("backedUpOrganizationId")}
                             title="Organization"
                             options={uniqueOrgs.map(org => ({
@@ -230,46 +206,30 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
                                 value: org,
                                 icon: Building2
                             }))}
-                        />
-                    )}
-                </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
-                            <Columns className="mr-2 h-4 w-4" />
-                            Columns
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                        /></>}</FilterFields>} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
                         {table
                             .getAllColumns()
                             .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
                             .map((column) => {
                                 return (
-                                    <DropdownMenuCheckboxItem
+                                    <GridColumnChoice
                                         key={column.id}
                                         className="capitalize"
                                         checked={column.getIsVisible()}
                                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                     >
                                         {column.id}
-                                    </DropdownMenuCheckboxItem>
+                                    </GridColumnChoice>
                                 )
                             })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div className="rounded-md border">
+                    </fieldset></GridViewMenu></>}>
+<div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(header.column.columnDef.header, header.getContext())}
-                                    </TableHead>
+                                    <SortableTableHead key={header.id} header={header}/>
                                 ))}
                             </TableRow>
                         ))}
@@ -295,9 +255,9 @@ export function VBMProtectedItemsTable({ data, loading, /* organizations */ }: V
                     </TableBody>
                 </Table>
             </div>
-            <div className="text-xs text-muted-foreground">
+<div className="text-xs text-muted-foreground">
                 Showing {table.getRowModel().rows.length} protected items
             </div>
-        </div>
+</FilterWorkspace></div>
     )
 }

@@ -23,8 +23,14 @@ yarn-debug.log*
 yarn-error.log*
 
 # Local env files
-.env*.local
-.env
+.env*
+!.env.example
+data
+.codex
+.codex-attachments
+.codex-remote-attachments
+.claude
+claude.md
 
 # Vercel
 .vercel

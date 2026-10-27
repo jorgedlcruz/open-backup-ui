@@ -1,55 +1,41 @@
 "use client"
+import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
-import Link from "next/link"
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
-  SortingState,
-  VisibilityState,
-  ColumnFiltersState,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-} from "@tanstack/react-table"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
+import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { VBMJob } from "@/lib/types/vbm"
-import { veeamApi } from "@/lib/api/veeam-client"
-import { toast } from "sonner"
 import {
-  MoreHorizontal,
-  ArrowUpDown,
-  PlayCircle,
-  PauseCircle,
-  XCircle,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Building2,
-  Columns
-} from "lucide-react"
-import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
+DropdownMenu,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuLabel,
+DropdownMenuSeparator,
+DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
+import { veeamApi } from "@/lib/api/veeam-client"
+import { VBMJob } from "@/lib/types/vbm"
+import {
+ColumnDef,
+ColumnFiltersState,
+flexRender,
+getCoreRowModel,
+getFacetedRowModel,
+getFacetedUniqueValues,
+getFilteredRowModel,
+getSortedRowModel,
+SortingState,
+useReactTable,
+VisibilityState,
+} from "@tanstack/react-table"
+import { AlertTriangle,Building2,CheckCircle2,Clock,MoreHorizontal,PauseCircle,PlayCircle,XCircle } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
 
 interface VBMJobsTableProps {
   data: VBMJob[]
@@ -99,18 +85,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
   const columns = React.useMemo<ColumnDef<VBMJob>[]>(() => [
     {
       accessorKey: "name",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="!p-0 hover:!bg-transparent"
-          >
-            Job Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
+      header: "Job Name",
       cell: ({ row }) => (
         <div className="flex flex-col">
           <Link href={`/vbm/jobs/${row.original.id}/sessions`} className="font-medium hover:underline text-primary">
@@ -271,7 +246,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
 
   const table = useReactTable({
     data,
-    columns,
+    columns: sortableColumns(columns, sorting, data),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -287,7 +262,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
     },
   })
 
-  if (loading) {
+  if (loading && data.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-gray-500">Loading VBM jobs...</div>
@@ -305,9 +280,7 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4 gap-2">
-        {table.getColumn("organizationId") && (
-          <DataTableFacetedFilter
+      <FilterWorkspace label="Grid filters" onClear={()=>table.resetColumnFilters()} filters={<FilterFields>{table.getColumn("organizationId") && <><DataTableFacetedFilter
             column={table.getColumn("organizationId")}
             title="Organization"
             options={Array.from(new Set(data.map(item => item.organizationId))).map(id => ({
@@ -315,22 +288,13 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
               value: id,
               icon: Building2
             }))}
-          />
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              <Columns className="mr-2 h-4 w-4" />
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          /></>}</FilterFields>} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
               .map((column) => {
                 return (
-                  <DropdownMenuCheckboxItem
+                  <GridColumnChoice
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
@@ -339,26 +303,17 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
                     }
                   >
                     {column.id}
-                  </DropdownMenuCheckboxItem>
+                  </GridColumnChoice>
                 )
               })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="rounded-lg border">
+          </fieldset></GridViewMenu></>}>
+<div className="rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
+                  <SortableTableHead key={header.id} header={header}/>
                 ))}
               </TableRow>
             ))}
@@ -387,6 +342,6 @@ export function VBMJobsTable({ data, loading = false, onRefresh, orgLookup = {} 
           </TableBody>
         </Table>
       </div>
-    </div>
+</FilterWorkspace></div>
   )
 }

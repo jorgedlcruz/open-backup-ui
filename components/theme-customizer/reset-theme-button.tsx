@@ -3,6 +3,7 @@
 import { useThemeConfig } from "@/components/active-theme";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_THEME } from "@/lib/themes";
+import { RotateCcw } from "lucide-react";
 
 export function ResetThemeButton() {
     const { setTheme } = useThemeConfig();
@@ -12,8 +13,8 @@ export function ResetThemeButton() {
     };
 
     return (
-        <Button variant="destructive" className="mt-4 w-full" onClick={resetThemeHandle}>
-            Reset to Default
+        <Button variant="outline" onClick={resetThemeHandle}>
+            <RotateCcw size={14} /> Reset to Default
         </Button>
     );
 }

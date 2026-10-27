@@ -19,7 +19,8 @@ export interface VBRSource {
     username: string;
     password?: string; // Only used internally, never returned in list
     protocol: string;
-    platform: 'vbr' | 'vb365' | 'vro' | 'one';
+    platform: 'vbr' | 'vb365' | 'vro' | 'one' | 'kasten';
+    name?: string;
     hasCredentials?: boolean;
 }
 
@@ -111,7 +112,7 @@ export const configStore = {
                     host: url.hostname,
                     port: parseInt(url.port) || 9419,
                     protocol: url.protocol.replace(':', ''),
-                    username: process.env.VEEAM_USERNAME || 'Administrator',
+                    username: process.env.VEEAM_USERNAME || process.env.VBR_USERNAME || 'Administrator',
                     password: process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD,
                     platform: 'vbr',
                     hasCredentials: !!(process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD)
@@ -128,7 +129,7 @@ export const configStore = {
                     host: url.hostname,
                     port: parseInt(url.port) || 4443,
                     protocol: url.protocol.replace(':', ''),
-                    username: 'Environment Variable',
+                    username: process.env.VBM_USERNAME || '',
                     password: process.env.VBM_PASSWORD,
                     platform: 'vb365',
                     hasCredentials: !!process.env.VBM_PASSWORD
@@ -136,6 +137,15 @@ export const configStore = {
             } catch { return null; }
         }
 
+        if (id === 'env-one' || id === 'env-vro') {
+            const prefix = id === 'env-one' ? 'VEEAM_ONE' : 'VRO';
+            const value = process.env[`${prefix}_API_URL`];
+            if (!value) return null;
+            try {
+                const url = new URL(value);
+                return { id, host:url.hostname, port:Number(url.port || (url.protocol === 'https:' ? 443 : 80)), protocol:url.protocol.slice(0,-1), platform:id === 'env-one' ? 'one':'vro', username:process.env[`${prefix}_USERNAME`] || '', password:process.env[`${prefix}_PASSWORD`], hasCredentials:!!process.env[`${prefix}_PASSWORD`] };
+            } catch { return null; }
+        }
         if (!fs.existsSync(CONFIG_FILE)) return null;
         const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
         const stored: StoredSource[] = JSON.parse(data);
@@ -183,6 +193,7 @@ export const configStore = {
             username: source.username,
             protocol: source.protocol || 'https',
             platform: source.platform,
+            ...(source.name ? {name:source.name} : {}),
             encryptedPassword
         };
 

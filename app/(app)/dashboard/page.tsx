@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
     // Redirect to first available platform dashboard
     if (hasVBR) {
-        redirect('/vbr/dashboard')
+        redirect('/vbr/lens')
     } else if (hasVB365) {
         redirect('/vbm/dashboard')
     } else if (hasVONE) {

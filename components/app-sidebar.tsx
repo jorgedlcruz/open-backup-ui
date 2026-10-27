@@ -4,7 +4,9 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles, Network, Aperture, Menu, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import styles from "./mobile-navigation.module.css"
 import {
   Sidebar,
   SidebarContent,
@@ -26,26 +28,29 @@ import {
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import { ChevronRight } from "lucide-react"
 import { useSectionNames } from "@/lib/context/section-names-context"
+import { lenses, lensForPath } from "@/lib/lens/navigation"
+import { navigationLabels } from "@/lib/navigation/breadcrumbs"
+import { isProtectedDataPath } from "@/lib/protected-data/navigation"
 
 // VBR Group with subpages
 const vbrItems = [
   {
-    title: "Dashboard",
-    href: "/vbr/dashboard",
-    icon: LayoutDashboard,
+    title: navigationLabels["/vbr/topology"],
+    href: "/vbr/topology",
+    icon: Network,
   },
   {
-    title: "Ransomware Detection",
+    title: navigationLabels["/vbr/threat-center"],
     href: "/vbr/threat-center",
     icon: ShieldAlert,
   },
   {
-    title: "Jobs & Policies",
+    title: navigationLabels["/vbr/jobs"],
     href: "/vbr/jobs",
     icon: Briefcase,
   },
   {
-    title: "Protected Data",
+    title: navigationLabels["/vbr/protected-data"],
     href: "/vbr/protected-data",
     icon: Shield,
   },
@@ -54,19 +59,19 @@ const vbrItems = [
     icon: Database,
     items: [
       {
-        title: "Virtual Infrastructure",
+        title: navigationLabels["/vbr/inventory/virtual"],
         href: "/vbr/inventory/virtual",
       },
       {
-        title: "Physical and Cloud",
+        title: navigationLabels["/vbr/inventory/protection-groups"],
         href: "/vbr/inventory/protection-groups",
       },
       {
-        title: "Unstructured Data",
+        title: navigationLabels["/vbr/inventory/unstructured"],
         href: "/vbr/inventory/unstructured",
       },
       {
-        title: "Microsoft Entra ID",
+        title: navigationLabels["/vbr/inventory/entra"],
         href: "/vbr/inventory/entra",
       },
     ]
@@ -77,15 +82,15 @@ const vbrItems = [
     icon: Server,
     items: [
       {
-        title: "Backup Proxies",
+        title: navigationLabels["/vbr/infrastructure/proxies"],
         href: "/vbr/infrastructure/proxies",
       },
       {
-        title: "Backup Repositories",
+        title: navigationLabels["/vbr/infrastructure/repositories"],
         href: "/vbr/infrastructure/repositories",
       },
       {
-        title: "Managed Servers",
+        title: navigationLabels["/vbr/infrastructure/managed-servers"],
         href: "/vbr/infrastructure/managed-servers",
       },
     ]
@@ -95,22 +100,22 @@ const vbrItems = [
 // VBM Group - Veeam Backup for M365
 const vbmItems = [
   {
-    title: "Dashboard",
+    title: navigationLabels["/vbm/dashboard"],
     href: "/vbm/dashboard",
     icon: LayoutDashboard,
   },
   {
-    title: "Backup Jobs",
+    title: navigationLabels["/vbm/jobs"],
     href: "/vbm/jobs",
     icon: Briefcase,
   },
   {
-    title: "Protected Objects",
+    title: navigationLabels["/vbm/protected-items"],
     href: "/vbm/protected-items",
     icon: Shield,
   },
   {
-    title: "Organizations",
+    title: navigationLabels["/vbm/organizations"],
     href: "/vbm/organizations",
     icon: Building2,
   },
@@ -120,11 +125,11 @@ const vbmItems = [
     icon: Server,
     items: [
       {
-        title: "Backup Proxies",
+        title: navigationLabels["/vbm/infrastructure/proxies"],
         href: "/vbm/infrastructure/proxies",
       },
       {
-        title: "Backup Repositories",
+        title: navigationLabels["/vbm/infrastructure/repositories"],
         href: "/vbm/infrastructure/repositories",
       },
     ]
@@ -134,7 +139,7 @@ const vbmItems = [
 // VRO Group - Veeam Recovery Orchestrator
 const vroItems = [
   {
-    title: "Recovery Plans",
+    title: navigationLabels["/vro"],
     href: "/vro",
     icon: ShieldCheck,
   },
@@ -143,7 +148,7 @@ const vroItems = [
 // K10 Group - single page
 const k10Items = [
   {
-    title: "Overview",
+    title: navigationLabels["/k10"],
     href: "/k10",
     icon: ShieldCheck,
     badge: "Coming",
@@ -153,27 +158,27 @@ const k10Items = [
 // Analytics Group - Veeam ONE
 const analyticsItems = [
   {
-    title: "Threat Center",
+    title: navigationLabels["/analytics/threat-center"],
     href: "/analytics/threat-center",
     icon: ShieldAlert,
   },
   {
-    title: "Alarms Overview",
+    title: navigationLabels["/analytics/alarms"],
     href: "/analytics/alarms",
     icon: Bell,
   },
   {
-    title: "Dashboards",
+    title: navigationLabels["/analytics/dashboards"],
     href: "/analytics/dashboards",
     icon: LayoutDashboard,
   },
   {
-    title: "Report Catalog",
+    title: navigationLabels["/analytics/reports"],
     href: "/analytics/reports",
     icon: FileText,
   },
   {
-    title: "Saved Reports",
+    title: navigationLabels["/analytics/saved-reports"],
     href: "/analytics/saved-reports",
     icon: Star,
   },
@@ -201,27 +206,27 @@ const documentationItems = [
 // Administration Group
 const adminItems = [
   {
-    title: "Licensing",
+    title: navigationLabels["/administration/licensing"],
     href: "/administration/licensing",
     icon: FileKey,
   },
   {
-    title: "Data Sources",
+    title: navigationLabels["/administration/data-sources"],
     href: "/administration/data-sources",
     icon: Blocks,
   },
   {
-    title: "Branding",
+    title: navigationLabels["/administration/branding"],
     href: "/administration/branding",
     icon: Palette,
   },
   {
-    title: "AI Integrations",
+    title: navigationLabels["/administration/ai-settings"],
     href: "/administration/ai-settings",
     icon: Sparkles,
   },
   {
-    title: "Telemetry",
+    title: navigationLabels["/administration/telemetry"],
     href: "/administration/telemetry",
     icon: Activity,
   },
@@ -230,11 +235,11 @@ const adminItems = [
     icon: UserRoundCog,
     items: [
       {
-        title: "Users",
+        title: navigationLabels["/administration/identity/users"],
         href: "/administration/identity/users",
       },
       {
-        title: "Roles",
+        title: navigationLabels["/administration/identity/roles"],
         href: "/administration/identity/roles",
       },
     ]
@@ -256,11 +261,28 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const pathname = usePathname()
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar()
+  const mobileTrigger = React.useRef<HTMLButtonElement>(null)
+  const mobileNavigationId = React.useId()
   const { sectionNames } = useSectionNames()
   // State for collapsible sub-menus in VBR
   const [inventoryOpen, setInventoryOpen] = React.useState(false)
   const [infrastructureOpen, setInfrastructureOpen] = React.useState(false)
+  const jobsActive = pathname === '/vbr/jobs' || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/')
+  const [jobsOpen, setJobsOpen] = React.useState(jobsActive)
+  React.useEffect(() => { if (jobsActive) setJobsOpen(true) }, [jobsActive, pathname])
+  const activeLens = lensForPath(pathname)
+  const [lensOpen, setLensOpen] = React.useState(!!activeLens)
+  React.useEffect(() => { if (activeLens) setLensOpen(true) }, [activeLens])
+  React.useEffect(() => { setOpenMobile(false) }, [pathname, setOpenMobile])
+
+  function closeMobileMenu(event: React.KeyboardEvent) {
+    if (isMobile && openMobile && event.key === "Escape") {
+      event.preventDefault()
+      setOpenMobile(false)
+      mobileTrigger.current?.focus()
+    }
+  }
 
   // Filter admin items based on what's configured
   // Identity only shows when VBR is configured (uses VBR credentials API)
@@ -270,8 +292,23 @@ export function AppSidebar({
   })
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+    <>
+    <div className={styles.header} onKeyDown={closeMobileMenu}>
+      <Button ref={mobileTrigger} variant="ghost" className={styles.trigger}
+        aria-label={openMobile ? "Close main menu" : "Open main menu"}
+        aria-expanded={openMobile} aria-controls={mobileNavigationId}
+        onClick={() => setOpenMobile(!openMobile)}>
+        {openMobile ? <X size={20} /> : <Menu size={20} />}<span>Menu</span>
+      </Button>
+      <div className={styles.brand}><Image src="/logo.webp" alt="" width={24} height={24} /><span>Open Backup UI</span></div>
+    </div>
+    <Sidebar collapsible="icon" {...props} id={mobileNavigationId} className={[styles.navigation, props.className].filter(Boolean).join(" ")}
+      role={isMobile ? "navigation" : undefined} aria-label={isMobile ? "Main navigation" : undefined}
+      onKeyDown={closeMobileMenu}
+      onClick={event => {
+        if (isMobile && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && (event.target as HTMLElement).closest('a[href]')) setOpenMobile(false)
+      }}>
+      <SidebarHeader className="hidden md:flex">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
@@ -313,7 +350,28 @@ export function AppSidebar({
           {vbrConfigured && (
             <SidebarGroupContent>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <div className="relative flex items-center">
+                    <SidebarMenuButton asChild isActive={!!activeLens || pathname === '/vbr/lens'} tooltip="Protection Lens" className="pr-8 group-data-[collapsible=icon]:pr-2">
+                      <Link href="/vbr/lens" prefetch={false}><Aperture className="h-4 w-4"/><span>Protection Lens</span></Link>
+                    </SidebarMenuButton>
+                    <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={lensOpen ? 'Collapse Protection Lens views' : 'Expand Protection Lens views'} aria-expanded={lensOpen} aria-controls="sidebar-protection-lens" onClick={() => setLensOpen(!lensOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${lensOpen ? '' : '-rotate-90'}`}/></button>
+                  </div>
+                  {lensOpen && <SidebarMenuSub id="sidebar-protection-lens">{lenses.map(lens => <SidebarMenuSubItem key={lens.id}><SidebarMenuSubButton asChild isActive={activeLens === lens.id}><Link href={lens.href} aria-current={activeLens === lens.id ? 'page' : undefined}>{lens.title}</Link></SidebarMenuSubButton></SidebarMenuSubItem>)}</SidebarMenuSub>}
+                </SidebarMenuItem>
                 {vbrItems.map((item) => {
+                  if (item.href === '/vbr/jobs') {
+                    const profilesActive = pathname === '/vbr/jobs/profiles'
+                    return <SidebarMenuItem key={item.title}>
+                      <div className="relative flex items-center">
+                        <SidebarMenuButton asChild isActive={jobsActive} tooltip={item.title} className="pr-8 group-data-[collapsible=icon]:pr-2">
+                          <Link href={item.href} aria-current={jobsActive ? pathname === item.href ? 'page' : 'location' : undefined}><Briefcase className="h-4 w-4"/><span>{item.title}</span></Link>
+                        </SidebarMenuButton>
+                        <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={`${jobsOpen ? 'Collapse' : 'Expand'} Jobs & Policies`} aria-expanded={jobsOpen} aria-controls="sidebar-jobs-policies" onClick={() => setJobsOpen(!jobsOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${jobsOpen ? '' : '-rotate-90'}`}/></button>
+                      </div>
+                      {jobsOpen && <SidebarMenuSub id="sidebar-jobs-policies"><SidebarMenuSubItem><SidebarMenuSubButton asChild isActive={profilesActive}><Link href="/vbr/jobs/profiles" aria-current={profilesActive ? 'page' : undefined}>{navigationLabels['/vbr/jobs/profiles']}</Link></SidebarMenuSubButton></SidebarMenuSubItem></SidebarMenuSub>}
+                    </SidebarMenuItem>
+                  }
                   // Determine if this item is a sub-menu (like Inventory)
                   const isSubMenu = !!item.items
                   // Determine state for this item
@@ -350,10 +408,12 @@ export function AppSidebar({
                   }
 
                   // Standard Item
+                  const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
+                    : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
-                        <Link href={item.href!}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                        <Link href={item.href!} aria-current={isActive ? pathname === item.href ? 'page' : 'location' : undefined}>
                           {item.icon && <item.icon className="h-4 w-4" />}
                           <span>{item.title}</span>
                         </Link>
@@ -599,5 +659,6 @@ export function AppSidebar({
         </div>
       </SidebarFooter>
     </Sidebar>
+    </>
   )
 }

@@ -1,11 +1,20 @@
 @import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
+@import './operations-theme.css';
+@import './glass-themes.css';
+
 @plugin 'tailwindcss-animate';
 @custom-variant dark (&:is(.dark *));
 
 body {
     @apply overscroll-none bg-transparent antialiased;
-    --text-family: var(--font-geist), sans-serif;
+    --text-family: var(--font-geist-sans), sans-serif;
+    --breadcrumb-font-size: var(--ops-small, .75rem);
+    --control-font-size: var(--ops-caption, .75rem);
 }
+
+.app-content { display: flex; flex-direction: column; flex: 1; min-width: 0; width: 100%; }
+[data-theme-content-layout="centered"] .app-content { max-width: 1440px; margin-inline: auto; }
 
 
 

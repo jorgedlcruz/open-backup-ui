@@ -1,3 +1,5 @@
+import { parsePreference, type Preference } from './telemetry/model'
+
 export const TELEMETRY_CONFIG = {
     // SECURITY NOTE:
     // This Key is WRITE-ONLY. It allows the client to send events to PostHog.
@@ -11,28 +13,42 @@ export const TELEMETRY_CONFIG = {
 }
 
 export const STORAGE_KEY = 'veeam_telemetry_disabled'
+export const TELEMETRY_PREFERENCE_EVENT = 'open-backup-ui:telemetry-preference'
+
+export function readTelemetryPreference(): Preference {
+    if (typeof window === 'undefined') return { enabled: null, source: 'unavailable' }
+    try { return parsePreference(window.localStorage.getItem(STORAGE_KEY)) }
+    catch { return { enabled: null, source: 'unavailable' } }
+}
 
 /**
  * Checks if telemetry is explicitly disabled by the user.
  * Returns true if disabled, false otherwise.
  */
 export const isTelemetryDisabled = (): boolean => {
+    return readTelemetryPreference().enabled !== true
+}
+
+function setPreference(enabled: boolean): boolean {
     if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(STORAGE_KEY) === 'true'
+    try {
+        if (enabled) window.localStorage.removeItem(STORAGE_KEY)
+        else window.localStorage.setItem(STORAGE_KEY, 'true')
+        window.dispatchEvent(new Event(TELEMETRY_PREFERENCE_EVENT))
+        return true
+    } catch { return false }
 }
 
 /**
  * Disables telemetry.
  */
 export const disableTelemetry = () => {
-    if (typeof window === 'undefined') return
-    window.localStorage.setItem(STORAGE_KEY, 'true')
+    return setPreference(false)
 }
 
 /**
  * Enables telemetry.
  */
 export const enableTelemetry = () => {
-    if (typeof window === 'undefined') return
-    window.localStorage.removeItem(STORAGE_KEY)
+    return setPreference(true)
 }

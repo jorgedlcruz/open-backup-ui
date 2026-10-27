@@ -1,0 +1,19 @@
+.services {display:flex;flex-wrap:wrap;gap:5px;}
+.table {min-width:1250px;}
+.table td {max-width:270px;overflow-wrap:break-word;}
+.table .organizationName {min-width:210px;}
+.storageTable {min-width:1020px;}
+.sort {display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.rowActions {display:flex;flex-direction:column;align-items:flex-start;gap:8px;}
+.rowActions a {display:inline-flex;align-items:center;gap:6px;font-size:var(--ops-small,11px);color:var(--ops-green);white-space:nowrap;}
+.below {margin-top:20px;}
+.overview {display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:20px;margin-bottom:20px;}
+.facts {padding:0 20px 20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;font-size:12px;}
+.facts dt {color:var(--muted-foreground);font-size:10px;margin-bottom:6px;}
+.facts dd {overflow-wrap:anywhere;}
+.issueList {padding:0 20px 20px;display:flex;flex-direction:column;gap:10px;}
+.issueList li {border:1px solid var(--border);border-left:3px solid var(--ops-chart-warning);border-radius:5px;padding:12px;font-size:12px;}
+.notice {padding:12px 18px;margin-bottom:20px;border:1px solid var(--border);border-radius:6px;color:var(--muted-foreground);font-size:12px;}
+.auto {display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted-foreground);}
+@media(max-width:850px){.overview {grid-template-columns:1fr;}}
+@media(max-width:500px){.facts {grid-template-columns:1fr;}.rowActions {gap:12px;}}

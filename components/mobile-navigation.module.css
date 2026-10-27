@@ -1,0 +1,54 @@
+.header {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    color: var(--sidebar-foreground);
+    background: var(--sidebar);
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+
+  .trigger {
+    min-height: 44px;
+    gap: 8px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .brand img {
+    flex-shrink: 0;
+  }
+
+  .navigation :global([data-sidebar="menu-button"]),
+  .navigation :global([data-sidebar="menu-sub-button"]) {
+    min-height: 44px;
+    height: auto;
+  }
+
+  .navigation :global(button[aria-controls="sidebar-protection-lens"]) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    right: 0;
+  }
+
+  .navigation :global(a[href="/vbr/lens"]) {
+    padding-right: 48px;
+  }
+}

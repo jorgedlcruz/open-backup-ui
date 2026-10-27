@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
+
 import {
     ColumnDef,
 
@@ -22,10 +25,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+
 import { VBMRestorePoint } from "@/lib/types/vbm"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowUpDown, Mail, Globe, Users, Database } from "lucide-react"
+import { Mail, Globe, Users, Database } from "lucide-react"
 
 interface VBMRestorePointsTableProps {
     data: VBMRestorePoint[]
@@ -40,16 +43,7 @@ interface VBMRestorePointsTableProps {
 export const columns: ColumnDef<VBMRestorePoint>[] = [
     {
         accessorKey: "backupTime",
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                className="-ml-4"
-            >
-                Backup Time
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-        ),
+        header: "Backup Time",
         cell: ({ row }) => {
             const date = new Date(row.getValue("backupTime"));
             return <div className="font-medium">{date.toLocaleString()}</div>
@@ -144,7 +138,7 @@ export function VBMRestorePointsTable({ data, loading, lookupData }: VBMRestoreP
 
     const table = useReactTable({
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         onSortingChange: setSorting,
@@ -206,11 +200,7 @@ export function VBMRestorePointsTable({ data, loading, lookupData }: VBMRestoreP
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(header.column.columnDef.header, header.getContext())}
-                                    </TableHead>
+                                    <SortableTableHead key={header.id} header={header}/>
                                 ))}
                             </TableRow>
                         ))}

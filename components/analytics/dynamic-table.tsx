@@ -1,36 +1,27 @@
 "use client"
+import { GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
+
 import {
-    ColumnDef,
-    SortingState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+ColumnDef,
+SortingState,
+flexRender,
+getCoreRowModel,
+getFilteredRowModel,
+getPaginationRowModel,
+getSortedRowModel,
+useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
+import { TableColumnDef,TableSectionData,VeeamOneTableItem } from "@/lib/types/veeam-one"
 import { cn } from "@/lib/utils"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { TableSectionData, TableColumnDef, VeeamOneTableItem } from "@/lib/types/veeam-one"
 
 interface DynamicTableProps {
     sectionData: TableSectionData
@@ -122,22 +113,7 @@ export function DynamicTable({ sectionData, tableData }: DynamicTableProps) {
     const columns = React.useMemo<ColumnDef<VeeamOneTableItem>[]>(() => {
         return sectionData.columns.map(col => ({
             accessorKey: col.field,
-            header: ({ column }) => (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="px-0 hover:bg-transparent font-medium"
-                >
-                    {col.label}
-                    {column.getIsSorted() === "asc" ? (
-                        <ArrowUp className="ml-2 h-4 w-4" />
-                    ) : column.getIsSorted() === "desc" ? (
-                        <ArrowDown className="ml-2 h-4 w-4" />
-                    ) : (
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
-                </Button>
-            ),
+            header: ()=><>{col.label}</>,
             cell: ({ row }) => {
                 const value = row.getValue(col.field)
                 const formatted = formatValue(value, col.formatter)
@@ -153,7 +129,7 @@ export function DynamicTable({ sectionData, tableData }: DynamicTableProps) {
 
     const table = useReactTable({
         data: tableData,
-        columns,
+        columns: sortableColumns(columns, sorting, tableData),
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -177,51 +153,34 @@ export function DynamicTable({ sectionData, tableData }: DynamicTableProps) {
 
     return (
         <div className="w-full space-y-4">
-            <div className="flex items-center gap-4">
-                <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                     placeholder="Filter data..."
                     value={globalFilter}
                     onChange={(event) => setGlobalFilter(event.target.value)}
                     className="max-w-sm"
-                />
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={null} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
                         {table.getAllColumns()
                             .filter((column) => column.getCanHide())
                             .map((column) => {
                                 const colDef = sectionData.columns.find(c => c.field === column.id)
                                 return (
-                                    <DropdownMenuCheckboxItem
+                                    <GridColumnChoice
                                         key={column.id}
                                         checked={column.getIsVisible()}
                                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                     >
                                         {colDef?.label || column.id}
-                                    </DropdownMenuCheckboxItem>
+                                    </GridColumnChoice>
                                 )
                             })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div className="rounded-md border bg-card">
+                    </fieldset></GridViewMenu></>}>
+<div className="rounded-md border bg-card">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
+                                    <SortableTableHead key={header.id} header={header}/>
                                 ))}
                             </TableRow>
                         ))}
@@ -250,7 +209,7 @@ export function DynamicTable({ sectionData, tableData }: DynamicTableProps) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-between py-4">
+<div className="flex items-center justify-between py-4">
                 <div className="text-sm text-muted-foreground">
                     Showing {table.getRowModel().rows.length} of {tableData.length} rows
                 </div>
@@ -273,6 +232,6 @@ export function DynamicTable({ sectionData, tableData }: DynamicTableProps) {
                     </Button>
                 </div>
             </div>
-        </div>
+</FilterWorkspace></div>
     )
 }

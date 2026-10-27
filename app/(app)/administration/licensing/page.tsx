@@ -11,12 +11,13 @@ export default async function LicensingPage() {
     const hasVBR = !!(
         storedSources.some(s => s.platform === 'vbr') ||
         cookieStore.get('veeam_source_id') ||
-        process.env.VEEAM_API_URL
+        process.env.VEEAM_API_URL || process.env.VBR_API_URL
     )
 
     // Robust check for VB365 configuration
     const hasVB365 = !!(
         storedSources.some(s => s.platform === 'vb365') ||
+        cookieStore.get('veeam_vb365_source_id') ||
         getChunkedCookie(cookieStore, 'veeam_vb365_token') ||
         process.env.VBM_API_URL
     )

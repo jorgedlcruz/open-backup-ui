@@ -6,12 +6,15 @@ import { useState, useEffect, useCallback } from "react"
 import { BackupJobsTable } from "./_components/backup-jobs-table"
 import { veeamApi } from "@/lib/api/veeam-client"
 import { VeeamBackupJob } from "@/lib/types/veeam"
+import Link from 'next/link'
+import { ArrowUpRight,RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import ops from '@/components/operations/operations.module.css'
 
 export default function VBRJobsPage() {
     const [jobs, setJobs] = useState<VeeamBackupJob[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    // const { searchQuery } = useSearch()
 
     const fetchJobs = useCallback(async () => {
         try {
@@ -30,27 +33,26 @@ export default function VBRJobsPage() {
     useEffect(() => {
         fetchJobs()
 
-        // Refresh data every 30 seconds
+        // Refresh data every minute.
         const interval = setInterval(fetchJobs, 60000)
         return () => clearInterval(interval)
     }, [fetchJobs])
 
     return (
         <div className="flex-1 overflow-auto">
-            <div className="container mx-auto py-8 px-4">
-                <div className="mb-6 flex justify-between items-center">
+            <main className={ops.console}>
+                <header className={ops.header}>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Veeam Backup Jobs</h1>
-                        <p className="text-muted-foreground mt-2">
-                            Monitor and manage your backup jobs
-                        </p>
+                        <h1>Jobs & policies</h1>
+                        <p>Manage protection. Open a job to investigate its runs, workloads and logs.</p>
                     </div>
-                </div>
+                    <div className={ops.headerControls}><Button asChild variant="outline" size="sm"><Link href="/vbr/lens/operations">Operations queue <ArrowUpRight size={14} /></Link></Button><Button variant="outline" size="sm" disabled={loading} onClick={fetchJobs}><RefreshCw size={14} className={loading?'animate-spin':''}/>Refresh</Button></div>
+                </header>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-red-800 font-medium">Error: {error}</p>
-                        <p className="text-red-600 text-sm mt-1">
+                    <div className={ops.notice} role="alert">
+                        <p>Error: {error}</p>
+                        <p>
                             Please check your API configuration and credentials
                         </p>
                     </div>
@@ -59,9 +61,10 @@ export default function VBRJobsPage() {
                 <BackupJobsTable
                     data={jobs}
                     loading={loading}
+                    error={error}
                     onRefresh={fetchJobs}
                 />
-            </div>
+            </main>
         </div>
     )
 }

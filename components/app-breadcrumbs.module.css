@@ -1,0 +1,9 @@
+.trail { width:100%; max-width:1800px; margin-inline:auto; padding:24px 32px 0; color:var(--muted-foreground); font-size:var(--breadcrumb-font-size,.75rem); line-height:1.5; font-weight:400; letter-spacing:normal; text-transform:none; }
+.trail ol { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; list-style:none; margin:0; padding:0; }
+.trail li { display:inline-flex; align-items:center; gap:8px; min-width:0; overflow-wrap:anywhere; }
+.trail :is(a,span) { font:inherit; letter-spacing:inherit; text-transform:none; }
+.trail a:hover { color:var(--foreground); text-decoration:underline; text-underline-offset:3px; }
+.trail a:focus-visible { outline:2px solid var(--ring); outline-offset:3px; border-radius:2px; }
+.trail [aria-current="page"] { color:var(--foreground); font-weight:500; }
+.separator { opacity:.5; }
+@media(max-width:600px) { .trail { padding:20px 14px 0; } }

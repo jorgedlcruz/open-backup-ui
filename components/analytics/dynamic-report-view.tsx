@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { SortableGrid } from '@/components/ui/sortable-grid'
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
@@ -141,7 +143,7 @@ function TableSection({ data }: { data: SectionData }) {
 
     return (
         <div className="max-h-[400px] overflow-auto">
-            <Table>
+            <SortableGrid rows={items} columns={columns.slice(0,8).map(id=>({id,value:(r:VeeamOneTableItem)=>r[id]}))}>{(items)=>(<Table>
                 <TableHeader>
                     <TableRow>
                         {columns.slice(0, 8).map(col => (
@@ -160,7 +162,7 @@ function TableSection({ data }: { data: SectionData }) {
                         </TableRow>
                     ))}
                 </TableBody>
-            </Table>
+            </Table>)}</SortableGrid>
             {items.length > 100 && (
                 <p className="text-center text-sm text-muted-foreground mt-2">Showing 100 of {items.length} rows</p>
             )}

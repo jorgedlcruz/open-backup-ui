@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { setChunkedCookie, deleteChunkedCookie } from "@/lib/utils/cookie-manager"
 import { configStore, VBRSource } from "@/lib/server/config-store"
 import { tokenManager } from "@/lib/server/token-manager"
+import { isSecureApplicationRequest } from '@/lib/server/request-origin'
 
 // Platform-specific auth configurations
 const platformConfigs = {
@@ -37,9 +38,6 @@ const platformConfigs = {
         tokenCookie: "kasten_token"
     }
 }
-
-// Helper to determine if secure cookies should be used
-const isSecure = (proto: string) => process.env.NODE_ENV === 'production' && proto === 'https:';
 
 type Platform = keyof typeof platformConfigs
 
@@ -96,7 +94,7 @@ export async function POST(
 
                 if (source) {
                     cookieStore.set(cookieName, sourceId, {
-                        secure: isSecure(request.nextUrl.protocol),
+                        secure: isSecureApplicationRequest(request),
                         httpOnly: true,
                         path: '/',
                         maxAge: 60 * 60 * 24 * 7,
@@ -106,7 +104,7 @@ export async function POST(
                     // Set URL cookie for client reference
                     const sourceUrl = `${source.protocol}://${source.host}:${source.port}`
                     cookieStore.set(urlCookieName, sourceUrl, {
-                        secure: isSecure(request.nextUrl.protocol),
+                        secure: isSecureApplicationRequest(request),
                         path: '/',
                         maxAge: 60 * 60 * 24 * 7
                     });
@@ -162,7 +160,7 @@ export async function POST(
 
             // Success: Set Source ID Cookie
             cookieStore.set('veeam_source_id', sourceId, {
-                secure: isSecure(request.nextUrl.protocol),
+                secure: isSecureApplicationRequest(request),
                 httpOnly: true,
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7,
@@ -171,7 +169,7 @@ export async function POST(
 
             // Set URL cookie for client reference
             cookieStore.set('veeam_vbr_token_url', `https://${host}:${port}`, {
-                secure: isSecure(request.nextUrl.protocol),
+                secure: isSecureApplicationRequest(request),
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7
             });
@@ -222,7 +220,7 @@ export async function POST(
 
             // Success: Set Source ID Cookie
             cookieStore.set('veeam_vb365_source_id', sourceId, {
-                secure: isSecure(request.nextUrl.protocol),
+                secure: isSecureApplicationRequest(request),
                 httpOnly: true,
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7,
@@ -231,7 +229,7 @@ export async function POST(
 
             // Set URL cookie for client reference
             cookieStore.set('veeam_vb365_token_url', `https://${host}:${port}`, {
-                secure: isSecure(request.nextUrl.protocol),
+                secure: isSecureApplicationRequest(request),
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7
             });
@@ -313,7 +311,7 @@ export async function POST(
         const sourceIdCookieName = platform === 'veeam-one' ? 'veeam_one_source_id' : `veeam_${platform}_source_id`;
         cookieStore.set(sourceIdCookieName, legacySourceId, {
             httpOnly: true,
-            secure: isSecure(request.nextUrl.protocol),
+            secure: isSecureApplicationRequest(request),
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: '/'
@@ -321,7 +319,7 @@ export async function POST(
 
         await setChunkedCookie(cookieStore, config.tokenCookie, token, {
             httpOnly: true,
-            secure: isSecure(request.nextUrl.protocol),
+            secure: isSecureApplicationRequest(request),
             sameSite: "lax",
             maxAge: 60 * 60 * 8, // 8 hours
             path: "/"
@@ -329,7 +327,7 @@ export async function POST(
 
         cookieStore.set(`${config.tokenCookie}_url`, baseUrl, {
             httpOnly: true,
-            secure: isSecure(request.nextUrl.protocol),
+            secure: isSecureApplicationRequest(request),
             sameSite: "lax",
             maxAge: 60 * 60 * 24 * 30, // 30 days
             path: "/"

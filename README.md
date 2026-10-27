@@ -1,451 +1,165 @@
 # Open Backup UI
 
+**A community Operations console for Veeam environments.**
+
+See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. Open Backup UI **v1.0.0** brings a consistent Operations experience to Veeam Backup & Replication, Veeam Backup for Microsoft 365, Veeam ONE, and administration.
+
+[What's new in v1.0](docs/releases/v1.0.0.md) · [Screenshot guide](docs/releases/v1.0.0-screenshots.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+
 > [!IMPORTANT]
-> **Disclaimer (community project, not supported)**
->
-> This repository is an independent, community-maintained project and **is not an official product of any vendor**.
-> It is provided **as-is**, with **no support obligations** and **no SLAs**. Use at your own risk and test in a lab environment first.
->
-> This project is **not affiliated with, endorsed by, or sponsored by any vendor**.
-> Any vendor and product names referenced in this repository are used **for identification purposes only** and may be trademarks of their respective owners. No trademark rights are granted by this repository.
->
-> **Security note:** Do not use this project against production systems unless you have reviewed the code and your security team has approved it. Do not upload logs, screenshots, or configuration files that contain credentials or customer data.
+> This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
 
-A Next.js 15 application providing a unified monitoring dashboard for data protection environments through an intuitive web interface.
+## What's new in v1.0
 
-![Open Backup UI Walkthrough](https://jorgedelacruz.uk/wp-content/uploads/2026/01/open-backup-ui-connect.png)
+- **Protection Lens:** Overview, Job Operations, Capacity Watch, and Capacity Forecast, with a compact view selector and a browser-specific default.
+- **Capacity planning:** backup-file projections, measured repository trends, retention and immutability investigation, and backup-hygiene review.
+- **Job builder and Policy Profiles:** guided VMware/Hyper-V creation with reusable retention, guest-processing, and scheduling settings.
+- **Investigation workflows:** workload errors, session/task logs, supported retry chains, recovery evidence, and connected repository details.
+- **One Operations experience:** refreshed VBR, Microsoft 365, Veeam ONE, and administration views with consistent grids, expandable filters, date sorting, and breadcrumbs.
+- **Faster navigation:** global search with previews, preserved HexMaps, and a phone-friendly main menu.
+- **Make it yours:** Operations plus Glass Ocean, Glass Forest, and Glass Aurora themes; fonts, colors, and live appearance previews.
 
-## What's New in v0.2.0
+The [full release notes](docs/releases/v1.0.0.md) cover each feature and include insertion points for screenshots.
 
-### Redesigned authentication experience
-- **New landing page**: Onboarding experience with animated feature carousel
-- **Dynamic credentials**: Add and manage data sources directly from the UI, no `.env` files required
-- **Auto-connect**: Credentials are stored locally (encrypted); click **Connect** on subsequent visits
-- **Multi-source support**: Connect multiple platforms from a single interface
-
-### Data sources management
-- **Administration > Data Sources**: View, add, edit, and remove data sources
-- **Real-time status**: See connection status (Connected/Ready/Setup) at a glance
-- **Platform types**: Multi-platform support (see Compatibility)
-
-### Monitoring and reporting integration
-- **Report catalog**: Browse and run reporting endpoints directly from the UI
-- **Saved reports**: Access previously generated reports
-- **Dynamic configuration**: Persisted credentials and auto-connect across supported platforms
-
----
-
-## Features
-
-### Backup platform monitoring (REST API)
-#### Dashboard view
-- **Security posture and best practices**: Simplified top-level widget for immediate visibility
-- **Transferred data widget**: Visual representation of data transfer rates over time
-- **Real-time statistics**: Active jobs, success rate, storage usage, protected workloads, and data processed
-- **Malware events**: Recent scan events and alerts (when available)
-- **Recent sessions**: Overview of the latest sessions with status and details
-  - **Time range dropdown**: 7-day, 14-day, and 30-day views
-  - **Export capability**: Export filtered session data to CSV or JSON
-  - **Type filtering**: Default filtering to backup job sessions for clarity
-
-#### Jobs management
-- **Comprehensive jobs table**: All jobs with status, type, and schedule information
-- **Advanced filtering**: Filter by job status (Running, Success, Warning, Failed)
-- **Job details**: Click any job to view detailed session history
-- **Search capability**: Quick search across job names
-- **Last/next run tracking**: See when jobs last ran and when they will run next
-
-#### Job details view
-- **Enhanced session history**: Complete history with default filtering for backup jobs
-- **Unified filtering**: Filters apply to both the transfer rate chart and the sessions grid
-- **Task-level breakdown**: Detailed task information for each session
-- **Transfer rates**: Visual representation of transfer rates over time
-- **Session status**: Success, Warning, Failed, and Running session tracking
-- **Time-based filtering**: Filter sessions by time range
-
-#### Backup infrastructure
-- **Backup proxies**:
-  - **Performance monitoring**: Track concurrent tasks
-  - **Configuration**: View transport modes, OS type, and details
-  - **Status**: Health indicators (Online/Offline) and maintenance mode status
-- **Backup repositories**:
-  - **Capacity planning**: Visual capacity bars showing Used vs Free space
-  - **Type support**: Windows, Linux, NFS, SMB, and object storage repository support
-  - **Properties**: Monitor immutability settings, task limits, and overall health
-- **Managed servers**:
-  - **Infrastructure overview**: View managed infrastructure servers
-  - **Server details**: Name, type, description, and version information
-
-#### Inventory management
-- **Virtual infrastructure**:
-  - Complete view of VMware vSphere, Microsoft Hyper-V, and Nutanix AHV virtual machines
-  - **Protection status**: Identify protected vs unprotected VMs with indicators
-  - **Rich metadata**: vCenter, datacenter, cluster, guest OS, and DNS names
-  - **Advanced filtering**: Faceted filtering by protection status, platform, and state
-- **Protected data**:
-  - **Rich grid view**: Detailed list of protected workloads with sortable columns
-  - **HexGrid visualization**: Toggleable hexagonal protection map with RPO-based coloring
-    - Green (protected within RPO), Orange (unprotected or outside RPO)
-    - Hover effects and click-to-detail dialog
-    - Filters by type and status with search
-  - **Calendar view**: Monthly calendar view for restore point visualization
-  - **Restore points**: Deep dive into restore points with derived type (Full/Incremental) and size data
-- **Physical and cloud infrastructure**:
-  - **Protection groups**: Monitor agent deployment and status
-  - **Discovered entities**: Track individual machines or cloud instances with agent status
-  - **Agent health**: Last connection time, version, and operation mode tracking
-- **Unstructured data**:
-  - **File shares**: Monitor protected file servers and NAS devices
-  - **Object storage**: Track object storage repositories and credential mappings
-  - **IO control**: View processing limits and configurations
-
-### Orchestration platform monitoring (REST API)
-- **Plans table**: Overview of orchestration plans
-- **Plan status**: Monitor plan state and configuration
-- **Plan details**: Name, description, and workload counts
-- **Search and filter**: Quick access to specific plans
-
-### SaaS backup platform monitoring (REST API)
-- **Dashboard**: Platform-specific statistics and session overview (default filtering to backup sessions)
-- **Jobs**: Monitor jobs, history, and status
-- **Calendar view**: Visualize restore points availability
-- **Organizations/tenants**: Track organizations and their storage usage
-- **Backup infrastructure**:
-  - **Proxies**: Status, CPU/Memory usage, version, roles, and actions (when available)
-  - **Repositories**: Capacity visualization, retention settings, immutability, encryption status (when available)
-
-### Administration
-- **Data sources**:
-  - **Centralized management**: Add, edit, and remove data sources from the UI
-  - **Multi-platform**: Multiple vendor platforms supported (see Compatibility)
-  - **Connection status**: Real-time status indicators (Connected/Ready/Setup)
-  - **Secure storage**: Credentials encrypted using AES-256 and stored locally
-  - **Auto-connect**: One-click re-authentication for stored credentials
-- **Licensing**:
-  - **Tabbed interface**: Toggle between supported platforms
-  - **License overview**: Detailed reporting with PDF/HTML download (where APIs allow)
-  - **Usage breakdown**: Breakdown by workload type (where APIs allow)
-- **Theme customizer**:
-  - **Color presets**: Blue, Green, Orange, Red, Violet, Yellow, and Default
-  - **Radius control**: Adjust UI corner roundness (0 to 1.0rem)
-  - **Scaling**: Adjust font and element scaling (90% to 110%)
-  - **Mode**: Dark/Light mode switching
-  - **Cookie persistence**: Theme settings persist across sessions via server-side cookies
-- **Identity management**:
-  - **User directory**: View and filter users with metadata (where APIs allow)
-- **Security settings**:
-  - **MFA enforcement**: Toggle with real-time API sync (where APIs allow)
-  - **Service accounts**: Per-user management with role assignment (where APIs allow)
-  - **RBAC roles**: View and manage role-based permissions (where APIs allow)
-
-### Kubernetes platform
-- **Coming soon**: Kubernetes backup platform monitoring
-
-### General features
-- **Real-time updates**: Automatic 30-second data refresh across supported views
-- **Unified global search**: Search across jobs and plans from any page
-- **Responsive design**: Optimized for desktop, tablet, and mobile devices
-- **Secure API proxy**: Server-side API calls protect credentials from client exposure
-- **Interactive visualizations**: Charts and graphs using Recharts
-- **Data tables**: Sortable, filterable tables with TanStack Table
-  - **Standardized headers**: Consistent column toggle and search across tables
-  - **Column visibility**: Hide/show columns via dropdown menu
-- **Toast notifications**: Error and success messages
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20.x or later
-- npm, yarn, pnpm, or bun package manager
-- Access to at least one Veeam product REST API:
-  - Veeam Backup & Replication REST API (v1.3-rev1)
-  - Veeam Backup for Microsoft 365 REST API (v8)
-  - Veeam ONE REST API (v12.3)
-  - Veeam Recovery Orchestrator REST API (v7.21)
-
-### Quick Start (Recommended)
-
-1. Install dependencies and start the application:
-
-```bash
-npm install
-npm run dev
-```
-
-2. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-3. **Add your first data source** using the Landing Page:
-   - Click **"Add Your First Data Source"**
-   - Select platform type (VBR, VB365, Veeam ONE, etc.)
-   - Enter the server hostname/IP and port
-   - Click **"Add Source"**, then **"Connect"**
-   - Enter your credentials and authenticate
-
-4. Once connected, click **"Continue to Dashboard"** to access the monitoring interface
-
-> 💡 **Credentials are encrypted and stored locally.** On your next visit, just click "Connect All Sources" to auto-authenticate!
-
-### Managing Data Sources
-
-After initial setup, you can manage your data sources from **Administration > Data Sources**:
-- View all configured platforms with connection status
-- Add new data sources
-- Edit existing source URLs and names
-- Remove data sources
-- Re-authenticate when credentials expire
-
-### Environment Variables (Legacy/Advanced)
-
-> ⚠️ **Deprecated for v0.2.0+**: We recommend using the UI-based Data Sources management instead of environment variables. Environment variables are still supported for backward compatibility and CI/CD deployments.
-
-If you prefer environment-based configuration, create a `.env.local` file:
-
-```env
-# Veeam Backup & Replication
-VEEAM_API_URL=https://your-vbr-server:9419
-VEEAM_USERNAME=your-username
-VEEAM_PASSWORD=your-password
-
-# Veeam Backup for Microsoft 365
-VBM_API_URL=https://your-vbm-server:4443
-VBM_USERNAME=your-vbm-username
-VBM_PASSWORD=your-vbm-password
-
-# Veeam ONE
-VEEAM_ONE_API_URL=https://your-vone-server:1239
-VEEAM_ONE_USERNAME=your-vone-username
-VEEAM_ONE_PASSWORD=your-vone-password
-
-# Veeam Recovery Orchestrator
-VRO_API_URL=https://your-vro-server:9898
-VRO_USERNAME=your-vro-username
-VRO_PASSWORD=your-vro-password
-
-# Allow self-signed certificates (development only)
-NODE_TLS_REJECT_UNAUTHORIZED=0
-```
-
-**Note**: Environment variables take precedence over UI-configured sources. If both are configured, the env var source will be used.
-
-### Development
-
-1. Install dependencies:
-
-```bash
-npm install
-```
-
-2. Run the development server:
-
-```bash
-npm run dev
-```
-
-The application uses Next.js 15 with Turbopack for fast development builds.
-
-3. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-### Production Build
-
-```bash
-npm run build
-npm start
-```
-
-## Container Deployment
-
-See [CONTAINER.md](./CONTAINER.md) for detailed instructions on building and running this application as a container.
-
-## API Integration
+## Explore the console
 
 ### Veeam Backup & Replication
-- **API Version**: v1.3-rev1
-- **Default Port**: 9419
-- **Authentication**: Basic Auth with session tokens
-- **Documentation**: [VBR REST API Reference](https://helpcenter.veeam.com/docs/backup/vbr_rest/reference/vbr-rest-v1-3-rev1.html)
-- **Endpoints Used**:
-  - `/api/v1/inventory` - Virtual infrastructure inventory
-  - `/api/v1/agents/protectionGroups` - Protection groups (Physical/Cloud)
-  - `/api/v1/agents/protectionGroups/{id}/discoveredEntities` - Discovered agent status
-  - `/api/v1/inventory/unstructuredDataServers` - Unstructured data servers
-  - `/api/v1/backupInfrastructure/jobs` - Backup jobs list
-  - `/api/v1/jobs/states` - Advanced job monitoring
-  - `/api/v1/backupInfrastructure/jobs/{id}/sessions` - Job sessions
-  - `/api/v1/backupInfrastructure/backupServers` - Managed servers
-  - `/api/v1/backupInfrastructure/backupProxies` - Backup proxies
-  - `/api/v1/backupInfrastructure/backupRepositories` - Backup repositories
-  - `/api/v1/backupInfrastructure/repositories/states` - Repository states
-  - `/api/v1/license` - License information overview
-  - `/api/v1/license/instances` - License instance details
-  - `/api/v1/license/capacity` - License capacity details
-  - `/api/v1/malware-detection` - Malware events
-  - `/api/v1/security/best-practices` - Security best practices
-  - `/api/v1/security/settings` - MFA and security settings
-  - `/api/v1/accounts/users` - User accounts management
-  - `/api/v1/roles` - RBAC role definitions
-  - `/api/v1/roles/{id}/permissions` - Role permissions
-  - `/api/v1/backupObjects` - Backup objects lookup
-  - `/api/v1/backups/{id}` - Backup details
-  - `/api/v1/backups/{id}/backupFiles` - Backup files (sizes)
-  - `/api/v1/restorePoints` - Restore points inventory
 
-### Veeam Recovery Orchestrator
-- **API Version**: v7.21
-- **Default Port**: 9898
-- **Authentication**: Basic Auth
-- **Documentation**: [VRO REST API Reference](https://helpcenter.veeam.com/references/vro/7.2/rest/7.2.1/)
-- **Endpoints Used**:
-  - `/api/v7.2/Plans` - Recovery orchestration plans
+| Workspace | What you can do |
+| --- | --- |
+| **Protection Lens** | Review estate health, investigate the current job queue, identify capacity pressure, and choose a default Lens. |
+| **Capacity Forecast** | Compare retained-file history and projections; explore growth/retention scenarios; review immutability and backup hygiene. A server collector records capacity every 15 minutes. |
+| **Jobs & Policies** | Search and filter jobs; sort last/next runs; inspect workloads, sessions, logs, and supported retry chains; retain start, stop, retry, enable, and disable actions. |
+| **Job builder** | Create VMware vSphere or Hyper-V backup jobs using live workload/storage choices, policy settings, preflight checks, and a reviewable JSON payload. Existing backup-copy and Entra ID forms remain available. |
+| **Policy Profiles** | Save, duplicate, revise, import, and export source-specific retention, guest-processing, and schedule profiles. Applying a profile copies its settings into a new job. |
+| **Protected Data** | Switch between coverage inventory and HexMap; inspect restore-point counts, sizes, recovery age, and RPO indicators. Open restore-point tables/calendars and recovery evidence. |
+| **Protection Topology** | Explore confirmed workload → job → repository paths in map/list views; investigate a workload's restore points across repository lanes. |
+| **Ransomware Detection** | Review native suspicious-activity events, affected workloads, detection settings, and the separate backup data-reduction indicators. |
+| **Backup Infrastructure** | Inspect repository capacity, consumption, scale-out grouping and immutability; proxy transport/task settings; managed-server roles and component updates. |
+| **Inventory** | Browse virtual infrastructure with production/protection context, protection groups with agent/discovery health, and file-share/object-storage sources. |
 
-### Veeam Backup for Microsoft 365
-- **API Version**: v8
-- **Default Port**: 4443
-- **Authentication**: Basic Auth
-- **Documentation**: [VBM REST API Reference](https://helpcenter.veeam.com/docs/vbo365/rest/reference/vbo-rest-v8.html)
-- **Endpoints Used**:
-  - `/v8/Jobs` - Microsoft 365 backup jobs
-  - `/v8/JobSessions` - Job history and status
-  - `/v8/Organizations` - M365 Organizations
-  - `/v8/ProtectedUsers` - Protected Users inventory
-  - `/v8/ProtectedGroups` - Protected Groups inventory
-  - `/v8/ProtectedSites` - Protected Sites inventory
-  - `/v8/ProtectedTeams` - Protected Teams inventory
-  - `/v8/RestorePoints` - Global restore point search
-  - `/v8/License` - License status and info
-  - `/v8/LicensedUsers` - Licensed user management (GET/DELETE)
-  - `/v8/Proxies` - Backup proxy servers
-  - `/v8/BackupRepositories` - Backup repository management
-  - `/v8/Reports/GenerateLicenseOverview` - PDF report generation
-  - `/v8/Health` - API service health
+### Microsoft 365 backup
 
-## Project Structure
+The dashboard combines job health, session history, backup evidence, and repository capacity. Dedicated Operations views cover:
 
-```
-├── app/
-│   ├── administration/               # Administration Area
-│   │   ├── branding/                 # Branding settings (Theme Customizer)
-│   │   ├── licensing/                # Licensing reports & status
-│   │   └── layout.tsx                # Administration layout
-│   ├── api/                          # API routes (secure proxy to Veeam APIs)
-│   │   ├── veeam/                    # VBR API routes
-│   │   │   ├── auth/                 # VBR authentication
-│   │   │   ├── jobs/                 # Backup jobs endpoint
-│   │   │   ├── sessions/             # Job sessions endpoint
-│   │   │   ├── backupInfrastructure/ # Infrastructure endpoints
-│   │   │   ├── license/              # License endpoints (inc. reports)
-│   │   │   ├── malware-detection/    # Malware events
-│   │   │   └── security/             # Security best practices
-│   │   ├── vro/                      # VRO API routes
-│   │   └── vbm/                      # VBM API routes
-│   │       ├── LicensedUsers/        # Licensed user management
-│   │       ├── Proxies/              # Proxy servers
-│   │       ├── Reports/              # PDF report generation
-│   │       └── ...                   # Other VBM endpoints
-│   ├── vbr/                          # VBR monitoring pages
-│   │   ├── dashboard/                # VBR dashboard with stats
-│   │   ├── jobs/                     # Jobs list and details
-│   │   ├── inventory/                # Inventory management
-│   │   ├── infrastructure/           # Infrastructure management
-│   │   ├── protected-data/           # Restore points & calendar view
-│   │   └── page.tsx                  # Redirects to dashboard
-│   ├── vro/                          # VRO monitoring page
-│   ├── vbm/                          # VBM monitoring pages
-│   │   ├── dashboard/                # VBM dashboard with stats
-│   │   ├── jobs/                     # M365 backup jobs list
-│   │   ├── protected-items/          # Protected objects view
-│   │   ├── organizations/            # M365 organizations
-│   │   └── infrastructure/           # Backup infrastructure
-│   │       ├── proxies/              # Backup proxies page
-│   │       └── repositories/         # Backup repositories page
-│   ├── k10/                          # K10 placeholder page
-│   ├── layout.tsx                    # Root layout with sidebar & theme provider
-│   └── page.tsx                      # Home (redirects to /vbr/dashboard)
-├── components/
-│   ├── ui/                           # shadcn/ui components (20+ components)
-│   ├── theme-customizer/             # Branding components (Radius, Mode, Preset)
-│   │   ├── color-mode-selector.tsx
-│   │   ├── content-layout-selector.tsx
-│   │   ├── preset-selector.tsx
-│   │   └── theme-radius-selector.tsx
-│   ├── app-header.tsx                # Application header with search
-│   ├── app-sidebar.tsx               # Navigation sidebar
-│   ├── active-theme.tsx              # Theme state management component
-│   ├── administration-nav.tsx        # Administration sidebar
-│   ├── dashboard-stats.tsx           # Dashboard statistics cards
-│   ├── sessions-overview.tsx         # Recent sessions widget with chart
-│   ├── transfer-rate-chart.tsx       # Transfer rate visualization
-│   ├── job-details-header.tsx        # Job details header component
-│   ├── vbr-restore-points-calendar.tsx # VBR Calendar View
-│   ├── vbm-restore-points-calendar.tsx # VBM Calendar View
-│   ├── hexgrid-protection-view.tsx   # HexGrid protection visualization
-│   └── ...                           # Various data tables
-├── lib/
-│   ├── api/
-│   │   └── veeam-client.ts           # API client utilities
-│   ├── types/
-│   │   ├── veeam.ts                  # VBR TypeScript types
-│   │   └── vbm.ts                    # VBM TypeScript types
-│   └── utils/
-│       ├── utils.ts                  # General utilities
-│       ├── transfer-rate.ts          # Transfer rate calculations
-│       └── rate-limiter.ts           # API rate limiting
-├── hooks/
-│   └── use-mobile.ts                 # Mobile detection hook
-└── public/
-    ├── favicon.ico                   # Application favicon
-    └── logo.webp                     # Application logo
+- **Backup Jobs:** schedules, sessions, per-workload errors, and existing job actions.
+- **Protected Objects:** users, groups, sites, and teams; HexMap, restore points, reported sizes, and review filters.
+- **Organizations:** job health, backup evidence, storage usage, and organization details.
+- **Repositories:** disk/cache and object-storage measurements, retention, immutability settings, and job relationships.
+- **Proxies:** availability, component updates, and concurrent-task configuration where reported.
+
+### Veeam ONE and Recovery Orchestrator
+
+- **Alarm Operations:** severity, age, affected objects, descriptions, knowledge-base guidance, history, exports, and reviewed resolution actions.
+- **Report Operations:** searchable catalog and saved reports, API-driven parameters, execution status, complete paged result tables, summaries, and native charts.
+- **Recovery Orchestrator:** search and inspect recovery plans and status.
+
+The revamped Veeam ONE views use native CSS/SVG visuals. Some older application components still retain Recharts/Tremor dependencies.
+
+### Search, appearance, and administration
+
+Open global search with **Ctrl/Cmd+K** to find VBR and Microsoft 365 workloads, jobs, and repositories. Scope results, inspect a preview, revisit recent items, and follow labelled approximate matches.
+
+Shared grids use expandable filter groups in a left rail, **Clear all** next to **Filters**, column controls, and sorting where applicable. The phone menu opens above the page content.
+
+Administration includes **Licensing**, **Data Sources**, **Branding & Appearance**, **AI Integrations**, **Telemetry**, and **Identity**. Review usage and expiration, connection/authentication status, API versions, user/role permissions, and local diagnostics. Appearance settings include light/dark mode, fonts, colors, density, radius, layout, sidebar mode, and section names.
+
+Optional AI health summaries support OpenAI, Google Gemini, and Anthropic. Generating a summary sends selected environment context to the configured provider; normal monitoring does not require AI.
+
+## Get started
+
+### Requirements
+
+- Node.js 20 or later and npm. The local v1.0 build was checked with Node.js 22.
+- Network access **from the application server** to the supported platform APIs.
+- Appropriate platform credentials and a persistent, writable `data/` directory.
+
+```bash
+git clone https://github.com/jorgedlcruz/open-backup-ui.git
+cd open-backup-ui
+npm ci --legacy-peer-deps
+npm run dev
 ```
 
-## Technology Stack
+Open [http://localhost:3000/connect](http://localhost:3000/connect), add a data source, connect, and continue to the dashboard. Manage sources later in **Administration → Data Sources**. The interface currently supports one configured source per platform type.
 
-- **Framework**: [Next.js 15](https://nextjs.org/docs) with App Router and Turbopack
-- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) built on [Radix UI](https://www.radix-ui.com/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **Charts**: [Recharts](https://recharts.org/)
-- **Data Tables**: [TanStack Table](https://tanstack.com/table/latest)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Theme**: [next-themes](https://github.com/pacocoursey/next-themes)
+The locked dependency set requires legacy peer resolution; use the same install command locally, in CI, and in containers.
 
-## Compatibility
+### Commands
 
-This project currently supports:
-- Veeam Backup and Replication REST API (v1.3-rev1)
-- Veeam Backup for Microsoft 365 REST API (v8)
-- Veeam ONE REST API (v12.3)
-- Veeam Recovery Orchestrator REST API (v7.21)
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Development server with Turbopack |
+| `npm run build` | Full production build, including Next.js lint/type checks |
+| `npm start` | Production server; see the TLS behavior below |
+| `npm test` | Complete automated regression suite |
+| `npm run typecheck` | Standalone TypeScript check |
+| `npm run lint` | ESLint |
+| `npm run test:forecast` | Forecast, retention/storage investigation, and collector tests |
+| `npm run test:job-builder` | Job/profile models, native API contract, and submission safeguards |
 
-## Documentation
+Additional `test:*` commands in `package.json` cover each platform and workspace.
 
-### Veeam Product Documentation
-- [Veeam Backup & Replication REST API](https://helpcenter.veeam.com/docs/backup/vbr_rest/)
-- [Veeam Recovery Orchestrator REST API](https://helpcenter.veeam.com/references/vro/)
-- [Veeam Backup for Microsoft 365 REST API](https://helpcenter.veeam.com/docs/vbo365/rest/)
+## API coverage and evidence
 
-## Support
+| Platform | Current integration |
+| --- | --- |
+| **VBR** | Primarily `/api/v1` with `1.3-rev1`; selected investigation/builder readers negotiate `1.3-rev2` for supported server builds. |
+| **Microsoft 365 backup** | `/v8` resource routes; stored-source authentication currently uses `/v7/Token`. |
+| **Veeam ONE** | `/api/v2.3` reporting and alarm routes. |
+| **Recovery Orchestrator** | `/api/v7.21/Plans`. |
+| **Kasten K10** | Placeholder; monitoring is not implemented. |
 
-This project is provided on a best-effort basis via GitHub issues only. It is not supported by Veeam Support.
+This is an implementation summary, not a certification matrix. Versions and permissions determine available fields and actions. Missing, stale, partial, and unsupported evidence is shown explicitly in the new Operations views.
 
-## Trademarks
+Forecasts are advisory. Retained-file history is not historical disk usage, and file sizes are not necessarily physical allocation or reclaimable space. Physical trends need at least three daily readings spanning 48 hours. Recovery-point counts, successful jobs, and an absence of malware events do not establish recoverability or a secure environment.
 
-Veeam and related marks are trademarks of Veeam Software. This project is independent and not affiliated with, endorsed by, or sponsored by Veeam Software.
+## Deployment and data
 
-## Data handling
+Use a persistent Node server or container for unattended capacity collection. Persist `data/` and the encryption key across upgrades. Profiles and capacity history are local to the application instance; this is not a distributed or multi-tenant service.
 
-Credentials are stored locally (encrypted) by the application. You are responsible for reviewing whether this meets your security requirements.
+**Access and TLS:** the app can use saved platform credentials and perform management actions. Put shared instances behind an authenticated access layer. The existing `npm start` script disables outbound TLS certificate verification; review the [deployment guide](docs/deployment.md) before production use. A phone only needs access to this web app, not to the backup servers.
 
+[Deployment, remote access, environment variables, and data handling](docs/deployment.md) · [Container instructions](CONTAINER.md)
 
-### Application Documentation
-- [Container Deployment Guide](./CONTAINER.md)
-- [Troubleshooting Guide](./TROUBLESHOOTING.md) - Solutions for common issues including 403 errors
+## Architecture
 
-## Contributing
+```mermaid
+flowchart LR
+    Browser[Browser: Operations, search, maps, job builder]
+    App[Next.js: pages, API routes, server actions]
+    Platforms[VBR / Microsoft 365 / Veeam ONE / VRO]
+    Stores[Local configuration, profiles, capacity history]
+    AI[Optional AI provider]
+    Browser --> App
+    App --> Platforms
+    App --> Stores
+    App -->|Requested summary| AI
+```
 
-This project was developed originally as part of the Veeam Community Hackathon 2025. With a limited and static subset of funcionality, it can be found here - https://github.com/VeeamCommunity/veeamcommunity-2025-Team-1/ Since then, many features have been added and the codebase has been refactored to be more maintainable and extensible. 
+Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, Radix/shadcn controls, TanStack Table, React Flow/ELK, and native CSS/SVG Operations visuals.
 
-If you are interested in contributing to this project, please see [CONTRIBUTING.md](./CONTRIBUTING.md) and [DCO.md](./DCO.md) for contribution guidelines.
+- `app/`: platform pages, authenticated-source API readers, and actions.
+- `components/`: shared Operations controls and domain workspaces.
+- `lib/`: API adapters, evidence models, forecasting, search, profiles, and local stores.
+- `tests/`: model, loading, API-contract, isolation, and regression checks.
+- `data/`: ignored runtime configuration, encrypted secrets, profiles, and capacity observations.
+- `docs/`: release notes, screenshots guide, deployment, and implementation details.
 
-## License
+## Current boundaries
 
-See [LICENSE](./LICENSE) file for details.
+- Analytics → Dashboards, Analytics → Threat Center, and Kasten remain placeholders. The VBR Ransomware Detection workspace is implemented.
+- Disabled creation-menu entries are not implemented. Reusable profiles apply to the new VMware/Hyper-V builder; they do not modify existing jobs automatically.
+- API coverage and mutation support vary by platform and job type. A successful connection does not validate every operation.
+- Some legacy Veeam ONE client paths still contain explicit demo/report fixtures; confirm data provenance for the workflow you use.
+- Polling and collection intervals vary. The application is not a real-time event stream or a substitute for a restore test.
+
+## Documentation and community
+
+- [v1.0 release notes](docs/releases/v1.0.0.md) and [screenshot checklist](docs/releases/v1.0.0-screenshots.md)
+- [Operations implementation and metric definitions](docs/operations-revamp.md)
+- [Protection Topology](docs/protection-topology.md) and [workload resilience](docs/workload-resilience.md)
+- [Deployment](docs/deployment.md), [containers](CONTAINER.md), and [troubleshooting](TROUBLESHOOTING.md)
+- [Contributing](CONTRIBUTING.md), [Developer Certificate of Origin](DCO.md), and [license](LICENSE)
+
+Originally developed for the [Veeam Community Hackathon 2025](https://github.com/VeeamCommunity/veeamcommunity-2025-Team-1/). Issues and contributions are welcome; support is best-effort community support, not Veeam Support.

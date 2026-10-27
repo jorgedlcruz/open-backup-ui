@@ -1,14 +1,15 @@
 "use client"
+import { FilterFields } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
-import { useState, useMemo } from "react"
-import { VeeamOneReportTemplate, VeeamOneTag } from "@/lib/types/veeam-one"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, FileText } from "lucide-react"
 import { FacetedFilter } from "@/components/faceted-filter"
-import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { VeeamOneReportTemplate,VeeamOneTag } from "@/lib/types/veeam-one"
+import { FileText } from "lucide-react"
 import Link from "next/link"
+import { useMemo,useState } from "react"
 
 interface ReportCatalogProps {
     templates: VeeamOneReportTemplate[]
@@ -83,37 +84,21 @@ export function ReportCatalog({ templates, tags }: ReportCatalogProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex flex-1 items-center space-x-2">
-                    <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                             placeholder="Search reports..."
-                            className="h-8 w-[150px] lg:w-[250px] pl-8"
+                            className="h-8 w-[150px] lg:w-[250px]"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <FacetedFilter
+                        /></>} onClear={()=>{setSearchQuery('');setSelectedTags(new Set())}} filters={<FilterFields>
+<FacetedFilter
                         title="Tags"
                         options={tagOptions}
                         selectedValues={selectedTags}
                         onSelect={setSelectedTags}
                         counts={tagCounts}
                     />
-                </div>
-                {selectedTags.size > 0 && (
-                    <Button
-                        variant="ghost"
-                        onClick={() => setSelectedTags(new Set())}
-                        className="h-8 px-2 lg:px-3"
-                    >
-                        Reset
-                    </Button>
-                )}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+</FilterFields>}>
+<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredTemplates.map((template) => (
                     <Link key={template.reportTemplateId} href={`/analytics/reports/${template.uid || template.reportTemplateId}`} className="block h-full">
                         <Card className="flex flex-col h-full hover:shadow-md transition-shadow cursor-pointer">
@@ -162,12 +147,11 @@ export function ReportCatalog({ templates, tags }: ReportCatalogProps) {
                     </Link>
                 ))}
             </div>
-
-            {filteredTemplates.length === 0 && (
+{filteredTemplates.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
                     No reports found matching your criteria.
                 </div>
             )}
-        </div>
+</FilterWorkspace></div>
     )
 }

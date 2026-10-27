@@ -1,0 +1,6 @@
+.header { display:inline-flex; align-items:center; gap:6px; width:100%; color:inherit; font:inherit; text-align:inherit; cursor:pointer; background:none; border:0; padding:0; }
+.header svg { flex-shrink:0; opacity:.55; }
+.header:hover { color:var(--foreground); }.header:hover svg,[aria-sort=ascending] .header svg,[aria-sort=descending] .header svg { opacity:1; color:var(--ops-accent,var(--primary)); }
+.header:focus-visible,.status button:focus-visible { outline:2px solid var(--ring); outline-offset:4px; border-radius:2px; }
+.status { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:9px 16px; color:var(--muted-foreground); font-size:var(--ops-caption,11px); border-bottom:1px solid var(--border); background:var(--card); }
+.status button { display:inline-flex; gap:5px; align-items:center; color:var(--ops-accent,var(--primary)); cursor:pointer; }

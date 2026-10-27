@@ -25,11 +25,12 @@ export function SectionNamesEditor() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {sectionOrder.map((key) => (
                     <div key={key} className="space-y-1.5">
-                        <label className="text-sm font-medium text-muted-foreground">
+                        <label htmlFor={`section-name-${key}`} className="text-xs font-medium text-muted-foreground">
                             {sectionLabels[key]}
                         </label>
                         <div className="flex gap-1.5">
                             <Input
+                                id={`section-name-${key}`}
                                 value={sectionNames[key]}
                                 onChange={(e) => setSectionName(key, e.target.value)}
                                 placeholder={getDefaultName(key)}
@@ -40,6 +41,7 @@ export function SectionNamesEditor() {
                                 size="icon"
                                 onClick={() => resetSectionName(key)}
                                 title={`Reset to "${getDefaultName(key)}"`}
+                                aria-label={`Reset ${sectionLabels[key]} label`}
                                 className="shrink-0 h-9 w-9"
                             >
                                 <RotateCcw className="h-3.5 w-3.5" />

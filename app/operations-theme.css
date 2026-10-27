@@ -1,0 +1,216 @@
+/* Shared operational semantics. Brand accents and result colors are independent. */
+:root {
+    --ops-accent: #37bd89;
+    --ops-action: #258861;
+    --ops-action-hover: #1f7855;
+    --ops-danger: #b93347;
+    --ops-warning: #876013;
+    --ops-success: #237957;
+    --ops-active: #2769a5;
+    --ops-chart-success: #37bd89;
+    --ops-chart-warning: #dcb05b;
+    --ops-chart-danger: #e36b78;
+    --ops-chart-active: #79b9f0;
+}
+
+.dark {
+    --ops-danger: #f18b94;
+    --ops-warning: #e9bd68;
+    --ops-success: #5bd3a3;
+    --ops-active: #79b9f0;
+}
+
+/* Selected through the existing cookie-backed Branding & Appearance controls. */
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) {
+    --text-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --background: #f5f6f7;
+    --foreground: #25282d;
+    --card: #ffffff;
+    --card-foreground: var(--foreground);
+    --popover: var(--card);
+    --popover-foreground: var(--foreground);
+    --primary: #257951;
+    --primary-foreground: #ffffff;
+    --secondary: #e9eeeb;
+    --secondary-foreground: #365143;
+    --muted: #edf0f2;
+    --muted-foreground: #5c6570;
+    --accent: #e2f0e9;
+    --accent-foreground: #1e6044;
+    --destructive: var(--ops-danger);
+    --destructive-foreground: #ffffff;
+    --border: #dce0e4;
+    --input: #c8cfd5;
+    --ring: #258861;
+    --chart-1: var(--ops-chart-success);
+    --chart-2: var(--ops-chart-active);
+    --chart-3: var(--ops-chart-warning);
+    --chart-4: #b0a1e6;
+    --chart-5: var(--ops-chart-danger);
+    --sidebar: #ffffff;
+    --sidebar-foreground: #4b5560;
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--accent);
+    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --radius: .625rem;
+    --ops-panel-radius: var(--radius);
+    --ops-control-radius: max(0px, calc(var(--radius) - 4px));
+    --ops-density: 1;
+    --ops-text: .8125rem;
+    --ops-small: .75rem;
+    --ops-caption: .6875rem;
+    font-family: var(--text-family);
+    font-size: var(--ops-text);
+    line-height: 1.5;
+}
+
+.dark :is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) {
+    --background: #111214;
+    --foreground: #e5e7eb;
+    --card: #18191c;
+    --popover: #1d1f23;
+    --primary: #37bd89;
+    --primary-foreground: #0b2419;
+    --secondary: #252a28;
+    --secondary-foreground: #c6d8cd;
+    --muted: #222428;
+    --muted-foreground: #a1a7b0;
+    --accent: #20362c;
+    --accent-foreground: #8de1b9;
+    --border: #303238;
+    --input: #42464e;
+    --ring: #37bd89;
+    --sidebar: #151619;
+    --sidebar-foreground: #b3b9c2;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"])[data-theme-scale="sm"] {
+    --ops-density: .9;
+    --ops-text: .75rem;
+    --ops-small: .6875rem;
+    --ops-caption: .6875rem;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"])[data-theme-scale="lg"] {
+    --ops-density: 1.2;
+    --ops-text: .9375rem;
+    --ops-small: .875rem;
+    --ops-caption: .8125rem;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is(h1, h2.text-3xl) {
+    font-size: clamp(1.5rem, 2.2vw, 1.875rem);
+    font-weight: 650;
+    letter-spacing: -.04em;
+    line-height: 1.25;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="card"] {
+    border-radius: var(--radius);
+    box-shadow: none;
+    gap: calc(1.25rem * var(--ops-density));
+    padding-block: calc(1.25rem * var(--ops-density));
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="card-header"], [data-slot="card-content"], [data-slot="card-footer"]) {
+    padding-inline: calc(1.25rem * var(--ops-density));
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="card-title"] {
+    font-size: calc(.875rem * var(--ops-density));
+    font-weight: 600;
+    letter-spacing: -.015em;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="card-description"], [data-slot="dialog-description"]) {
+    font-size: var(--ops-small);
+    line-height: 1.6;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="table"] {
+    font-size: var(--ops-small);
+    font-variant-numeric: tabular-nums;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="table-head"] {
+    background: color-mix(in srgb, var(--muted) 55%, var(--card));
+    color: var(--muted-foreground);
+    font-size: var(--ops-caption);
+    font-weight: 500;
+    padding: calc(.6875rem * var(--ops-density)) 1rem;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="table-cell"] {
+    padding: calc(.875rem * var(--ops-density)) 1rem;
+    border-color: color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="table-cell"] .text-sm {
+    font-size: var(--ops-small);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="button"], [data-slot="select-trigger"], [data-slot="input"], [data-slot="tabs-trigger"]) {
+    font-size: var(--ops-small);
+    border-radius: max(0px, calc(var(--radius) - 4px));
+    box-shadow: none;
+}
+
+/* Actions use the same compact type as grid captions, including popover triggers. */
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="button"] {
+    font-size: var(--control-font-size);
+    line-height: 1.4;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="badge"] {
+    border-radius: max(0px, calc(var(--radius) - 5px));
+    font-size: var(--ops-caption);
+    font-weight: 500;
+    padding: .2rem .45rem;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="badge"][data-variant="success"] {
+    color: var(--ops-success);
+    background: color-mix(in srgb, var(--ops-success) 10%, transparent);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="badge"][data-variant="warning"] {
+    color: var(--ops-warning);
+    background: color-mix(in srgb, var(--ops-warning) 10%, transparent);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="badge"][data-variant="destructive"] {
+    color: var(--ops-danger);
+    background: color-mix(in srgb, var(--ops-danger) 10%, transparent);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="sidebar-menu-button"], [data-slot="sidebar-menu-sub-button"]) {
+    font-size: var(--ops-small);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="sidebar-menu-sub-button"][data-active="true"] {
+    font-weight: 500;
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) [data-slot="sidebar-menu-button"][data-active="true"] {
+    box-shadow: inset 2px 0 0 var(--primary);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+    background: var(--card);
+    border-radius: var(--radius);
+    font-size: var(--ops-text);
+}
+
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+    font-size: 1rem;
+    letter-spacing: -.02em;
+}
+
+/* Keep a visible keyboard focus indicator when removing decorative shadows. */
+:is([data-theme-preset="operations"], [data-theme-preset^="glass-"]) :is(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+}

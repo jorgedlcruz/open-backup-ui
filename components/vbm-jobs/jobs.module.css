@@ -1,0 +1,49 @@
+.page { min-width:0; }
+.page h1 { overflow-wrap:anywhere; }
+.resultMetric { padding:17px 0 11px; }
+.resultMetric > span { font-size:16px; }
+.jobsTable { min-width:1150px; }
+.sessionsTable { min-width:1050px; }
+.jobsTable td,.sessionsTable td { max-width:290px; min-width:100px; overflow-wrap:anywhere; line-height:1.65; }
+.sort,.evidenceLink { display:flex; align-items:center; gap:7px; text-align:left; cursor:pointer; }
+.evidenceLink:hover { color:var(--ops-green); }
+.evidenceLink svg { flex-shrink:0; }
+.back { margin-bottom:16px; }
+.configuration { padding:0 20px 20px; font-size:var(--ops-small,11px); }
+.configuration > p { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.7; margin-bottom:16px; color:var(--muted-foreground); }
+.facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px 24px; }
+.facts dt { color:var(--muted-foreground); font-size:var(--ops-caption,10px); margin-bottom:5px; }
+.facts dd { overflow-wrap:anywhere; line-height:1.7; font-size:var(--ops-small,11px); }
+.configuration details { margin-top:20px; border-top:1px solid var(--border); padding-top:14px; }
+.configuration summary { cursor:pointer; color:var(--muted-foreground); margin-bottom:12px; }
+.stack { display:flex; flex-direction:column; gap:20px; min-width:0; }
+.navigation { display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between; gap:10px; margin-bottom:20px; }
+.navigation > div { display:flex; align-items:center; gap:10px; }
+.detailGrid { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap:20px; align-items:start; }
+.sideFacts { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; padding:0 20px 20px; }
+.sideFacts dt { color:var(--muted-foreground); font-size:var(--ops-caption,10px); margin-bottom:5px; }
+.sideFacts dd { font-size:var(--ops-small,11px); line-height:1.65; overflow-wrap:anywhere; }
+.result { padding:0 20px 20px; font-size:var(--ops-small,12px); }
+.result p { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.8; margin-top:12px; }
+.workloads { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; padding:0 20px 18px; }
+.workloads button { border:1px solid var(--border); border-radius:7px; padding:12px 10px; cursor:pointer; text-align:left; }
+.workloads button[aria-pressed=true] { border-color:var(--ops-green); background:color-mix(in srgb,var(--ops-accent) 6%,transparent); }
+.workloads span,.workloads small { display:block; color:var(--muted-foreground); font-size:var(--ops-caption,10px); }
+.workloads strong { display:block; font-size:24px; font-weight:550; margin:5px 0; }
+.logList { padding:0 20px; }
+.logEntry { border:1px solid var(--border); border-radius:7px; padding:16px; margin-bottom:10px; }
+.logEntry[data-issue=true] { border-left:3px solid var(--ops-warning); }
+.logEntry[data-error=true] { border-left-color:var(--ops-danger); }
+.logEntry header { display:flex; align-items:center; flex-wrap:wrap; gap:10px; color:var(--muted-foreground); font-size:var(--ops-caption,10px); }
+.logEntry header time { margin-left:auto; }
+.logEntry p { white-space:pre-wrap; overflow-wrap:anywhere; font-size:var(--ops-small,12px); line-height:1.8; margin-top:10px; }
+.logEntry > strong { display:block; overflow-wrap:anywhere; font-size:11px; font-weight:500; margin-top:12px; }
+.logEntry details { font-size:10px; color:var(--muted-foreground); margin-top:12px; }
+.logEntry summary { cursor:pointer; }
+.chain { padding:0 20px 16px; display:flex; flex-direction:column; gap:8px; }
+.chain button { border:1px solid var(--border); border-radius:6px; padding:10px; text-align:left; cursor:pointer; font-size:var(--ops-caption,10px); }
+.chain button[aria-pressed=true] { border-color:var(--ops-green); }
+.chain button > span { display:block; margin-top:6px; color:var(--muted-foreground); overflow-wrap:anywhere; }
+@media(max-width:1250px) { .detailGrid { grid-template-columns:minmax(0,1fr); }.sideFacts { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:700px) { .facts,.sideFacts { grid-template-columns:repeat(2,minmax(0,1fr)); }.workloads { grid-template-columns:repeat(2,minmax(0,1fr)); }.logEntry header time { margin-left:0; } }
+@media(max-width:440px) { .facts,.sideFacts { grid-template-columns:minmax(0,1fr); }.navigation > div { gap:4px; }.navigation { align-items:flex-start; } }

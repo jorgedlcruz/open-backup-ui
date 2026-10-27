@@ -4,6 +4,8 @@ interface TokenCache {
     accessToken: string;
     refreshToken?: string;
     expiresAt: number; // Unix timestamp
+    authenticatedAt?: number;
+    expiryReported?: boolean;
 }
 
 // Global cache to survive HMR in development
@@ -40,6 +42,12 @@ const authConfigs = {
 };
 
 export const tokenManager = {
+    // Server-only access; callers must never serialize the token.
+    peek(sourceId: string) { return tokenCache.get(sourceId) || null; },
+    forget(sourceId: string) { tokenCache.delete(sourceId); },
+    remember(sourceId: string, accessToken: string, expiresIn: number | null) {
+        tokenCache.set(sourceId, {accessToken, expiresAt:Date.now()/1000 + (expiresIn !== null && Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300), authenticatedAt:Date.now()/1000, expiryReported:expiresIn !== null});
+    },
     /**
      * Retrieves a valid access token for the given source ID.
      * If cached token is missing or expired, it attempts to log in again.
@@ -125,13 +133,14 @@ export const tokenManager = {
             const response = await fetch(loginUrl, {
                 method: 'POST',
                 headers: config.headers,
-                body: body
+                body: body,
+                signal: AbortSignal.timeout(15000),
+                redirect: 'error',
+                cache: 'no-store'
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                // 429 Handling is implicit here, but logging is good
-                console.error(`[TokenManager] Login failed: ${response.status} ${text}`);
+                console.error(`[TokenManager] Login failed: HTTP ${response.status}`);
                 return null;
             }
 
@@ -144,10 +153,14 @@ export const tokenManager = {
                 return null;
             }
 
+            const current = configStore.getById(sourceId);
+            if (!current || current.host !== source.host || current.port !== source.port || current.protocol !== source.protocol || current.username !== source.username || current.password !== source.password) return null;
             tokenCache.set(sourceId, {
                 accessToken,
                 refreshToken: data.refresh_token,
-                expiresAt: (Date.now() / 1000) + (expiresIn || 3600)
+                expiresAt: (Date.now() / 1000) + (expiresIn || 3600),
+                authenticatedAt: Date.now() / 1000,
+                expiryReported: typeof expiresIn === 'number' && Number.isFinite(expiresIn) && expiresIn > 0
             });
 
             console.log(`[TokenManager] Successfully authenticated ${sourceId}`);

@@ -1,38 +1,45 @@
 "use client"
+import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts" // Added YAxis
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
+import { Card,CardContent,CardDescription,CardHeader,CardTitle } from "@/components/ui/card"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
+import { Bar,BarChart,CartesianGrid,Cell,ResponsiveContainer,Tooltip,XAxis,YAxis } from "recharts"; // Added YAxis
 // Tabs imports removed
+import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+DropdownMenu,
+DropdownMenuCheckboxItem,
+DropdownMenuContent,
+DropdownMenuItem,
+DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    useReactTable,
-    getSortedRowModel,
-    SortingState,
-    ColumnFiltersState,
-    getFilteredRowModel,
-    VisibilityState,
-    getFacetedRowModel,
-    getFacetedUniqueValues,
-    getPaginationRowModel // Added
-} from "@tanstack/react-table"
-import { VeeamSession } from "@/lib/types/veeam"
-import { ArrowUpDown, CheckCircle2, AlertTriangle, XCircle, HelpCircle, Columns, ChevronLeft, ChevronRight, ChevronDown, FolderUp, FileJson, FileSpreadsheet, CalendarDays } from "lucide-react" // Added icons
-import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { VeeamSession } from "@/lib/types/veeam"
+import {
+ColumnDef,
+ColumnFiltersState,
+flexRender,
+getCoreRowModel,
+getFacetedRowModel,
+getFacetedUniqueValues,
+getFilteredRowModel,
+getPaginationRowModel // Added
+,
+
+getSortedRowModel,
+SortingState,
+useReactTable,
+VisibilityState
+} from "@tanstack/react-table"
+import { AlertTriangle,CalendarDays,CheckCircle2,ChevronDown,ChevronLeft,ChevronRight,FileJson,FileSpreadsheet,FolderUp,HelpCircle,XCircle } from "lucide-react"; // Added icons
 
 interface SessionsOverviewProps {
     sessions: VeeamSession[]
@@ -57,18 +64,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
     {
         accessorKey: "result.result",
         id: "status",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="!p-0 hover:!bg-transparent"
-                >
-                    Status
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
+        header: "Status",
         cell: ({ row }) => {
             const result = row.original.result?.result
             return (
@@ -95,35 +91,13 @@ export const columns: ColumnDef<VeeamSession>[] = [
     },
     {
         accessorKey: "name",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="!p-0 hover:!bg-transparent"
-                >
-                    Job Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
+        header: "Job Name",
         cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
     },
     {
         accessorKey: "sessionType", // Using sessionType as 'Type'
         id: "type",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="!p-0 hover:!bg-transparent"
-                >
-                    Type
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
+        header: "Type",
         cell: ({ row }) => <div className="text-sm text-muted-foreground">{row.getValue("type")}</div>,
         filterFn: (row, id, value) => {
             return value.includes(row.getValue(id))
@@ -131,18 +105,7 @@ export const columns: ColumnDef<VeeamSession>[] = [
     },
     {
         accessorKey: "creationTime",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="!p-0 hover:!bg-transparent"
-                >
-                    Time
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-            )
-        },
+        header: "Time",
         cell: ({ row }) => {
             const date = new Date(row.getValue("creationTime"))
             return (
@@ -293,7 +256,7 @@ export function SessionsOverview({
 
     const table = useReactTable({
         data: tableData,
-        columns,
+        columns: sortableColumns(columns, sorting, tableData),
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -367,7 +330,7 @@ export function SessionsOverview({
     };
 
     return (
-        <Card className="h-[835px] flex flex-col overflow-hidden">
+        <Card className="min-h-[835px] flex flex-col overflow-hidden">
             <CardHeader className="pb-2 shrink-0">
                 <div className="flex items-center justify-between">
                     <div>
@@ -432,9 +395,7 @@ export function SessionsOverview({
 
             <CardContent className="flex flex-col flex-1 gap-4">
                 {/* 1. Controls / Filters for Table AND Chart (Moved to Top) */}
-                <div className="flex items-center justify-between shrink-0">
-                    <div className="flex flex-1 items-center space-x-2">
-                        <Input
+                <FilterWorkspace label="Grid filters" search={<><Input
                             placeholder="Filter jobs..."
                             value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
@@ -442,10 +403,7 @@ export function SessionsOverview({
                             }
                             className="h-8 w-[150px] lg:w-[250px]"
                             disabled={loading}
-                        />
-
-                        {table.getColumn("status") && (
-                            <DataTableFacetedFilter
+                        /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={<FilterFields>{table.getColumn("status") && <><DataTableFacetedFilter
                                 column={table.getColumn("status")}
                                 title="Status"
                                 options={[
@@ -453,11 +411,8 @@ export function SessionsOverview({
                                     { label: "Warning", value: "Warning", icon: AlertTriangle },
                                     { label: "Failed", value: "Failed", icon: XCircle },
                                 ]}
-                            />
-                        )}
-
-                        {table.getColumn("type") && (
-                            <DataTableFacetedFilter
+                            /></>}
+{table.getColumn("type") && <><DataTableFacetedFilter
                                 column={table.getColumn("type")}
                                 title="Type"
                                 options={
@@ -466,39 +421,25 @@ export function SessionsOverview({
                                         value: type
                                     }))
                                 }
-                            />
-                        )}
-                    </div>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex" disabled={loading}>
-                                <Columns className="mr-2 h-4 w-4" />
-                                Columns
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[150px]">
+                            /></>}</FilterFields>} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
                             {table
                                 .getAllColumns()
                                 .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
                                 .map((column) => {
                                     return (
-                                        <DropdownMenuCheckboxItem
+                                        <GridColumnChoice
                                             key={column.id}
                                             className="capitalize"
                                             checked={column.getIsVisible()}
                                             onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                         >
                                             {column.id}
-                                        </DropdownMenuCheckboxItem>
+                                        </GridColumnChoice>
                                     )
                                 })}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-
-                {/* 2. Bar Chart Section */}
-                <div className="h-[250px] w-full cursor-pointer shrink-0">
+                        </fieldset></GridViewMenu></>}>
+{/* 2. Bar Chart Section */}
+<div className="h-[250px] w-full cursor-pointer shrink-0">
                     {loading ? (
                         <div className="flex items-end justify-between h-full w-full gap-2 px-4 pb-2">
                             {[...Array(7)].map((_, i) => (
@@ -551,19 +492,14 @@ export function SessionsOverview({
                         </ResponsiveContainer>
                     )}
                 </div>
-
-                {/* 3. Data Table */}
-                <div className="rounded-md border flex-1 overflow-auto min-h-0">
+{/* 3. Data Table */}
+<div className="rounded-md border flex-1 overflow-auto min-h-0">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header) => (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(header.column.columnDef.header, header.getContext())}
-                                        </TableHead>
+                                        <SortableTableHead key={header.id} header={header}/>
                                     ))}
                                 </TableRow>
                             ))}
@@ -607,9 +543,8 @@ export function SessionsOverview({
                         </TableBody>
                     </Table>
                 </div>
-
-                {/* 4. Pagination */}
-                <div className="flex items-center justify-between px-2 pb-2 shrink-0">
+{/* 4. Pagination */}
+<div className="flex items-center justify-between px-2 pb-2 shrink-0">
                     <div className="flex-1 text-sm text-muted-foreground">
                         {loading ? <Skeleton className="h-4 w-24" /> : `${table.getFilteredRowModel().rows.length} sessions`}
                     </div>
@@ -639,8 +574,7 @@ export function SessionsOverview({
                         </div>
                     </div>
                 </div>
-
-            </CardContent>
+</FilterWorkspace></CardContent>
         </Card>
     )
 }

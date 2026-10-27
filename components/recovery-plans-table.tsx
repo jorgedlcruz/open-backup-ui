@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
+
 import {
   ColumnDef,
   flexRender,
@@ -9,14 +12,7 @@ import {
   getSortedRowModel,
   SortingState,
 } from "@tanstack/react-table"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table"
 import { VRORecoveryPlan } from "@/lib/types/veeam"
 
 interface RecoveryPlansTableProps {
@@ -153,7 +149,7 @@ export function RecoveryPlansTable({ data, loading = false }: RecoveryPlansTable
 
   const table = useReactTable({
     data,
-    columns,
+    columns: sortableColumns(columns, sorting, data),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -185,14 +181,7 @@ export function RecoveryPlansTable({ data, loading = false }: RecoveryPlansTable
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
+                <SortableTableHead key={header.id} header={header}/>
               ))}
             </TableRow>
           ))}

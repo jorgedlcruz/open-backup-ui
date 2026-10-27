@@ -1,0 +1,1910 @@
+{
+  "source": "User-supplied VBR OpenAPI specification",
+  "version": "1.3-rev2",
+  "sha256": "b8f4404d3eb312f6903a907837c3565af5fe890896678debc899db5b7325ea79",
+  "schemas": {
+    "BackupJobSpec": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/JobSpec"
+        },
+        {
+          "required": [
+            "description"
+          ],
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "isHighPriority": {
+              "type": "boolean"
+            },
+            "virtualMachines": {
+              "$ref": "#/components/schemas/BackupJobVirtualMachinesSpec"
+            },
+            "storage": {
+              "$ref": "#/components/schemas/BackupJobStorageModel"
+            },
+            "guestProcessing": {
+              "$ref": "#/components/schemas/BackupJobGuestProcessingModel"
+            },
+            "schedule": {
+              "$ref": "#/components/schemas/BackupScheduleModel"
+            }
+          }
+        }
+      ]
+    },
+    "JobSpec": {
+      "type": "object",
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/components/schemas/EJobType"
+        }
+      }
+    },
+    "EJobType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VSphereBackup",
+        "HyperVBackup",
+        "VSphereReplica",
+        "CloudDirectorBackup",
+        "EntraIDTenantBackup",
+        "EntraIDAuditLogBackup",
+        "FileBackupCopy",
+        "LegacyBackupCopy",
+        "BackupCopy",
+        "WindowsAgentBackup",
+        "LinuxAgentBackup",
+        "FileBackup",
+        "ObjectStorageBackup",
+        "EntraIDTenantBackupCopy",
+        "SureBackupContentScan",
+        "CloudBackupAzure",
+        "CloudBackupAWS",
+        "CloudBackupGoogle",
+        "WindowsAgentBackupWorkstationPolicy",
+        "LinuxAgentBackupWorkstationPolicy",
+        "WindowsAgentBackupServerPolicy",
+        "LinuxAgentBackupServerPolicy",
+        "NutanixAHVBackupJob",
+        "ProxmoxBackupJob",
+        "IrisBackup",
+        "WindowsAgentBackupFailoverCluster"
+      ]
+    },
+    "BackupJobVirtualMachinesSpec": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/InventoryObjectModel"
+          }
+        },
+        "excludes": {
+          "$ref": "#/components/schemas/BackupJobExclusionsSpec"
+        }
+      }
+    },
+    "InventoryObjectModel": {
+      "required": [
+        "platform"
+      ],
+      "type": "object",
+      "properties": {
+        "platform": {
+          "$ref": "#/components/schemas/EInventoryPlatformType"
+        },
+        "size": {
+          "type": "string"
+        }
+      }
+    },
+    "EInventoryPlatformType": {
+      "enum": [
+        "VSphere",
+        "HyperV",
+        "CloudDirector",
+        "Agent",
+        "Nutanix",
+        "Proxmox"
+      ],
+      "type": "string"
+    },
+    "BackupJobExclusionsSpec": {
+      "type": "object",
+      "properties": {
+        "vms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/InventoryObjectModel"
+          }
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/VmwareObjectDiskModel"
+          }
+        },
+        "templates": {
+          "$ref": "#/components/schemas/BackupJobExclusionsTemplates"
+        }
+      }
+    },
+    "VmwareObjectDiskModel": {
+      "required": [
+        "disksToProcess",
+        "vmObject"
+      ],
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        "disksToProcess": {
+          "$ref": "#/components/schemas/EVmwareDisksTypeToProcess"
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removeFromVMConfiguration": {
+          "type": "boolean"
+        }
+      }
+    },
+    "EVmwareDisksTypeToProcess": {
+      "type": "string",
+      "enum": [
+        "AllDisks",
+        "SystemOnly",
+        "SelectedDisks"
+      ]
+    },
+    "BackupJobExclusionsTemplates": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "excludeFromIncremental": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BackupJobStorageModel": {
+      "required": [
+        "backupProxies",
+        "backupRepositoryId",
+        "retentionPolicy"
+      ],
+      "type": "object",
+      "properties": {
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "backupProxies": {
+          "$ref": "#/components/schemas/BackupProxiesSettingsModel"
+        },
+        "retentionPolicy": {
+          "$ref": "#/components/schemas/BackupJobRetentionPolicySettingsModel"
+        },
+        "gfsPolicy": {
+          "$ref": "#/components/schemas/GFSPolicySettingsModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/components/schemas/BackupJobAdvancedSettingsModel"
+        }
+      }
+    },
+    "BackupProxiesSettingsModel": {
+      "required": [
+        "autoSelectEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "autoSelectEnabled": {
+          "type": "boolean"
+        },
+        "proxyIds": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "BackupJobRetentionPolicySettingsModel": {
+      "required": [
+        "quantity",
+        "type"
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/components/schemas/ERetentionPolicyType"
+        },
+        "quantity": {
+          "type": "integer"
+        }
+      }
+    },
+    "ERetentionPolicyType": {
+      "type": "string",
+      "enum": [
+        "RestorePoints",
+        "Days"
+      ]
+    },
+    "GFSPolicySettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/components/schemas/GFSPolicySettingsWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/components/schemas/GFSPolicySettingsMonthlyModel"
+        },
+        "yearly": {
+          "$ref": "#/components/schemas/GFSPolicySettingsYearlyModel"
+        }
+      }
+    },
+    "GFSPolicySettingsWeeklyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfWeeks": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/components/schemas/EDayOfWeek"
+        }
+      }
+    },
+    "EDayOfWeek": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "GFSPolicySettingsMonthlyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfMonths": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/components/schemas/ESennightOfMonth"
+        }
+      }
+    },
+    "ESennightOfMonth": {
+      "type": "string",
+      "enum": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Fifth",
+        "Last"
+      ]
+    },
+    "GFSPolicySettingsYearlyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfYears": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/components/schemas/EMonth"
+        }
+      }
+    },
+    "EMonth": {
+      "type": "string",
+      "enum": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    },
+    "BackupJobAdvancedSettingsModel": {
+      "required": [
+        "backupModeType"
+      ],
+      "type": "object",
+      "properties": {
+        "backupModeType": {
+          "$ref": "#/components/schemas/EBackupModeType"
+        },
+        "syntheticFulls": {
+          "$ref": "#/components/schemas/SyntheticFullSettingsModel"
+        },
+        "activeFulls": {
+          "$ref": "#/components/schemas/ActiveFullSettingsModel"
+        },
+        "backupHealth": {
+          "$ref": "#/components/schemas/BackupHealthCheckSettingsModels"
+        },
+        "fullBackupMaintenance": {
+          "$ref": "#/components/schemas/FullBackupMaintenanceModel"
+        },
+        "storageData": {
+          "$ref": "#/components/schemas/BackupStorageSettingModel"
+        },
+        "notifications": {
+          "$ref": "#/components/schemas/NotificationSettingsModel"
+        },
+        "vSphere": {
+          "$ref": "#/components/schemas/BackupJobAdvancedSettingsVSphereModel"
+        },
+        "storageIntegration": {
+          "$ref": "#/components/schemas/PrimaryStorageIntegrationSettingsModel"
+        },
+        "scripts": {
+          "$ref": "#/components/schemas/JobScriptsSettingsModel"
+        }
+      }
+    },
+    "EBackupModeType": {
+      "type": "string",
+      "enum": [
+        "Full",
+        "Incremental",
+        "ReverseIncremental",
+        "Transform",
+        "TransformForeverIncremental"
+      ]
+    },
+    "SyntheticFullSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleMonthlyModel"
+        }
+      }
+    },
+    "AdvancedStorageScheduleWeeklyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "days": {
+          "uniqueItems": true,
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/EDayOfWeek"
+          }
+        },
+        "localTime": {
+          "type": "string",
+          "format": "time"
+        }
+      }
+    },
+    "AdvancedStorageScheduleMonthlyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "dayOfWeek": {
+          "$ref": "#/components/schemas/EDayOfWeek"
+        },
+        "dayNumberInMonth": {
+          "$ref": "#/components/schemas/EDayNumberInMonth"
+        },
+        "dayOfMonth": {
+          "type": "integer"
+        },
+        "months": {
+          "uniqueItems": true,
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/EMonth"
+          }
+        },
+        "localTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "isLastDayOfMonth": {
+          "type": "boolean"
+        }
+      }
+    },
+    "EDayNumberInMonth": {
+      "type": "string",
+      "enum": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Last",
+        "OnDay"
+      ]
+    },
+    "ActiveFullSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleMonthlyModel"
+        }
+      }
+    },
+    "BackupHealthCheckSettingsModels": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleMonthlyModel"
+        }
+      }
+    },
+    "FullBackupMaintenanceModel": {
+      "type": "object",
+      "properties": {
+        "removeData": {
+          "$ref": "#/components/schemas/FullBackupMaintenanceRemoveDataModel"
+        },
+        "defragmentAndCompact": {
+          "$ref": "#/components/schemas/FullBackupMaintenanceDefragmentAndCompactModel"
+        }
+      }
+    },
+    "FullBackupMaintenanceRemoveDataModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "afterDays": {
+          "type": "integer"
+        }
+      }
+    },
+    "FullBackupMaintenanceDefragmentAndCompactModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/components/schemas/AdvancedStorageScheduleMonthlyModel"
+        }
+      }
+    },
+    "BackupStorageSettingModel": {
+      "type": "object",
+      "properties": {
+        "inlineDataDedupEnabled": {
+          "type": "boolean"
+        },
+        "excludeSwapFileBlocks": {
+          "type": "boolean"
+        },
+        "excludeDeletedFileBlocks": {
+          "type": "boolean"
+        },
+        "compressionLevel": {
+          "$ref": "#/components/schemas/ECompressionLevel"
+        },
+        "storageOptimization": {
+          "$ref": "#/components/schemas/EStorageOptimization"
+        },
+        "encryption": {
+          "$ref": "#/components/schemas/BackupStorageSettingsEncryptionModel"
+        }
+      }
+    },
+    "ECompressionLevel": {
+      "type": "string",
+      "enum": [
+        "Auto",
+        "None",
+        "DedupFriendly",
+        "Optimal",
+        "High",
+        "Extreme"
+      ]
+    },
+    "EStorageOptimization": {
+      "type": "string",
+      "enum": [
+        "256KB",
+        "512KB",
+        "1MB",
+        "4MB",
+        "8MB"
+      ]
+    },
+    "BackupStorageSettingsEncryptionModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "encryptionType": {
+          "$ref": "#/components/schemas/EEncryptionType"
+        },
+        "encryptionPasswordId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "encryptionPasswordUniqueId": {
+          "type": "string"
+        },
+        "kmsServerId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "EEncryptionType": {
+      "type": "string",
+      "enum": [
+        "ByUserPassword",
+        "ByKms"
+      ]
+    },
+    "NotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "sendSNMPNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "$ref": "#/components/schemas/EmailNotificationSettingsModel"
+        },
+        "vmAttribute": {
+          "$ref": "#/components/schemas/NotificationVmAttributeSettingsModel"
+        }
+      }
+    },
+    "EmailNotificationSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "recipients": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sendDailySummary": {
+          "type": "boolean"
+        },
+        "dailySummaryLocalTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "notificationType": {
+          "$ref": "#/components/schemas/EEmailNotificationType"
+        },
+        "customNotificationSettings": {
+          "$ref": "#/components/schemas/EmailCustomNotificationType"
+        }
+      }
+    },
+    "EEmailNotificationType": {
+      "type": "string",
+      "enum": [
+        "UseGlobalNotificationSettings",
+        "UseCustomNotificationSettings"
+      ]
+    },
+    "EmailCustomNotificationType": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "notifyOnSuccess": {
+          "type": "boolean"
+        },
+        "notifyOnWarning": {
+          "type": "boolean"
+        },
+        "notifyOnError": {
+          "type": "boolean"
+        },
+        "SuppressNotificationUntilLastRetry": {
+          "type": "boolean"
+        }
+      }
+    },
+    "NotificationVmAttributeSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "appendToExistingValue": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BackupJobAdvancedSettingsVSphereModel": {
+      "type": "object",
+      "properties": {
+        "enableVMWareToolsQuiescence": {
+          "type": "boolean"
+        },
+        "changedBlockTracking": {
+          "$ref": "#/components/schemas/VSphereChangedBlockTrackingSettingsModel"
+        }
+      }
+    },
+    "VSphereChangedBlockTrackingSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "enableCBTautomatically": {
+          "type": "boolean"
+        },
+        "resetCBTonActiveFull": {
+          "type": "boolean"
+        }
+      }
+    },
+    "PrimaryStorageIntegrationSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "processedVmsLimitEnabled": {
+          "type": "boolean"
+        },
+        "processedVmsCount": {
+          "type": "integer"
+        },
+        "failoverToStandardBackup": {
+          "type": "boolean"
+        }
+      }
+    },
+    "JobScriptsSettingsModel": {
+      "type": "object",
+      "properties": {
+        "preCommand": {
+          "$ref": "#/components/schemas/ScriptCommand"
+        },
+        "postCommand": {
+          "$ref": "#/components/schemas/ScriptCommand"
+        },
+        "periodicityType": {
+          "$ref": "#/components/schemas/EScriptPeriodicityType"
+        },
+        "runScriptEvery": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "dayOfWeek": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/EDayOfWeek"
+          }
+        }
+      }
+    },
+    "ScriptCommand": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": "string"
+        }
+      }
+    },
+    "EScriptPeriodicityType": {
+      "type": "string",
+      "enum": [
+        "Days",
+        "BackupSessions"
+      ]
+    },
+    "BackupJobGuestProcessingModel": {
+      "required": [
+        "appAwareProcessing",
+        "guestFSIndexing"
+      ],
+      "type": "object",
+      "properties": {
+        "appAwareProcessing": {
+          "$ref": "#/components/schemas/BackupApplicationAwareProcessingModel"
+        },
+        "guestFSIndexing": {
+          "$ref": "#/components/schemas/GuestFileSystemIndexingModel"
+        },
+        "guestInteractionProxies": {
+          "$ref": "#/components/schemas/GuestInteractionProxiesSettingsModel"
+        },
+        "guestCredentials": {
+          "$ref": "#/components/schemas/GuestOsCredentialsModel"
+        }
+      }
+    },
+    "BackupApplicationAwareProcessingModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "appSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BackupApplicationSettingsModel"
+          }
+        }
+      }
+    },
+    "BackupApplicationSettingsModel": {
+      "required": [
+        "vmObject",
+        "vss"
+      ],
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        "vss": {
+          "$ref": "#/components/schemas/EApplicationSettingsVSS"
+        },
+        "usePersistentGuestAgent": {
+          "type": "boolean"
+        },
+        "transactionLogs": {
+          "$ref": "#/components/schemas/ETransactionLogsSettings"
+        },
+        "sql": {
+          "$ref": "#/components/schemas/BackupSQLSettingsModel"
+        },
+        "oracle": {
+          "$ref": "#/components/schemas/BackupOracleSettingsModel"
+        },
+        "postgreSQL": {
+          "$ref": "#/components/schemas/BackupPostgreSQLSettingsModel"
+        },
+        "exclusions": {
+          "$ref": "#/components/schemas/BackupFSExclusionsModel"
+        },
+        "scripts": {
+          "$ref": "#/components/schemas/BackupScriptSettingsModel"
+        }
+      }
+    },
+    "EApplicationSettingsVSS": {
+      "type": "string",
+      "enum": [
+        "RequireSuccess",
+        "IgnoreFailures",
+        "Disabled"
+      ]
+    },
+    "ETransactionLogsSettings": {
+      "type": "string",
+      "enum": [
+        "Process",
+        "CopyOnly"
+      ]
+    },
+    "BackupSQLSettingsModel": {
+      "required": [
+        "logsProcessing"
+      ],
+      "type": "object",
+      "properties": {
+        "logsProcessing": {
+          "$ref": "#/components/schemas/ESQLLogsProcessing"
+        },
+        "backupMinsCount": {
+          "type": "integer"
+        },
+        "retainLogBackups": {
+          "$ref": "#/components/schemas/ERetainLogBackupsType"
+        },
+        "keepDaysCount": {
+          "type": "integer"
+        },
+        "logShippingServers": {
+          "$ref": "#/components/schemas/BackupLogShippingServersModel"
+        }
+      }
+    },
+    "ESQLLogsProcessing": {
+      "type": "string",
+      "enum": [
+        "Truncate",
+        "Backup",
+        "NeverTruncate"
+      ]
+    },
+    "ERetainLogBackupsType": {
+      "type": "string",
+      "enum": [
+        "UntilBackupDeleted",
+        "KeepOnlyDays"
+      ]
+    },
+    "BackupLogShippingServersModel": {
+      "required": [
+        "autoSelection"
+      ],
+      "type": "object",
+      "properties": {
+        "autoSelection": {
+          "type": "boolean"
+        },
+        "shippingServerIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "BackupOracleSettingsModel": {
+      "required": [
+        "archiveLogs",
+        "useGuestCredentials"
+      ],
+      "type": "object",
+      "properties": {
+        "useGuestCredentials": {
+          "type": "boolean"
+        },
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "archiveLogs": {
+          "$ref": "#/components/schemas/EBackupOracleLogsSettings"
+        },
+        "deleteHoursCount": {
+          "type": "integer"
+        },
+        "deleteGBsCount": {
+          "type": "integer"
+        },
+        "backupLogs": {
+          "type": "boolean"
+        },
+        "backupMinsCount": {
+          "type": "integer"
+        },
+        "retainLogBackups": {
+          "$ref": "#/components/schemas/ERetainLogBackupsType"
+        },
+        "keepDaysCount": {
+          "type": "integer"
+        },
+        "logShippingServers": {
+          "$ref": "#/components/schemas/BackupLogShippingServersModel"
+        }
+      }
+    },
+    "EBackupOracleLogsSettings": {
+      "type": "string",
+      "enum": [
+        "Preserve",
+        "DeleteExpiredHours",
+        "DeleteExpiredGBs"
+      ]
+    },
+    "BackupPostgreSQLSettingsModel": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/PostgreSQLSettingsModel"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "logShippingServers": {
+              "$ref": "#/components/schemas/BackupLogShippingServersModel"
+            }
+          }
+        }
+      ]
+    },
+    "PostgreSQLSettingsModel": {
+      "type": "object",
+      "properties": {
+        "useGuestCredentials": {
+          "type": "boolean"
+        },
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "userConnectionType": {
+          "$ref": "#/components/schemas/EPostgreSQLUserConnectionType"
+        },
+        "backupLogs": {
+          "type": "boolean"
+        },
+        "backupMinsCount": {
+          "type": "integer"
+        },
+        "retainLogBackups": {
+          "$ref": "#/components/schemas/ERetainLogBackupsType"
+        },
+        "keepDaysCount": {
+          "type": "integer"
+        },
+        "tempArchiveLogsPath": {
+          "type": "string"
+        }
+      }
+    },
+    "EPostgreSQLUserConnectionType": {
+      "enum": [
+        "Credentials",
+        "PasswordFile",
+        "Peer"
+      ],
+      "type": "string"
+    },
+    "BackupFSExclusionsModel": {
+      "required": [
+        "exclusionPolicy"
+      ],
+      "type": "object",
+      "properties": {
+        "exclusionPolicy": {
+          "$ref": "#/components/schemas/EBackupExclusionPolicy"
+        },
+        "itemsList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EBackupExclusionPolicy": {
+      "type": "string",
+      "enum": [
+        "Disabled",
+        "ExcludeOnly",
+        "IncludeOnly"
+      ]
+    },
+    "BackupScriptSettingsModel": {
+      "required": [
+        "scriptProcessingMode"
+      ],
+      "type": "object",
+      "properties": {
+        "scriptProcessingMode": {
+          "$ref": "#/components/schemas/EBackupScriptProcessingMode"
+        },
+        "windowsScripts": {
+          "$ref": "#/components/schemas/BackupWindowsScriptModel"
+        },
+        "linuxScripts": {
+          "$ref": "#/components/schemas/BackupLinuxScriptModel"
+        }
+      }
+    },
+    "EBackupScriptProcessingMode": {
+      "type": "string",
+      "enum": [
+        "DisableExec",
+        "IgnoreExecFailures",
+        "RequireSuccess"
+      ]
+    },
+    "BackupWindowsScriptModel": {
+      "type": "object",
+      "properties": {
+        "preFreezeScript": {
+          "type": "string"
+        },
+        "postThawScript": {
+          "type": "string"
+        }
+      }
+    },
+    "BackupLinuxScriptModel": {
+      "type": "object",
+      "properties": {
+        "preFreezeScript": {
+          "type": "string"
+        },
+        "postThawScript": {
+          "type": "string"
+        }
+      }
+    },
+    "GuestFileSystemIndexingModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "indexingSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BackupIndexingSettingsModel"
+          }
+        }
+      }
+    },
+    "BackupIndexingSettingsModel": {
+      "required": [
+        "vmObject"
+      ],
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        "WindowsIndexing": {
+          "$ref": "#/components/schemas/BackupObjectIndexingModel"
+        },
+        "LinuxIndexing": {
+          "$ref": "#/components/schemas/BackupObjectIndexingModel"
+        }
+      }
+    },
+    "BackupObjectIndexingModel": {
+      "required": [
+        "guestFSIndexingMode"
+      ],
+      "type": "object",
+      "properties": {
+        "guestFSIndexingMode": {
+          "$ref": "#/components/schemas/EGuestFSIndexingMode"
+        },
+        "indexingList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EGuestFSIndexingMode": {
+      "type": "string",
+      "enum": [
+        "Disable",
+        "IndexAll",
+        "IndexAllExcept",
+        "IndexOnly"
+      ]
+    },
+    "GuestInteractionProxiesSettingsModel": {
+      "required": [
+        "autoSelectEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "autoSelectEnabled": {
+          "type": "boolean"
+        },
+        "proxyIds": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "GuestOsCredentialsModel": {
+      "type": "object",
+      "required": [
+        "useAgentManagementCredentials"
+      ],
+      "properties": {
+        "useAgentManagementCredentials": {
+          "type": "boolean"
+        },
+        "credentials": {
+          "$ref": "#/components/schemas/SpecifiedGuestOsCredentialsModel"
+        },
+        "credentialsPerMachine": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/GuestOsCredentialsPerMachineModel"
+          }
+        }
+      }
+    },
+    "SpecifiedGuestOsCredentialsModel": {
+      "type": "object",
+      "required": [
+        "credentialsId",
+        "credentialsType"
+      ],
+      "properties": {
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "credentialsType": {
+          "$ref": "#/components/schemas/ECredentialsType"
+        }
+      }
+    },
+    "ECredentialsType": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Linux",
+        "ManagedService"
+      ]
+    },
+    "GuestOsCredentialsPerMachineModel": {
+      "required": [
+        "vmObject"
+      ],
+      "type": "object",
+      "properties": {
+        "credentials": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/components/schemas/SpecifiedGuestOsCredentialsModel"
+          }
+        },
+        "vmObject": {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        "default": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BackupScheduleModel": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/BackupScheduleModelDaily"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "monthly": {
+              "$ref": "#/components/schemas/ScheduleMonthlyModel"
+            },
+            "periodically": {
+              "$ref": "#/components/schemas/SchedulePeriodicallyModel"
+            },
+            "continuously": {
+              "$ref": "#/components/schemas/ScheduleBackupWindowModel"
+            },
+            "afterThisJob": {
+              "$ref": "#/components/schemas/ScheduleAfterThisJobModel"
+            },
+            "retry": {
+              "$ref": "#/components/schemas/ScheduleRetryModel"
+            },
+            "backupWindow": {
+              "$ref": "#/components/schemas/ScheduleBackupWindowModel"
+            }
+          }
+        }
+      ]
+    },
+    "BackupScheduleModelDaily": {
+      "required": [
+        "runAutomatically"
+      ],
+      "type": "object",
+      "properties": {
+        "runAutomatically": {
+          "type": "boolean"
+        },
+        "daily": {
+          "$ref": "#/components/schemas/ScheduleDailyModel"
+        }
+      }
+    },
+    "ScheduleDailyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "localTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "dailyKind": {
+          "$ref": "#/components/schemas/EDailyKinds"
+        },
+        "days": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/EDayOfWeek"
+          }
+        }
+      }
+    },
+    "EDailyKinds": {
+      "type": "string",
+      "enum": [
+        "Everyday",
+        "WeekDays",
+        "SelectedDays"
+      ]
+    },
+    "ScheduleMonthlyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "localTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "dayOfWeek": {
+          "$ref": "#/components/schemas/EDayOfWeek"
+        },
+        "dayNumberInMonth": {
+          "$ref": "#/components/schemas/EDayNumberInMonth"
+        },
+        "dayOfMonth": {
+          "type": "integer"
+        },
+        "months": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/EMonth"
+          }
+        },
+        "isLastDayOfMonth": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SchedulePeriodicallyModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "periodicallyKind": {
+          "$ref": "#/components/schemas/EPeriodicallyKinds"
+        },
+        "frequency": {
+          "type": "integer"
+        },
+        "backupWindow": {
+          "$ref": "#/components/schemas/BackupWindowSettingModel"
+        },
+        "startTimeWithinAnHour": {
+          "type": "integer"
+        }
+      }
+    },
+    "EPeriodicallyKinds": {
+      "type": "string",
+      "enum": [
+        "Hours",
+        "Minutes",
+        "Seconds",
+        "Days"
+      ]
+    },
+    "BackupWindowSettingModel": {
+      "required": [
+        "days"
+      ],
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/BackupWindowDayHoursModel"
+          }
+        }
+      }
+    },
+    "BackupWindowDayHoursModel": {
+      "required": [
+        "day",
+        "hours"
+      ],
+      "type": "object",
+      "properties": {
+        "day": {
+          "$ref": "#/components/schemas/EDayOfWeek"
+        },
+        "hours": {
+          "type": "string"
+        }
+      }
+    },
+    "ScheduleBackupWindowModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "backupWindow": {
+          "$ref": "#/components/schemas/BackupWindowSettingModel"
+        }
+      }
+    },
+    "ScheduleAfterThisJobModel": {
+      "type": "object",
+      "required": [
+        "isEnabled"
+      ],
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "jobName": {
+          "type": "string"
+        }
+      }
+    },
+    "ScheduleRetryModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "retryCount": {
+          "type": "integer"
+        },
+        "awaitMinutes": {
+          "type": "integer"
+        }
+      }
+    },
+    "HyperVBackupJobSpec": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/JobSpec"
+        },
+        {
+          "required": [
+            "description"
+          ],
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "isHighPriority": {
+              "type": "boolean"
+            },
+            "virtualMachines": {
+              "$ref": "#/components/schemas/HyperVBackupJobVirtualMachinesModel"
+            },
+            "storage": {
+              "$ref": "#/components/schemas/HyperVBackupJobStorageModel"
+            },
+            "guestProcessing": {
+              "$ref": "#/components/schemas/BackupJobGuestProcessingModel"
+            },
+            "schedule": {
+              "$ref": "#/components/schemas/BackupScheduleModel"
+            }
+          }
+        }
+      ]
+    },
+    "HyperVBackupJobVirtualMachinesModel": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/InventoryObjectModel"
+          }
+        },
+        "excludes": {
+          "$ref": "#/components/schemas/HyperVBackupJobExclusionsModel"
+        }
+      }
+    },
+    "HyperVBackupJobExclusionsModel": {
+      "type": "object",
+      "properties": {
+        "vms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/InventoryObjectModel"
+          }
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/HyperVObjectDiskModel"
+          }
+        }
+      }
+    },
+    "HyperVObjectDiskModel": {
+      "required": [
+        "vmObject",
+        "disksToProcess"
+      ],
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        "disksToProcess": {
+          "$ref": "#/components/schemas/EHyperVDisksTypeToProcess"
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EHyperVDisksTypeToProcess": {
+      "type": "string",
+      "enum": [
+        "AllDisks",
+        "SystemOnly",
+        "SelectedDisks"
+      ]
+    },
+    "HyperVBackupJobStorageModel": {
+      "required": [
+        "backupProxies",
+        "backupRepositoryId",
+        "retentionPolicy"
+      ],
+      "type": "object",
+      "properties": {
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "backupProxies": {
+          "$ref": "#/components/schemas/HyperVBackupProxiesSettingsModel"
+        },
+        "retentionPolicy": {
+          "$ref": "#/components/schemas/BackupJobRetentionPolicySettingsModel"
+        },
+        "gfsPolicy": {
+          "$ref": "#/components/schemas/GFSPolicySettingsModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/components/schemas/HyperVBackupJobAdvancedSettingsModel"
+        }
+      }
+    },
+    "HyperVBackupProxiesSettingsModel": {
+      "required": [
+        "proxyType"
+      ],
+      "type": "object",
+      "properties": {
+        "proxyType": {
+          "$ref": "#/components/schemas/EHyperVProxyType"
+        },
+        "offHostSettings": {
+          "$ref": "#/components/schemas/OffHostBackupProxyModel"
+        }
+      }
+    },
+    "EHyperVProxyType": {
+      "type": "string",
+      "enum": [
+        "OnHost",
+        "OffHost"
+      ]
+    },
+    "OffHostBackupProxyModel": {
+      "type": "object",
+      "required": [
+        "autoSelectEnabled"
+      ],
+      "properties": {
+        "autoSelectEnabled": {
+          "type": "boolean"
+        },
+        "failoverToOnHostBackup": {
+          "type": "boolean"
+        },
+        "proxyIds": {
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "HyperVBackupJobAdvancedSettingsModel": {
+      "required": [
+        "backupModeType"
+      ],
+      "type": "object",
+      "properties": {
+        "backupModeType": {
+          "$ref": "#/components/schemas/EBackupModeType"
+        },
+        "syntheticFulls": {
+          "$ref": "#/components/schemas/SyntheticFullSettingsModel"
+        },
+        "activeFulls": {
+          "$ref": "#/components/schemas/ActiveFullSettingsModel"
+        },
+        "backupHealth": {
+          "$ref": "#/components/schemas/BackupHealthCheckSettingsModels"
+        },
+        "fullBackupMaintenance": {
+          "$ref": "#/components/schemas/FullBackupMaintenanceModel"
+        },
+        "storageData": {
+          "$ref": "#/components/schemas/BackupStorageSettingModel"
+        },
+        "notifications": {
+          "$ref": "#/components/schemas/HyperVNotificationSettingsModel"
+        },
+        "hyperV": {
+          "$ref": "#/components/schemas/BackupJobAdvancedSettingsHyperVModel"
+        },
+        "scripts": {
+          "$ref": "#/components/schemas/JobScriptsSettingsModel"
+        }
+      }
+    },
+    "HyperVNotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "sendSNMPNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "$ref": "#/components/schemas/EmailNotificationSettingsModel"
+        }
+      }
+    },
+    "BackupJobAdvancedSettingsHyperVModel": {
+      "type": "object",
+      "properties": {
+        "guestQuiescence": {
+          "$ref": "#/components/schemas/HyperVGuestQuiescenceSettingsModel"
+        },
+        "changedBlockTracking": {
+          "type": "boolean"
+        },
+        "volumeSnapshots": {
+          "type": "boolean"
+        }
+      }
+    },
+    "HyperVGuestQuiescenceSettingsModel": {
+      "required": [
+        "isEnabled"
+      ],
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "crashConsistentBackup": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VmwareObjectModel": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "type",
+            "hostName"
+          ],
+          "properties": {
+            "hostName": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "$ref": "#/components/schemas/EVmwareInventoryType"
+            },
+            "objectId": {
+              "type": "string"
+            },
+            "urn": {
+              "type": "string"
+            },
+            "powerState": {
+              "$ref": "#/components/schemas/EPowerState"
+            },
+            "metadata": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CommonMetaInfo"
+              }
+            },
+            "aclInfo": {
+              "$ref": "#/components/schemas/ObjectAclInfo"
+            }
+          }
+        }
+      ]
+    },
+    "EVmwareInventoryType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VirtualMachine",
+        "vCenterServer",
+        "Datacenter",
+        "Cluster",
+        "Host",
+        "ResourcePool",
+        "Folder",
+        "Datastore",
+        "DatastoreCluster",
+        "StoragePolicy",
+        "Template",
+        "ComputeResource",
+        "VirtualApp",
+        "Tag",
+        "Category",
+        "Multitag",
+        "Network",
+        "DVSNetwork",
+        "Disk",
+        "SharedDisk"
+      ]
+    },
+    "EPowerState": {
+      "type": "string",
+      "enum": [
+        "PoweredOff",
+        "PoweredOn",
+        "Suspended"
+      ]
+    },
+    "CommonMetaInfo": {
+      "required": [
+        "field",
+        "data"
+      ],
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "ObjectAclInfo": {
+      "type": "object",
+      "required": [
+        "isAllowed"
+      ],
+      "properties": {
+        "isAllowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "HyperVObjectModel": {
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/InventoryObjectModel"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "type",
+            "hostName",
+            "objectId"
+          ],
+          "properties": {
+            "hostName": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "$ref": "#/components/schemas/EHyperVInventoryType"
+            },
+            "objectId": {
+              "type": "string"
+            },
+            "urn": {
+              "type": "string"
+            },
+            "parentObjectId": {
+              "type": "string"
+            },
+            "aclInfo": {
+              "$ref": "#/components/schemas/ObjectAclInfo"
+            }
+          }
+        }
+      ]
+    },
+    "EHyperVInventoryType": {
+      "type": "string",
+      "enum": [
+        "VMGroup",
+        "ManagementGroup",
+        "HostGroup",
+        "Scvmm",
+        "Cluster",
+        "Host",
+        "VirtualMachine",
+        "Network",
+        "Volume",
+        "CSV",
+        "Tag",
+        "ClusterVolume"
+      ]
+    }
+  }
+}

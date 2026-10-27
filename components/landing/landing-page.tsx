@@ -31,8 +31,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { isTelemetryDisabled, enableTelemetry, disableTelemetry } from "@/lib/telemetry"
-import posthog from "posthog-js"
+import { isTelemetryDisabled, enableTelemetry, disableTelemetry, STORAGE_KEY, TELEMETRY_PREFERENCE_EVENT } from "@/lib/telemetry"
+import { toast } from "sonner"
+import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
 
 const platformIcons: Record<PlatformType, React.ReactNode> = {
     vbr: <Server className="h-6 w-6" />,
@@ -308,7 +309,8 @@ const defaultPorts: Record<PlatformType, string> = {
 }
 
 export function LandingPage() {
-    const { dataSources, addDataSource, removeDataSource, updateDataSource, setAuthenticated } = useDataSources()
+    const { dataSources, addDataSource, removeDataSource, updateDataSource, reloadSources, isLoading, loadError } = useDataSources()
+    const [connectionError, setConnectionError] = useState<string | null>(null)
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
     const [telemetryEnabled, setTelemetryEnabled] = useState(true)
@@ -316,7 +318,15 @@ export function LandingPage() {
     // After mounting, we have access to the theme
     useEffect(() => {
         setMounted(true)
-        setTelemetryEnabled(!isTelemetryDisabled())
+        const sync = () => setTelemetryEnabled(!isTelemetryDisabled())
+        const onStorage = (event: StorageEvent) => { if (event.key === STORAGE_KEY || event.key === null) sync() }
+        sync()
+        window.addEventListener(TELEMETRY_PREFERENCE_EVENT, sync)
+        window.addEventListener('storage', onStorage)
+        return () => {
+            window.removeEventListener(TELEMETRY_PREFERENCE_EVENT, sync)
+            window.removeEventListener('storage', onStorage)
+        }
     }, [])
 
     // UI State
@@ -430,22 +440,19 @@ export function LandingPage() {
         setAuthState(prev => ({ ...prev, loading: true, error: null }))
 
         try {
-            const response = await fetch(`/api/auth/${source.type}`, {
+            const path = source.managed ? `/api/administration/data-sources/${encodeURIComponent(source.id)}/connect` : `/api/auth/${source.type}`
+            await applicationRequest(path, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    url: source.url,
+                    ...(!source.managed ? { url: source.url } : {}),
                     username: authState.username,
                     password: authState.password
                 })
             })
 
-            if (!response.ok) {
-                const data = await response.json()
-                throw new Error(data.error || "Authentication failed")
-            }
-
-            setAuthenticated(authState.sourceId, true)
+            await reloadSources()
+            setAuthState(prev => ({ ...prev, username: '', password: '', loading: false }))
             setAuthDialogOpen(false)
         } catch (error) {
             setAuthState(prev => ({
@@ -460,22 +467,22 @@ export function LandingPage() {
 
     const handleAutoConnect = async (source: DataSource) => {
         setConnecting(prev => new Set(prev).add(source.id))
+        setConnectionError(null)
         try {
-            const response = await fetch(`/api/auth/${source.type}`, {
+            await applicationRequest(`/api/administration/data-sources/${encodeURIComponent(source.id)}/connect`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sourceId: source.id })
+                body: JSON.stringify({})
             })
 
-            if (response.ok) {
-                setAuthenticated(source.id, true)
-                return true
-            } else {
+            await reloadSources()
+            return true
+        } catch (error) {
+            if (error instanceof ApplicationRequestError && error.kind === 'response' && error.status === 401 && source.managed !== 'environment') {
                 openAuthDialog(source.id)
-                return false
+            } else {
+                setConnectionError(error instanceof Error ? error.message : 'The source could not be connected. Please retry.')
             }
-        } catch {
-            openAuthDialog(source.id)
             return false
         } finally {
             setConnecting(prev => {
@@ -531,9 +538,7 @@ export function LandingPage() {
                             <div className="border rounded-lg p-1 flex items-center gap-1 bg-background/50 backdrop-blur-sm" title="Telemetry Settings">
                                 <button
                                     onClick={() => {
-                                        enableTelemetry()
-                                        setTelemetryEnabled(true)
-                                        if (posthog) posthog.opt_in_capturing()
+                                        if (!enableTelemetry()) toast.error('The telemetry preference could not be saved in this browser.')
                                     }}
                                     title="Telemetry Enabled"
                                     className={cn(
@@ -546,9 +551,7 @@ export function LandingPage() {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        disableTelemetry()
-                                        setTelemetryEnabled(false)
-                                        if (posthog) posthog.opt_out_capturing()
+                                        if (!disableTelemetry()) toast.error('The telemetry preference could not be saved in this browser.')
                                     }}
                                     title="Telemetry Disabled"
                                     className={cn(
@@ -605,12 +608,12 @@ export function LandingPage() {
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h2 className="text-2xl font-bold">
-                                    {dataSources.length === 0 ? "Get Started" : "Data Sources"}
+                                    {dataSources.length === 0 && !isLoading && !loadError ? "Get Started" : "Data Sources"}
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    {dataSources.length === 0
+                                    {dataSources.length === 0 && !isLoading && !loadError
                                         ? "Add your first data source to begin"
-                                        : "Manage your connected platforms"
+                                        : "Connections run from the application server, including when you use your phone."
                                     }
                                 </p>
                             </div>
@@ -627,6 +630,18 @@ export function LandingPage() {
                             )}
                         </div>
 
+                        {(loadError || connectionError) && <div role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+                            <p>{loadError || connectionError}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                <Button variant="outline" size="sm" disabled={isLoading} onClick={() => { setConnectionError(null); void reloadSources() }}>Retry</Button>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    const url = new URL(window.location.href)
+                                    if (url.hostname.endsWith('.trycloudflare.com')) url.protocol = 'https:'
+                                    window.location.assign(url.href)
+                                }}>Reopen secure connection</Button>
+                            </div>
+                        </div>}
+                        {isLoading && <p role="status" className="mb-3 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin"/>Loading saved connections…</p>}
                         {/* Scrollable Sources Grid */}
                         <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1">
                             <div className="space-y-3">
@@ -677,7 +692,7 @@ export function LandingPage() {
                                                         size="sm"
                                                         className="h-7 px-2 text-xs"
                                                         onClick={() => source.hasCredentials ? handleAutoConnect(source) : openAuthDialog(source.id)}
-                                                        disabled={connecting.has(source.id)}
+                                                        disabled={connecting.has(source.id) || isLoading || !!loadError}
                                                     >
                                                         {connecting.has(source.id) ? (
                                                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -710,7 +725,7 @@ export function LandingPage() {
                                 ))}
 
                                 {/* Empty State - Add Source */}
-                                {dataSources.length === 0 && (
+                                {dataSources.length === 0 && !isLoading && !loadError && (
                                     <button
                                         onClick={() => setViewMode("add")}
                                         className={cn(
@@ -735,6 +750,7 @@ export function LandingPage() {
                                     size="default"
                                     className="w-full bg-[#00b336] hover:bg-[#00a030] text-white"
                                     onClick={allAuthenticated ? () => window.location.href = "/dashboard" : handleConnectAll}
+                                    disabled={isLoading || !!loadError || connecting.size > 0}
                                 >
                                     {allAuthenticated ? (
                                         <>
@@ -959,7 +975,7 @@ export function LandingPage() {
                     <DialogHeader>
                         <DialogTitle>Connect to {dataSources.find(ds => ds.id === authState.sourceId)?.name}</DialogTitle>
                         <DialogDescription>
-                            Enter your credentials to authenticate.
+                            The application server connects to this system. Your phone does not need access to its private network.
                         </DialogDescription>
                     </DialogHeader>
 

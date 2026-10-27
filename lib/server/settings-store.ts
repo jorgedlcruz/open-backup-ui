@@ -32,24 +32,25 @@ const defaultSettings: AppSettings = {
 export const settingsStore = {
     get(): AppSettings {
         if (!fs.existsSync(SETTINGS_FILE)) {
-            return defaultSettings;
+            return { ai: { ...defaultSettings.ai } };
         }
         try {
             const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
             const stored = JSON.parse(data) as AppSettings;
+            if (!stored.ai || typeof stored.ai.provider !== 'string') throw new Error('Invalid settings');
             
             // Decrypt API key for internal use
             if (stored.ai?.encryptedApiKey) {
                 try {
                     stored.ai.apiKey = decrypt(stored.ai.encryptedApiKey);
-                } catch (e) {
-                    console.error('Failed to decrypt AI API key', e);
+                } catch {
+                    // Retain the ciphertext so the UI can report an unreadable credential.
+                    delete stored.ai.apiKey;
                 }
             }
             return stored;
-        } catch (e) {
-            console.error('Failed to read settings store:', e);
-            return defaultSettings;
+        } catch {
+            throw new Error('AI configuration could not be read. Check the server settings file.');
         }
     },
 
@@ -65,7 +66,8 @@ export const settingsStore = {
     save(newSettings: Partial<AppSettings>) {
         const current = this.get();
         
-        let encryptedApiKey = current.ai?.encryptedApiKey;
+        const sameProvider = !newSettings.ai?.provider || newSettings.ai.provider === current.ai.provider;
+        let encryptedApiKey = sameProvider ? current.ai?.encryptedApiKey : undefined;
         
         // If a new API key is provided and it's not the masked string
         if (newSettings.ai?.apiKey && !newSettings.ai.apiKey.includes('••••')) {

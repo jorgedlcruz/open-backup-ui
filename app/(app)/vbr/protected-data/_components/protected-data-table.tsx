@@ -1,44 +1,35 @@
 "use client"
+import { GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
-import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table"
-import {
-    ArrowUpDown,
-    Shield,
-    AlertTriangle,
-    CheckCircle2,
-    Columns,
-    SlidersHorizontal
-} from "lucide-react"
 
+import {
+ColumnDef,
+ColumnFiltersState,
+SortingState,
+VisibilityState,
+flexRender,
+getCoreRowModel,
+getFilteredRowModel,
+getPaginationRowModel,
+getSortedRowModel,
+useReactTable,
+} from "@tanstack/react-table"
+import { AlertTriangle,CheckCircle2,Shield,SlidersHorizontal } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
+DropdownMenu,
+DropdownMenuCheckboxItem,
+DropdownMenuContent,
+DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
 import { VeeamProtectedWorkload } from "@/lib/types/veeam"
 import { useRouter } from "next/navigation"
 
@@ -69,18 +60,7 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
     const columns = React.useMemo<ColumnDef<VeeamProtectedWorkload>[]>(() => [
         {
             accessorKey: "name",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="!p-0 hover:!bg-transparent"
-                    >
-                        Workload Name
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                )
-            },
+            header: "Workload Name",
             cell: ({ row }) => (
                 <div
                     className="font-medium hover:underline text-primary cursor-pointer truncate max-w-[300px]"
@@ -109,18 +89,7 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
         {
             id: "restorePointsCount",
             accessorFn: (row) => Number(row.restorePointsCount || 0),
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="!p-0 hover:!bg-transparent"
-                    >
-                        Points
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                )
-            },
+            header: "Points",
             cell: ({ row }) => {
                 const count = row.getValue("restorePointsCount") as number;
                 return (
@@ -158,7 +127,7 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
 
     const table = useReactTable({
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
@@ -203,15 +172,30 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
     return (
         <div className="w-full space-y-4">
             {/* Filters Toolbar */}
-            <div className="flex items-center justify-between">
-                <div className="flex flex-1 items-center space-x-2">
-                    <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                         placeholder="Filter protected data..."
                         value={globalFilter ?? ""}
                         onChange={(event) => setGlobalFilter(event.target.value)}
                         className="h-8 w-[150px] lg:w-[250px]"
-                    />
-                    <DropdownMenu>
+                    /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={null} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => {
+                                return (
+                                    <GridColumnChoice
+                                        key={column.id}
+                                        className="capitalize"
+                                        checked={column.getIsVisible()}
+                                        onCheckedChange={(value) =>
+                                            column.toggleVisibility(!!value)
+                                        }
+                                    >
+                                        {column.id}
+                                    </GridColumnChoice>
+                                )
+                            })}
+                    </fieldset></GridViewMenu><DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 border-dashed">
                                 <SlidersHorizontal className="mr-2 h-4 w-4" />
@@ -232,53 +216,16 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                                 Failed
                             </DropdownMenuCheckboxItem>
                         </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
-                            <Columns className="mr-2 h-4 w-4" />
-                            Columns
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-
-            {/* Table */}
-            <div className="rounded-md border bg-card shadow-sm">
+                    </DropdownMenu></>}>
+{/* Table */}
+<div className="rounded-md border bg-card shadow-sm">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id} className="hover:bg-transparent">
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                        </TableHead>
+                                        <SortableTableHead key={header.id} header={header}/>
                                     )
                                 })}
                             </TableRow>
@@ -315,9 +262,8 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                     </TableBody>
                 </Table>
             </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-end space-x-2 py-4">
+{/* Pagination */}
+<div className="flex items-center justify-end space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredRowModel().rows.length} protected workloads
                 </div>
@@ -340,6 +286,6 @@ export function ProtectedDataTable({ data, loading }: DataTableProps) {
                     </Button>
                 </div>
             </div>
-        </div>
+</FilterWorkspace></div>
     )
 }

@@ -1,36 +1,28 @@
 "use client"
+import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
+
 import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+ColumnDef,
+ColumnFiltersState,
+SortingState,
+VisibilityState,
+flexRender,
+getCoreRowModel,
+getFilteredRowModel,
+getPaginationRowModel,
+getSortedRowModel,
+useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
 import { TriggeredAlarmItem } from "@/lib/types/veeam-one-alarms"
 
 interface ActiveAlarmsTableProps {
@@ -55,7 +47,7 @@ export function ActiveAlarmsTable({
 
     const table = useReactTable({
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
@@ -74,35 +66,22 @@ export function ActiveAlarmsTable({
 
     return (
         <div className="w-full space-y-4">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 flex-1">
-                    <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                         placeholder="Filter alarms..."
                         value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                         onChange={(event) =>
                             table.getColumn("name")?.setFilterValue(event.target.value)
                         }
                         className="max-w-sm"
-                    />
-                    {onRefresh && (
-                        <Button variant="outline" size="icon" onClick={onRefresh} disabled={isLoading}>
+                    /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={<FilterFields>{onRefresh && <><Button variant="outline" size="icon" onClick={onRefresh} disabled={isLoading}>
                             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                        </Button>
-                    )}
-                </div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                        </Button></>}</FilterFields>} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
                         {table
                             .getAllColumns()
                             .filter((column) => column.getCanHide())
                             .map((column) => {
                                 return (
-                                    <DropdownMenuCheckboxItem
+                                    <GridColumnChoice
                                         key={column.id}
                                         className="capitalize"
                                         checked={column.getIsVisible()}
@@ -111,27 +90,18 @@ export function ActiveAlarmsTable({
                                         }
                                     >
                                         {column.id}
-                                    </DropdownMenuCheckboxItem>
+                                    </GridColumnChoice>
                                 )
                             })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div className="rounded-md border bg-card">
+                    </fieldset></GridViewMenu></>}>
+<div className="rounded-md border bg-card">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                        </TableHead>
+                                        <SortableTableHead key={header.id} header={header}/>
                                     )
                                 })}
                             </TableRow>
@@ -169,7 +139,7 @@ export function ActiveAlarmsTable({
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
+<div className="flex items-center justify-end space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of{" "}
                     {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -193,6 +163,6 @@ export function ActiveAlarmsTable({
                     </Button>
                 </div>
             </div>
-        </div>
+</FilterWorkspace></div>
     )
 }

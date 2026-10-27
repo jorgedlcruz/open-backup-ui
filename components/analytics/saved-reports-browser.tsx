@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Folder, FileText, ChevronRight, CornerUpLeft } from "lucide-react"
 import Link from "next/link"
+import styles from "@/components/one-reports/reports.module.css"
 
 interface SavedReportsBrowserProps {
     items: VeeamOneGridNode[]
@@ -48,7 +49,7 @@ export function SavedReportsBrowser({ items }: SavedReportsBrowserProps) {
     return (
         <div className="space-y-6">
             {/* Header / Breadcrumbs */}
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground overflow-x-auto pb-2">
+            <nav aria-label="Report folders" className={`${styles.breadcrumbs} overflow-x-auto pb-2`}>
                 <Button
                     variant="ghost"
                     size="sm"
@@ -70,7 +71,7 @@ export function SavedReportsBrowser({ items }: SavedReportsBrowserProps) {
                         </Button>
                     </div>
                 ))}
-            </div>
+            </nav>
 
             {/* Back Button (if deep) */}
             {navStack.length > 0 && (

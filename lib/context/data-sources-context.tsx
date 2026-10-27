@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
+import { clientSources, loadClientSources } from '../data-sources/client'
 
 // Platform types
 export type PlatformType = 'vbr' | 'vb365' | 'vro' | 'veeam-one' | 'one' | 'kasten'
@@ -23,6 +24,7 @@ export interface DataSource {
     url: string
     isAuthenticated: boolean
     hasCredentials?: boolean
+    managed?: 'saved' | 'environment'
     lastAuthenticated?: string
 }
 
@@ -37,6 +39,9 @@ interface DataSourcesContextType {
     setAuthenticated: (id: string, authenticated: boolean) => void
     hasAnyDataSource: boolean
     hasAuthenticatedSource: boolean
+    isLoading: boolean
+    loadError: string | null
+    reloadSources: () => Promise<boolean>
 }
 
 const DataSourcesContext = createContext<DataSourcesContextType | null>(null)
@@ -51,68 +56,52 @@ function generateId(): string {
 export function DataSourcesProvider({ children }: { children: React.ReactNode }) {
     const [dataSources, setDataSources] = useState<DataSource[]>([])
     const [isHydrated, setIsHydrated] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
+    const requestVersion = useRef(0)
 
-    // Load sources from server and check sessions on mount
-    useEffect(() => {
-        const init = async () => {
+    const reloadSources = useCallback(async (signal?: AbortSignal) => {
+        const version = ++requestVersion.current
+        setIsLoading(true)
+        try {
+            const sources = await loadClientSources(signal)
+            if (signal?.aborted || version !== requestVersion.current) return false
+            setDataSources(sources)
+            setLoadError(null)
+            setIsHydrated(true)
+            return true
+        } catch (error) {
+            if (signal?.aborted || version !== requestVersion.current) return false
+            setLoadError(error instanceof Error ? error.message : 'Data sources could not be loaded. Please retry.')
+            // Preserve existing metadata on network/access failure. Cached rows
+            // never establish authentication and are not written back on failure.
             try {
-                // 1. Fetch Configured Sources (Server Truth)
-                const sourcesRes = await fetch('/api/config/sources')
-                let initialSources: DataSource[] = []
-
-                if (sourcesRes.ok) {
-                    initialSources = await sourcesRes.json()
-                } else {
-                    // Fallback to local storage if API fails
-                    const stored = localStorage.getItem(STORAGE_KEY)
-                    if (stored) {
-                        initialSources = JSON.parse(stored)
-                    }
-                }
-
-                // 2. Check Auth Status (Session)
-                const sessionRes = await fetch('/api/auth/session')
-                let sessions: Record<string, { authenticated: boolean }> = {}
-                if (sessionRes.ok) {
-                    sessions = await sessionRes.json()
-                }
-
-                // 3. Merge and Set
-                const merged = initialSources.map(ds => {
-                    const session = sessions[ds.type]
-                    if (session && session.authenticated) {
-                        return {
-                            ...ds,
-                            isAuthenticated: true,
-                            lastAuthenticated: new Date().toISOString()
-                        }
-                    }
-                    return { ...ds, isAuthenticated: false }
-                })
-
-                setDataSources(merged)
-            } catch (e) {
-                console.error("Data sources initialization failed:", e)
-            } finally {
-                setIsHydrated(true)
-            }
+                const stored = localStorage.getItem(STORAGE_KEY)
+                const fallback = stored ? clientSources(JSON.parse(stored), true) : []
+                setDataSources(previous => previous.length ? previous : fallback)
+            } catch { /* An unavailable browser cache does not erase server configuration. */ }
+            return false
+        } finally {
+            if (!signal?.aborted && version === requestVersion.current) setIsLoading(false)
         }
-
-        init()
     }, [])
+
+    useEffect(() => {
+        const controller = new AbortController()
+        void reloadSources(controller.signal)
+        return () => { controller.abort() }
+    }, [reloadSources])
 
     // Save to localStorage when sources change (but not auth status)
     useEffect(() => {
-        if (isHydrated) {
+        if (isHydrated && !loadError) {
             try {
                 // Store without sensitive runtime data
                 const toStore = dataSources.map(({ id, type, name, url }) => ({ id, type, name, url, isAuthenticated: false }))
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
-            } catch (e) {
-                console.error("Failed to save data sources to localStorage:", e)
-            }
+            } catch { /* Server-backed connections also work without localStorage. */ }
         }
-    }, [dataSources, isHydrated])
+    }, [dataSources, isHydrated, loadError])
 
     const addDataSource = useCallback((type: PlatformType, url: string, name?: string): DataSource => {
         const newSource: DataSource = {
@@ -133,6 +122,8 @@ export function DataSourcesProvider({ children }: { children: React.ReactNode })
                 if (updates.url) {
                     updated.url = updates.url.replace(/\/+$/, '')
                     updated.isAuthenticated = false // Reset auth when URL changes
+                    updated.hasCredentials = false
+                    updated.managed = undefined
                 }
                 return updated
             }
@@ -178,7 +169,10 @@ export function DataSourcesProvider({ children }: { children: React.ReactNode })
             getDataSourceByType,
             setAuthenticated,
             hasAnyDataSource,
-            hasAuthenticatedSource
+            hasAuthenticatedSource,
+            isLoading,
+            loadError,
+            reloadSources
         }}>
             {children}
         </DataSourcesContext.Provider>

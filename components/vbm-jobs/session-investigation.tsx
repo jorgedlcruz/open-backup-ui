@@ -1,0 +1,48 @@
+'use client'
+import { date,Empty,Loading,Notice,Pager,Panel,SearchBox,useEvidence } from '@/components/investigation/shared'
+import { FilterSelect } from '@/components/operations/filter-facet'
+import { FilterFields,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
+import ops from '@/components/operations/operations.module.css'
+import { Button } from '@/components/ui/button'
+import { Field,number,value } from '@/components/vbm-dashboard/evidence-panels'
+import { Tone } from '@/components/vbm-dashboard/session-history'
+import shared from '@/components/vbm-dashboard/vbm-dashboard.module.css'
+import { veeamApi } from '@/lib/api/veeam-client'
+import { validId } from '@/lib/investigation/model'
+import { formatBytes } from '@/lib/restore-points/model'
+import { cn } from '@/lib/utils'
+import { status } from '@/lib/vbm-dashboard/model'
+import { duration,filterLogs,logIssue,lookup,retryChain,workload,workloads,workloadTarget,type JobsSnapshot,type LogFilters,type Session,type SessionDetail } from '@/lib/vbm-jobs/model'
+import { ArrowLeft,ChevronLeft,ChevronRight,RefreshCw } from 'lucide-react'
+import { useCallback,useState } from 'react'
+import styles from './jobs.module.css'
+import { Export } from './shared'
+
+export function SessionInvestigation({id,jobId,data,sessions,onSelect,revision}:{id:string;jobId:string;data:JobsSnapshot;sessions:Session[];onSelect:(id:string|null)=>void;revision:number}) {
+  const [retry,setRetry]=useState(0),load=useCallback((signal:AbortSignal)=>veeamApi.getVBMSessionInvestigation(id,jobId,signal),[id,jobId])
+  const {data:detail,error,loading}=useEvidence(load,revision+retry)
+  const position=sessions.findIndex(row=>row.id===id.toLowerCase()),session=detail?.session
+  const chain=session ? retryChain(session,[...new Map([...sessions,session].map(row=>[row.id,row])).values()]):[]
+  return <div><div className={styles.navigation}><Button variant="outline" size="sm" onClick={()=>onSelect(null)}><ArrowLeft size={14}/>Back to session history</Button><div><Button size="sm" variant="outline" aria-label="Previous session" disabled={position<=0} onClick={()=>onSelect(sessions[position-1].id)}><ChevronLeft size={14}/>Newer</Button><span className={ops.subtext}>{position>=0 ? `${position+1} / ${sessions.length}`:'Outside history window'}</span><Button size="sm" variant="outline" aria-label="Next session" disabled={position<0 || position>=sessions.length-1} onClick={()=>onSelect(sessions[position+1].id)}>Older<ChevronRight size={14}/></Button><Button size="icon" variant="ghost" aria-label="Refresh session details" disabled={loading} onClick={()=>setRetry(n=>n+1)}><RefreshCw size={14}/></Button></div></div>
+    {error && <Notice error>{error}</Notice>}{loading && <Loading>{detail ? 'Refreshing session evidence…':'Loading session details and workload logs…'}</Loading>}
+    {detail && session && <><div className={styles.stack}><Panel title="Session result" subtitle={`${date(session.creationTime)} · ${value(session.jobType)} · ${value(session.jobSessionConfigType)}`} action={<Tone value={status(session.status)}/>}><div className={styles.result}><p>{session.details || 'No result message reported.'}</p></div></Panel>
+      <div className={shared.context}><span>Duration <strong>{duration(session)}</strong></span><span>Transferred <strong>{formatBytes(session.statistics?.transferredDataBytes)}</strong></span><span>Processed <strong>{number(session.statistics?.processedObjects)} objects</strong></span><span>Bottleneck <strong>{value(session.statistics?.bottleneck)}</strong></span></div>
+    </div><div className={styles.detailGrid}><WorkloadLogs key={session.id} detail={detail}/><div className={styles.stack}><Panel title="Session evidence" subtitle="Reported values for this execution."><dl className={styles.sideFacts}><Field label="Session ID">{session.id}</Field><Field label="Started">{date(session.creationTime)}</Field><Field label="Ended">{date(session.endTime)}</Field><Field label="Repository">{lookup(data.repositories.data,session.repositoryId)}</Field><Field label="Repository ID">{value(session.repositoryId)}</Field><Field label="Proxy ID">{value(session.proxyId)}</Field><Field label="Proxy pool ID">{value(session.proxyPoolId)}</Field><Field label="Job ID">{value(session.jobId)}</Field><Field label="Processing rate">{formatBytes(session.statistics?.processingRateBytesPS)}/s · {number(session.statistics?.processingRateItemsPS)} items/s</Field><Field label="Read rate">{formatBytes(session.statistics?.readRateBytesPS)}/s</Field><Field label="Write rate">{formatBytes(session.statistics?.writeRateBytesPS)}/s</Field><Field label="Progress (API value)">{number(session.progress)}</Field></dl></Panel>
+      <Panel title="Retry evidence" subtitle="Relationships supplied by the API."><dl className={styles.sideFacts}><Field label="Retry count">{number(session.retryCount)}</Field><Field label="Will be retried (reported)">{session.jobWillBeRetried==null ? 'Not reported':session.jobWillBeRetried ? 'Yes':'No'}</Field><Field label="Main session ID">{validId(session.mainSessionId) ? session.mainSessionId:'No explicit parent reported'}</Field></dl>{chain.length ? <div className={styles.chain}>{chain.map(row=><button key={row.id} aria-pressed={row.id===session.id} onClick={()=>onSelect(row.id)}><Tone value={status(row.status)}/><span>{date(row.creationTime)}</span><span>Retry {number(row.retryCount)} · {row.id}</span></button>)}</div>:<p className={ops.panelFoot}>No explicit retry chain in loaded history. Nearby runs are not assumed to be retries.</p>}{validId(session.mainSessionId) && !chain.some(row=>row.id===session.mainSessionId) && <p className={ops.panelFoot}>The main session is outside the loaded history. <button className={ops.textLink} onClick={()=>onSelect(session.mainSessionId!)}>Inspect main session</button></p>}</Panel></div></div></>}
+  </div>
+}
+
+function WorkloadLogs({detail}:{detail:SessionDetail}) {
+  const [filters,setFilters]=useState<LogFilters>({query:'',severity:'issues',workload:'all',order:'oldest'}),[page,setPage]=useState(0)
+  const update=(patch:Partial<LogFilters>)=>{setFilters(old=>({...old,...patch}));setPage(0)}
+  const logs=detail.logs,rows=filterLogs(logs.data,filters),current=Math.min(page,Math.max(0,Math.ceil(rows.length/12)-1)),issues=logs.data.filter(logIssue)
+  return <Panel title="Workload errors & session log" subtitle="Full messages from the selected execution, grouped by the workload named in each message." action={<Export rows={rows.map(row=>({...row,workload:workload(row),referencedObject:workloadTarget(row)}))} name={`microsoft365-${detail.session.id}-log`}/>}>
+    {!!detail.warnings.length && <div className={styles.logList}>{detail.warnings.map(text=><Notice key={text}>{text}</Notice>)}</div>}
+    <FilterWorkspace label="Grid filters" search={<><SearchBox label="Search workload names, URLs, or errors" value={filters.query} onChange={query=>update({query})}/></>} onClear={()=>{setFilters(current=>({...current,query:'',severity:'all',workload:'all'}));setPage(0)}} filters={<FilterFields><FilterSelect label={"Workload"} value={filters.workload} onValueChange={event=>update({workload:event})}><option value="all">All workloads</option>{workloads.map(name=><option key={name} value={name}>{name} · {logs.data.filter(row=>workload(row)===name).length} entries · {issues.filter(row=>workload(row)===name).length} issues</option>)}</FilterSelect>
+<FilterSelect label={"Severity"} value={filters.severity} onValueChange={event=>update({severity:event})}><option value="issues">Errors / warnings</option><option value="all">All severities</option>{[...new Set(logs.data.map(row=>row.type || 'Not reported'))].sort().map(type=><option key={type}>{type}</option>)}</FilterSelect></FilterFields>} actions={<><GridViewMenu><label>Order<select aria-label="Log order" value={filters.order} onChange={event=>update({order:event.target.value as 'oldest'|'newest'})}><option value="oldest">Oldest first</option><option value="newest">Newest first</option></select></label></GridViewMenu></>}>
+{!logs.available ? <Empty>Session logs are unavailable. Refresh the session to retry.</Empty>:!rows.length ? <Empty>No log entries match these filters.{filters.severity==='issues' && <Button size="sm" variant="outline" onClick={()=>update({severity:'all',workload:'all',query:''})}>Show all log entries</Button>}</Empty>:<div className={styles.logList}>{rows.slice(current*12,current*12+12).map(row=><article key={row.id} className={styles.logEntry} data-issue={logIssue(row)} data-error={['Error','Failed'].includes(row.type || '')}><header><span className={cn(ops.badge,logIssue(row) ? row.type==='Warning' ? ops.warning:ops.danger:row.type==='Success' ? ops.success:ops.neutral)}><span className={ops.dot}/>{value(row.type)}</span><span>{workload(row)}</span><time>{date(row.creationTime)}</time></header>{workloadTarget(row) && <strong>Referenced workload · {workloadTarget(row)}</strong>}<p>{row.message || 'No message reported'}</p><details><summary>Log entry details</summary><p>ID: {row.id}<br/>Sequence: {number(row.usn)}<br/>Created: {date(row.creationTime)}<br/>Ended: {date(row.endTime)}</p></details></article>)}</div>}
+<Pager page={current} count={rows.length} size={12} onChange={setPage} label="log entries"/>
+<p className={ops.panelFoot}>{logs.complete ? 'Complete returned log.':'Partial / unavailable log.'} Workload labels come from message text; counts represent log entries, not unique failed objects. Ambiguous messages remain in Other / session. Exports contain all filtered entries across pages.</p>
+</FilterWorkspace></Panel>
+}

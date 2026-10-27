@@ -1,0 +1,10 @@
+.table { min-width:1100px; }
+.table td { max-width:300px; overflow-wrap:anywhere; }
+.description { display:block; max-width:300px; margin-top:5px; color:var(--muted-foreground); font-size:var(--ops-caption,10px); line-height:1.6; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 20px; padding:12px 20px; border-block:1px solid var(--border); color:var(--muted-foreground); font-size:var(--ops-small,11px); line-height:1.7; }
+.summary strong { color:var(--foreground); font-weight:550; font-variant-numeric:tabular-nums; }
+.status { display:flex; flex-direction:column; align-items:flex-start; gap:7px; min-width:110px; }
+.progress { display:flex; align-items:center; gap:8px; width:100%; font-size:var(--ops-caption,10px); color:var(--muted-foreground); font-variant-numeric:tabular-nums; }
+.progress > div { height:4px; flex:1; background:var(--muted); border-radius:4px; overflow:hidden; }
+.progress > div > span { display:block; height:100%; background:var(--ops-active); border-radius:inherit; }
+@media(max-width:600px) { .summary{padding-inline:14px;} }

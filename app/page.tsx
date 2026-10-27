@@ -9,7 +9,7 @@ export default async function Home() {
   const cookieStore = await cookies()
 
   // Check for any valid auth tokens
-  const vbrToken = getChunkedCookie(cookieStore, 'veeam_vbr_token')
+  const vbrToken = cookieStore.get('veeam_source_id')?.value || getChunkedCookie(cookieStore, 'veeam_vbr_token')
   const vb365Token = getChunkedCookie(cookieStore, 'veeam_vb365_token')
   const vroToken = getChunkedCookie(cookieStore, 'veeam_vro_token')
   const voneToken = getChunkedCookie(cookieStore, 'veeam_one_token')

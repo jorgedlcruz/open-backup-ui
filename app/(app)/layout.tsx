@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
+import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
 import { SectionNamesProvider } from "@/lib/context/section-names-context";
 import { configStore } from "@/lib/server/config-store";
 import { cookies } from "next/headers";
@@ -40,7 +41,7 @@ export default async function AppLayout({
 
     return (
         <SectionNamesProvider>
-            <SidebarProvider>
+            <SidebarProvider defaultOpen={cookieStore.get("sidebar_state")?.value !== "false"}>
                 <AppSidebar
                     vbrConfigured={vbrConfigured}
                     vb365Configured={vb365Configured}
@@ -48,8 +49,9 @@ export default async function AppLayout({
                     veeamOneConfigured={veeamOneConfigured}
                 />
                 <SidebarInset>
-                    <AppHeader />
-                    {children}
+                    <AppHeader vbrConfigured={vbrConfigured} vb365Configured={vb365Configured}
+                        sourceScope={JSON.stringify([cookieStore.get('veeam_source_id')?.value, cookieStore.get('veeam_vb365_source_id')?.value])} />
+                    <div className="app-content"><AppBreadcrumbs />{children}</div>
                 </SidebarInset>
             </SidebarProvider>
         </SectionNamesProvider>

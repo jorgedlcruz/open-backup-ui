@@ -1,39 +1,30 @@
 "use client"
+import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
+import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { sortableColumns } from '@/lib/table-sort'
 import * as React from "react"
+
 import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+ColumnDef,
+ColumnFiltersState,
+SortingState,
+VisibilityState,
+flexRender,
+getCoreRowModel,
+getFilteredRowModel,
+getPaginationRowModel,
+getSortedRowModel,
+useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, ArrowUp, ArrowDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { VeeamOneTableItem } from "@/lib/types/veeam-one"
+
 import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter"
+import { Table,TableBody,TableCell,TableHeader,TableRow } from "@/components/ui/table"
+import { VeeamOneTableItem } from "@/lib/types/veeam-one"
 
 interface ReportDataTableProps {
     data: VeeamOneTableItem[]
@@ -55,25 +46,14 @@ export function ReportDataTable({ data }: ReportDataTableProps) {
 
         return keys.map(key => ({
             accessorKey: key,
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                        className="capitalize px-0 hover:bg-transparent"
-                    >
-                        {key.replace(/_/g, ' ')}
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                )
-            },
+            header: ()=><>{key.replace(/_/g, ' ')}</>,
             cell: ({ row }) => <div>{row.getValue(key)}</div>,
         }))
     }, [data])
 
     const table = useReactTable({
         data,
-        columns,
+        columns: sortableColumns(columns, sorting, data),
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
@@ -104,57 +84,38 @@ export function ReportDataTable({ data }: ReportDataTableProps) {
 
     return (
         <div className="w-full space-y-4">
-            <div className="flex items-center gap-4">
-                <Input
+            <FilterWorkspace label="Grid filters" search={<><Input
                     placeholder="Filter data..."
                     value={(table.getState().globalFilter as string) ?? ""}
                     onChange={(event) =>
                         table.setGlobalFilter(event.target.value)
                     }
                     className="max-w-sm"
-                />
-                {/* Filters */}
-                {table.getColumn("status") && (
-                    <DataTableFacetedFilter
+                /></>} onClear={()=>{table.resetColumnFilters();table.setGlobalFilter('')}} filters={<FilterFields>{table.getColumn("status") && <><DataTableFacetedFilter
                         column={table.getColumn("status")}
                         title="Status"
                         options={getUniqueValues("status")}
-                    />
-                )}
-                {table.getColumn("job_name") && (
-                    <DataTableFacetedFilter
+                    /></>}
+{table.getColumn("job_name") && <><DataTableFacetedFilter
                         column={table.getColumn("job_name")}
                         title="Job Name"
                         options={getUniqueValues("job_name")}
-                    />
-                )}
-                {table.getColumn("protection_type") && (
-                    <DataTableFacetedFilter
+                    /></>}
+{table.getColumn("protection_type") && <><DataTableFacetedFilter
                         column={table.getColumn("protection_type")}
                         title="Protection Type"
                         options={getUniqueValues("protection_type")}
-                    />
-                )}
-                {table.getColumn("platform") && (
-                    <DataTableFacetedFilter
+                    /></>}
+{table.getColumn("platform") && <><DataTableFacetedFilter
                         column={table.getColumn("platform")}
                         title="Platform"
                         options={getUniqueValues("platform")}
-                    />
-                )}
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Columns <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    /></>}</FilterFields>} actions={<><GridViewMenu><fieldset className="grid-column-fields"><legend>Visible columns</legend>
                         {table.getAllColumns()
                             .filter((column) => column.getCanHide())
                             .map((column) => {
                                 return (
-                                    <DropdownMenuCheckboxItem
+                                    <GridColumnChoice
                                         key={column.id}
                                         className="capitalize"
                                         checked={column.getIsVisible()}
@@ -163,41 +124,18 @@ export function ReportDataTable({ data }: ReportDataTableProps) {
                                         }
                                     >
                                         {column.id.replace(/_/g, ' ')}
-                                    </DropdownMenuCheckboxItem>
+                                    </GridColumnChoice>
                                 )
                             })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            <div className="rounded-md border bg-card">
+                    </fieldset></GridViewMenu></>}>
+<div className="rounded-md border bg-card">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : (
-                                                    <div
-                                                        className={cn(
-                                                            header.column.getCanSort() ? "cursor-pointer select-none flex items-center gap-2" : "",
-                                                        )}
-                                                        onClick={header.column.getToggleSortingHandler()}
-                                                    >
-                                                        {flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                        {{
-                                                            asc: <ArrowUp className="h-4 w-4" />,
-                                                            desc: <ArrowDown className="h-4 w-4" />,
-                                                        }[header.column.getIsSorted() as string] ?? null}
-                                                    </div>
-                                                )
-                                            }
-                                        </TableHead>
+                                        <SortableTableHead key={header.id} header={header}/>
                                     )
                                 })}
                             </TableRow>
@@ -233,7 +171,7 @@ export function ReportDataTable({ data }: ReportDataTableProps) {
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
+<div className="flex items-center justify-end space-x-2 py-4">
                 <div className="flex-1 text-sm text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of{" "}
                     {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -257,6 +195,6 @@ export function ReportDataTable({ data }: ReportDataTableProps) {
                     </Button>
                 </div>
             </div>
-        </div>
+</FilterWorkspace></div>
     )
 }
