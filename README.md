@@ -4,7 +4,7 @@
 
 See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. Open Backup UI **v1.0.0** brings a consistent Operations experience to Veeam Backup & Replication, Veeam Backup for Microsoft 365, Veeam ONE, and administration.
 
-[What's new in v1.0](docs/releases/v1.0.0.md) · [Screenshot guide](docs/releases/v1.0.0-screenshots.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+[What's new in v1.0](docs/releases/v1.0.0.md) · [Visual guide](docs/releases/v1.0.0-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
 > [!IMPORTANT]
 > This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
@@ -19,7 +19,11 @@ See protection health, investigate failures, explore recovery evidence, and plan
 - **Faster navigation:** global search with previews, preserved HexMaps, and a phone-friendly main menu.
 - **Make it yours:** Operations plus Glass Ocean, Glass Forest, and Glass Aurora themes; fonts, colors, and live appearance previews.
 
-The [full release notes](docs/releases/v1.0.0.md) cover each feature and include insertion points for screenshots.
+The [full release notes](docs/releases/v1.0.0.md) include 38 feature screenshots. Browse the [visual guide](docs/releases/v1.0.0-gallery.md) for captions and current navigation routes.
+
+![Protection Lens overview](docs/releases/images/v1.0.0/01-protection-lens.webp)
+
+*Protection Lens brings health, investigation priorities, and capacity into one view.*
 
 ## Explore the console
 
