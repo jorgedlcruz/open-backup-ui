@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/.nyc_output/
+/test-results/
+/playwright-report/
 
 # next.js
 /.next/
@@ -20,11 +23,17 @@
 # production
 /build
 /artifacts/
+/output/
 /tmp/
 
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+/.aws/
+/.ssh/
 
 # debug
 npm-debug.log*

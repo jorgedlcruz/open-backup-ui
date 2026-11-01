@@ -42,6 +42,12 @@ export class ForecastCache {
 
   has(key: string) { return this.entries.has(key) }
 
+  /** Read an existing authenticated scope without starting or awaiting collection. */
+  peek(key: string, background = false): ForecastSnapshot | null {
+    const entry = this.entries.get(key)
+    return entry?.value && !entry.invalidated ? this.snapshot(entry, background) : null
+  }
+
   due(key: string) {
     const entry = this.entries.get(key)
     return !entry || !entry.pending && entry.nextRefresh <= this.clock()

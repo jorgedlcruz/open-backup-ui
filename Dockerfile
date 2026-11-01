@@ -45,6 +45,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/scripts/https-server.cjs ./scripts/https-server.cjs
+COPY --from=builder /app/scripts/kiosk-server.cjs ./scripts/kiosk-server.cjs
+COPY --from=builder /app/scripts/lib/kiosk-gateway.cjs ./scripts/lib/kiosk-gateway.cjs
+COPY --from=builder /app/lib/labs/public-paths.cjs ./lib/labs/public-paths.cjs
 COPY --from=builder /app/lib/server/tls-runtime.cjs ./lib/server/tls-runtime.cjs
 
 # Set correct permissions
@@ -54,6 +57,7 @@ USER nextjs
 
 EXPOSE 3000
 EXPOSE 3443
+EXPOSE 3102
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"

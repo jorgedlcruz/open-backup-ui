@@ -2,16 +2,28 @@
 
 **A community Operations console for Veeam environments.**
 
-See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. Open Backup UI **v1.0.0** brings a consistent Operations experience to Veeam Backup & Replication, Veeam Backup for Microsoft 365, Veeam ONE, and administration.
+See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. Open Backup UI **v1.0.1** adds Kiosk Builder, read-only TV dashboards and AI summary PDF reports to the Operations experience across Veeam Backup & Replication, Veeam Backup for Microsoft 365, Veeam ONE, and administration. The initial kiosk source catalog covers VBR.
 
-[What's new in v1.0](docs/releases/v1.0.0.md) · [Visual guide](docs/releases/v1.0.0-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+[What's new in v1.0.1](docs/releases/v1.0.1.md) · [Visual guide](docs/releases/v1.0.1-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
-Importing the prepared release package with GitHub Desktop? Follow the [offline branch import and PR/release guide](docs/github-desktop-import.md). The package restores `features/v1.0.0` with its code, images, and history, and includes ready-to-paste PR and release descriptions.
+Preparing v1.0.1 in GitHub Desktop? Use the [PR Markdown](docs/releases/v1.0.1-pull-request.md) and [publication review](docs/releases/v1.0.1-validation.md#github-desktop-handoff). The earlier v1.0.0 offline package has its own [import guide](docs/github-desktop-import.md).
 
 > [!IMPORTANT]
 > This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
 
-## What's new in v1.0
+## What's new in v1.0.1
+
+- **Kiosk Builder (Labs):** enable it in Settings and build a canvas from sixteen VBR sources and ten visual forms, with editable mappings, series, filters and columns.
+- **A layout that makes room:** magnetic alignment, cascading repulsion, consistent padding, undo/redo and browser-local composition import/export.
+- **Read-only monitoring screens:** optional password-protected links, configurable refresh and full-screen TV fitting through a dedicated viewer listener. Keep the main console behind your existing access controls.
+- **Cached capacity evidence:** repository forecasts, runway, footprint, retention and hygiene widgets, plus a populated forecast miniature in the Lens selector.
+- **AI summaries and PDF reports:** clearer provider setup and errors, a panel that follows Branding, and local export of completed analyses with linked contents and embedded multilingual fonts.
+
+![Kiosk Builder shared TV view](docs/releases/images/v1.0.1/08-kiosk-tv.webp)
+
+*A ten-widget monitoring screen in Glass Aurora. [Explore all 15 release images](docs/releases/v1.0.1-gallery.md), the [Kiosk Builder guide](docs/labs.md), and [AI PDF export](docs/ai-summary-pdf.md).*
+
+## The v1.0 Operations foundation
 
 - **Protection Lens:** Overview, Job Operations, Capacity Watch, and Capacity Forecast, with a compact view selector and a browser-specific default.
 - **Capacity planning:** cached backup-file projections, measured repository trends, retention and immutability investigation, and backup-hygiene review, with planning data refreshed in the background every 30 minutes.
@@ -115,7 +127,7 @@ Run `npm ci` after cloning or extracting the source on a new machine; dependenci
 
 The release source ZIP includes the application, tests, documentation, release screenshots, and connection-page images. It excludes installed dependencies, generated builds, local credentials, and runtime `data/`. Configure your own connections after extracting it; keep your existing instance's `data/` and encryption key when upgrading.
 
-To create the same source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.0.0.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
+To create the source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.0.1.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
 
 The separate Linux standalone release includes the production build and runtime dependencies. Follow [standalone startup instructions](STANDALONE.md) to run it directly; use the source ZIP to install and build on Windows, macOS, or another architecture.
 
@@ -194,6 +206,8 @@ Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, Radix/shadcn contro
 
 ## Documentation and community
 
+- [v1.0.1 release notes](docs/releases/v1.0.1.md), [visual guide](docs/releases/v1.0.1-gallery.md), and [validation scope](docs/releases/v1.0.1-validation.md)
+- [Kiosk Builder and sharing](docs/labs.md) and [AI summary PDF export](docs/ai-summary-pdf.md)
 - [v1.0 release notes](docs/releases/v1.0.0.md) and [screenshot checklist](docs/releases/v1.0.0-screenshots.md)
 - [Operations implementation and metric definitions](docs/operations-revamp.md)
 - [Protection Topology](docs/protection-topology.md) and [workload resilience](docs/workload-resilience.md)

@@ -25,6 +25,8 @@
 .preview { height:77px; display:flex; gap:9px; align-items:center; margin-top:12px; }
 .figure { min-width:58px; flex-shrink:0; }.figure strong { display:block; font-size:25px; letter-spacing:-.8px; font-weight:600; line-height:1.2; font-variant-numeric:tabular-nums; }
 .figure small { display:block; color:var(--muted-foreground); font-size:9px; margin-top:6px; }
+.forecastFigure { min-width:100px; max-width:140px; }.forecastFigure strong { font-size:20px; letter-spacing:-.5px; white-space:nowrap; }.forecastFigure .forecastValue { color:var(--ops-chart-active); margin-top:5px; }
+.repositoryName { display:block; color:var(--foreground); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px; }
 .activity { width:100%; min-width:0; height:62px; overflow:visible; }
 .rows { flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
 .rowLabel { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:9px; color:var(--muted-foreground); line-height:1.2; margin-bottom:4px; }

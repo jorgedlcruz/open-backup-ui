@@ -10,7 +10,7 @@ const SOURCE_DIRECTORIES = ['.github', 'app', 'components', 'docs', 'hooks', 'li
 const ROOT_FILES = [
   '.dockerignore', '.env.example', '.gitattributes', '.gitignore', 'CHANGELOG.md',
   'components.json', 'CONTAINER.md', 'CONTRIBUTING.md', 'DCO.md', 'Dockerfile',
-  'eslint.config.mjs', 'instrumentation.ts', 'LICENSE', 'next.config.js',
+  'eslint.config.mjs', 'instrumentation.ts', 'middleware.ts', 'LICENSE', 'next.config.js',
   'package-lock.json', 'package.json', 'postcss.config.mjs', 'README.md',
   'STANDALONE.md', 'TROUBLESHOOTING.md', 'tsconfig.json',
 ]

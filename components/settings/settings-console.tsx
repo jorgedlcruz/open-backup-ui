@@ -12,6 +12,7 @@ import { Panel } from '@/components/investigation/shared'
 import { cn } from '@/lib/utils'
 import ops from '@/components/operations/operations.module.css'
 import styles from './settings.module.css'
+import { LabsSettings } from '@/components/labs/labs-settings'
 
 type Certificate = {
     subject: string; issuer: string; subjectAltName: string; validFrom: string; validTo: string;
@@ -32,9 +33,11 @@ export function SettingsConsole() {
             <TabsList aria-label={t('Application settings')} className={styles.tabs}>
                 <TabsTrigger value="language"><Globe2 size={15} />{t('Language & region')}</TabsTrigger>
                 <TabsTrigger value="https"><LockKeyhole size={15} />{t('HTTPS & certificates')}</TabsTrigger>
+                <TabsTrigger value="labs">{t('Labs')}</TabsTrigger>
             </TabsList>
             <TabsContent value="language"><LanguageSettings /></TabsContent>
             <TabsContent value="https"><CertificateSettings /></TabsContent>
+            <TabsContent value="labs"><LabsSettings /></TabsContent>
         </Tabs>
     </div>
 }

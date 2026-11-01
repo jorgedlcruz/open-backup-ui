@@ -9,10 +9,13 @@ export async function generateMetadata({params}:{params:Promise<{view:string}>})
   const {t}=await getRequestI18n()
   return {title:lens?`${t(lens.title)} · Protection Lens`:'Protection Lens'}
 }
-export default async function LensPage({params,searchParams}:{params:Promise<{view:string}>;searchParams:Promise<{filter?:string}>}){
+export default async function LensPage({params,searchParams}:{params:Promise<{view:string}>;searchParams:Promise<{filter?:string;repository?:string;mode?:string}>}){
   const {view}=await params
   if(!isLensId(view))notFound()
-  if(view==='forecast')return <ForecastConsole/>
+  if(view==='forecast'){
+    const {repository,mode}=await searchParams
+    return <ForecastConsole initialRepository={typeof repository==='string'?repository:''} initialMode={mode==='capacity'?'capacity':'files'}/>
+  }
   const {filter}=await searchParams,valid=['attention','running','failed','warning','disabled','all'].includes(filter||'')
   return <OperationsConsole view={view} initialFilter={valid?filter as JobFilter:'attention'}/>
 }

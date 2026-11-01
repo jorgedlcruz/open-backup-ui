@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { I18nProvider } from "@/components/providers/i18n-provider";
 import { LOCALE_COOKIE, normalizePreference, resolveLocale } from "@/lib/i18n/model";
+import { readShare } from "@/lib/server/kiosk-shares";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,7 +61,10 @@ export default async function RootLayout({
   const pathname = headersList.get("x-pathname") || "";
   const isConnectPage = pathname === "/connect" || pathname.startsWith("/connect");
 
-  const themeSettings = normalizeTheme(Object.fromEntries(
+  const sharedId = /^\/share\/kiosk\/([A-Za-z0-9_-]{43})\/?$/.exec(pathname)?.[1];
+  const shared = sharedId ? await readShare(sharedId).catch(() => null) : null;
+  const publicPage = pathname.startsWith('/share/kiosk/');
+  const themeSettings = normalizeTheme(shared?.theme ?? Object.fromEntries(
     Object.entries(THEME_COOKIES).map(([key, cookie]) => [key, cookieStore.get(cookie)?.value])
   ));
 
@@ -85,12 +89,13 @@ export default async function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
+          forcedTheme={publicPage ? shared?.mode ?? 'dark' : undefined}
         >
-          <ActiveThemeProvider initialTheme={themeSettings}>
-            <PostHogProvider>
+          <ActiveThemeProvider initialTheme={themeSettings} persist={!publicPage}>
+            {pathname.startsWith('/share/kiosk/') ? children : <PostHogProvider>
               {children}
               <Toaster />
-            </PostHogProvider>
+            </PostHogProvider>}
           </ActiveThemeProvider>
         </ThemeProvider>
         </I18nProvider>

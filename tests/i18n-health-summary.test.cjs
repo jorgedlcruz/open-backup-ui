@@ -31,7 +31,7 @@ function healthRoute() {
   const model = () => () => ({ model: 'test' })
   const dependencies = {
     'next/server': { NextResponse: { json: (body, meta) => ({ body, status: meta.status }) } },
-    ai: { streamText: options => { calls.push(options); return { toTextStreamResponse: () => ({ status: 200 }) } } },
+    ai: { streamText: options => { calls.push(options); return { fullStream: (async function* () { yield { type: 'text-delta', text: 'Test summary' }; yield { type: 'finish', finishReason: 'stop' } })() } } },
     '@ai-sdk/openai': { createOpenAI: model }, '@ai-sdk/google': { createGoogleGenerativeAI: model }, '@ai-sdk/anthropic': { createAnthropic: model },
     'next/headers': { cookies: async () => ({ get: () => undefined, getAll: () => [] }) },
     '@/lib/api/veeam-client': { VeeamApiClient: class {
@@ -50,7 +50,7 @@ function healthRoute() {
     exports, process: { env: {} }, console: { log() {}, warn() {}, error() {} },
     require: name => {
       if (dependencies[name]) return dependencies[name]
-      if (['@/lib/i18n/model', '@/lib/ai-integrations/health-presentation'].includes(name)) return require(path.join(root, `${name.slice(2)}.ts`))
+      if (['@/lib/i18n/model', '@/lib/ai-integrations/health-presentation', '@/lib/ai-integrations/health-stream', '@/lib/server/health-summary-stream', '@/lib/server/health-summary-errors'].includes(name)) return require(path.join(root, `${name.slice(2)}.ts`))
       throw new Error(`Unexpected dependency: ${name}`)
     },
   })

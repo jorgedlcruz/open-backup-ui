@@ -22,10 +22,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ActiveThemeProvider({
     children,
-    initialTheme
+    initialTheme,
+    persist = true
 }: {
     children: ReactNode;
     initialTheme?: ThemeType;
+    persist?: boolean;
 }) {
     const [theme, setTheme] = useState<ThemeType>(() =>
         normalizeTheme(initialTheme)
@@ -36,7 +38,7 @@ export function ActiveThemeProvider({
         const body = document.body;
 
         for (const key of Object.keys(THEME_COOKIES) as (keyof ThemeType)[]) {
-            setThemeCookie(THEME_COOKIES[key], theme[key] || null);
+            if (persist) setThemeCookie(THEME_COOKIES[key], theme[key] || null);
             if (key !== "accentColor" && key !== "chartColor") {
                 body.setAttribute(`data-theme-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`, theme[key]);
             }
@@ -45,7 +47,7 @@ export function ActiveThemeProvider({
         for (const key of Object.keys(previousOverrides.current)) if (!(key in overrides)) body.style.removeProperty(key);
         for (const [key, value] of Object.entries(overrides)) body.style.setProperty(key, value);
         previousOverrides.current = overrides;
-    }, [theme]);
+    }, [theme, persist]);
 
     return <ThemeContext.Provider value={{ theme, setTheme: value => setTheme(normalizeTheme(value)) }}>{children}</ThemeContext.Provider>;
 }

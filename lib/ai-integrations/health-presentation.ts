@@ -41,6 +41,8 @@ export function healthSummaryError(t: Translator, value: string) {
     case 'Unknown error during AI generation': return t('Unknown error during AI generation')
     case 'Failed to generate AI summary': return t('Failed to generate AI summary')
     case 'No readable stream returned by API': return t('No readable stream returned by API')
+    case 'The provider returned no summary text. Check AI Integrations and try again.': return t('The provider returned no summary text. Check AI Integrations and try again.')
+    case 'The AI response was interrupted. Retry to generate a complete summary.': return t('The AI response was interrupted. Retry to generate a complete summary.')
     default: return value
   }
 }

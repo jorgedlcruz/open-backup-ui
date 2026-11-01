@@ -47,7 +47,7 @@ function ForecastChart({history,future,now,capacity,mode}:{history:ChartPoint[];
   </div>
 }
 
-export function ForecastConsole() {
+export function ForecastConsole({initialRepository='',initialMode='files'}:{initialRepository?:string;initialMode?:'files'|'capacity'}={}) {
   const { bytes, date, number } = usePlanningFormat()
 
   const { t: localText } = useI18n()
@@ -58,7 +58,8 @@ export function ForecastConsole() {
   const [data,setData]=useState<ForecastSnapshot|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
   const [request,setRequest]=useState({version:0,force:false})
   const requestPending=useRef(false)
-  const [selected,setSelected]=useState(''),[horizon,setHorizon]=useState(30),[change,setChange]=useState(0),[retention,setRetention]=useState(''),[mode,setMode]=useState<'files'|'capacity'>('files')
+  const [selected,setSelected]=useState(initialRepository),[horizon,setHorizon]=useState(30),[change,setChange]=useState(0),[retention,setRetention]=useState(''),[mode,setMode]=useState<'files'|'capacity'>(initialMode)
+  useEffect(()=>{setSelected(initialRepository);setMode(initialMode)},[initialRepository,initialMode])
   const [query,setQuery]=useState(''),[condition,setCondition]=useState('all'),[page,setPage]=useState(0)
   useEffect(()=>{
     const controller=new AbortController();requestPending.current=true;setLoading(true);setError('')

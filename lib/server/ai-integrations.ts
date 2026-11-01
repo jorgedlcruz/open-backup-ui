@@ -4,6 +4,7 @@ import { settingsStore } from './settings-store'
 import { configurationInput, providerSchema, providers, type Configuration, type Provider } from '../ai-integrations/model'
 import { environmentKey, resolveCredential, type StoredAi } from '../ai-integrations/credentials'
 import { probeProvider } from '../ai-integrations/probe'
+import { isSameApplicationOrigin } from './request-origin'
 
 const headers = { 'Cache-Control': 'private, no-store' }
 class ConfigurationError extends Error { constructor(message: string, public status = 400) { super(message) } }
@@ -11,8 +12,7 @@ function failure(error: unknown) {
   return NextResponse.json({ error: error instanceof ConfigurationError ? error.message : 'AI configuration could not be read or updated. Check the server settings file and try again.' }, { status: error instanceof ConfigurationError ? error.status : 500, headers })
 }
 function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get('origin')
-  if (origin && origin !== request.nextUrl.origin) throw new ConfigurationError('AI settings requests must originate from this application.', 403)
+  if (!isSameApplicationOrigin(request) || request.headers.get('sec-fetch-site') === 'cross-site') throw new ConfigurationError('AI settings requests must originate from this application.', 403)
 }
 export function configurationRevision(settings: StoredAi) {
   // A one-way revision binds evidence and edits to credentials without disclosing them.

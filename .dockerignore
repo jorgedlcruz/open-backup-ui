@@ -9,15 +9,23 @@ yarn-error.log*
 out
 dist
 artifacts
+output
 tmp
 
 # Testing
 coverage
 .nyc_output
+test-results
+playwright-report
 
 # Misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+.aws
+.ssh
 
 # Debug
 npm-debug.log*

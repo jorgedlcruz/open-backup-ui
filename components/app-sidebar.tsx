@@ -253,6 +253,7 @@ const adminItems = [
 ]
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  labsEnabled?: boolean
   vbrConfigured?: boolean
   vb365Configured?: boolean
   vroConfigured?: boolean
@@ -260,6 +261,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({
+  labsEnabled = false,
   vbrConfigured = true,
   vb365Configured = true,
   vroConfigured = true,
@@ -342,6 +344,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        {labsEnabled && <SidebarGroup><SidebarGroupContent><SidebarMenu><SidebarMenuItem><SidebarMenuButton asChild isActive={pathname === '/labs'} tooltip={t('Kiosk Builder')}><Link href="/labs"><Sparkles size={16} /><span>{t('Kiosk Builder')}</span></Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu></SidebarGroupContent></SidebarGroup>}
         {/* Veeam Backup & Replication Group */}
         <SidebarGroup>
           <div className="flex min-w-0 items-center justify-between gap-2 pr-2">
