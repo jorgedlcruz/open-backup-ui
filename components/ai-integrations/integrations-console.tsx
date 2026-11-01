@@ -9,16 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Panel } from '@/components/investigation/shared'
 import { connectionLabels, credentialLabels, modelEvidence, modelId, modelOptions, providers, staleCheck, type Check, type Configuration, type CredentialSource, type Draft, type Provider } from '@/lib/ai-integrations/model'
+import { requestAiConfiguration as request } from '@/lib/ai-integrations/request'
 import { cn } from '@/lib/utils'
 import ops from '@/components/operations/operations.module.css'
 import styles from './integrations.module.css'
 
-async function request(path: string, signal: AbortSignal, body?: unknown) {
-  const response = await fetch(`/api/settings/ai${path}`, { signal, cache: 'no-store', ...(body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
-  const data = await response.json().catch(() => null)
-  if (!response.ok || !data) throw Error(data?.error || 'The AI configuration request could not be completed.')
-  return data
-}
 const date = (value: string) => new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 export function AiIntegrationsConsole() {
@@ -26,12 +21,13 @@ export function AiIntegrationsConsole() {
 
   const [saved, setSaved] = useState<Configuration | null>(null), [draft, setDraft] = useState<Draft | null>(null)
   const [pending, setPending] = useState<'load' | 'save' | 'check' | null>('load'), [error, setError] = useState<string | null>(null), [notice, setNotice] = useState<string | null>(null)
+  const [feedbackFor, setFeedbackFor] = useState<'load' | 'save' | 'check'>('load')
   const [check, setCheck] = useState<Check | null>(null), [query, setQuery] = useState(''), [showKey, setShowKey] = useState(false), [now, setNow] = useState(Date.now())
   const activeRequest = useRef<AbortController | null>(null)
   const load = useCallback(async () => {
     if (activeRequest.current) return
     const controller = new AbortController(); activeRequest.current = controller
-    setPending('load'); setError(null); setNotice(null)
+    setPending('load'); setFeedbackFor('load'); setError(null); setNotice(null)
     try {
       const data: Configuration = await request('', controller.signal)
       setSaved(data); setDraft({ provider: data.provider, modelName: data.modelName, apiKey: '' }); setCheck(null); setQuery(''); setShowKey(false)
@@ -44,7 +40,7 @@ export function AiIntegrationsConsole() {
   async function run(action: 'save' | 'check') {
     if (!saved || !draft || activeRequest.current) return
     const controller = new AbortController(); activeRequest.current = controller
-    setPending(action); setError(null); setNotice(null)
+    setPending(action); setFeedbackFor(action); setError(null); setNotice(null)
     try {
       const result = await request(action === 'check' ? '/check' : '', controller.signal, { ...draft, revision: saved.revision })
       if (controller.signal.aborted) return
@@ -79,8 +75,7 @@ export function AiIntegrationsConsole() {
 
   return <div className={cn(ops.console, styles.page)}>
     <header className={ops.header}><div><h1><Trans>{"AI Integrations"}</Trans></h1><p>Configure the assistant behind your operational health summaries.</p></div><div className={styles.actions}><Button variant="outline" disabled={busy || dirty} onClick={load}><RefreshCw size={14} className={pending === 'load' ? 'animate-spin' : ''} />Refresh settings</Button></div></header>
-    {error && <div className={cn(ops.notice, styles.error)} role="alert"><TriangleAlert size={18} /><div>{error}</div>{!saved && <Button variant="outline" disabled={busy} onClick={load}><Trans>{"Retry"}</Trans></Button>}</div>}
-    {notice && <div className={styles.success} role="status"><CheckCircle2 size={16} />{notice}</div>}
+    {error && feedbackFor === 'load' && <div className={cn(ops.notice, styles.error)} role="alert"><TriangleAlert size={18} /><div>{error}</div>{!saved && <Button variant="outline" disabled={busy} onClick={load}><Trans>{"Retry"}</Trans></Button>}</div>}
     {!saved || !draft ? pending ? <div className={ops.loading}><Loader2 className="animate-spin" /><h2>Loading AI configuration</h2><p>Reading the active provider and credential status.</p></div> : <div className={ops.empty}><CircleHelp size={24} /><p>Configuration is unavailable. Retry before making changes.</p></div> : <>
       <div className={cn(ops.metrics, styles.metrics)} aria-label="AI integration summary">
         <div className={ops.metric}><div className={ops.metricLabel}>Saved provider<Server size={16} /></div><strong>{providers[saved.provider].name}</strong><p>Active across AI features</p></div>
@@ -99,7 +94,10 @@ export function AiIntegrationsConsole() {
               <div className={styles.modelSection}><div className={styles.fieldHeading}><label htmlFor="ai-model">Model selection</label><span className={styles.hint}>{query ? `${matching.length} of ` : ''}{models.length} choices</span></div><label className={styles.search}><Search size={14} /><input aria-label={uiText("Filter model choices")} placeholder={uiText("Filter by model name or ID…")} value={query} onChange={event => setQuery(event.target.value)} /></label><select id="ai-model" value={draft.modelName} onChange={event => { setDraft({ ...draft, modelName: event.target.value }); setNotice(null) }}>{!draft.modelName && <option value="">Select a model</option>}{matching.map(model => <option key={model.id} value={model.id}>{model.name}{model.name !== model.id ? ` (${model.id})` : ''}{check?.models.some(item => item.id === model.id) ? ' · API catalog' : ' · Preset / custom'}</option>)}</select>{query && <p className={styles.hint}>The current selection stays visible while filtering.</p>}<p className={styles.hint}>Existing presets are retained. Check the connection to discover the provider’s catalog; model listing alone does not verify text-generation compatibility.</p></div>
               <div className={styles.field}><label htmlFor="ai-model-id">Model ID / custom model</label><Input id="ai-model-id" value={draft.modelName} maxLength={200} spellCheck={false} aria-invalid={!validModel} aria-describedby="ai-model-hint" onChange={event => { setDraft({ ...draft, modelName: event.target.value }); setNotice(null) }} /><p id="ai-model-hint" className={cn(styles.hint, !validModel && ops.danger)}>{validModel ? 'Use the exact model ID supported by your provider. Saved and custom IDs are preserved even when absent from the catalog.' : 'Enter a model ID beginning with a letter or number, without spaces or relative path segments.'}</p></div>
             </fieldset>
-            <div className={styles.formFooter}><p>Saving updates the configuration without contacting the provider.</p><div className={styles.actions}>{dirty && <Button type="button" variant="outline" disabled={busy} onClick={discard}>Discard changes</Button>}<Button type="submit" disabled={busy || !dirty || !validModel}>{pending === 'save' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}Save Configuration</Button></div></div>
+            <div className={styles.formFooter}><p>Saving updates the configuration without contacting the provider.</p>
+              {feedbackFor === 'save' && error && <div className={cn(styles.feedback, styles.error)} role="alert"><TriangleAlert size={16} aria-hidden="true" /><span>{error}</span></div>}
+              {feedbackFor === 'save' && notice && <div className={cn(styles.feedback, styles.success)} role="status"><CheckCircle2 size={16} aria-hidden="true" /><span>{notice}</span></div>}
+              <div className={styles.actions}>{dirty && <Button type="button" variant="outline" disabled={busy} onClick={discard}>Discard changes</Button>}<Button type="submit" disabled={busy || !dirty || !validModel}>{pending === 'save' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}{pending === 'save' ? uiText('Saving…') : 'Save Configuration'}</Button></div></div>
           </form>
         </Panel>
         <div className={styles.sideColumn}>
@@ -107,6 +105,7 @@ export function AiIntegrationsConsole() {
             <div className={styles.connectionBody}>
               <div className={cn(styles.connection, fresh && verified ? styles.connected : '')}>{pending === 'check' ? <Loader2 className="animate-spin" size={24} /> : fresh && verified ? <ShieldCheck size={24} /> : check ? <TriangleAlert size={24} /> : <CircleHelp size={24} />}<div><strong className={connectionTone}>{stateLabel}</strong><p>{check ? check.detail : 'A configured key does not establish a working connection.'}</p></div></div>
               <Button type="button" variant="outline" disabled={busy || !validModel} onClick={() => run('check')}><Activity size={15} />{pending === 'check' ? 'Checking provider…' : 'Check connection & models'}</Button>
+              {feedbackFor === 'check' && error && <div className={cn(styles.feedback, styles.error)} role="alert"><TriangleAlert size={16} aria-hidden="true" /><span>{error}</span></div>}
               <p className={styles.hint}>Reads the provider’s model catalog using the selected credential. No prompt, backup data, or inference request is sent.</p>
               <dl className={styles.facts}><div><dt>Credential used</dt><dd>{credentialLabels[check?.credentialSource || credential]}</dd></div><div><dt>Selected model</dt><dd className={evidence === 'listed' ? ops.success : ''}>{evidence === 'listed' ? 'Listed by provider' : evidence === 'not-listed' ? 'Not listed · review model ID' : 'Not verified'}</dd></div><div><dt>Catalog</dt><dd>{check ? `${check.models.length} models · ${check.complete ? 'complete' : 'partial / unavailable'}` : 'Not loaded'}</dd></div><div><dt>Response</dt><dd>{check?.httpStatus ? `HTTP ${check.httpStatus} · ${check.latencyMs.toLocaleString()} ms` : 'Not received'}</dd></div><div><dt>Last checked</dt><dd>{check ? date(check.checkedAt) : 'Not checked this visit'}{check && !fresh && <span className={styles.stale}>Check again for current evidence</span>}</dd></div><div className={styles.endpoint}><dt>Catalog endpoint</dt><dd>{providers[draft.provider].endpoint}</dd></div></dl>
               <a href={providers[draft.provider].docs} target="_blank" rel="noreferrer" className={styles.docLink}>Provider API reference <ExternalLink size={12} /></a>

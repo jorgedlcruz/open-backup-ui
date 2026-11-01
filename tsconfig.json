@@ -36,6 +36,11 @@
   ],
   "exclude": [
     "node_modules",
+    "tmp",
+    "artifacts",
+    ".codex-attachments",
+    ".codex-remote-attachments",
+    ".next/standalone",
     "template-insights-main",
     "template-overview-main"
   ]

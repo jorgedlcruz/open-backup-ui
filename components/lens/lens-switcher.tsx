@@ -1,11 +1,13 @@
 'use client'
-import {useMemo,useRef,useState} from 'react'
+import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {Activity,Aperture,ArrowUpRight,Check,ChevronDown,HardDrive,Layers3,Loader2,Star,TrendingUp} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Popover,PopoverContent,PopoverTrigger} from '@/components/ui/popover'
 import {lenses,type LensId} from '@/lib/lens/navigation'
 import {lensPreviews} from '@/lib/lens/previews'
+import type {ForecastPreview} from '@/lib/lens/forecast-preview'
+import {ForecastMiniature} from './forecast-miniature'
 import type {OperationsSnapshot} from '@/lib/operations/model'
 import {useLensPreference} from './lens-preferences'
 import styles from './lens-switcher.module.css'
@@ -35,13 +37,33 @@ function CapacityPreview({data}:{data:Previews['capacity']}){
   return <><div className={styles.figure}><strong>{formatNumber(data.atRisk)}</strong><small>{t("at risk")}</small></div><div className={styles.rows}>{data.rows.map(row=><div key={row.id} title={`${row.name} · ${t(row.risk)}${row.used===null?` · ${t('Capacity not reported')}`:''}`}><div className={styles.rowLabel}><span>{row.name}</span><span>{row.used===null?'—':formatNumber(row.used/100,{style:'percent',maximumFractionDigits:0})}</span></div><div className={styles.track}><i style={{width:`${row.used??0}%`,background:['Offline','Critical'].includes(row.risk)?'var(--ops-chart-danger)':row.risk==='Healthy'?'var(--ops-chart-success)':'var(--ops-chart-warning)'}}/></div></div>)}</div></>
 }
 export function LensSwitcher({view,snapshot,loading,stale}:{view:LensId;snapshot:OperationsSnapshot|null;loading:boolean;stale:boolean}){
-  const {t,formatNumber}=useI18n()
+  const {t,formatNumber,formatDate}=useI18n()
   const [open,setOpen]=useState(false)
+  const [forecast,setForecast]=useState<ForecastPreview|null>(null),[forecastLoading,setForecastLoading]=useState(false),[forecastError,setForecastError]=useState(false)
+  useEffect(()=>{
+    if(!open)return
+    const controller=new AbortController();let pending=false
+    setForecast(null);setForecastLoading(true);setForecastError(false)
+    const read=async()=>{
+      if(pending||document.hidden)return
+      pending=true
+      try {
+        const response=await fetch('/api/vbr/forecast?preview=1',{cache:'no-store',signal:controller.signal})
+        if(!response.ok)throw new Error('Preview unavailable')
+        const result=await response.json() as {preview:ForecastPreview|null}
+        if(!controller.signal.aborted){setForecast(result.preview);setForecastError(false)}
+      }catch{if(!controller.signal.aborted){setForecast(null);setForecastError(true)}}
+      finally{pending=false;if(!controller.signal.aborted)setForecastLoading(false)}
+    }
+    void read()
+    const timer=setInterval(()=>void read(),15000)
+    return()=>{controller.abort();clearInterval(timer)}
+  },[open,snapshot?.sourceName])
   const selectedLink=useRef<HTMLAnchorElement>(null)
   const activeLens=lenses.find(lens=>lens.id===view)!
   const preview=useMemo(()=>lensPreviews(snapshot),[snapshot]),preference=useLensPreference(),window=t(snapshot?.range==='7d'?'7 days':snapshot?.range==='30d'?'30 days':'24 hours')
   const context=(id:LensId)=>{
-    if(id==='forecast')return t('Retention scenarios and recorded capacity history')
+    if(id==='forecast')return forecast?<><span className={styles.repositoryName} title={forecast.name}>{forecast.name}</span>{forecast.mode==='files'?t('Modeled backups only'):t('Recorded volume usage')} · {forecast.stale?t('Previous cache'):t('Cached')} {formatDate(forecast.fetchedAt,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}{forecast.partial?' · '+t('Partial snapshot'):''}{forecast.refreshing?' · '+t('Refreshing…'):''}</>:t('Open Forecast to collect evidence when no cache is available')
     if(!preview)return t('Preview uses the selected VBR source')
     const partial=preview[id].partial?' · '+t('Partial snapshot'):''
     if(id==='overview')return preview.overview.summary?t('{count} completed runs · {window}',{count:formatNumber(preview.overview.summary.completed),window})+partial:t('Session history is not available')
@@ -63,10 +85,10 @@ export function LensSwitcher({view,snapshot,loading,stale}:{view:LensId;snapshot
         {lenses.map(lens=>{
           const Icon=icons[lens.id],selected=view===lens.id,isDefault=preference.defaultView===lens.id
           return <article key={lens.id} className={`${styles.card} ${selected?styles.selected:''}`}>
-            <Link ref={selected?selectedLink:undefined} href={lens.href} className={styles.open} aria-current={selected?'page':undefined} aria-label={t('Open {view} Lens',{view:t(lens.title)})} onClick={()=>setOpen(false)}>
+            <Link ref={selected?selectedLink:undefined} href={lens.id==='forecast'&&forecast?`${lens.href}?repository=${encodeURIComponent(forecast.repositoryId)}&mode=${forecast.mode}`:lens.href} className={styles.open} aria-current={selected?'page':undefined} aria-label={t('Open {view} Lens',{view:t(lens.title)})} onClick={()=>setOpen(false)}>
               <div className={styles.titleRow}><span className={styles.icon}><Icon size={17}/></span><div><h3>{t(lens.title)}</h3><p>{t(lens.category)}</p></div><ArrowUpRight size={15} className={styles.arrow}/></div>
               <p className={styles.description}>{t(lens.description)}</p>
-              <div className={styles.preview}>{lens.id==='forecast'?<Empty><TrendingUp size={22}/>{t("Explore 30 / 60 / 90 day scenarios")}</Empty>:!preview?<Empty>{loading?<><Loader2 size={13} className="animate-spin"/>{t("Loading live preview")}</>:t("Open a health Lens for a live preview")}</Empty>:lens.id==='overview'?<OverviewPreview data={preview.overview}/>:lens.id==='operations'?<JobsPreview data={preview.operations}/>:<CapacityPreview data={preview.capacity}/>}</div>
+              <div className={styles.preview}>{lens.id==='forecast'?forecast?<ForecastMiniature data={forecast}/>:<Empty>{forecastLoading?<><Loader2 size={13} className="animate-spin"/>{t('Reading cached forecast…')}</>:forecastError?t('Cached preview unavailable'):t('No cached forecast yet')}</Empty>:!preview?<Empty>{loading?<><Loader2 size={13} className="animate-spin"/>{t("Loading live preview")}</>:t("Open a health Lens for a live preview")}</Empty>:lens.id==='overview'?<OverviewPreview data={preview.overview}/>:lens.id==='operations'?<JobsPreview data={preview.operations}/>:<CapacityPreview data={preview.capacity}/>}</div>
               <small className={styles.context}>{context(lens.id)}</small>
             </Link>
             <div className={styles.foot}>

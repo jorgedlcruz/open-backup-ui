@@ -6,6 +6,7 @@ import { forecastCache } from '../forecast/cache'
 import { loadForecast } from '../forecast/load'
 import { TopologyRequestError } from '../topology/load'
 import type { VbrReader } from './vbr-read'
+import { forecastPreview } from '../lens/forecast-preview'
 
 const backgroundEnabled = () => process.env.CAPACITY_COLLECTOR_ENABLED !== 'false'
 const endpoints = new Set([
@@ -115,6 +116,16 @@ export async function loadConfiguredForecast(sourceId: string, scope: string) {
     clearTimeout(timeout)
     controller.abort()
   }
+}
+
+export function readForecastPreview(context: { cacheKey: string; serverCredentials: boolean; sourceId?: string }) {
+  return { preview: forecastPreview(readCachedForecastSnapshot(context)) }
+}
+
+export function readCachedForecastSnapshot(context: { cacheKey: string; serverCredentials: boolean; sourceId?: string }) {
+  const configured = context.serverCredentials && !!context.sourceId
+  if (configured) currentSource(context.sourceId!, context.cacheKey)
+  return forecastCache.peek(context.cacheKey, configured && backgroundEnabled())
 }
 
 export async function readForecastSnapshot(

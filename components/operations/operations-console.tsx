@@ -15,7 +15,7 @@ import { activityBuckets,capacitySummary,exportJobsCsv,filterJobs,filterReposito
 import { cn } from '@/lib/utils'
 import { enumLabel } from '@/lib/i18n/presentation'
 import { vbrError } from '@/lib/i18n/vbr-errors'
-import { Activity,ArrowDownToLine,ArrowRight,ArrowUpRight,Check,CheckCircle2,ChevronLeft,ChevronRight,CircleHelp,CirclePause,Clock3,Database,HardDrive,ListFilter,Loader2,Network,RefreshCw,Search,ShieldCheck,Sparkles,TriangleAlert,XCircle } from 'lucide-react'
+import { Activity,ArrowDownToLine,ArrowRight,ArrowUpRight,Check,CheckCircle2,ChevronLeft,ChevronRight,CircleHelp,CirclePause,Clock3,Database,HardDrive,ListFilter,Loader2,Network,RefreshCw,Search,ShieldCheck,TriangleAlert,XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect,useMemo,useState,type ReactNode } from 'react'
 import { Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis } from 'recharts'
@@ -103,7 +103,6 @@ export function OperationsConsole({ view = 'overview', initialFilter = 'attentio
   const [page, setPage] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [storageFilter, setStorageFilter] = useState<RepositoryFilter>('all')
-  const [showAi, setShowAi] = useState(false)
   useEffect(() => { setFilter(initialFilter); setPage(0) }, [initialFilter])
   useEffect(() => {
     const controller = new AbortController()
@@ -215,7 +214,7 @@ export function OperationsConsole({ view = 'overview', initialFilter = 'attentio
             <div className={styles.quickLinks}><Link href="/vbr/protected-data"><span><Database size={17} /><span><Trans>{"Find a restore point"}</Trans><small><Trans>{"Explore protected data and recovery history"}</Trans></small></span></span><ArrowUpRight size={15} /></Link><Link href="/vbr/topology"><span><Network size={17} /><span><Trans>{"Trace a protection path"}</Trans><small><Trans>{"Workload → job → repository"}</Trans></small></span></span><ArrowUpRight size={15} /></Link><Link href="/vbr/threat-center"><span><ShieldCheck size={17} /><span><Trans>{"Review security signals"}</Trans><small>{data.security.available ? t('{count} security violations · {total} reported', { count: formatNumber(data.security.data.filter(s => s.status === 'Violation').length), total: formatNumber(data.security.data.length) }) : t('Security checks unavailable')}</small></span></span><ArrowUpRight size={15} /></Link></div>
           </Panel>
         </div></div>
-        <button className={styles.aiToggle} onClick={() => setShowAi(true)} disabled={showAi} aria-expanded={showAi}><Sparkles size={16} /><span>{showAi ? t('AI health summary') : t('Generate AI health summary')}</span><span><Trans>{"Sends environment context to your configured provider"}</Trans></span><ChevronRight size={16} className={cn(showAi && 'rotate-90')} /></button>{showAi && <AiHealthSummary />}
+        <AiHealthSummary />
       </>}
       {view === 'operations' && <Panel title="Your work queue" subtitle="Job state is current. The history window controls the session evidence available in each investigation." action={<Button variant="outline" size="sm" onClick={download} disabled={!visibleJobs.length || !data.jobs.available}><ArrowDownToLine size={14} /><Trans>{"Export CSV"}</Trans></Button>}>
         <FilterWorkspace label={t('Your work queue filters')} search={<><input aria-label={t("Search jobs")} placeholder={t("Search jobs or repositories…")} value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} /></>} onClear={()=>{setJobFilter('all');setSearch('');setPage(0)}} filters={<FilterFields><FilterCondition>{filters.map(f => <button key={f.value} aria-pressed={filter === f.value} onClick={() => setJobFilter(f.value)} className={cn(filter === f.value && styles.filterSelected)}>{t(f.label)}<span>{data.jobs.available ? formatNumber(filterJobs(jobs, f.value, '').length) : '—'}</span></button>)}</FilterCondition>

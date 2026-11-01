@@ -9,18 +9,22 @@ import { settingsStore } from '@/lib/server/settings-store';
 import { tokenManager } from '@/lib/server/token-manager';
 import { getChunkedCookie } from '@/lib/utils/cookie-manager';
 import { resolveCredential } from '@/lib/ai-integrations/credentials';
-import { providerSchema, providers } from '@/lib/ai-integrations/model';
+import { providerSchema, providers, type Provider } from '@/lib/ai-integrations/model';
 import { healthSummaryLanguageInstruction } from '@/lib/ai-integrations/health-presentation';
 import { LOCALE_COOKIE, normalizeLocale, resolveLocale } from '@/lib/i18n/model';
+import { HEALTH_STREAM_TYPE } from '@/lib/ai-integrations/health-stream';
+import { healthSummaryResponse } from '@/lib/server/health-summary-stream';
+import { healthSummaryProblem } from '@/lib/server/health-summary-errors';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
     console.log('[AI Health Summary] Request received');
+    let generationProvider: Provider | undefined;
+    let generationKey = '';
     try {
         const { prompt, locale: requestedLocale } = await req.json();
         const locale = normalizeLocale(requestedLocale) || resolveLocale(req.cookies.get(LOCALE_COOKIE)?.value, req.headers.get('accept-language'));
-        console.log('[AI Health Summary] Prompt:', prompt);
 
         // 1. Get user configuration
         const aiSettings = settingsStore.get().ai;
@@ -84,13 +88,6 @@ export async function POST(req: NextRequest) {
             serverVeeamApi.getBackupJobs()
         ]);
 
-        try {
-            // Using a fetch to our local proxy or directly if serverVeeamApi supports it.
-            // Actually, the serverVeeamApi client handles token automatically. Let's rely on that.
-        } catch (e) {
-            console.warn("Could not fetch backups trend", e);
-        }
-
         // 3. Assemble Prompt Context
         const failedSessions = sessions.filter(s => s.result?.result === 'Failed');
         const warnings = sessions.filter(s => s.result?.result === 'Warning');
@@ -147,17 +144,27 @@ export async function POST(req: NextRequest) {
 
         // 4. Generate Stream
         console.log(`[AI Health Summary] Calling AI Provider using model: ${modelName}`);
+        generationProvider = providerStr;
+        generationKey = apiKey;
         const result = streamText({
             model: model,
             system: systemPrompt,
             prompt: `User request: ${prompt}\n\nContext:\n${context}`,
+            abortSignal: req.signal,
+            // fullStream forwards sanitized diagnostics to the caller. Avoid the
+            // SDK's default logging of raw request bodies and provider errors.
+            onError: () => {},
         });
 
-        return result.toTextStreamResponse();
+        return await healthSummaryResponse(result.fullStream, providerStr, apiKey, req.headers.get('accept')?.includes(HEALTH_STREAM_TYPE) ?? false, req.signal);
     } catch (error) {
-        console.error('AI Health Summary Error:', error);
+        if (generationProvider) {
+            const problem = healthSummaryProblem(error, generationProvider, generationKey);
+            return NextResponse.json({ error: problem.message, problem }, { status: problem.status || 502, headers: { 'Cache-Control': 'private, no-store' } });
+        }
+        console.error('[AI Health Summary] Unable to prepare the summary request.');
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Unknown error during AI generation' },
+            { error: 'Failed to generate AI summary' },
             { status: 500 }
         );
     }

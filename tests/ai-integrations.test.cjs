@@ -88,7 +88,7 @@ function harness(options = {}) {
   const calls = [], writes = []
   class Response { constructor(body, init = {}) { this.body = body; this.status = init.status || 200; this.headers = init.headers } static json(body, init) { return new Response(body, init) } }
   const store = { get: () => ({ ai: { ...settings } }), save: ({ ai }) => { writes.push(ai); const same = settings.provider === ai.provider; settings = { ...settings, ...ai, apiKey: ai.apiKey || (same ? settings.apiKey : undefined), encryptedApiKey: ai.apiKey ? 'new-cipher' : same ? settings.encryptedApiKey : undefined } } }
-  const deps = { 'node:crypto': require('node:crypto'), 'next/server': { NextResponse: Response }, './settings-store': { settingsStore: store }, '../ai-integrations/model': m, '../ai-integrations/credentials': c, '../ai-integrations/probe': p }
+  const deps = { 'node:crypto': require('node:crypto'), 'next/server': { NextResponse: Response }, './settings-store': { settingsStore: store }, './request-origin': require('../lib/server/request-origin.ts'), '../ai-integrations/model': m, '../ai-integrations/credentials': c, '../ai-integrations/probe': p }
   const exports = {}
   vm.runInNewContext(compile(require.resolve('../lib/server/ai-integrations.ts')), { exports, require: name => { if (!(name in deps)) throw Error(name); return deps[name] }, process: { env: options.env || {} }, AbortSignal, fetch: async (url, init) => { calls.push({ url, ...init }); return options.fetch ? options.fetch(url, init) : reply(200, catalog('gpt-4o-mini')) } })
   const request = (patch = {}, origin = 'http://localhost:3000') => ({ nextUrl: new URL('http://localhost:3000/api/settings/ai'), headers: new Headers({ origin }), signal: new AbortController().signal, json: async () => ({ ...config({ revision: exports.configurationRevision(settings) }), ...patch }) })
@@ -126,6 +126,66 @@ test('concurrent configuration changes invalidate connection evidence', async ()
 test('saving configuration returns redacted state and performs no provider request', async () => {
   const h = harness(), result = await h.exports.updateConfiguration(h.request({ modelName: 'custom-model', apiKey: 'replacement-secret' }), 'save')
   assert.equal(result.body.modelName, 'custom-model'); assert.equal(h.writes.length, 1); assert.equal(h.calls.length, 0); assert.doesNotMatch(JSON.stringify(result), /replacement-secret|new-cipher/)
+})
+
+test('AI saves use the browser-facing host when Next is bound to all interfaces', async () => {
+  for (const origin of ['http://127.0.0.1:3101', 'http://192.168.1.250:3101', 'https://backup.example.test']) {
+    const h = harness(), request = h.request({ provider: 'gemini', modelName: 'gemini-2.5-flash', apiKey: 'test-gemini-key' }, origin)
+    request.nextUrl = new URL('http://0.0.0.0:3101/api/settings/ai')
+    request.headers.set('host', new URL(origin).host)
+    request.headers.set('x-forwarded-proto', new URL(origin).protocol.slice(0, -1))
+    request.headers.set('sec-fetch-site', 'same-origin')
+    const result = await h.exports.updateConfiguration(request, 'save')
+    assert.equal(result.status, 200, origin)
+    assert.equal(result.body.provider, 'gemini'); assert.equal(result.body.credentialSource, 'saved')
+    assert.equal(h.writes.length, 1); assert.equal(h.calls.length, 0)
+    assert.doesNotMatch(JSON.stringify(result), /test-gemini-key|new-cipher/)
+  }
+})
+
+test('connection checks accept the requested LAN host without trusting forwarded host overrides', async () => {
+  const h = harness(), request = h.request({}, 'http://192.168.1.250:3101')
+  request.nextUrl = new URL('http://0.0.0.0:3101/api/settings/ai/check')
+  request.headers.set('host', '192.168.1.250:3101')
+  assert.equal((await h.exports.updateConfiguration(request, 'check')).status, 200)
+  assert.equal(h.calls.length, 1)
+  request.headers.set('origin', 'https://foreign.test')
+  request.headers.set('x-forwarded-host', 'foreign.test')
+  assert.equal((await h.exports.updateConfiguration(request, 'check')).status, 403)
+  assert.equal(h.calls.length, 1); assert.equal(h.writes.length, 0)
+})
+
+test('cross-site requests and malformed application hosts cannot save keys', async () => {
+  for (const patch of [{ 'sec-fetch-site': 'cross-site' }, { host: 'app.test,foreign.test' }, { host: 'user@app.test' }]) {
+    const h = harness(), request = h.request()
+    for (const [name, value] of Object.entries(patch)) request.headers.set(name, value)
+    assert.equal((await h.exports.updateConfiguration(request, 'save')).status, 403)
+    assert.equal(h.writes.length, 0); assert.equal(h.calls.length, 0)
+  }
+})
+
+const { requestAiConfiguration } = require('../lib/ai-integrations/request.ts')
+test('client surfaces rejected saves and does not reinterpret them as success', async () => {
+  await assert.rejects(requestAiConfiguration('', new AbortController().signal, {}, async () => reply(403, { error: 'Use the application to save.' })), /Use the application to save/)
+})
+
+test('stalled saves time out with an actionable message and abort the fetch', async () => {
+  let requestSignal
+  const stalled = async (_, options) => {
+    requestSignal = options.signal
+    await require('node:timers/promises').setTimeout(1000, undefined, { signal: requestSignal })
+    return reply(200, {})
+  }
+  await assert.rejects(requestAiConfiguration('', new AbortController().signal, { provider: 'gemini' }, stalled, 5), /Save confirmation timed out.*draft is still here/)
+  assert.equal(requestSignal.aborted, true)
+})
+
+test('navigation cancellation is preserved instead of displaying a save timeout', async () => {
+  const controller = new AbortController()
+  controller.abort()
+  await assert.rejects(requestAiConfiguration('', controller.signal, {}, async (_, options) => {
+    options.signal.throwIfAborted()
+  }, 1000), error => error.name === 'AbortError')
 })
 
 function storeHarness(initial = { ai: saved }) {

@@ -5,6 +5,7 @@ import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
 import { SectionNamesProvider } from "@/lib/context/section-names-context";
 import { configStore } from "@/lib/server/config-store";
 import { cookies } from "next/headers";
+import { LABS_COOKIE } from '@/lib/labs/model';
 
 export default async function AppLayout({
     children,
@@ -43,13 +44,14 @@ export default async function AppLayout({
         <SectionNamesProvider>
             <SidebarProvider defaultOpen={cookieStore.get("sidebar_state")?.value !== "false"}>
                 <AppSidebar
+                    labsEnabled={cookieStore.get(LABS_COOKIE)?.value === 'true'}
                     vbrConfigured={vbrConfigured}
                     vb365Configured={vb365Configured}
                     vroConfigured={vroConfigured}
                     veeamOneConfigured={veeamOneConfigured}
                 />
                 <SidebarInset>
-                    <AppHeader vbrConfigured={vbrConfigured} vb365Configured={vb365Configured}
+                    <AppHeader labsEnabled={cookieStore.get(LABS_COOKIE)?.value === 'true'} vbrConfigured={vbrConfigured} vb365Configured={vb365Configured}
                         sourceScope={JSON.stringify([cookieStore.get('veeam_source_id')?.value, cookieStore.get('veeam_vb365_source_id')?.value])} />
                     <div className="app-content"><AppBreadcrumbs />{children}</div>
                 </SidebarInset>

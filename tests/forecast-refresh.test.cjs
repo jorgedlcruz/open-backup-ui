@@ -116,6 +116,19 @@ test('cached page reads preserve snapshot time and do not record old capacity as
   assert.equal(second.cache.intervalMinutes, 30)
 })
 
+test('mini preview reads only its current scope and rejects reconfigured credentials', async () => {
+  const h = harness(), item = h.records.get('vbr')
+  const context = { cacheKey: scopeFor(item).scope, serverCredentials: true, sourceId: item.id }
+  assert.equal(h.exports.readForecastPreview(context).preview, null)
+  assert.equal(h.loads.length, 0)
+  await h.request()
+  assert.equal(h.exports.readForecastPreview(context).preview.name, 'Repository')
+  assert.equal(h.loads.length, 1); assert.equal(h.measurements.length, 1)
+  assert.equal(h.exports.readForecastPreview({ cacheKey: 'other-principal', serverCredentials: false }).preview, null)
+  h.records.set(item.id, { ...item, password: 'changed-fixture-password' })
+  assert.throws(() => h.exports.readForecastPreview(context), error => error.status === 409)
+})
+
 test('manual Refresh bypasses the interval while ordinary reads share the refreshed result', async () => {
   const h = harness()
   const first = await h.request()
