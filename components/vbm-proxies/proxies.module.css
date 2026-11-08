@@ -16,7 +16,7 @@
 .detailTable td {max-width:310px;overflow-wrap:anywhere;}
 .form {display:flex;flex-direction:column;gap:14px;}
 .form label {display:flex;flex-direction:column;gap:6px;font-size:13px;}
-.form select {border:1px solid var(--border);background:var(--background);border-radius:6px;padding:8px;}
+.form select {border:1px solid var(--border);background:var(--field-background, var(--background));border-radius:6px;padding:8px;}
 .form .check {flex-direction:row;align-items:center;}
 .page header h1 {overflow-wrap:anywhere;}
 @media(max-width:1000px){.overview {grid-template-columns:minmax(0,1fr);}}

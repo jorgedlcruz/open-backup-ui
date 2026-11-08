@@ -56,6 +56,7 @@ import {
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
+import type { GuestDirectory, GuestRestoreRequest, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
 
 interface TokenResponse {
   access_token: string;
@@ -226,7 +227,7 @@ export class VeeamApiClient {
 
       if (!response.ok) {
         const errorMessage = data.error || data.message || `API request failed: ${response.status} ${response.statusText}`;
-        throw new Error(errorMessage);
+        throw Object.assign(new Error(errorMessage), { uncertain: data.uncertain === true });
       }
       return data as T;
     }
@@ -861,6 +862,37 @@ export class VeeamApiClient {
     if (params.objectId) query.set('objectId', params.objectId);
     if (params.backupId) query.set('backupId', params.backupId);
     return this.request(`/restore-points?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  getRestoreOptions(restorePointId: string, backupId: string, operation: RestoreOperation, signal?: AbortSignal): Promise<RestoreOptions> {
+    const query = new URLSearchParams({ restorePointId, backupId, operation });
+    return this.request(`/restore/options?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  getRestoreInventory(platform: RestorePlatform, kind: InventoryKind, server: string | undefined, skip: number, signal?: AbortSignal): Promise<RestoreInventoryPage> {
+    const query = new URLSearchParams({ platform, kind, skip: String(skip) });
+    if (server) query.set('server', server);
+    return this.request(`/restore/inventory?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  startRestore(draft: RestoreDraft): Promise<RestoreResult> {
+    return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(draft) });
+  }
+
+  browseGuestFiles(sessionId: string, sourceKey: string, path: string | undefined, skip: number, signal?: AbortSignal): Promise<GuestDirectory> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'browse', sessionId, sourceKey, path, skip }) });
+  }
+
+  modifyGuestFiles(request: GuestRestoreRequest): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(request) });
+  }
+
+  guestCredentials(sessionId: string, sourceKey: string, signal?: AbortSignal): Promise<{ credentials: {id: string; name: string}[] }> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'credentials', sessionId, sourceKey }) });
+  }
+
+  guestTask(sessionId: string, sourceKey: string, taskId: string, signal?: AbortSignal): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'task', sessionId, sourceKey, taskId }) });
   }
 
   async getVBRRestorePoints(params: { objectId?: string; backupId?: string }): Promise<import('@/lib/restore-points/model').RestorePoint[]> {

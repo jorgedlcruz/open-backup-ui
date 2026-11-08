@@ -13,7 +13,7 @@ export interface BackupEvidence {
   id: string; name?: string | null; jobId?: string | null; repositoryId?: string | null; repositoryName?: string | null;
 }
 export interface RestorePointSnapshot {
-  sourceName: string; fetchedAt: string; objectId?: string; backupId?: string;
+  sourceName: string; sourceKey?: string; fetchedAt: string; objectId?: string; backupId?: string;
   subject: { id: string; name?: string | null; platformName?: string | null; type?: string | null; size?: number | null } | null;
   data: RestorePoint[]; pointsComplete: boolean; backups: BackupEvidence[]; files: BackupFile[];
   filesComplete: boolean; repositories: { id: string; name?: string | null; isOnline?: boolean | null }[]; warnings: string[];

@@ -1,6 +1,14 @@
 # Changelog
 
-## 1.0.1 — in development
+## 1.0.2 (in development)
+
+- Start a VM restore from the selected calendar or table entry. Set the recovered VM name and destination together and review the settings before submission.
+- Follow sessions and mounted recoveries from Activity. Open a session log, migrate a recovered VM, or stop publishing.
+- Search and filter fields use the selected Glass theme's surface and foreground colors.
+
+See the [VM restore API map](docs/vm-restore-api.md) for the launch payloads and recovery lifecycle endpoints.
+
+## 1.0.1
 
 - **AI summary PDF export:** download the completed analysis as an A4 or US Letter report with an editorial cover, linked contents, numbered sections, confidence labels, highlighted recommendations, repeating table headers and page numbers. Optional analysis notes, localized labels and embedded Noto fonts preserve all summary tabs and multilingual resource names. Export runs locally in the browser without another provider request; incomplete or failed analyses cannot be exported.
 - **AI provider errors:** health summaries preserve provider failures before and during streaming, including Gemini HTTP 402 credit errors. The panel shows the provider, status and sanitized diagnostic with relevant settings/billing links; incomplete and empty responses no longer appear to be successful analyses.

@@ -1,6 +1,6 @@
 .fields { display:flex; flex-direction:column; gap:8px; min-width:0; font-size:12px; }
 .fields > label,.condition { display:flex; flex-direction:column; align-items:stretch; gap:7px; min-width:0; color:var(--muted-foreground); font-size:11px; font-weight:500; }
-.fields select,.fields input:not([type=checkbox]):not([type=radio]),.condition select { width:100%; min-width:0; max-width:100%; border:1px solid var(--border); border-radius:6px; background:var(--background); color:var(--foreground); padding:8px; font:inherit; font-size:12px; }
+.fields select,.fields input:not([type=checkbox]):not([type=radio]),.condition select { width:100%; min-width:0; max-width:100%; border:1px solid var(--border); border-radius:6px; background:var(--field-background, var(--background)); color:var(--foreground); padding:8px; font:inherit; font-size:12px; }
 .fields > button { justify-content:space-between; width:100%; }
 .fields label:has(> input[type=checkbox]),.fields label:has(> input[type=radio]) { flex-direction:row; align-items:center; color:var(--foreground); font-size:12px; }
 .fields input[type=checkbox],.fields input[type=radio] { accent-color:var(--primary); flex-shrink:0; }

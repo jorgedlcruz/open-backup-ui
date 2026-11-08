@@ -35,6 +35,7 @@ import { isProtectedDataPath } from "@/lib/protected-data/navigation"
 
 // VBR Group with subpages
 const vbrItems = [
+  { title: navigationLabels["/vbr/activity"], href: "/vbr/activity", icon: Activity },
   {
     title: navigationLabels["/vbr/topology"],
     href: "/vbr/topology",

@@ -13,7 +13,9 @@ export type VbrReader = (path: string, revision?: VbrRevision) => Promise<unknow
 // This capability cannot call rescan or other inventory mutations.
 export type VbrInventoryReader = (host: string | null, skip: number, limit: number, revision?: VbrRevision, hierarchy?: 'HostsAndClusters'|'HostsAndVms') => Promise<unknown>
 
-export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; serverCredentials: boolean; sourceId?: string; signal: AbortSignal }) => Promise<unknown>) {
+// VBR exposes this read-only cross-platform mount list as a POST with query parameters.
+export type PublishedRecoveryReader = (skip: number, limit: number) => Promise<unknown>
+export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; serverCredentials: boolean; sourceId?: string; signal: AbortSignal; publishedRecoveries: PublishedRecoveryReader }) => Promise<unknown>) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60000)
   const abort = () => controller.abort()
@@ -35,10 +37,10 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
     if (!token) throw new TopologyRequestError('Your VBR session has expired. Reconnect your data source.', 401)
     const destination = new URL(baseUrl)
     if (!['http:', 'https:'].includes(destination.protocol)) throw new TopologyRequestError('Invalid VBR source protocol.', 400)
-    const requestJson = async (path: string, revision: VbrRevision = '1.3-rev1', browseBody?: string): Promise<unknown> => {
+    const requestJson = async (path: string, revision: VbrRevision = '1.3-rev1', browseBody?: string, listPublished = false): Promise<unknown> => {
       const send = () => fetch(new URL(path, destination), {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision, ...(browseBody ? { 'Content-Type': 'application/json' } : {}) },
-        ...(browseBody ? { method: 'POST', body: browseBody } : {}),
+        ...(browseBody || listPublished ? { method: 'POST', body: browseBody } : {}),
         cache: 'no-store', redirect: 'error', signal: controller.signal,
       })
       let response = await send()
@@ -56,9 +58,16 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       `/api/v1/inventory${host ? `/${encodeURIComponent(host)}` : ''}`, revision,
       JSON.stringify({ pagination: { skip, limit }, permissionScope: 'Any', ...(hierarchyType ? {hierarchyType}:{}) }),
     )
+    const publishedRecoveries: PublishedRecoveryReader = (skip, limit) => {
+      const query = new URLSearchParams({skip: String(skip), limit: String(limit), orderColumn: 'VmName', orderAsc: 'true'})
+      for (const platform of ['VMware', 'HyperV', 'UnstructuredData', 'Nutanix', 'Proxmox', 'CustomPlatform', 'WindowsPhysical', 'LinuxPhysical', 'LinuxPhysicalPpc', 'AWSEC2', 'AzureCompute', 'GCE']) {
+        query.append('targetPlatform', platform)
+      }
+      return requestJson(`/private-api/v1/restore/instantRecovery/sessions?${query}`, '1.3-rev2', undefined, true)
+    }
     const cacheKey = readCacheScope(destination.href, token, configuredPrincipal ? source : undefined)
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
-    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
+    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, publishedRecoveries, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
   } catch (error) {
     return NextResponse.json({ error: error instanceof TopologyRequestError ? error.message
       : controller.signal.aborted ? 'Loading took too long. Retry or narrow the source environment.'

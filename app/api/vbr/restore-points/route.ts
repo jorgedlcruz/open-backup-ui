@@ -10,5 +10,7 @@ export async function GET(request: NextRequest) {
   if ((!objectId && !backupId) || [objectId, backupId].some(id => id && !uuid.test(id))) {
     return NextResponse.json({ error: 'Select a valid backup object or backup ID.' }, { status: 400, headers: { 'Cache-Control': 'private, no-store' } });
   }
-  return withVbrRead(request, (read, sourceName) => loadRestorePoints(read, sourceName, { objectId, backupId }));
+  return withVbrRead(request, async (read, sourceName, _inventory, context) => ({
+    ...await loadRestorePoints(read, sourceName, { objectId, backupId }), sourceKey: context.sourceKey,
+  }));
 }

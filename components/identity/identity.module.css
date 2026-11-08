@@ -15,7 +15,7 @@
 .search { display:flex; align-items:center; gap:8px; border:1px solid var(--input); border-radius:var(--ops-control-radius,6px); padding:8px 10px; color:var(--muted-foreground); min-width:0; }
 .search input { background:transparent; outline:none; width:220px; min-width:0; font-size:var(--ops-small,12px); color:var(--foreground); }
 .search:focus-within { outline:2px solid var(--ring); outline-offset:2px; }
-.filterRow select,.permissionToolbar select,.actionForm select { border:1px solid var(--input); background:var(--background); border-radius:var(--ops-control-radius,6px); padding:8px 10px; font-size:var(--ops-small,12px); max-width:100%; }
+.filterRow select,.permissionToolbar select,.actionForm select { border:1px solid var(--input); background:var(--field-background, var(--background)); border-radius:var(--ops-control-radius,6px); padding:8px 10px; font-size:var(--ops-small,12px); max-width:100%; }
 .sort { display:flex; align-items:center; gap:4px; color:var(--muted-foreground); }
 .sort select { border:0; padding-left:4px; }
 .tableTools { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; color:var(--muted-foreground); font-size:var(--ops-caption,11px); }

@@ -1,5 +1,8 @@
 "use client"
 import { useRecoveryPresentation } from './use-presentation'
+import { RestoreWorkflow } from './restore-workflow'
+import { isRestoreOperation, type RestoreOperation } from '@/lib/restore-points/workflow'
+import workflow from './workflow.module.css'
 
 import { FilterSelect } from '@/components/operations/filter-facet'
 import { FilterFields } from '@/components/operations/filter-fields'
@@ -44,6 +47,12 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const [repository, setRepository] = useState('all');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [operation, setOperation] = useState<RestoreOperation | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  function inspectPoint(id: string) {
+    setOperation(null);
+    setSelectedId(id);
+  }
   useEffect(() => {
     if (!objectId && !backupId) { setLoading(false); return; }
     const controller = new AbortController();
@@ -111,7 +120,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
             <FilterWorkspace label={t("Grid filters")} search={<><label className={ops.search}><Search size={15} /><input aria-label={t("Search recovery points")} placeholder={t("Job, repository, file, point ID…")} value={search} onChange={event => setSearch(event.target.value)} /></label></>} onClear={resetFilters} filters={<FilterFields><FilterSelect label={t("Malware filter")} value={malware} onValueChange={event => setMalware(event)}><option value="all">{t("All malware states")}</option><option value="flagged">{t("Flagged points")}</option><option value="clean">{t("Reported clean")}</option><option value="unknown">{t("Unknown status")}</option></FilterSelect>
 <FilterSelect label={t("Repository filter")} value={repository} onValueChange={event => setRepository(event)}><option value="all">{t("All repositories")}</option>{readiness!.locations.map(location => <option key={location.id} value={location.id}>{location.name}</option>)}</FilterSelect></FilterFields>}>
 {!filtered.length ? <div className={ops.empty}><CircleHelp size={25} /><p>{rows.length ? t("No points match these filters.") : data.pointsComplete ? t("No restore points reported for this selection.") : t("The partial collection contains no restore points.")}</p>{rows.length > 0 && <Button size="sm" variant="outline" onClick={resetFilters}>{t("Clear filters")}</Button>}</div>
-              : view === 'list' ? <VBRRestorePointsTable data={filtered} onInspect={setSelectedId} showWorkload={!objectId} /> : <VBRRestorePointsCalendar data={filtered} onInspect={setSelectedId} showWorkload={!objectId} />}
+              : view === 'list' ? <VBRRestorePointsTable data={filtered} onInspect={inspectPoint} showWorkload={!objectId} /> : <VBRRestorePointsCalendar data={filtered} onInspect={inspectPoint} showWorkload={!objectId} />}
 <div className={ops.panelFoot}>{t("File sizes describe the entire matched file. Shared files can contain other points or workloads; they are counted once in the storage summary.")}</div>
 </FilterWorkspace></section>
         </div>
@@ -129,15 +138,19 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
           <Panel title={t("Evidence boundaries")}><div className={styles.boundaries}><p><CircleHelp size={15} />{t("A restore point and an allowed operation do not prove successful recovery.")}</p><p><LockKeyhole size={15} />{t("Repository configuration alone does not establish this point’s immutable-until date.")}</p><p><CheckCircle2 size={15} />{t("Use a verified recovery test and an explicit recovery target to establish readiness.")}</p></div></Panel>
         </aside>
       </div>
-      <footer className={ops.footer}><span><Database size={12} />{t('VBR · {source} · snapshot {date}', { source: data.sourceName, date: date(data.fetchedAt) })}</span><span>{t("Readiness describes API evidence · no recovery action is started here")}</span></footer>
+      <footer className={ops.footer}><span><Database size={12} />{t('VBR · {source} · snapshot {date}', { source: data.sourceName, date: date(data.fetchedAt) })}</span></footer>
     </>}
-    <Dialog open={!!selected} onOpenChange={open => { if (!open) setSelectedId(null); }}><DialogContent className={styles.dialog}>
-      {selected && <><DialogHeader><DialogTitle>{t("Recovery point evidence")}</DialogTitle><DialogDescription>{selected.point.name || title} · {date(selected.point.creationTime)}</DialogDescription></DialogHeader>
+    <Dialog open={!!selected} onOpenChange={open => { if (!open && !submitting) setSelectedId(null); }}><DialogContent showCloseButton={!submitting} className={styles.dialog}>
+      {selected && <><DialogHeader><DialogTitle>{operation ? label(operation) : t("Restore point")}</DialogTitle><DialogDescription>{selected.point.name || title} · {date(selected.point.creationTime)}</DialogDescription></DialogHeader>
         <div className={styles.detailBadges}><span className={ops.badge}>{label(selected.type)}</span><MalwareBadge value={selected.point.malwareStatus} fileFlagged={isFlagged(selected.file?.severity)} />{selected.gfs.map(flag => <span className={ops.badge} key={flag}>{label(flag)}</span>)}</div>
         {selected.flagged && <div className={styles.securityNotice}><TriangleAlert size={18} />{t("Review the reported threat and scan evidence before choosing this point.")}</div>}
-        <section className={styles.detailSection}><h3>{t("Available recovery operations")}</h3><p>{t("Reported by VBR for this point. Availability does not confirm permissions, prerequisites, or a tested recovery.")}</p>
-          {selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={styles.operations}>{selected.point.allowedOperations.map(operation => <li key={operation}><ArrowUpRight size={13} />{label(operation)}</li>)}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
+        {operation ? <RestoreWorkflow key={selected.point.id + operation} point={selected.point} flagged={selected.flagged} sourceKey={data?.sourceKey} operation={operation} onBack={() => setOperation(null)} onBusy={setSubmitting} /> : <>
+        <section className={styles.detailSection}><h3>{t("Available recovery operations")}</h3>
+          {selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={workflow.operations}>{[...new Set(selected.point.allowedOperations)].map(item => <li key={item}>
+            {isRestoreOperation(item) ? <button type="button" onClick={() => setOperation(item)}>{label(item)}<ArrowUpRight size={15} /></button> : <span>{label(item)} · {t('Available in VBR')}</span>}
+          </li>)}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
         </section>
+        <details className={workflow.evidence}><summary>{t("Recovery point evidence")}</summary>
         <dl className={styles.detailGrid}>
           <div><dt>{t("Type evidence")}</dt><dd>{label(selected.typeSource)}</dd></div><div><dt>{t("GFS flags")}</dt><dd>{selected.gfs.length ? selected.gfs.map(label).join(', ') : selected.gfsSource === 'Not reported' ? t("Unknown") : t("None reported")}<small>{label(selected.gfsSource)}</small></dd></div>
           <div><dt>{t("Point malware status")}</dt><dd>{selected.point.malwareStatus ? label(selected.point.malwareStatus) : t("Unknown")}<small>{t("Scan time and provenance not reported")}</small></dd></div><div><dt>{t("File malware status")}</dt><dd>{selected.file?.severity ? label(selected.file.severity) : t("Unknown")}</dd></div>
@@ -148,6 +161,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
         </dl>
         <section className={styles.detailSection}><h3>{t("Source identifiers")}</h3><dl className={styles.identifiers}><dt>{t("Restore point")}</dt><dd>{selected.point.id}</dd><dt>{t("Backup")}</dt><dd>{selected.point.backupId}</dd><dt>{t("Backup file")}</dt><dd>{selected.file?.id || selected.point.backupFileId || t("Unknown")}</dd><dt>{t("Session")}</dt><dd>{usableId(selected.point.sessionId) ? <Link href={`/vbr/sessions/${selected.point.sessionId}`}>{t("Investigate session ↗")}</Link> : t("Unknown")}</dd><dt>{t("File path")}</dt><dd>{selected.file?.name || t("Unknown")}</dd></dl></section>
         {usableId(selected.backup?.jobId) && <Button asChild variant="outline"><Link href={`/vbr/jobs/${encodeURIComponent(selected.backup.jobId)}`}>{t("Inspect source job")}<ArrowUpRight size={14} /></Link></Button>}
+        </details></>}
       </>}
     </DialogContent></Dialog>
   </div>;

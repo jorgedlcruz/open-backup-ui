@@ -84,7 +84,7 @@
 .resolveReview h3 { font-weight:600; }
 .resolveReview p { font-size:12px; margin:8px 0 14px; }
 .resolveReview label { display:block; font-size:11px; font-weight:550; }
-.resolveReview textarea { display:block; width:100%; min-height:85px; border:1px solid var(--border); padding:10px; margin-top:7px; border-radius:6px; background:var(--background); font-size:12px; font-weight:400; }
+.resolveReview textarea { display:block; width:100%; min-height:85px; border:1px solid var(--border); padding:10px; margin-top:7px; border-radius:6px; background:var(--field-background, var(--background)); font-size:12px; font-weight:400; }
 .resolveReview > div,.dialogEnd { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:14px; }
 .dialogEnd { padding-top:15px; border-top:1px solid var(--border); }
 .dialogEnd > span { flex:1; min-width:200px; }

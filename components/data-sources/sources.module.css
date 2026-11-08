@@ -30,7 +30,7 @@
 .detailNote {padding:0 20px 20px;font-size:12px;color:var(--muted-foreground);}
 .form {display:flex;flex-direction:column;gap:16px;}
 .form label {display:flex;flex-direction:column;gap:7px;font-size:13px;}
-.form select {background:var(--background);border:1px solid var(--border);border-radius:6px;padding:8px;}
+.form select {background:var(--field-background, var(--background));border:1px solid var(--border);border-radius:6px;padding:8px;}
 .form .checkbox {flex-direction:row;align-items:center;}
 .address {display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:12px;}
 .password {display:flex;align-items:center;gap:5px;}
