@@ -15,5 +15,5 @@
 .tabs small {font-variant-numeric:tabular-nums;opacity:.8}.inset {padding:1.15rem}.inset h2 {font-size:1rem;font-weight:600}.inset p,.note {line-height:1.55}.inset p {margin-block:.5rem}.note {padding:.35rem 1.2rem .65rem}
 .properties {padding:.75rem 0 1rem}.recovery + .recovery {margin-top:1.25rem}
 .child {padding:.85rem 0;border-bottom:1px solid var(--border)}.child span:first-of-type {flex:1}.related {margin-inline-start:.75rem}
-.filePanel[hidden] {display:none}
+.filePanel[hidden],.inset[hidden] {display:none}
 .paths {display:grid;gap:.35rem;padding-bottom:1rem;font-size:.8rem}.paths code {overflow-wrap:anywhere;user-select:all}

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { investigationSessionSchema, recordStatus, time, uuid, validId, type Session } from '../investigation/model'
+import { instantVmEvidence, type InstantVmEvidence } from './instant-vm'
 
 const id = z.string().regex(uuid).transform(value => value.toLowerCase())
 export const platforms = ['vSphere', 'hyperV', 'fcd', 'flr', 'publish'] as const
@@ -12,6 +13,7 @@ export const mountPaths: Record<MountKind, string> = {
   publish: '/api/v1/dataIntegration',
 }
 export type Mount = {
+  instantVm?: InstantVmEvidence
   id: string; sessionId: string; kind: MountKind|'other'; operation?: string; state: string; name?: string
   host?: string; backup?: string; pointTime?: string; error?: string; disks?: string[]; originalLocation?: boolean
   publication?: {mode?: string; port?: number; disks: {name?: string; accessLink?: string; mountPoints: string[]}[]}
@@ -43,11 +45,12 @@ export function parseMount(kind: MountKind, raw: unknown): Mount {
   const item = z.object({
     id, sessionId: id, state: z.string(), vmName: z.string().nullish(), hostName: z.string().nullish(),
     jobName: z.string().nullish(), restorePointDate: z.string().nullish(), errorMessage: z.string().nullish(),
-    spec: z.object({type: z.string().nullish()}).nullish(),
+    spec: z.object({type: z.string().nullish()}).passthrough().nullish(),
     mountedDisks: z.array(z.object({mountedDiskName: z.string()})).nullish(),
   }).parse(raw)
   const disks = item.mountedDisks?.map(disk => disk.mountedDiskName)
   return { id: item.id, sessionId: item.sessionId, state: item.state, kind, originalLocation: item.spec?.type === 'OriginalLocation',
+    ...((kind === 'vSphere' || kind === 'hyperV') && {instantVm: instantVmEvidence(kind, item.spec, item.hostName)}),
     name: item.vmName || disks?.join(', '), host: item.hostName ?? undefined,
     backup: item.jobName ?? undefined, pointTime: item.restorePointDate ?? undefined, error: item.errorMessage ?? undefined, disks }
 }

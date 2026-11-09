@@ -1,0 +1,181 @@
+.workspace {
+  --signal: var(--ops-accent, var(--primary));
+  --ink: var(--foreground);
+  --line: color-mix(in srgb, var(--signal) 30%, var(--border));
+  --surface: var(--ops-panel-bg, var(--card));
+  container-type: inline-size;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--ops-radius, .8rem);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 93%, transparent);
+}
+
+.canvas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(2.4rem, .32fr) minmax(0, 1.15fr) minmax(1.5rem, .3fr) minmax(0, 1.12fr);
+  align-items: start;
+  padding: clamp(1rem, 2.8cqi, 2.2rem);
+  background-image: radial-gradient(ellipse at 47% 5%, color-mix(in srgb, var(--signal) 9%, transparent), transparent 46%),
+    radial-gradient(color-mix(in srgb, var(--ink) 11%, transparent) .7px, transparent .8px);
+  background-size: auto, 14px 14px;
+}
+.canvas[data-editing] {grid-template-columns: minmax(0, .86fr) minmax(2.1rem, .23fr) minmax(0, 1fr) minmax(1rem, .18fr) minmax(0, 1.9fr);}
+.repository, .machine, .destination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+  padding: .75rem .55rem;
+}
+.art, .dragHandle {
+  display: grid;
+  position: relative;
+  place-items: center;
+  height: 5.5rem;
+  width: 100%;
+}
+.dragHandle {
+  cursor: grab;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: .6rem;
+  max-width: 8.5rem;
+}
+.dragHandle:active { cursor: grabbing; }
+.dragHandle:hover, .dragHandle:focus-visible { background: color-mix(in srgb, var(--signal) 9%, transparent); border-color: var(--line); }
+.grip { position: absolute; inset-inline-end: 0; top: 34%; color: var(--muted-foreground); }
+.identity { display: grid; gap: .18rem; margin-top: .5rem; max-width: 100%; }
+.role { color: var(--muted-foreground); font-size: .73rem; font-weight: 550; }
+.identity strong { font-size: clamp(.94rem, 1.7cqi, 1.2rem); line-height: 1.3; font-weight: 660; overflow-wrap: anywhere; letter-spacing: -.018em; }
+.facts { display: grid; gap: .55rem; max-width: 100%; min-width: 0; margin-top: .8rem; font-size: .76rem; line-height: 1.38; }
+.facts dt { display: flex; justify-content: center; align-items: center; gap: .28rem; color: var(--muted-foreground); font-size: .69rem; }
+.facts dt svg { flex: none; width: .78rem; height: .78rem; }
+.facts dd, .transferDetail { overflow-wrap: anywhere; }
+.facts dd { margin: .1rem 0 0; }
+.power { display: inline-flex; align-items: center; gap: .3rem; font-size: .71rem; font-weight: 580; color: var(--muted-foreground); margin-top: .44rem; }
+.power[data-power="PoweredOn"] { color: color-mix(in srgb, var(--signal) 72%, var(--ink)); }
+
+/* Stacked storage platters, the recovered guest and its underlying chassis. */
+.repositoryArt {
+  --metal: color-mix(in srgb, var(--signal) 36%, var(--surface));
+  position: relative; width: 4.5rem; height: 3.65rem; align-self: end; margin-bottom: .2rem;
+}
+.repositoryArt > i {
+  position: absolute; width: 3.75rem; height: 1.5rem; left: .2rem; bottom: 0;
+  border: 1px solid color-mix(in srgb, var(--signal) 55%, var(--ink)); border-radius: 50% / 33%;
+  background: linear-gradient(100deg, var(--metal), color-mix(in srgb, var(--signal) 55%, var(--surface)) 39%, var(--metal));
+  box-shadow: inset .25rem 0 .3rem color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.repositoryArt > i:nth-child(2) { bottom: .62rem; }
+.repositoryArt > i:nth-child(3) { bottom: 1.23rem; }
+.repositoryArt > i:nth-child(3)::before {
+  content: ""; position: absolute; inset: -1px -1px auto; height: .88rem; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--signal) 54%, var(--ink));
+  background: color-mix(in srgb, var(--signal) 20%, var(--surface));
+}
+.repositoryArt > span {
+  position: absolute; right: 0; bottom: 0; display: grid; place-content: center;
+  width: 1.5rem; height: 1.5rem; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: .43rem;
+}
+.hostArt {
+  position: relative; display: block; width: 5.8rem; height: 5.1rem; align-self: end;
+  --metal: color-mix(in srgb, var(--signal) 24%, var(--surface));
+  --metal-light: color-mix(in srgb, var(--signal) 12%, var(--surface));
+  --metal-edge: color-mix(in srgb, var(--ink) 38%, var(--metal));
+}
+.machineBadge {
+  position: absolute; z-index: 2; left: calc(50% - 1.12rem); top: .1rem; width: 2.24rem; height: 1.84rem;
+  display: grid; place-items: center; color: var(--ink); border-radius: .4rem;
+  border: 1px solid color-mix(in srgb, var(--signal) 72%, var(--ink));
+  background: linear-gradient(140deg, var(--metal-light), color-mix(in srgb, var(--signal) 52%, var(--surface)));
+  box-shadow: 2px 3px 0 var(--metal), 3px 4px 0 var(--metal-edge);
+}
+.machineBadge svg { width: 1.23rem; height: 1.23rem; stroke-width: 1.7; }
+.machineBadge[data-empty] { background: var(--surface); border-style: dashed; box-shadow: none; color: var(--muted-foreground); }
+.uplink { position: absolute; top: 2.22rem; bottom: 1.87rem; left: 50%; border-left: 2px dotted var(--metal-edge); }
+.chassis { display: grid; position: absolute; left: .55rem; right: .55rem; bottom: .24rem; gap: 2px; }
+.chassis::before {
+  content: ""; position: absolute; bottom: calc(100% - .15rem); left: 0; width: 100%; height: .63rem;
+  background: linear-gradient(150deg, var(--metal-light), var(--metal)); clip-path: polygon(13% 0, 86% 0, 100% 100%, 0 100%);
+}
+.serverUnit {
+  position: relative; display: flex; align-items: center; justify-content: space-between; height: .72rem;
+  padding: 0 .35rem; border-radius: .18rem; border: 1px solid var(--metal-edge); background: linear-gradient(100deg, var(--metal), var(--metal-light));
+}
+.serverUnit i { height: .18rem; width: 1.55rem; background: repeating-linear-gradient(90deg,var(--metal-edge) 0 2px,transparent 2px 4px); }
+.serverUnit b { width: .25rem; height: .25rem; border-radius: 50%; background: var(--metal-edge); }
+.hostArt[data-production] { --metal: color-mix(in srgb, var(--muted-foreground) 23%, var(--surface)); --metal-light: var(--surface); }
+
+.connection { position: relative; display: flex; align-items: center; align-self: start; height: 1rem; margin-top: 4.1rem; color: var(--line); }
+.strand { position: relative; flex: 1; height: 1px; background: currentColor; }
+.connection[data-mounted] { color: color-mix(in srgb, var(--signal) 75%, var(--muted-foreground)); }
+.connection[data-mounted] .strand { height: 2px; background: repeating-linear-gradient(to right,currentColor 0 2px,transparent 2px 5px); }
+.linkLabel { position: absolute; left: 50%; top: 1.1rem; transform: translateX(-50%); color: var(--muted-foreground); font-size: .65rem; line-height: 1.1; }
+.connection > svg { flex: none; width: .87rem; height: .87rem; margin-inline-start: -.35rem; }
+.connection[data-transfer] .strand { background: repeating-linear-gradient(to right, currentColor 0 4px, transparent 4px 7px); }
+.connection[data-phase="active"], .connection[data-phase="completed"] { color: var(--signal); }
+.connection[data-phase="active"] .strand > i { position: absolute; top: -2px; left: 0; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.destination {
+  align-self: stretch; border: 1px dashed var(--line); border-radius: .7rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+.destination[data-enabled] { border-color: color-mix(in srgb, var(--signal) 55%, var(--border)); }
+.destination[data-dragging], .destination[data-configuring] { background: color-mix(in srgb, var(--signal) 8%, var(--surface)); }
+.destination[data-configuring] { align-items: stretch; text-align: start; padding: clamp(.7rem,1.7cqi,1.2rem); border-style: solid; }
+.destination[data-configuring] .identity { margin: 0 0 .8rem; }
+.destination[data-configuring] .role { color: var(--ink); font-size: .95rem; font-weight: 650; }
+.destination[data-over] { outline: 2px solid var(--signal); outline-offset: -2px; background: color-mix(in srgb, var(--signal) 18%, var(--surface)); }
+.choose {
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem; margin-top: .7rem; padding: .40rem .55rem; min-height: 2rem;
+  background: color-mix(in srgb, var(--signal) 12%, var(--surface)); border: 1px solid var(--line); border-radius: .43rem;
+  color: var(--ink); font-size: .74rem; font-weight: 650; cursor: pointer;
+}
+.choose svg { flex: none; }
+.choose:hover { border-color: var(--signal); }
+.choose:focus-visible, .dragHandle:focus-visible, .form:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.transfer { padding: .85rem clamp(.9rem, 2.5cqi, 1.6rem); border-top: 1px solid var(--border); }
+.form { width: 100%; min-width: 0; border-radius: .25rem; }
+.form:focus-visible { outline-offset: -3px; }
+.transfer { display: grid; gap: .4rem; }
+.transferHeading { display: flex; justify-content: space-between; align-items: baseline; gap: .65rem; font-size: .85rem; font-weight: 600; }
+.transferHeading strong { font-variant-numeric: tabular-nums; }
+.transferState { display: inline-flex; align-items: center; gap: .4rem; }
+.transferState i { width: .45rem; height: .45rem; flex: none; background: var(--muted-foreground); border-radius: 50%; }
+.transfer[data-phase="active"] .transferState i, .transfer[data-phase="completed"] .transferState i { background: var(--signal); }
+.transfer[data-phase="failed"] .transferState i { background: var(--destructive); }
+.transfer progress { width: 100%; height: .35rem; accent-color: var(--signal); }
+.transferDetail { font-size: .77rem; color: var(--muted-foreground); }
+.srOnly { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .destination, .choose, .dragHandle { transition: background-color .15s, border-color .15s; }
+  .connection[data-mounted] .strand { animation: mountedLink 3.2s ease-in-out infinite; }
+  .connection[data-phase="active"] .strand > i { animation: moveData 1.8s linear infinite; }
+  @keyframes mountedLink { 50% { opacity: .56; } }
+  @keyframes moveData { from { left: 0; } to { left: calc(100% - 5px); } }
+}
+
+@container (max-width: 34rem) {
+  .canvas, .canvas[data-editing] { grid-template-columns: minmax(0,1fr); padding: .75rem; }
+  .repository, .machine, .destination {
+    display: grid; grid-template-columns: 4.3rem minmax(0,1fr); column-gap: .8rem; align-items: start; text-align: start;
+    padding: .6rem .55rem; align-self: auto;
+  }
+  .art, .dragHandle { grid-column: 1; grid-row: 1 / span 4; width: 4.3rem; height: 4.15rem; align-self: center; }
+  .repositoryArt, .hostArt { scale: .74; transform-origin: center; align-self: center; }
+  .hostArt { justify-self: center; }
+  .identity, .power, .facts, .choose { grid-column: 2; }
+  .identity { margin-top: 0; }
+  .facts { margin-top: .45rem; gap: .32rem; }
+  .facts dt { justify-content: start; }
+  .grip { top: .1rem; inset-inline-end: -.2rem; }
+  .choose { justify-self: start; min-height: 2.5rem; }
+  .destination[data-configuring] { display: block; }
+  .connection { width: 1.25rem; margin: .05rem 0 .05rem 2.13rem; transform: rotate(90deg); }
+  .linkLabel { inset: auto auto 50% 50%; transform-origin: left bottom; transform: rotate(-90deg) translate(.8rem, .3rem); }
+}
+@media (forced-colors: active) {
+  .strand, .transferState i { background: CanvasText; }
+  .machineBadge, .serverUnit, .repositoryArt > i, .choose, .destination { border-color: ButtonText; }
+}

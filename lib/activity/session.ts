@@ -1,13 +1,15 @@
-import type { PublishedRecoveryReader, VbrReader } from '../server/vbr-read'
+import type { PublishedRecoveryReader, VbrReader, VmPowerReader } from '../server/vbr-read'
 import { investigationSessionSchema, taskSchema, validId, revisionForBuild, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
 import { loadLogs } from '../investigation/load'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
 import { loadActivityMounts } from './load'
 import { mountBelongsToSession, type Mount } from './model'
+import { enrichInstantVm, relatedMigration } from './instant-vm-evidence'
 
 export type MountHint = Pick<Mount, 'id'|'kind'>
 export type ActivityDetail = {
+  instantMigration?: Session | null
   id: string; sourceKey: string; sourceName: string; updatedAt: string; session: Session | null
   mounts: Mount[]; mountWarnings: string[]; logs: Logs; tasks: Evidence<Task>; children: Evidence<Session> | null; canStop: boolean
 }
@@ -24,7 +26,7 @@ function authError(error: unknown) {
 }
 
 export async function loadActivitySession(raw: VbrReader, sourceName: string, sourceKey: string, id: string,
-  hint?: MountHint, published?: PublishedRecoveryReader): Promise<ActivityDetail> {
+  hint?: MountHint, published?: PublishedRecoveryReader, vmPower?: VmPowerReader): Promise<ActivityDetail> {
   if (!validId(id)) throw new TopologyRequestError('Select a valid session.', 400)
   const version = await raw('/api/v1/serverInfo').catch(error => { authError(error); return null })
   const revision = revisionForBuild((version as {buildVersion?:string} | null)?.buildVersion)
@@ -55,5 +57,8 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
     if (scoped.length !== children.data.length) children.complete = false
     children.data = scoped
   }
-  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
+  const [enriched, instantMigration] = await Promise.all([
+    Promise.all(mounts.map(mount => enrichInstantVm(raw, mount, vmPower))), relatedMigration(raw, session),
+  ])
+  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, instantMigration, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
 }

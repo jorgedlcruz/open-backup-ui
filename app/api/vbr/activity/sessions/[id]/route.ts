@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, {params}: Context) {
     (expected !== null && !/^[a-f0-9]{64}$/.test(expected))) return NextResponse.json({error:'Invalid session link.'}, {status:400})
   return withVbrRead(request, (read, sourceName, _inventory, ctx) => {
     if (expected && expected !== ctx.sourceKey) throw new TopologyRequestError('This session belongs to a different VBR source.', 409)
-    return loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries)
+    return loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries, ctx.vmPower)
   })
 }
 export async function POST(request: NextRequest, {params}: Context) {

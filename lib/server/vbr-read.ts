@@ -15,7 +15,8 @@ export type VbrInventoryReader = (host: string | null, skip: number, limit: numb
 
 // VBR exposes this read-only cross-platform mount list as a POST with query parameters.
 export type PublishedRecoveryReader = (skip: number, limit: number) => Promise<unknown>
-export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; serverCredentials: boolean; sourceId?: string; signal: AbortSignal; publishedRecoveries: PublishedRecoveryReader }) => Promise<unknown>) {
+export type VmPowerReader = (manager: string, platform: 'VSphere'|'HyperV', vmName: string) => Promise<unknown>
+export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; serverCredentials: boolean; sourceId?: string; signal: AbortSignal; publishedRecoveries: PublishedRecoveryReader; vmPower: VmPowerReader }) => Promise<unknown>) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60000)
   const abort = () => controller.abort()
@@ -67,8 +68,16 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       return requestJson(`/private-api/v1/restore/instantRecovery/sessions?${query}`, '1.3-rev2', undefined, true)
     }
     const cacheKey = readCacheScope(destination.href, token, configuredPrincipal ? source : undefined)
+    const vmPower: VmPowerReader = (manager, platform, vmName) => {
+      if (!manager || /[\\/?#\x00-\x1f]/.test(manager) || ['.', '..'].includes(manager)) throw new TopologyRequestError('Invalid inventory server.', 400)
+      return requestJson('/api/v1/inventory/' + encodeURIComponent(manager), '1.3-rev2', JSON.stringify({
+        permissionScope:'Restore', hierarchyType:platform === 'VSphere' ? 'HostsAndClusters' : 'HostsAndVms', pagination:{skip:0,limit:2},
+        filter:{type:'GroupExpression', operation:'And', items:Object.entries({platform, type:'VirtualMachine', name:vmName})
+          .map(([property,value]) => ({type:'PredicateExpression', operation:'Equals', property, value}))},
+      }))
+    }
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
-    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, publishedRecoveries, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
+    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, publishedRecoveries, vmPower, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
   } catch (error) {
     return NextResponse.json({ error: error instanceof TopologyRequestError ? error.message
       : controller.signal.aborted ? 'Loading took too long. Retry or narrow the source environment.'
