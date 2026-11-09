@@ -81,6 +81,23 @@ test('terminal closeout captures runs between polls and continues task pages aft
   assert.ok(!calls.some(url=>url.includes(old.id)))
 })
 
+test('an unavailable terminal log is retried by its verified ID without replaying an expired session',async()=>{
+  const {api}=harness(),s=session(1,{state:'Stopped',endTime:new Date(now-55_000).toISOString()})
+  const cursor=api.initialSampleCursor(now),disk={title:'Restoring Hard disk 1 (60 GB) : 29.9 GB restored at 109 MB/s'}
+  const original=fixture([],[s],[],[disk]),captured=[]
+  let offline=true
+  const read=async path=>{
+    if(offline && path.endsWith('/logs'))throw Error('temporary failure')
+    return original.read(path)
+  }
+  await api.sampleSessionCycle(read,async(_s,logs)=>captured.push(logs.available),cursor,now)
+  assert.equal(cursor.taskPages[s.id].retries,1)
+  offline=false
+  await api.sampleSessionCycle(read,async(_s,logs)=>captured.push(logs.available),cursor,now+15_000)
+  assert.deepEqual(captured,[false,true])
+  assert.equal(cursor.taskPages[s.id],undefined)
+})
+
 test('bootstrap starts once, scopes concurrent workers to the configured principal, and refuses redirected/changed sources',async t=>{
   const dir=await fs.promises.mkdtemp(path.join(os.tmpdir(),'vbr-sampler-'))
   t.after(()=>fs.promises.rm(dir,{recursive:true,force:true}))
