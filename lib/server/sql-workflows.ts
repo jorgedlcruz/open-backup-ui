@@ -10,13 +10,13 @@ import type {z} from 'zod'
 
 export type SqlIntent=z.infer<typeof sqlIntentSchema>
 export type SqlJob={jobId:string;database:SqlDatabase}
-export type SqlCheckStamp={nonce:string;digest:string;existing?:boolean;pointInTime?:boolean}
+export type SqlCheckStamp={nonce:string;digest:string;existing?:boolean;pointInTime?:boolean;recoveryPoint?:string}
 export type SqlFlow={
   id:string;sessionId:string;intent:SqlIntent;databases:SqlDatabase[];ranges:({from?:string|null;to?:string|null}|null)[]
   published?:string[];state:'open'|'submitted'|'uncertain'|'canceled';created:number
   checks:Partial<Record<SqlStep,SqlCheckStamp>>
   inputs?:Partial<Record<SqlStep,string>>
-  pending?:{nonce:string;step:SqlStep|'submit'|'cancel';digest:string;pointInTime?:boolean;taskId?:string}
+  pending?:{nonce:string;step:SqlStep|'submit'|'cancel';digest:string;pointInTime?:boolean;recoveryPoint?:string;taskId?:string}
   jobs?:SqlJob[]; submission?:string
 }
 const absent=(error:unknown)=>(error as NodeJS.ErrnoException).code==='ENOENT'

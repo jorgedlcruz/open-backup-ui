@@ -1,0 +1,53 @@
+/* Open Backup UI v1.0.2 */
+.workspace{display:grid;grid-template-columns:minmax(12.5rem,25%) minmax(0,1fr);align-items:start;min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:.7rem;background:color-mix(in srgb,var(--card) 48%,transparent)}
+.tree{align-self:stretch;min-width:0;padding:.88rem .5rem;border-inline-end:1px solid var(--border);background:color-mix(in srgb,var(--muted) 17%,transparent)}
+.tree h4,.listTitle,.listHead h4{display:flex;align-items:center;gap:.45rem;font-weight:650}
+.tree h4{margin:0 .35rem .65rem;color:var(--muted-foreground);font-size:.78rem}
+.tree ul{list-style:none;margin:0;padding:0}
+.tree ul ul{margin-inline-start:.55rem;padding-inline-start:.27rem;border-inline-start:1px solid color-mix(in srgb,var(--border) 65%,transparent)}
+.treeRow{display:flex;align-items:center;gap:.05rem;border-radius:.35rem}
+.treeRow[data-current]{background:color-mix(in srgb,var(--primary) 15%,transparent);box-shadow:inset 2px 0 var(--primary)}
+.disclose,.spacer{flex:none;width:1.1rem}
+.disclose,.node,.more,.rowLink,.actionScope button{border:0;background:transparent;color:inherit;cursor:pointer;text-align:start}
+.disclose{display:grid;place-items:center;align-self:stretch;border-radius:.25rem}
+.node{display:flex;min-width:0;flex:1;align-items:center;gap:.4rem;padding:.44rem .22rem;line-height:1.32;font-size:.79rem;border-radius:.3rem}
+.treeRow svg,.rowLink svg,.file svg,.listTitle svg{flex:none;color:var(--primary)}
+.node span{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.node:hover,.more:hover,.disclose:hover,.rowLink:hover,.actionScope button:hover{color:var(--primary)}
+.workspace button:focus-visible,.workspace input:focus-visible,.version summary:focus-visible{outline:2px solid var(--primary);outline-offset:-1px}
+.more,.actionScope button{color:var(--primary);font-size:.75rem;text-decoration:underline;text-underline-offset:.15rem}
+.more{padding:.5rem}
+.detail{min-width:0;display:grid;gap:.9rem;padding:1rem 1.1rem 1.1rem}
+.detailHeader{display:flex;align-items:center;gap:.75rem;min-width:0}
+.detailHeader>div{min-width:0}
+.symbol{width:2.8rem;height:2.8rem;flex:none;display:grid;place-items:center;border-radius:.65rem;border:1px solid color-mix(in srgb,var(--primary) 45%,transparent);background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary)}
+.detailHeader h3{font-size:1.13rem;font-weight:650;letter-spacing:-.015em;overflow-wrap:anywhere;line-height:1.35;margin:.05rem 0}
+.detailHeader p,.location,.version,.facts dt,.file small{color:var(--muted-foreground);font-size:.74rem}
+.location{display:block;overflow-wrap:anywhere}
+.version{padding:.4rem .65rem;border-inline-start:2px solid color-mix(in srgb,var(--primary) 40%,transparent)}
+.version summary{cursor:pointer;line-height:1.45}.version summary span{margin-inline-end:.27rem}
+.version p{white-space:pre-wrap;overflow-wrap:anywhere;margin:.55rem 0 0}
+.actionArea{display:grid;gap:.45rem;padding:.65rem .75rem;border:1px solid color-mix(in srgb,var(--primary) 25%,var(--border));border-radius:.55rem;background:color-mix(in srgb,var(--primary) 5%,transparent);min-width:0}
+.actionScope,.listHead,.pager{display:flex;gap:.55rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.actionScope span{font-size:.77rem;font-weight:600}
+.listHead h4,.listTitle{margin:0;font-size:.88rem}
+.listHead h4 span{display:inline-grid;place-items:center;min-width:1.35rem;font-size:.72rem;color:var(--muted-foreground);border-radius:1rem;border:1px solid var(--border);padding:0 .3rem}
+.filter{display:flex;align-items:center;gap:.45rem;border:1px solid var(--border);border-radius:.4rem;background:var(--field-background,var(--card));padding:.35rem .55rem;color:var(--muted-foreground)}
+.filter input{background:transparent;color:var(--foreground);width:9rem;max-width:100%}
+.table{width:100%;border-collapse:collapse;font-size:.82rem}
+.table th,.table td{text-align:start;border-bottom:1px solid var(--border);padding:.58rem .5rem;line-height:1.4}
+.table th{font-weight:550;color:var(--muted-foreground);font-size:.72rem}
+.table td{overflow-wrap:anywhere}
+.table .checkCell{width:2rem;white-space:nowrap}
+.table input{accent-color:var(--primary);vertical-align:middle;cursor:pointer}
+.table tr[data-selected]{background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.rowLink{display:inline-flex;align-items:center;gap:.42rem;font-weight:600;max-width:100%;overflow-wrap:anywhere}
+.empty,.pager,.readError{margin:0;padding:.55rem .1rem;color:var(--muted-foreground);font-size:.8rem}
+.readError{display:flex;align-items:center;gap:.65rem;color:var(--destructive);overflow-wrap:anywhere}
+.facts{display:flex;flex-wrap:wrap;gap:.75rem 1.3rem;margin:0;min-width:0}
+.facts dd{margin:.15rem 0 0;overflow-wrap:anywhere}
+.file{display:flex;gap:.55rem;align-items:start;min-width:0;border-top:1px solid var(--border);padding:.45rem .1rem}
+.file svg{margin-top:.2rem}.file div{min-width:0;display:grid;gap:.15rem}.file span{overflow-wrap:anywhere}
+.objectTitle{display:flex;align-items:center}
+@media(max-width:950px){.workspace{grid-template-columns:minmax(10rem,24%) minmax(0,1fr)}.detail{padding:.85rem}}
+@media(max-width:730px){.workspace{grid-template-columns:minmax(0,1fr)}.tree{border-inline-end:0;border-bottom:1px solid var(--border);max-height:13rem;overflow-y:auto;padding:.65rem}.tree h4{margin-bottom:.35rem}.tree ul ul{margin-inline-start:.75rem}.node{padding:.35rem}.detail{padding:.85rem .7rem}.rowLink{gap:.25rem}.actionArea{padding:.55rem}.table th,.table td{padding:.5rem .3rem}.table .checkCell{width:1.65rem}.readError{align-items:flex-start;flex-wrap:wrap}}

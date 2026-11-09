@@ -74,7 +74,8 @@ async function settleCheck(ctx:SqlContext,sid:string,fid:string,step:SqlStep,non
     delete flow.pending
     if(!result.ok)return
     const existing=result.data.existingDatabases
-    flow.checks[step]={nonce,digest:current.digest,existing:Array.isArray(existing)&&existing.length>0,pointInTime:current.pointInTime}
+    flow.checks[step]={nonce,digest:current.digest,existing:Array.isArray(existing)&&existing.length>0,
+      pointInTime:current.pointInTime,recoveryPoint:current.recoveryPoint}
     return sqlSeal(ctx,'proof',{sessionId:sid,workflowId:fid,step,nonce})
   })
   return {...result,...(proof&&{proof})}
@@ -130,7 +131,9 @@ export async function runSqlWorkflow(send:RecoverySend,ctx:SqlContext,input:z.in
         f.inputs[step]=digest
       }
       delete f.checks[step]
-      f.pending={nonce,step,digest,pointInTime:!!(data.restoreToDate||data.restoreBeforeLsn)}
+      const recoveryPoint=step==='windowsLogBackups'||step==='exportPointInTime'?
+        fingerprint(ctx,[data.restoreToDate??null,data.restoreBeforeLsn??null]):undefined
+      f.pending={nonce,step,digest,pointInTime:!!(data.restoreToDate||data.restoreBeforeLsn),recoveryPoint}
       return f
     })
     let started
@@ -151,8 +154,16 @@ export async function runSqlWorkflow(send:RecoverySend,ctx:SqlContext,input:z.in
     const valid=(step:SqlStep)=>!!f.checks[step] && proofs.some(p=>p.workflowId===fid && p.sessionId===sid && p.step===step && p.nonce===f.checks[step]?.nonce)
     if(requiredSqlChecks(ref.intent,input.settings).some(step=>!valid(step)))throw fail('Complete VBR validation for this operation.')
     if(f.checks.sqlDatabasesDoNotExist?.existing && !input.settings.overwrite)throw fail('Confirm the existing database can be overwritten.')
-    const pit=!!(f.checks.windowsLogBackups?.pointInTime || f.checks.exportPointInTime?.pointInTime)
-    if(pit!==!!input.settings.pointInTime)throw fail('Confirm the validated SQL recovery time.')
+    const logs=f.checks.windowsLogBackups,pointInTime=!!input.settings.pointInTime
+    if(ref.intent==='export'||ref.intent==='exportFiles') {
+      // VBR keeps the configured export point on the workflow. The start payload
+      // has no date/LSN, so log validation must attest exactly that native setting.
+      const configured=f.checks.exportPointInTime
+      if(!configured?.recoveryPoint||configured.pointInTime!==pointInTime||
+        ((ref.intent==='export'||pointInTime||logs) && logs?.recoveryPoint!==configured.recoveryPoint)){
+        throw fail('Confirm the validated SQL recovery time.')
+      }
+    } else if(!!logs?.pointInTime!==pointInTime)throw fail('Confirm the validated SQL recovery time.')
     f.pending={step:'submit',nonce,digest}
     return f
   })

@@ -5,8 +5,10 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { sqlRequest, type AdScope } from '@/lib/restore-points/ad-client'
+import { browseSqlPage } from '@/lib/restore-points/sql-browse-client'
 import { uncertainRestore } from '@/lib/restore-points/workflow'
 import { requiredSqlChecks } from '@/lib/recovery/sql-checks'
+import {sqlRecoverySelection,sqlWizardDefaults,type SqlRecoveryPreset} from '@/lib/restore-points/sql-action-presets'
 import type { SqlStep } from '@/lib/recovery/sql-actions'
 import { useRecoveryPresentation } from './use-presentation'
 import { sqlCaptions, type SqlItem, type SqlFlow } from './sql-explorer'
@@ -23,26 +25,21 @@ function timeInput(ms:number){
   const date=new Date(ms)
   return Number.isFinite(ms)?new Date(ms-date.getTimezoneOffset()*60000).toISOString().slice(0,19):''
 }
-export function sqlTimeWindow(dbs:SqlItem[]) {
-  if(!dbs.length)return
-  const ranges=dbs.map(db=>[Date.parse(db.timeRange?.from||db.timeRange?.startTime||''),Date.parse(db.timeRange?.to||db.timeRange?.endTime||'')])
-  const from=Math.max(...ranges.map(pair=>pair[0])),to=Math.min(...ranges.map(pair=>pair[1]))
-  if(Number.isFinite(from)&&Number.isFinite(to)&&to-from>60000)return {from,to}
-}
 const stepLabels:Partial<Record<SqlStep,string>>={sqlCredentials:'SQL credentials',stagingServerSqlCredentials:'SQL credentials',guestCredentials:'Windows credentials',
   stagingServerGuestCredentials:'Windows credentials',adminShareAccess:'Administrative share',mountAccess:'Mount access',windowsLogBackups:'Transaction logs',
   targetInstance:'Target instance',files:'Database files',filesOnReplicas:'Replica files',freeSpace:'Free space',sqlDatabasesDoNotExist:'Destination databases',
   standByRestoreMode:'Recovery state',alwaysOnAndUpdatePrimaryNode:'Availability group',exportTargetWindowsServer:'Export server',exportTargetPath:'Destination path',
   stagingServerFreeSpaceForExport:'Staging server free space',exportPointInTime:'Recovery time'}
 
-export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
-  scope:AdScope;flow:SqlFlow;databases:SqlItem[];onClose:()=>void;onAccepted:()=>void
+export function SqlRecoveryWorkflow({scope,flow,databases,preset,onClose,onAccepted}:{
+  scope:AdScope;flow:SqlFlow;databases:SqlItem[];preset?:SqlRecoveryPreset;onClose:()=>void;onAccepted:()=>void
 }){
   const {t,date,diagnostic}=useRecoveryPresentation()
-  const exporting=flow.intent==='export'||flow.intent==='exportPublished',published=flow.intent==='exportPublished',instant=flow.intent==='instant'
+  const defaults=sqlWizardDefaults(flow.intent,databases,preset)
+  const {exporting,fileExport,range}=defaults,published=flow.intent==='exportPublished',instant=flow.intent==='instant'
   const canMap=instant||flow.intent==='restore'
-  const [stage,setStage]=useState<'destination'|'options'|'review'>('destination'),[busy,setBusy]=useState(false),[checking,setChecking]=useState(''),[error,setError]=useState(''),[uncertain,setUncertain]=useState(false)
-  const [host,setHost]=useState(''),[instance,setInstance]=useState(''),[custom,setCustom]=useState(false),[instances,setInstances]=useState<{machineName:string;instanceName:string}[]>([])
+  const [stage,setStage]=useState<'destination'|'options'|'review'>(defaults.initialStage),[busy,setBusy]=useState(false),[checking,setChecking]=useState(''),[error,setError]=useState(''),[uncertain,setUncertain]=useState(false)
+  const [host,setHost]=useState(''),[instance,setInstance]=useState(''),[custom,setCustom]=useState(defaults.custom),[instances,setInstances]=useState<{machineName:string;instanceName:string}[]>([])
   const [targetNames,setTargetNames]=useState(databases.map(db=>db.name||'')),[auth,setAuth]=useState<'saved'|'windows'|'sql'>('saved')
   const [user,setUser]=useState(''),[password,setPassword]=useState(''),[winOverride,setWinOverride]=useState(false),[winUser,setWinUser]=useState(''),[winPass,setWinPass]=useState('')
   const [exportHost,setExportHost]=useState(''),[exportUser,setExportUser]=useState(''),[exportPass,setExportPass]=useState(''),[exportPath,setExportPath]=useState('')
@@ -51,21 +48,23 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
   const [files,setFiles]=useState<(Files|null)[]>(databases.map(()=>null)),[mapping,setMapping]=useState(false)
   const [state,setState]=useState('Recovery'),[standby,setStandby]=useState(''),[schedule,setSchedule]=useState<'Auto'|'Manual'|'ScheduledAt'>('Manual'),[scheduledAt,setScheduledAt]=useState('')
   const [group,setGroup]=useState(''),[groups,setGroups]=useState<string[]>([]),[replicas,setReplicas]=useState<string[]>([])
-  const range=published?undefined:sqlTimeWindow(databases)
-  const [pit,setPit]=useState(false),[at,setAt]=useState(timeInput(range?.to??NaN)),[lsn,setLsn]=useState(''),[direction,setDirection]=useState<'Before'|'After'>('Before')
+  const [pit,setPit]=useState(defaults.pointInTime),[at,setAt]=useState(timeInput(range?.to??NaN)),[lsn,setLsn]=useState(''),[direction,setDirection]=useState<'Before'|'After'>('Before')
   const [transactions,setTransactions]=useState<{rows:Transaction[];skip:number;count:number}>()
   const [proofs,setProofs]=useState<string[]>([]),[warnings,setWarnings]=useState<string[]>([]),[collisions,setCollisions]=useState<string[]>([]),[overwrite,setOverwrite]=useState(false)
-  const lock=useRef(false),server=host.trim(),source=databases[0]?.sqlServerName
+  const lock=useRef(false),server=host.trim()
+  const sourceName=(db:SqlItem)=>[db.sqlServerName?.machineName,db.sqlServerName?.instanceName].filter(Boolean).join('\\')
+  const sources=[...new Set(databases.map(sourceName).filter(Boolean))],mixed=sources.length>1
+  const dbLabel=(db:SqlItem)=>mixed?[sourceName(db),db.name].filter(Boolean).join(' · '):db.name
+  const duplicateTargets=custom&&new Set(targetNames.map(name=>name.trim().toLowerCase())).size!==targetNames.length
   const connectionReady=useRef(false)
   const destinationValid=(!custom||!!server)&&(auth==='saved'||(!!user.trim()&&!!password))&&(!winOverride||(!!winUser.trim()&&!!winPass))&&
-    (!exporting||(!!exportHost.trim()&&!!exportUser.trim()&&!!exportPass&&!!exportPath.trim()))&&(exporting||targetNames.every(name=>!!name.trim()))
+    (!exporting||(!!exportHost.trim()&&!!exportUser.trim()&&!!exportPass&&!!exportPath.trim()))&&(exporting||!duplicateTargets&&targetNames.every(name=>!!name.trim()))
   const atMs=Date.parse(at),validTime=!pit||!!range&&(atMs>=range.from&&atMs<=range.to)
   const optionsValid=validTime&&(!canMap||state!=='StandBy'||!!standby.trim())&&(!instant||schedule!=='ScheduledAt'||Date.parse(scheduledAt)>Date.now())&&
     (!mapping||files.every(file=>file&&[file.primaryFile,...file.secondaryFiles,...file.blobFolders].every(p=>!!p.trim())))
   const request=<T,>(action:string,fields:Record<string,unknown>={})=>sqlRequest<T>({...scope,action,workflow:flow,...fields})
-  const settings={pointInTime:pit,...(exporting?{compression}:{}),...(instant?{schedule,scheduledAt:schedule==='ScheduledAt'&&scheduledAt?new Date(scheduledAt).toISOString():undefined}:{}),...(!exporting?{overwrite}: {})}
-  const target=custom?{machineName:server,instanceName:instance.trim()}:{}
-  const when=pit&&Number.isFinite(atMs)?{restoreToDate:new Date(atMs).toISOString(),restoreBeforeLsn:lsn||undefined}:{}
+  const settings={pointInTime:pit,...(exporting&&!fileExport?{compression}:{}),...(instant?{schedule,scheduledAt:schedule==='ScheduledAt'&&scheduledAt?new Date(scheduledAt).toISOString():undefined}:{}),...(!exporting?{overwrite}: {})}
+  const {target,when}=sqlRecoverySelection(custom,server,instance,pit,atMs,lsn)
   async function run(job:()=>Promise<void>,commit=false) {
     if(lock.current)return
     lock.current=true;setBusy(true);setError('')
@@ -113,14 +112,14 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
     setProofs(grants);setWarnings([...new Set(messages)]);setStage('review')
   }
   function cancel(){if(!busy){if(uncertain){onClose();return}void run(async()=>{await request('cancelWorkflow');onClose()})}}
-  async function mapFiles(){
+  async function loadSourceFiles(){
     const rows=await Promise.all(databases.map(async db=>{
-      const page=await sqlRequest<{items:SqlItem[];total:number|null}>({...scope,action:'browse',view:'files',parent:db.key,skip:0,limit:200})
+      const page=await browseSqlPage<{items:SqlItem[];total:number|null}>({...scope,view:'files',parent:db.key,skip:0,limit:200})
       const list=page.items.filter(item=>item.primaryFile)
       if(list.length!==1)throw Error(t('VBR did not return a complete file mapping for {name}.',{name:db.name||''}))
       return {primaryFile:list[0].primaryFile!,secondaryFiles:list[0].secondaryFiles||[],blobFolders:list[0].blobFolders||[]}
     }))
-    setFiles(rows);setMapping(true)
+    setFiles(rows)
   }
   function setFile(db:number,field:keyof Files,index:number,value:string){
     setFiles(old=>old.map((row,i)=>!row||i!==db?row:{...row,[field]:field==='primaryFile'?value:row[field].map((p,j)=>j===index?value:p)}))
@@ -139,7 +138,7 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
     autoComplete="off" onChange={event=>change(event.target.value)}/></label>
   return <Dialog open onOpenChange={v=>{if(!v)cancel()}}><DialogContent className={styles.dialog} onInteractOutside={e=>e.preventDefault()}
     onEscapeKeyDown={e=>{if(busy)e.preventDefault()}}><DialogHeader><DialogTitle>{t(sqlCaptions[flow.intent])}</DialogTitle>
-    <DialogDescription>{databases.map(db=>db.name).filter(Boolean).join(', ')} · {stage==='destination'?t('Destination'):stage==='options'?t('Recovery options'):t('Review')}</DialogDescription></DialogHeader>
+    <DialogDescription>{databases.map(dbLabel).filter(Boolean).join(', ')} · {stage==='destination'?t('Destination'):stage==='options'?t('Recovery options'):t('Review')}</DialogDescription></DialogHeader>
     {error&&<p role="alert" className={styles.error}>{error}</p>}{uncertain&&<p role="alert">{t('Check Sessions before submitting another request.')}</p>}
     <form className={styles.form} onSubmit={event=>{event.preventDefault();if(busy||uncertain)return
       if(stage==='destination'&&destinationValid){connectionReady.current=false;setStage('options')}
@@ -147,8 +146,8 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
       else if(stage==='review'&&(!collisions.length||overwrite))void run(async()=>{await request('submit',{proofs,settings});onAccepted()},true)
     }}><fieldset disabled={busy||uncertain}>
     {stage==='destination'&&<>
-      {exporting?<p>{t('Use the staging server configured in VBR.')}</p>:<><label>{hostLabel}<select value={custom?'custom':'original'} onChange={e=>setCustom(e.target.value==='custom')}>
-        <option value="original">{t('Original location')}{source?.machineName?' · '+[source.machineName,source.instanceName].filter(Boolean).join('\\'):''}</option>
+      {exporting?(!fileExport&&<p>{t('Use the staging server configured in VBR.')}</p>):<><label>{hostLabel}<select value={custom?'custom':'original'} onChange={e=>setCustom(e.target.value==='custom')}>
+        {flow.intent!=='publish'&&<option value="original">{t('Original location')}{sources.length===1?' · '+sources[0]:''}</option>}
         <option value="custom">{t('New location')}</option></select></label>
       {custom&&<>
         {textField(t('Server'),host,setHost)}{textField(t('Instance name'),instance,setInstance)}
@@ -156,8 +155,8 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
         {!!instances.length&&<select aria-label={t('Instances')} value="" onChange={e=>{const next=instances[Number(e.target.value)];setHost(next.machineName);setInstance(next.instanceName||'')}}><option value="">{t('Select')}</option>
           {instances.map((entry,index)=><option key={index} value={index}>{[entry.machineName,entry.instanceName].filter(Boolean).join('\\')}</option>)}</select>}
       </>}
-      {!exporting&&<fieldset><legend>{t('Destination databases')}</legend>{databases.map((db,i)=><label key={db.key}>{db.name}<input required value={targetNames[i]}
-        onChange={e=>setTargetNames(old=>old.map((v,j)=>j===i?e.target.value:v))}/></label>)}</fieldset>}
+      {!exporting&&<fieldset><legend>{t('Destination databases')}</legend>{databases.map((db,i)=><label key={db.key}>{dbLabel(db)}<input required value={targetNames[i]}
+        onChange={e=>setTargetNames(old=>old.map((v,j)=>j===i?e.target.value:v))}/></label>)}{duplicateTargets&&<p role="status">{t('Use distinct database names on the target instance.')}</p>}</fieldset>}
       <details><summary>{t('Credentials')}</summary><label>{t('SQL credentials')}<select value={auth} onChange={e=>setAuth(e.target.value as typeof auth)}>
         <option value="saved">{t('Use VBR credentials')}</option><option value="windows">{t('Windows authentication')}</option><option value="sql">{t('SQL authentication')}</option></select></label>
         {auth!=='saved'&&<>{textField(t('Username'),user,setUser)}{textField(t('Password'),password,setPassword,true)}</>}
@@ -190,7 +189,7 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
       {canMap&&<><label>{t('Recovery state')}<select value={state} onChange={e=>setState(e.target.value)}>
         <option value="Recovery">{t('Bring database online')}</option><option value="NoRecovery">{t('Leave database restoring')}</option><option value="StandBy">{t('Standby (read-only)')}</option></select></label>
         {state==='StandBy'&&textField(t('Standby file path'),standby,setStandby)}
-        {box(t('Change database file paths'),mapping,on=>{if(on)void run(mapFiles);else setMapping(false)})}
+        {box(t('Change database file paths'),mapping,on=>{if(on)void run(async()=>{await loadSourceFiles();setMapping(true)});else setMapping(false)})}
         {mapping&&files.map((file,i)=>file&&<fieldset key={databases[i].key}><legend>{databases[i].name}</legend>
           {textField(t('Primary file'),file.primaryFile,p=>setFile(i,'primaryFile',0,p))}
           {file.secondaryFiles.map((p,j)=><label key={j}>{t('Secondary file')} {j+1}<input value={p} onChange={e=>setFile(i,'secondaryFiles',j,e.target.value)}/></label>)}
@@ -204,19 +203,21 @@ export function SqlRecoveryWorkflow({scope,flow,databases,onClose,onAccepted}:{
       {instant&&<><label>{t('Switchover')}<select value={schedule} onChange={e=>setSchedule(e.target.value as typeof schedule)}>
         <option value="Auto">{t('Automatic')}</option><option value="Manual">{t('Manual')}</option><option value="ScheduledAt">{t('Scheduled')}</option></select></label>
         {schedule==='ScheduledAt'&&<label>{t('Scheduled time')}<input type="datetime-local" required value={scheduledAt} onChange={e=>setScheduledAt(e.target.value)}/></label>}</>}
-      {exporting&&<><label>{t('Backup compression')}<select value={compression} onChange={e=>setCompression(e.target.value as typeof compression)}>
+      {fileExport&&databases.length===1&&<div><Button type="button" size="sm" variant="outline" disabled={!!files[0]} onClick={()=>void run(loadSourceFiles)}>{t('Database files')}</Button>
+        {files[0]&&<ul>{[files[0].primaryFile,...files[0].secondaryFiles,...files[0].blobFolders].map((name,i)=><li key={i}>{name}</li>)}</ul>}</div>}
+      {exporting&&!fileExport&&<><label>{t('Backup compression')}<select value={compression} onChange={e=>setCompression(e.target.value as typeof compression)}>
         <option value="Default">{t('Server default')}</option><option value="WithCompression">{t('Enable')}</option><option value="NoCompression">{t('Disable')}</option></select></label>
         <Button type="button" size="sm" variant="outline" onClick={()=>void run(async()=>{await ensureConnection();setDefaultCompression((await check('exportDefaultCompressionSetting')).data.defaultCompression||t('Not reported'))})}>{t('Check server default')}</Button>
         {defaultCompression&&<small>{defaultCompression}</small>}</>}
     </>}
     {stage==='review'&&<><dl className={styles.attributes}>
-      <div><dt>{hostLabel}</dt><dd>{exporting?t('Use the staging server configured in VBR.'):custom?[server,instance].filter(Boolean).join('\\'):[source?.machineName,source?.instanceName].filter(Boolean).join('\\')||t('Original location')}</dd></div>
-      <div><dt>{t('Databases')}</dt><dd>{databases.map((db,i)=>exporting||targetNames[i]===db.name?db.name:db.name+' → '+targetNames[i]).join('\n')}</dd></div>
+      {(!fileExport||pit)&&<div><dt>{hostLabel}</dt><dd>{exporting?t('Use the staging server configured in VBR.'):custom?[server,instance].filter(Boolean).join('\\'):sources.join(', ')||t('Original location')}</dd></div>}
+      <div><dt>{t('Databases')}</dt><dd>{databases.map((db,i)=>exporting||targetNames[i]===db.name?dbLabel(db):dbLabel(db)+' → '+targetNames[i]).join('\n')}</dd></div>
       {!published&&<div><dt>{t('Recovery time')}</dt><dd>{pit?date(atMs):backupTime?date(backupTime):t('Backup time')}{pit&&lsn?' · '+lsn:''}</dd></div>}
       {canMap&&<div><dt>{t('Recovery state')}</dt><dd>{state==='Recovery'?t('Bring database online'):state==='StandBy'?t('Standby (read-only)')+' · '+standby:t('Leave database restoring')}</dd></div>}
       {mapping&&files.map((file,i)=>file&&<div key={databases[i].key}><dt>{databases[i].name}</dt><dd>{[file.primaryFile,...file.secondaryFiles,...file.blobFolders].join('\n')}</dd></div>)}
       {instant&&<div><dt>{t('Switchover')}</dt><dd>{schedule==='ScheduledAt'?date(scheduledAt):schedule==='Manual'?t('Manual'):t('Automatic')}</dd></div>}
-      {exporting&&<><div><dt>{t('Export destination')}</dt><dd>{exportHost} · {exportPath}</dd></div><div><dt>{t('Backup compression')}</dt><dd>{compression==='Default'?t('Server default'):compression==='WithCompression'?t('Enable'):t('Disable')}</dd></div></>}
+      {exporting&&<><div><dt>{t('Export destination')}</dt><dd>{exportHost} · {exportPath}</dd></div>{!fileExport&&<div><dt>{t('Backup compression')}</dt><dd>{compression==='Default'?t('Server default'):compression==='WithCompression'?t('Enable'):t('Disable')}</dd></div>}</>}
       {group&&<div><dt>{t('Availability group')}</dt><dd>{group}</dd></div>}
       </dl>{warnings.map((msg,i)=><p className={styles.feedback} key={i}>{diagnostic(msg)}</p>)}
       {collisions.length>0&&<div className={styles.feedback}><strong>{t('Existing destination databases')}</strong><p>{collisions.join(', ')}</p>

@@ -92,6 +92,17 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'Compression applies only to a SQL backup file.':
+    case 'This SQL browse page expired. Refresh the page.':
+    case 'Reopen the SQL browse page.':
+    case 'VBR returned a different SQL browse view. Refresh the page.':
+    case 'VBR returned an unreadable SQL browse item.':
+    case 'VBR returned a database for a different SQL instance. Refresh the page.':
+    case 'VBR returned files for a different database. Refresh the page.':
+    case 'VBR returned an incomplete SQL browse page. Refresh the page.':
+    case 'VBR returned an invalid SQL browse page.':
+    case 'Use distinct database names on the target instance.':
+      return t(value)
     case 'Restore-point evidence could not be loaded.': return t('Restore-point evidence could not be loaded.')
     case 'Select a valid backup object or backup ID.': return t('Select a valid backup object or backup ID.')
     case 'Select a valid repository ID.': return t('Select a valid repository ID.')

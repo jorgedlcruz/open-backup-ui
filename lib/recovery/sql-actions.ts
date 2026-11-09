@@ -16,7 +16,7 @@ const date=z.string().datetime({offset:true})
 export const sqlDatabaseSchema=z.object({sourceServer:name,instanceName:instance,sourceDatabase:name})
 const reportedDatabase=sqlDatabaseSchema.extend({instanceName:instance.nullish().transform(value=>value??'')})
 export type SqlDatabase=z.infer<typeof sqlDatabaseSchema>
-export const sqlIntentSchema=z.enum(['restore','publish','instant','export','exportPublished'])
+export const sqlIntentSchema=z.enum(['restore','publish','instant','export','exportFiles','exportPublished'])
 export type SqlIntent=z.infer<typeof sqlIntentSchema>
 type Intent=SqlIntent
 const filePaths=z.object({primaryFile:text,secondaryFiles:z.array(text).max(1024),blobFolders:z.array(text).max(1024)})
@@ -36,7 +36,7 @@ export const sqlStepDataSchema=z.object({
   machineName:name.optional(),instanceName:instance.optional(),username:name.optional(),password:z.string().min(1).max(4096).optional(),
   auth:z.enum(['windows','sql']).optional(),targetNames:z.array(name).max(128).optional(),targetFiles:z.array(filePaths.nullable()).max(128).optional(),
   recoveryState:z.enum(['Recovery','NoRecovery','StandBy']).optional(),standbyFilePath:text.optional(),availabilityGroupName:name.optional(),
-  restoreToDate:date.optional(),restoreBeforeLsn:z.string().min(1).max(128).regex(/^[0-9a-fA-F:]+$/).optional(),
+  restoreToDate:date.optional(),restoreBeforeLsn:z.string().min(1).max(128).regex(/^[0-9a-fA-F]+(?:[ :][0-9a-fA-F]+)*$/).optional(),
   dateTime:date.optional(),direction:z.enum(['Before','After']).optional(),skip:z.number().int().min(0).max(1000000).optional(),
   limit:z.number().int().min(1).max(200).optional(),fileType:z.enum(['SqlFiles','AllFiles']).optional(),parentPath:text.optional(),targetPath:text.optional(),
 }).strict()
@@ -45,7 +45,7 @@ type Settings=z.infer<typeof sqlFinalSettingsSchema>
 const base='/private-api/v1'
 const validation=base+'/validations/applicationItems/vesql/'
 const taskRoot=base+'/validations/applicationItems/tasks/'
-const intentPath:Record<Intent,string>={restore:'restore',instant:'instantRecovery',publish:'publish',export:'export',exportPublished:'exportPublishedDatabase'}
+const intentPath:Record<Intent,string>={restore:'restore',instant:'instantRecovery',publish:'publish',export:'export',exportFiles:'export',exportPublished:'exportPublishedDatabase'}
 const actionPath=(intent:Intent,id:string)=>base+'/'+intentPath[intent]+'/applicationItems/vesql/'+guid.parse(id)
 const bad=(message:string,status=400)=>new VbrRecoveryError(message,status)
 function post(send:RecoverySend,path:string,body?:unknown) {
@@ -72,7 +72,7 @@ export async function initSqlAction(send:RecoverySend,sessionId:string,intent:In
     databasesToExport:publishedJobs(publishJobIds).map(publishJobId=>({publishJobId})),
   }))
   const dbs=selected(databases)
-  const payload=intent==='export'?{databasesToExport:dbs.map(database=>({database,toBakFile:true}))}:
+  const payload=intent==='export'||intent==='exportFiles'?{databasesToExport:dbs.map(database=>({database,toBakFile:intent==='export'}))}:
     intent==='restore'?{databasesToRestore:dbs}:{databases:dbs}
   return accepted(await post(send,actionPath(intent,sessionId)+'/init',payload))
 }
@@ -81,7 +81,7 @@ function stepAllowed(intent:Intent,step:SqlStep) {
   if(requiredSqlChecks(intent,{pointInTime:true}).includes(step))return true
   if(intent==='exportPublished')return step==='fileSystem'||step==='exportDefaultCompressionSetting'
   if(step==='transactions'||step==='fineTuning'||step==='fileSystem')return true
-  if(intent==='export')return step==='exportDefaultCompressionSetting'
+  if(intent==='export'||intent==='exportFiles')return intent==='export'&&step==='exportDefaultCompressionSetting'
   return step==='targetInstances'||step==='availabilityGroups'||step==='replicaNodes'
 }
 const segments:Partial<Record<SqlStep,string>>={fineTuning:'fineTuning/validation',transactions:'fineTuning/transactions'}
@@ -160,10 +160,11 @@ function scheduleSpec(settings:Settings) {
 export async function submitSqlAction(send:RecoverySend,workflowId:string,intent:Intent,databases:SqlDatabase[],input:Settings,publishJobIds?:string[]) {
   const settings=sqlFinalSettingsSchema.parse(input),dbs=intent==='exportPublished'?databases.map(db=>sqlDatabaseSchema.parse(db)):selected(databases)
   const restoreSettings=dbs.map(database=>({database,allowTargetDatabaseOverwrite:settings.overwrite===true}))
+  if(intent==='exportFiles' && settings.compression && settings.compression!=='Default')throw bad('Compression applies only to a SQL backup file.')
   const bakCompression=settings.compression??'Default'
   const body=intent==='restore'?{restoreSettings}:intent==='publish'?{publishSettings:restoreSettings}:
     intent==='instant'?{settings:restoreSettings.map(item=>({...item,scheduleSpec:scheduleSpec(settings)}))}:
-    intent==='export'?{exportSettings:dbs.map(database=>({database,bakCompression}))}:
+    intent==='export'||intent==='exportFiles'?{exportSettings:dbs.map(database=>({database,bakCompression}))}:
     {exportSettings:publishedJobs(publishJobIds).map(publishJobId=>({publishJobId,bakCompression}))}
   const raw=await post(send,actionPath(intent,workflowId)+'/start',body)
   const ack=z.object({sourceDatabaseToJobs:z.array(z.object({database:reportedDatabase,jobId:guid})).min(1).max(128)}).safeParse(raw)

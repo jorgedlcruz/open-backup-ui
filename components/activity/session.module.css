@@ -17,6 +17,7 @@
 .properties {padding:.75rem 0 1rem}.recovery + .recovery {margin-top:1.25rem}
 .child {padding:.85rem 0;border-bottom:1px solid var(--border)}.child span:first-of-type {flex:1}.related {margin-inline-start:.75rem}
 .filePanel[hidden],.inset[hidden] {display:none}
+.childSessions:not(:first-child) {margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
 .mapStatus,.mapPicker {display:flex;align-items:center;gap:.6rem 1rem;flex-wrap:wrap;font-size:.82rem}
 .mapStatus {margin-top:.65rem;color:var(--muted-foreground)}.mapStatus strong {color:var(--foreground)}
 .mapPicker {margin-bottom:.8rem}.mapPicker select {max-width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:.5rem;background:var(--background);color:var(--foreground)}

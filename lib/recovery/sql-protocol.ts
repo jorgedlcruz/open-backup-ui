@@ -26,11 +26,14 @@ export function sqlOpen<T>(ctx:SqlContext,kind:string,token:string,schema:z.ZodT
 
 const text=z.string().max(4096), identifier=z.union([text,z.number().int().safe()]).transform(String)
 const range=z.object({from:text.nullish(),to:text.nullish()})
+// VESQL serializes an LSN as {value:"VLF offset slot"}. Keep its native
+// precision and whitespace. Older responses can supply a scalar directly.
+const lsn=z.union([text,z.number().int().safe().transform(String),z.object({value:text}).transform(lsn=>lsn.value)])
 const address=z.object({machineName:text.nullish(),instanceName:text.nullish()})
 export const sqlNode=z.object({
   type:z.enum(['SQLServer','SQLInstance','SQLDatabase','SQLDatabaseFile']),id:identifier.nullish(),name:text.nullish(),
-  vmName:text.nullish(),serverName:text.nullish(),allNames:z.array(text).nullish(),instanceId:identifier.nullish(),sqlServerName:address.nullish(),
-  timeRange:range.nullish(),lsnRange:z.object({from:z.union([text,z.number()]).nullish(),to:z.union([text,z.number()]).nullish()}).nullish(),
+  vmName:text.nullish(),serverName:text.nullish(),allNames:z.array(text).nullish(),instanceId:identifier.nullish(),databaseId:identifier.nullish(),sqlServerName:address.nullish(),
+  timeRange:range.nullish(),lsnRange:z.object({from:lsn.nullish(),to:lsn.nullish()}).nullish().catch(undefined),
   fullVersion:text.nullish(),version:z.union([text,z.number()]).nullish(),backupCreated:text.nullish(),guestBackupStartTime:text.nullish(),
   guestBackupEndTime:text.nullish(),previousBackupCreated:text.nullish(),nextBackupCreated:text.nullish(),
   recoveryModel:text.nullish(),isSystem:z.boolean().nullish(),isReadOnly:z.boolean().nullish(),isBackedUp:z.boolean().nullish(),
@@ -68,21 +71,29 @@ export function browsePage(ctx:SqlContext,request:z.infer<typeof pageRequest>,ra
   if(pagination?.skip!=null && pagination.skip!==skip)throw new VbrRecoveryError('VBR returned a different SQL browse page.',502)
   const items:SqlItem[]=[]
   for(const candidate of data) {
+    if(candidate && typeof candidate==='object' && 'type' in candidate && candidate.type!==views[view])throw new VbrRecoveryError('VBR returned a different SQL browse view. Refresh the page.',409)
     const parsed=sqlNode.safeParse(candidate)
-    if(!parsed.success || parsed.data.type!==views[view])continue
+    if(!parsed.success)throw new VbrRecoveryError('VBR returned an unreadable SQL browse item.',502)
     const n=parsed.data
     if(view==='instances' && parent && (n.serverName
       ? !parent.serverNames?.some(host=>host.toLowerCase()===n.serverName?.toLowerCase())
       : !parent.sole))continue
-    if(view==='databases' && n.instanceId && n.instanceId!==parent?.id)continue
+    if(view==='databases') {
+      const matches=n.instanceId ? n.instanceId===parent?.id : !!n.sqlServerName?.machineName && !!parent?.sourceServer &&
+        (parent.serverNames??[parent.sourceServer]).some(alias=>alias.toLowerCase()===n.sqlServerName?.machineName?.toLowerCase()) &&
+        (n.sqlServerName.instanceName??'').toLowerCase()===(parent.instanceName??'').toLowerCase()
+      if(!matches)throw new VbrRecoveryError('VBR returned a database for a different SQL instance. Refresh the page.',409)
+    }
+    if(view==='files' && n.databaseId && n.databaseId!==parent?.id)throw new VbrRecoveryError('VBR returned files for a different database. Refresh the page.',409)
     const binding:SqlGrant={sessionId,type:n.type,id:n.id,name:n.name}
     if(view==='servers') {binding.serverNames=[...new Set([n.name,n.vmName,...n.allNames||[]].filter((v):v is string=>!!v))]
       binding.sole=skip===0 && pagination?.total===1 && data.length===1;binding.sourceServer=n.name||undefined}
-    if(view==='instances') {binding.sourceServer=n.serverName || parent?.sourceServer;binding.instanceName=n.name ?? ''}
+    if(view==='instances') {binding.sourceServer=n.serverName || parent?.sourceServer;binding.serverNames=parent?.serverNames;binding.instanceName=n.name ?? ''}
     if(view==='databases') {binding.sourceServer=n.sqlServerName?.machineName || parent?.sourceServer
       binding.instanceName=n.sqlServerName?.instanceName ?? parent?.instanceName;binding.timeRange=n.timeRange}
     items.push({...n,...(view!=='files'&&{key:sqlSeal(ctx,'item',binding)})})
   }
   const total=pagination?.total??null,next=skip+data.length
+  if(total!==null && next<total && !data.length)throw new VbrRecoveryError('VBR returned an incomplete SQL browse page. Refresh the page.',409)
   return {items,total,skip,limit,...(data.length && (total===null ? data.length>=limit : next<total) ? {nextSkip:next} : {})}
 }

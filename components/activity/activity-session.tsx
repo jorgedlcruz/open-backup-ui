@@ -263,6 +263,9 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const status = mounts[0]?.state ?? (filesUnmounted && !jobDone ? 'Unmounted' : session ? recordStatus(session) : undefined)
   const child = data?.children
   const directory = data?.appExplorer
+  // An Explorer mount is interactive. Its VBR session can sit at 0% for its entire lifetime.
+  const showTransfer = !directory || !!data?.throughput?.samples.length
+  const showChildSessions = child && (!directory || child.data.length > 0 || !child.available || !child.complete)
   const providerName = directory?.kind==='sql' ? t('Microsoft SQL Server') : t('Active Directory')
   const directoryOpen = directory && !directory.closed && !jobDone
   async function resumeExplorer() {
@@ -356,11 +359,11 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
               !readyToBrowse && latest?.startTime && <time>{date(latest.updateTime || latest.startTime)}</time>}</div>
           {readyToBrowse && activeTab !== 'files' && <Button size="sm" onClick={() => {selectTab('files'); filesTab.current?.focus()}}>
             <FolderOpen size={16}/>{t('Browse guest files')}</Button>}
-          <SessionSpeedChart key={data.sourceKey + (childState && data.instantMigration ? data.instantMigration.id : id)}
+          {showTransfer && <SessionSpeedChart key={data.sourceKey + (childState && data.instantMigration ? data.instantMigration.id : id)}
             history={childState ? data.migrationThroughput : data.throughput}
             preferDisk={!!data.entireRestore && !childState}
-            running={childState ? migrationPending : !!session && !jobDone}/>
-          {(childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
+            running={childState ? migrationPending : !!session && !jobDone}/>}
+          {!directory && (childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
         </div>
         {!!facts.length && <dl className={styles.facts}>{facts.map(([key,value]) => <div key={String(key)}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>}
         {session?.result?.message && session.result.message !== latest?.title && !['Success','None'].includes(session.result.message) && <p className={investigation.message}>{session.result.message}</p>}
@@ -405,10 +408,10 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
               <Button disabled={resuming} onClick={()=>void resumeExplorer()}><FolderOpen size={15}/>{t('Open')} · {providerName}</Button>{resumeError && <p role="alert">{notice(resumeError)}</p>}
             </div> : directory.kind==='sql' ? <SqlExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/> : <ActiveDirectoryExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/>)}
             {directory?.kind==='sql' && !directoryOpen && !directory.needsResume && !error && <SqlExplorer key={data.sourceKey+id+'-operations'} sourceKey={data.sourceKey} sessionId={id} operationsOnly onOperation={refresh}/>}
-            {child && <><h2>{t('Application item restores')}</h2>
+            {showChildSessions && <section className={styles.childSessions}><h2>{t('Application item restores')}</h2>
             {child.data.map(s => <Link className={styles.child} key={s.id} href={link(s.id)}><Files size={17}/><span>{s.name || s.id}</span><Status value={recordStatus(s)}/><ArrowUpRight size={15}/></Link>)}
-            {!child.available ? <p>{t('Application item sessions could not be loaded.')}</p> : !child.data.length ? <p>{t('No application item restores have been reported.')}</p> : !child.complete && <p>{t('Partial collection')}</p>}
-            </>}
+            {!child.available ? <p>{t('Application item sessions could not be loaded.')}</p> : !child.complete ? <p>{t('Partial collection')}</p> : !child.data.length && <p>{t('No application item restores have been reported.')}</p>}
+            </section>}
           </TabsContent>}
         </Tabs>
         {isFile && !fileMount && !data.mountWarnings.includes('flr') && <p className={styles.note}>{jobDone || filesUnmounted ? t('This session has no active guest file mount.') : t('Guest files become available when VBR reports a mount.')}</p>}

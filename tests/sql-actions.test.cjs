@@ -20,6 +20,9 @@ test('initialization uses server-issued source identity and the exact native ope
     assert.equal(await initSqlAction(h.send,browse,intent,[db]),flow);assert.deepEqual(h.calls,[{path:url,options:{method:'POST',mutation:true,body}}])
   }
   const h=mock()
+  h.replies.set(root('export',browse)+'/init',{id:flow})
+  await initSqlAction(h.send,browse,'exportFiles',[db])
+  assert.deepEqual(h.calls.pop().options.body,{databasesToExport:[{database:db,toBakFile:false}]})
   await assert.rejects(initSqlAction(h.send,browse,'restore',[db,db]),/once/)
   assert.equal(h.calls.length,0)
   h.replies.set(root('publish',browse)+'/initPublishedDatabaseExport',{id:flow})
@@ -74,6 +77,7 @@ test('submit is never replayed when acknowledgement is ambiguous, uses explicit 
     ['publish','publish',{overwrite:true},{publishSettings:[{database:db,allowTargetDatabaseOverwrite:true}]}],
     ['instant','instantRecovery',{schedule:'ScheduledAt',scheduledAt:'2026-12-01T12:34:00Z'},{settings:[{database:db,allowTargetDatabaseOverwrite:false,scheduleSpec:{scheduleType:'ScheduledAt',switchDateTime:'2026-12-01T12:34:00Z'}}]}],
     ['export','export',{compression:'WithCompression'},{exportSettings:[{database:db,bakCompression:'WithCompression'}]}],
+    ['exportFiles','export',{}, {exportSettings:[{database:db,bakCompression:'Default'}]}],
     ['exportPublished','exportPublishedDatabase',{}, {exportSettings:[{publishJobId:job,bakCompression:'Default'}]}],
   ]){
     const h=mock(),path=root(group,flow)+'/start';h.replies.set(path,ack)
@@ -99,4 +103,6 @@ test('mounted SQL jobs target the exact permanent session and job; validation ca
   assert.ok(requiredSqlChecks('export',{pointInTime:true}).includes('stagingServerFreeSpaceForExport'))
   assert.ok(!requiredSqlChecks('export',{}).includes('stagingServerFreeSpaceForExport'))
   assert.ok(!requiredSqlChecks('exportPublished',{}).includes('exportPointInTime'))
+  assert.deepEqual(requiredSqlChecks('exportFiles',{}),['exportPointInTime','mountAccess','exportTargetWindowsServer','exportTargetPath'])
+  assert.ok(requiredSqlChecks('exportFiles',{pointInTime:true}).includes('stagingServerFreeSpaceForExport'))
 })
