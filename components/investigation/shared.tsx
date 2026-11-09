@@ -71,9 +71,9 @@ export function useRefresh() {
   useEffect(() => { const timer = setInterval(() => { if (!document.hidden) setRevision(n => n + 1) }, 60000); return () => clearInterval(timer) }, [])
   return { revision, refresh: () => setRevision(n => n + 1) }
 }
-export function LogViewer({ logs, title, id }: { logs: Logs; title: string; id: string }) {
+export function LogViewer({ logs, title, id, newestFirst = false }: { logs: Logs; title: string; id: string; newestFirst?: boolean }) {
   const { t, formatNumber, date, notice } = useInvestigationPresentation()
-  const [query, setQuery] = useState(''), [filter, setFilter] = useState('all'), [order, setOrder] = useState('oldest'), [page, setPage] = useState(0)
+  const [query, setQuery] = useState(''), [filter, setFilter] = useState('all'), [order, setOrder] = useState(newestFirst ? 'newest' : 'oldest'), [page, setPage] = useState(0)
   const rows = logs.data.filter(row => (filter === 'all' || (filter === 'issues' ? ['Failed', 'Warning'].includes(row.status || '') : row.status === filter)) &&
     [row.title, row.description, ...(row.additionalInfo || []).flatMap(info => [info.field, info.data])].join(' ').toLowerCase().includes(query.toLowerCase()))
     .map((row, index) => ({ ...row, key: index })).sort((a, b) => {

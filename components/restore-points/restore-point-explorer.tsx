@@ -1,7 +1,9 @@
 "use client"
 import { useRecoveryPresentation } from './use-presentation'
 import { RestoreWorkflow } from './restore-workflow'
+import { RecoveryHandoff } from './preparing-recovery'
 import { isRestoreOperation, type RestoreOperation } from '@/lib/restore-points/workflow'
+import type { RestoreLaunch } from '@/lib/restore-points/launch'
 import workflow from './workflow.module.css'
 
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -16,10 +18,22 @@ import { VBRRestorePointsTable } from '@/components/vbr-restore-points-table'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { enrichPoints,fileAccounting,isFlagged,pointTime,recoveryReadiness,usableId,type RestorePointSnapshot } from '@/lib/restore-points/model'
 import { cn } from '@/lib/utils'
-import { ArrowLeft,ArrowUpRight,CalendarDays,CheckCircle2,CircleHelp,Clock3,Database,FileStack,HardDrive,Layers3,List,Loader2,LockKeyhole,RefreshCw,Search,ShieldCheck,TriangleAlert } from 'lucide-react'
+import { ArrowLeft,ArrowUpRight,CalendarDays,CheckCircle2,CircleHelp,Clock3,Cloud,Database,FileStack,FolderOpen,HardDrive,HardDriveUpload,Layers3,List,Loader2,LockKeyhole,MonitorUp,MonitorPlay,RefreshCw,RotateCcw,Search,Server,ShieldCheck,TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect,useMemo,useState,type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect,useMemo,useState,useTransition,type ReactNode } from 'react'
 import styles from './restore-points.module.css'
+
+const recoveryIcons = {
+  StartViVMInstantRecovery: MonitorPlay,
+  StartHvVMInstantRecovery: MonitorUp,
+  StartEntireVmRestore: RotateCcw,
+  StartEntireVmRestoreHyperV: Server,
+  StartEntireVmRestoreCloudDirector: Cloud,
+  StartFCDInstantRecovery: HardDrive,
+  StartFlrRestore: FolderOpen,
+  StartDiskPublish: HardDriveUpload,
+} satisfies Record<RestoreOperation, typeof HardDrive>
 
 export function MalwareBadge({ value, fileFlagged = false }: { value?: string | null; fileFlagged?: boolean }) {
   const { t, label } = useRecoveryPresentation()
@@ -48,7 +62,15 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [operation, setOperation] = useState<RestoreOperation | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const router = useRouter()
+  const [navigating, startTransition] = useTransition()
+  const [handoff, setHandoff] = useState<RestoreLaunch>()
+  function openActivity(receipt: RestoreLaunch) {
+    setHandoff(receipt)
+    setSelectedId(null)
+    setOperation(null)
+    startTransition(() => router.push('/vbr/activity/preparing?' + new URLSearchParams({request: receipt.requestId})))
+  }
   function inspectPoint(id: string) {
     setOperation(null);
     setSelectedId(id);
@@ -82,6 +104,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const oldest = [...rows].reverse().find(row => pointTime(row.point) !== null && pointTime(row.point)! <= Date.parse(data?.fetchedAt || ''));
   const partialStorage = !data?.pointsComplete || accounting.unmatched > 0 || accounting.physical.unknown > 0;
 
+  if (navigating && handoff) return <RecoveryHandoff receipt={handoff} />
   return <div className={cn(ops.console, styles.explorer)}>
     <Link href="/vbr/protected-data" className={styles.back}><ArrowLeft size={14} />{t("Protected data")}</Link>
     <header className={ops.header}>
@@ -140,28 +163,33 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
       </div>
       <footer className={ops.footer}><span><Database size={12} />{t('VBR · {source} · snapshot {date}', { source: data.sourceName, date: date(data.fetchedAt) })}</span></footer>
     </>}
-    <Dialog open={!!selected} onOpenChange={open => { if (!open && !submitting) setSelectedId(null); }}><DialogContent showCloseButton={!submitting} className={styles.dialog}>
+    <Dialog open={!!selected} onOpenChange={open => { if (!open) setSelectedId(null); }}><DialogContent className={styles.dialog}>
       {selected && <><DialogHeader><DialogTitle>{operation ? label(operation) : t("Restore point")}</DialogTitle><DialogDescription>{selected.point.name || title} · {date(selected.point.creationTime)}</DialogDescription></DialogHeader>
         <div className={styles.detailBadges}><span className={ops.badge}>{label(selected.type)}</span><MalwareBadge value={selected.point.malwareStatus} fileFlagged={isFlagged(selected.file?.severity)} />{selected.gfs.map(flag => <span className={ops.badge} key={flag}>{label(flag)}</span>)}</div>
         {selected.flagged && <div className={styles.securityNotice}><TriangleAlert size={18} />{t("Review the reported threat and scan evidence before choosing this point.")}</div>}
-        {operation ? <RestoreWorkflow key={selected.point.id + operation} point={selected.point} flagged={selected.flagged} sourceKey={data?.sourceKey} operation={operation} onBack={() => setOperation(null)} onBusy={setSubmitting} /> : <>
+        {operation ? <RestoreWorkflow key={selected.point.id + operation} point={selected.point} flagged={selected.flagged} sourceKey={data?.sourceKey} operation={operation} onBack={() => setOperation(null)} onLaunch={openActivity} /> : <>
+        <dl className={cn(styles.detailGrid, workflow.primaryEvidence)} aria-label={t('Recovery point evidence')}>
+          <div><dt>{t("Job / backup")}</dt><dd>{usableId(selected.backup?.jobId) ? <Link href={`/vbr/jobs/${encodeURIComponent(selected.backup.jobId)}`}>{selected.backup.name || selected.backup.jobId}</Link> : selected.backup?.name || t("Unknown")}</dd></div>
+          <div><dt>{t("Repository")}</dt><dd>{usableId(selected.backup?.repositoryId) ? <Link href={`/vbr/infrastructure/repositories/${encodeURIComponent(selected.backup.repositoryId)}`}>{selected.backup.repositoryName || selected.backup.repositoryId}</Link> : t("Unknown")}</dd></div>
+          <div className={workflow.fullWidth}><dt>{t("File path")}</dt><dd>{selected.file?.name || t("Unknown")}</dd></div>
+          <div><dt>{t("Original workload size")}</dt><dd>{size(selected.point.originalSize)}</dd></div>
+          <div><dt>{t("Whole-file stored size")}</dt><dd>{size(selected.file?.backupSize)}</dd></div>
+        </dl>
         <section className={styles.detailSection}><h3>{t("Available recovery operations")}</h3>
-          {selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={workflow.operations}>{[...new Set(selected.point.allowedOperations)].map(item => <li key={item}>
-            {isRestoreOperation(item) ? <button type="button" onClick={() => setOperation(item)}>{label(item)}<ArrowUpRight size={15} /></button> : <span>{label(item)} · {t('Available in VBR')}</span>}
-          </li>)}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
+          {selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={workflow.operations}>{[...new Set(selected.point.allowedOperations)].map(item => {
+            if (!isRestoreOperation(item)) return <li key={item}><span>{label(item)} · {t('Available in VBR')}</span></li>
+            const Icon = recoveryIcons[item]
+            return <li key={item}><button type="button" onClick={() => setOperation(item)}><Icon size={16} aria-hidden="true" />{label(item)}</button></li>
+          })}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
         </section>
-        <details className={workflow.evidence}><summary>{t("Recovery point evidence")}</summary>
-        <dl className={styles.detailGrid}>
+        <section className={styles.detailSection}><h3>{t("Recovery point evidence")}</h3><dl className={styles.detailGrid}>
           <div><dt>{t("Type evidence")}</dt><dd>{label(selected.typeSource)}</dd></div><div><dt>{t("GFS flags")}</dt><dd>{selected.gfs.length ? selected.gfs.map(label).join(', ') : selected.gfsSource === 'Not reported' ? t("Unknown") : t("None reported")}<small>{label(selected.gfsSource)}</small></dd></div>
           <div><dt>{t("Point malware status")}</dt><dd>{selected.point.malwareStatus ? label(selected.point.malwareStatus) : t("Unknown")}<small>{t("Scan time and provenance not reported")}</small></dd></div><div><dt>{t("File malware status")}</dt><dd>{selected.file?.severity ? label(selected.file.severity) : t("Unknown")}</dd></div>
-          <div><dt>{t("Repository")}</dt><dd>{usableId(selected.backup?.repositoryId) ? <Link className="hover:underline" href={`/vbr/infrastructure/repositories/${encodeURIComponent(selected.backup.repositoryId)}`}>{selected.backup.repositoryName || selected.backup.repositoryId}</Link> : t("Unknown")}</dd></div><div><dt>{t("Job / backup")}</dt><dd>{selected.backup?.name || t("Unknown")}</dd></div>
-          <div><dt>{t("Original workload size")}</dt><dd>{size(selected.point.originalSize)}</dd></div><div><dt>{t("Whole-file stored size")}</dt><dd>{size(selected.file?.backupSize)}</dd></div>
           <div><dt>{t("Whole-file data size")}</dt><dd>{size(selected.file?.dataSize)}</dd></div><div><dt>{t("Workloads sharing this file")}</dt><dd>{selected.file?.objectIds ? formatNumber(selected.file.objectIds.length) : t("Unknown")}</dd></div>
           <div><dt>{t("File mapping")}</dt><dd>{selected.mapping === 'confirmed' ? usableId(selected.point.backupFileId) ? t("Direct backup-file ID") : t("File restore-point membership") : selected.mapping === 'ambiguous' ? t("Conflicting / ambiguous evidence") : t("Unknown")}</dd></div><div><dt>{t("Recovery test / immutable-until")}</dt><dd>{t("Unknown")}</dd></div>
-        </dl>
-        <section className={styles.detailSection}><h3>{t("Source identifiers")}</h3><dl className={styles.identifiers}><dt>{t("Restore point")}</dt><dd>{selected.point.id}</dd><dt>{t("Backup")}</dt><dd>{selected.point.backupId}</dd><dt>{t("Backup file")}</dt><dd>{selected.file?.id || selected.point.backupFileId || t("Unknown")}</dd><dt>{t("Session")}</dt><dd>{usableId(selected.point.sessionId) ? <Link href={`/vbr/sessions/${selected.point.sessionId}`}>{t("Investigate session ↗")}</Link> : t("Unknown")}</dd><dt>{t("File path")}</dt><dd>{selected.file?.name || t("Unknown")}</dd></dl></section>
-        {usableId(selected.backup?.jobId) && <Button asChild variant="outline"><Link href={`/vbr/jobs/${encodeURIComponent(selected.backup.jobId)}`}>{t("Inspect source job")}<ArrowUpRight size={14} /></Link></Button>}
-        </details></>}
+        </dl></section>
+        <section className={styles.detailSection}><h3>{t("Source identifiers")}</h3><dl className={styles.identifiers}><dt>{t("Restore point")}</dt><dd>{selected.point.id}</dd><dt>{t("Backup")}</dt><dd>{selected.point.backupId}</dd><dt>{t("Backup file")}</dt><dd>{selected.file?.id || selected.point.backupFileId || t("Unknown")}</dd><dt>{t("Session")}</dt><dd>{usableId(selected.point.sessionId) ? <Link href={`/vbr/sessions/${selected.point.sessionId}`}>{t("Investigate session ↗")}</Link> : t("Unknown")}</dd></dl></section>
+        </>}
       </>}
     </DialogContent></Dialog>
   </div>;

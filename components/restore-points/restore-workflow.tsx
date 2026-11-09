@@ -1,24 +1,23 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { isFlagged, type RestorePoint } from '@/lib/restore-points/model'
-import { restoreActivityUrl, uncertainRestore, type InventoryKind, type RestoreDraft, type RestoreInventoryItem, type RestoreOperation, type RestoreOptions, type RestoreResult, type RestoreTarget } from '@/lib/restore-points/workflow'
+import { beginRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import type { InventoryKind, RestoreDraft, RestoreInventoryItem, RestoreOperation, RestoreOptions, RestoreTarget } from '@/lib/restore-points/workflow'
 import { useRecoveryPresentation } from './use-presentation'
 import { TargetPicker } from './target-picker'
-import { GuestFileBrowser } from './guest-file-browser'
 import styles from './workflow.module.css'
 
 function Check({ label, value, onChange }: { label: string; value: boolean; onChange: (next: boolean) => void }) {
   return <label className={styles.check}><input type="checkbox" checked={value} onChange={event => onChange(event.target.checked)} />{label}</label>
 }
 
-export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, onBusy }: {
-  point: RestorePoint; flagged: boolean; sourceKey?: string; operation: RestoreOperation; onBack: () => void; onBusy: (value: boolean) => void
+export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, onLaunch }: {
+  point: RestorePoint; flagged: boolean; sourceKey?: string; operation: RestoreOperation; onBack: () => void; onLaunch: (receipt: RestoreLaunch) => void
 }) {
   const { t, diagnostic, label } = useRecoveryPresentation()
   const [options, setOptions] = useState<RestoreOptions>()
@@ -40,7 +39,7 @@ export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, 
   if (options) return <>
     {!flagged && isFlagged(options.point.malwareStatus) && <p className={styles.warning} role="alert"><ShieldAlert size={17} />{t('Point malware status')} · {label(options.point.malwareStatus!)}</p>}
     {!!options.warnings?.length && <div role="status">{options.warnings.map(warning => <p key={warning} className={styles.warning}>{diagnostic(warning)}</p>)}</div>}
-    <RestoreForm point={point} flagged={flagged || isFlagged(options.point.malwareStatus)} options={options} operation={operation} onBack={onBack} onBusy={onBusy} />
+    <RestoreForm point={point} flagged={flagged || isFlagged(options.point.malwareStatus)} options={options} operation={operation} onBack={onBack} onLaunch={onLaunch} />
   </>
   return <div className={styles.flow}>
     {error ? <p role="alert" className={styles.error}>{diagnostic(error)}</p> : <p className={styles.status} role="status"><Loader2 className="animate-spin" size={16} />{t('Loading recovery options…')}</p>}
@@ -49,10 +48,10 @@ export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, 
   </div>
 }
 
-function RestoreForm({ point, flagged, options, operation, onBack, onBusy }: {
-  point: RestorePoint; flagged: boolean; options: RestoreOptions; operation: RestoreOperation; onBack: () => void; onBusy: (value: boolean) => void
+function RestoreForm({ point, flagged, options, operation, onBack, onLaunch }: {
+  point: RestorePoint; flagged: boolean; options: RestoreOptions; operation: RestoreOperation; onBack: () => void; onLaunch: (receipt: RestoreLaunch) => void
 }) {
-  const { t, label, diagnostic } = useRecoveryPresentation()
+  const { t, label } = useRecoveryPresentation()
   const flr = operation === 'StartFlrRestore'
   const fcd = operation === 'StartFCDInstantRecovery'
   const publish = operation === 'StartDiskPublish'
@@ -88,10 +87,6 @@ function RestoreForm({ point, flagged, options, operation, onBack, onBusy }: {
   const canOverwrite = instantVi || fullVi || (hyperV && custom)
   const canRestoreTags = (instantVi && !crossPlatform) || (fullVi && custom)
   const [review, setReview] = useState(false)
-  const [result, setResult] = useState<RestoreResult>()
-  const [error, setError] = useState('')
-  const [uncertain, setUncertain] = useState(false)
-  const [busy, setBusy] = useState(false)
   const lock = useRef(false)
   const ipList = ips.trim().split(/[\s,]+/).filter(Boolean)
   const validTarget = !vm || !custom || (!!target.host && !!target.vmName?.trim() && (!fullVi || !!target.folder))
@@ -107,14 +102,11 @@ function RestoreForm({ point, flagged, options, operation, onBack, onBusy }: {
   function changeDisk(uid: string, field: 'mountedName' | 'registeredName', value: string) {
     setDisks(previous => previous.map(disk => disk.uid === uid ? { ...disk, [field]: value } : disk))
   }
-  async function submit(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault()
-    if (!valid || lock.current || uncertain) return
-    if (!review) { setReview(true); setError(''); return }
+    if (!valid || lock.current) return
+    if (!review) { setReview(true); return }
     lock.current = true
-    setBusy(true)
-    onBusy(true)
-    setError('')
     const draft: RestoreDraft = {
       sourceKey: options.sourceKey, restorePointId: point.id, backupId: point.backupId, operation,
       mode: custom ? 'Customized' : 'OriginalLocation', reason: reason.trim() || undefined,
@@ -130,25 +122,8 @@ function RestoreForm({ point, flagged, options, operation, onBack, onBusy }: {
       ...(flr && { guestOs, mountServerId: mountServer || undefined, credentialsId: credentialsId || undefined }),
       ...(publish && { allowedIps: ipList, disks: allDisks ? undefined : disks }),
     }
-    try {
-      setResult(await veeamApi.startRestore(draft))
-    } catch (err) {
-      setUncertain(uncertainRestore(err))
-      setError(err instanceof Error ? err.message : t('Recovery request failed.'))
-    } finally {
-      setBusy(false)
-      onBusy(false)
-      lock.current = false
-    }
+    onLaunch(beginRestoreLaunch(draft, options.point.name || point.name || point.id, point.creationTime || undefined, value => veeamApi.startRestore(value)))
   }
-
-  if (result) return <div className={styles.flow}>
-    <h3 className={styles.success} role="status"><CheckCircle2 size={22} />{t('Recovery requested')}</h3>
-    {result.id && <p className={styles.session}>{t('Session')} · {result.id}</p>}
-    {result.mountErrors?.map((issue, index) => <p className={styles.error} key={index}>{issue.type} · {issue.message}</p>)}
-    {flr && result.id && <GuestFileBrowser sessionId={result.id} sourceKey={options.sourceKey} />}
-    <div className={styles.actions}><Button asChild><Link href={restoreActivityUrl(result.id)}>{t('View activity')}<ArrowRight size={15} /></Link></Button></div>
-  </div>
 
   return <form className={styles.flow} onSubmit={submit}>
     {!review ? <>
@@ -237,12 +212,9 @@ function RestoreForm({ point, flagged, options, operation, onBack, onBusy }: {
       </dl>
       {(full && !custom || canOverwrite && overwrite) && <p className={styles.warning}><ShieldAlert size={17} />{t('This recovery can replace the existing VM.')}</p>}
     </>}
-    {error && <p role="alert" className={styles.error}>{diagnostic(error)}</p>}
-    {uncertain && <p>{t('Check Activity before submitting another request.')}</p>}
     <div className={styles.actions}>
-      <Button variant="outline" type="button" disabled={busy} onClick={() => { if (review && !uncertain) { setReview(false); setError('') } else onBack() }}><ArrowLeft size={14} />{t('Back')}</Button>
-      {uncertain ? <Button asChild><Link href={restoreActivityUrl()}>{t('View activity')}</Link></Button>
-        : <Button type="submit" disabled={!valid || busy}>{busy && <Loader2 size={15} className="animate-spin" />}{review ? label(operation) : t('Review')}<ArrowRight size={14} /></Button>}
+      <Button variant="outline" type="button" onClick={() => { if (review) setReview(false); else onBack() }}><ArrowLeft size={14} />{t('Back')}</Button>
+      <Button type="submit" disabled={!valid}>{review ? label(operation) : t('Review')}<ArrowRight size={14} /></Button>
     </div>
   </form>
 }

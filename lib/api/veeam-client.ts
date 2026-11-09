@@ -1,5 +1,6 @@
 // Veeam Backup & Replication API Client
 // This client now uses Next.js API routes to avoid CORS issues
+import { applicationRequest, ApplicationRequestError } from './application-request';
 
 import {
   VeeamBackupJob,
@@ -56,7 +57,7 @@ import {
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
-import type { GuestDirectory, GuestRestoreRequest, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
+import type { GuestDirectory, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
 
 interface TokenResponse {
   access_token: string;
@@ -88,6 +89,24 @@ export class VeeamApiClient {
   private vbmAuthDebouncer = new AuthDebouncer<string>(3000); // Cache auth for 3 seconds
 
   private serverHeaders: Record<string, string> = {};
+
+  // Saved sources and sign-in cookies authenticate on the server. Environment
+  // sessions may instead use the browser's existing VBR bearer after a restore.
+  public async requestActivity<T>(path: string, init: RequestInit = {}): Promise<T> {
+    if (!/^\/api\/vbr\/activity(?:$|[/?])/.test(path)) throw new Error('Invalid Activity path.');
+    const send = (token?: string) => {
+      const headers = new Headers(init.headers);
+      if (token) headers.set('Authorization', 'Bearer ' + token);
+      return applicationRequest<T>(path, { ...init, headers });
+    };
+    if (this.token) return send(await this.authenticate());
+    try { return await send(); }
+    catch (error) {
+      if ((init.method || 'GET') !== 'GET' || !(error instanceof ApplicationRequestError) ||
+        error.kind !== 'response' || error.status !== 401 || init.signal?.aborted) throw error;
+      return send(await this.authenticate());
+    }
+  }
 
   public setServerHeaders(headers: Record<string, string>) {
     this.serverHeaders = headers;
@@ -227,7 +246,7 @@ export class VeeamApiClient {
 
       if (!response.ok) {
         const errorMessage = data.error || data.message || `API request failed: ${response.status} ${response.statusText}`;
-        throw Object.assign(new Error(errorMessage), { uncertain: data.uncertain === true });
+        throw Object.assign(new Error(errorMessage), { uncertain: typeof data.uncertain === 'boolean' ? data.uncertain : response.status >= 500 });
       }
       return data as T;
     }
@@ -235,7 +254,7 @@ export class VeeamApiClient {
     // Handle Text/HTML responses
     const text = await response.text();
     if (!response.ok) {
-      throw new Error(text || `API request failed: ${response.status} ${response.statusText}`);
+      throw Object.assign(new Error(text || `API request failed: ${response.status} ${response.statusText}`), { uncertain: response.status >= 500 });
     }
     return text as unknown as T;
   }
@@ -295,8 +314,9 @@ export class VeeamApiClient {
     return this.request(`/investigation/sessions/${encodeURIComponent(id)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
-  async getTaskInvestigation(sessionId: string, taskId: string, signal?: AbortSignal): Promise<import('@/lib/investigation/model').TaskInvestigation> {
-    return this.request(`/investigation/sessions/${encodeURIComponent(sessionId)}/tasks/${encodeURIComponent(taskId)}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  async getTaskInvestigation(sessionId: string, taskId: string, signal?: AbortSignal, sourceKey?: string): Promise<import('@/lib/investigation/model').TaskInvestigation> {
+    const query = sourceKey ? '?' + new URLSearchParams({sourceKey}) : '';
+    return this.request(`/investigation/sessions/${encodeURIComponent(sessionId)}/tasks/${encodeURIComponent(taskId)}${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
   async getBackupJobs(options?: {
@@ -879,12 +899,54 @@ export class VeeamApiClient {
     return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(draft) });
   }
 
-  browseGuestFiles(sessionId: string, sourceKey: string, path: string | undefined, skip: number, signal?: AbortSignal): Promise<GuestDirectory> {
-    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'browse', sessionId, sourceKey, path, skip }) });
+  browseGuestFiles(sessionId: string, sourceKey: string, path: string | undefined, skip: number, signal?: AbortSignal, foldersOnly?: boolean): Promise<GuestDirectory> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'browse', sessionId, sourceKey, path, skip, foldersOnly }) });
   }
 
   modifyGuestFiles(request: GuestRestoreRequest): Promise<GuestTask> {
     return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(request) });
+  }
+
+  startGuestSearch(sessionId: string, sourceKey: string, path: string, query: string, recursive: boolean): Promise<GuestSearch> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify({ action: 'search', sessionId, sourceKey, path, query, recursive }) });
+  }
+
+  prepareGuestDownload(sessionId: string, sourceKey: string, sourcePaths: string[]): Promise<import('../restore-points/workflow').GuestDownload> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify({ action: 'prepareDownload', sessionId, sourceKey, sourcePaths }) });
+  }
+
+  guestDownloadTask(sessionId: string, sourceKey: string, taskId: string, downloadKey: string, stop: boolean, signal?: AbortSignal): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal,
+      body: JSON.stringify({ action: stop ? 'stopDownload' : 'downloadStatus', sessionId, sourceKey, taskId, downloadKey }) });
+  }
+
+  async streamGuestArchive(sessionId: string, sourceKey: string, taskId: string, downloadKey: string, signal: AbortSignal) {
+    const token = await this.authenticate()
+    const response = await fetch(applicationApiUrl('/api/vbr/restore/files'), {
+      method: 'POST', signal, redirect: 'error', cache: 'no-store',
+      headers: { ...this.serverHeaders, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'streamDownload', sessionId, sourceKey, taskId, downloadKey }),
+    })
+    if (!response.ok || !response.body || response.headers.get('content-type') !== 'application/zip') {
+      const failure = await response.json().catch(() => null)
+      throw new Error(typeof failure?.error === 'string' ? failure.error : 'The ZIP archive could not be downloaded.')
+    }
+    return response.body
+  }
+
+  guestSearchStatus(sessionId: string, sourceKey: string, search: GuestSearch, signal?: AbortSignal): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal,
+      body: JSON.stringify({ action: 'searchStatus', sessionId, sourceKey, taskId: search.id, searchKey: search.searchKey }) });
+  }
+
+  stopGuestSearch(sessionId: string, sourceKey: string, search: GuestSearch): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST',
+      body: JSON.stringify({ action: 'stopSearch', sessionId, sourceKey, taskId: search.id, searchKey: search.searchKey }) });
+  }
+
+  guestSearchResults(sessionId: string, sourceKey: string, search: GuestSearch, skip: number, signal?: AbortSignal): Promise<GuestDirectory> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal,
+      body: JSON.stringify({ action: 'searchResults', sessionId, sourceKey, taskId: search.id, searchKey: search.searchKey, skip }) });
   }
 
   guestCredentials(sessionId: string, sourceKey: string, signal?: AbortSignal): Promise<{ credentials: {id: string; name: string}[] }> {

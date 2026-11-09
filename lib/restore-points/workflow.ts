@@ -66,7 +66,7 @@ export type RestoreDraft = {
   credentialsId?: string
   allowedIps?: string[]
 }
-export type RestoreResult = { id?: string; state?: string; sessionType?: string; mountErrors?: {type: string; message: string}[] }
+export type RestoreResult = { id: string; sourceKey: string; state?: string; sessionType?: string; mountErrors?: {type: string; message: string}[] }
 
 export type GuestFile = { name: string; displayName?: string; location?: string; type: 'Drive' | 'Folder' | 'File' | 'Link'; size?: number }
 export type GuestDirectory = {
@@ -80,6 +80,8 @@ export type GuestRestoreRequest = {
   targetPath?: string; targetHost?: RestoreInventoryItem; credentialsId?: string
 }
 export type GuestTask = { id?: string; state?: string; result?: string; progressPercent?: number }
+export type GuestSearch = GuestTask & { id: string; searchKey: string }
+export type GuestDownload = GuestTask & { id: string; downloadKey: string; count?: number; bearerOnly?: boolean }
 
 export const uncertainRestore = (error: unknown) => error instanceof TypeError ||
   (error instanceof Error && 'uncertain' in error && error.uncertain === true)
@@ -93,6 +95,6 @@ export function guestItemPath(item: GuestFile, directory: GuestDirectory) {
   return parent.endsWith(separator) ? parent + item.name : parent + separator + item.name
 }
 
-export function restoreActivityUrl(sessionId?: string) {
-  return sessionId ? '/vbr/activity?session=' + encodeURIComponent(sessionId) : '/vbr/activity'
+export function restoreActivityUrl(sessionId: string, sourceKey: string) {
+  return '/vbr/activity/' + encodeURIComponent(sessionId) + '?' + new URLSearchParams({sourceKey})
 }

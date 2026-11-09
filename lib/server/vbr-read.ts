@@ -51,7 +51,8 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       if (!response.ok) throw new TopologyRequestError(
         response.status === 401 ? 'Your VBR session has expired. Reconnect your data source.'
           : response.status === 403 ? 'Your VBR account cannot read the required backup records.'
-            : 'The VBR platform could not return protection data.', response.status === 401 || response.status === 403 ? response.status : 502)
+            : response.status === 404 ? 'The requested VBR record could not be found.' : 'The VBR platform could not return protection data.',
+        [401, 403, 404].includes(response.status) ? response.status : 502)
       return response.json()
     }
     const browse: VbrInventoryReader = (host, skip, limit, revision, hierarchyType) => requestJson(

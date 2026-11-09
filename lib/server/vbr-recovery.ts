@@ -13,11 +13,13 @@ export type RecoverySend = (path: string, options?: {
   method?: 'GET' | 'POST'
   body?: unknown
   mutation?: boolean
+  archive?: boolean
 }) => Promise<unknown>
 
 export async function withVbrRecovery(request: NextRequest, run: (context: {
   send: RecoverySend
   sourceKey: string
+  bearerOnly: boolean
 }) => Promise<unknown>) {
   const headers = { 'Cache-Control': 'private, no-store' }
   try {
@@ -34,21 +36,32 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
     if (!['https:', 'http:'].includes(destination.protocol)) throw new VbrRecoveryError('Invalid VBR source.')
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
     let token = sourceId ? await tokenManager.getToken(sourceId) : null
-    token ||= getChunkedCookie(jar, 'veeam_vbr_token') || request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1] || null
+    token ||= getChunkedCookie(jar, 'veeam_vbr_token') || null
+    const bearerOnly = !token
+    token ||= request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1] || null
     if (!token) throw new VbrRecoveryError('Reconnect your VBR source.', 401)
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(60000)])
-    const send: RecoverySend = async (path, { method = 'GET', body, mutation = false } = {}) => {
+    const send: RecoverySend = async (path, { method = 'GET', body, mutation = false, archive = false } = {}) => {
       const url = new URL(path, destination)
       if (url.origin !== destination.origin || !url.pathname.startsWith('/api/v1/')) throw new VbrRecoveryError('Invalid VBR operation.')
+      if (archive && (method !== 'POST' || !/^\/api\/v1\/backupBrowser\/flr\/[a-f\d-]{36}\/prepareDownload\/[a-f\d-]{36}\/download$/i.test(path))) {
+        throw new VbrRecoveryError('Invalid archive request.')
+      }
+      // The request signal cancels upstream I/O if the browser disconnects.
+      // Once headers arrive a large ZIP may take longer than the JSON timeout.
+      const connectTimeout = new AbortController()
+      const transferSignal = archive ? AbortSignal.any([request.signal, connectTimeout.signal]) : signal
+      const timer = archive ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
       const fetchOnce = () => fetch(url, {
-        method, redirect: 'error', cache: 'no-store', signal,
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': '1.3-rev2',
+        method, redirect: 'error', cache: 'no-store', signal: transferSignal,
+        headers: { Authorization: `Bearer ${token}`, Accept: archive ? 'application/octet-stream' : 'application/json', 'x-api-version': '1.3-rev2',
           ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       })
       try {
         let response = await fetchOnce()
         if (response.status === 401 && sourceId) {
+          await response.body?.cancel()
           token = await tokenManager.refreshToken(sourceId)
           if (token) response = await fetchOnce()
         }
@@ -59,15 +72,25 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           throw new VbrRecoveryError(uncertain ? 'VBR could not confirm the operation. Check Activity before trying again.' : message,
             response.status >= 500 ? 502 : response.status, uncertain)
         }
+        if (archive) {
+          if (!response.body || !/^(application\/(octet-stream|zip|x-zip-compressed))(;|$)/i.test(response.headers.get('content-type') || '')) {
+            await response.body?.cancel()
+            throw new VbrRecoveryError('VBR did not return the prepared ZIP archive.', 502)
+          }
+          return new Response(response.body, { headers: { ...headers, 'Content-Type': 'application/zip',
+            'Content-Disposition': 'attachment; filename="guest-files-' + path.split('/').at(-2) + '.zip"',
+            'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } })
+        }
         const text = await response.text()
         return text ? JSON.parse(text) : null
       } catch (error) {
         if (error instanceof VbrRecoveryError) throw error
         throw new VbrRecoveryError(mutation ? 'The result is unknown. Check Activity before trying again.' : 'The VBR source could not be reached.',
           signal.aborted ? 504 : 502, mutation)
-      }
+      } finally { if (timer) clearTimeout(timer) }
     }
-    return NextResponse.json(await run({ send, sourceKey }), { headers })
+    const result = await run({ send, sourceKey, bearerOnly })
+    return result instanceof Response ? result : NextResponse.json(result, { headers })
   } catch (error) {
     const failure = error instanceof VbrRecoveryError ? error : new VbrRecoveryError('The VBR response could not be processed.', 502)
     return NextResponse.json({ error: failure.message, uncertain: failure.uncertain }, { status: failure.status, headers })

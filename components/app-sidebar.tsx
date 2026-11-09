@@ -35,7 +35,6 @@ import { isProtectedDataPath } from "@/lib/protected-data/navigation"
 
 // VBR Group with subpages
 const vbrItems = [
-  { title: navigationLabels["/vbr/activity"], href: "/vbr/activity", icon: Activity },
   {
     title: navigationLabels["/vbr/topology"],
     href: "/vbr/topology",
@@ -97,6 +96,7 @@ const vbrItems = [
       },
     ]
   },
+  { title: navigationLabels["/vbr/activity"], href: "/vbr/activity", icon: Activity },
 ]
 
 // VBM Group - Veeam Backup for M365
@@ -421,6 +421,7 @@ export function AppSidebar({
 
                   // Standard Item
                   const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
+                    : item.href === '/vbr/activity' ? pathname === item.href || pathname.startsWith('/vbr/activity/')
                     : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
                   return (
                     <SidebarMenuItem key={item.title}>

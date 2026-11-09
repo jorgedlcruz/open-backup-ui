@@ -6,7 +6,8 @@ import { useI18n } from '@/components/providers/i18n-provider'
 import { Button } from '@/components/ui/button'
 import { TargetPicker } from '@/components/restore-points/target-picker'
 import type { RestoreInventoryItem } from '@/lib/restore-points/workflow'
-import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
+import { ApplicationRequestError } from '@/lib/api/application-request'
+import { veeamApi } from '@/lib/api/veeam-client'
 
 export function MountControls({mount, sourceKey, onAccepted}: {
   mount: Mount; sourceKey: string; onAccepted: (sessionId?: string) => void
@@ -23,6 +24,7 @@ export function MountControls({mount, sourceKey, onAccepted}: {
   const [quick, setQuick] = useState(false)
   const [busy, setBusy] = useState(false)
   const [uncertain, setUncertain] = useState(false)
+  const [accepted, setAccepted] = useState(false)
   const [error, setError] = useState('')
   const lock = useRef(false)
   if (mount.kind === 'other' || mount.kind === 'flr' || !['Mounted', 'Failed', 'MountFailed', 'UnmountFailed'].includes(mount.state)) return null
@@ -40,16 +42,17 @@ export function MountControls({mount, sourceKey, onAccepted}: {
   }
 
   async function submit() {
-    if (!action || !ready || lock.current || uncertain) return
+    if (!action || !ready || lock.current || uncertain || accepted) return
     lock.current = true
     setBusy(true)
     setError('')
     try {
-      const result = await applicationRequest<{sessionId: string|null}>(`/api/vbr/activity/mounts/${mount.id}`, {
+      const result = await veeamApi.requestActivity<{sessionId: string|null}>(`/api/vbr/activity/mounts/${mount.id}`, {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({sourceKey, sessionId: mount.sessionId, kind: mount.kind, action,
           ...(selectTarget ? {host, resourcePool: pool, folder, datastore, useOriginalPlacement: useOriginal, quickMigration: quick} : {})}),
       })
+      setAccepted(true)
       onAccepted(result.sessionId || undefined)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Request failed.'))
@@ -60,6 +63,7 @@ export function MountControls({mount, sourceKey, onAccepted}: {
     }
   }
 
+  if (accepted) return <p role="status" className="text-sm">{t('VBR accepted the request.')}</p>
   if (!action) return <div className="flex flex-wrap gap-2 border-t pt-4">
     {mount.kind !== 'publish' && mount.state === 'Mounted' && <Button size="sm" onClick={() => setAction('migrate')}>{migrate}</Button>}
     <Button size="sm" variant="outline" onClick={() => setAction('unmount')}>{stop}</Button>

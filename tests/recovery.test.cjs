@@ -150,7 +150,7 @@ test('VMware network mapping resolves original distributed port group against ba
   assert.equal(hv.network.mappings[0].sourceNetwork.disconnect, true)
 })
 
-test('an ambiguous recovery submission is never replayed', async () => {
+function mockRecoveryTransport() {
   const Module = require('node:module')
   const originalLoad = Module._load
   const source = { id: 'source', platform: 'vbr', protocol: 'https', host: 'vbr.example', port: 9419 }
@@ -170,6 +170,11 @@ test('an ambiguous recovery submission is never replayed', async () => {
   } finally { Module._load = originalLoad }
   const request = { method: 'POST', headers: new Headers({ host: 'ui.example', origin: 'https://ui.example' }),
     nextUrl: new URL('https://ui.example/api/vbr/restore/start'), signal: new AbortController().signal }
+  return { withVbrRecovery, request }
+}
+
+test('an ambiguous recovery submission is never replayed', async () => {
+  const { withVbrRecovery, request } = mockRecoveryTransport()
   const originalFetch = global.fetch
   try {
     for (const simulateFailure of [() => { throw new TypeError('dropped') }, () => Response.json({}, { status: 500 })]) {
@@ -180,5 +185,35 @@ test('an ambiguous recovery submission is never replayed', async () => {
       assert.equal(result.status, 502)
       assert.equal((await result.json()).uncertain, true)
     }
+  } finally { global.fetch = originalFetch }
+})
+
+test('the scoped binary endpoint sends the bearer only to VBR and streams the archive without reading it into memory', async () => {
+  const { withVbrRecovery, request } = mockRecoveryTransport()
+  const originalFetch = global.fetch
+  const archive = '/api/v1/backupBrowser/flr/' + sessionId + '/prepareDownload/' + pointId + '/download'
+  try {
+    let finish, calls = 0
+    global.fetch = async (url, options) => {
+      calls++
+      assert.equal(new URL(url).hostname, 'vbr.example')
+      assert.equal(options.headers.Authorization, 'Bearer test-token')
+      assert.equal(options.headers.Accept, 'application/octet-stream')
+      assert.equal(options.redirect, 'error')
+      return new Response(new ReadableStream({ start(controller) {
+        controller.enqueue(new Uint8Array([80,75]))
+        finish = () => controller.close()
+      } }), { headers: { 'Content-Type': 'application/octet-stream' } })
+    }
+    const result = await withVbrRecovery(request, ({send}) => send(archive, {method: 'POST', archive:true}))
+    assert.equal(result.headers.get('Content-type'), 'application/zip')
+    assert.match(result.headers.get('Content-Disposition'), /attachment; filename="guest-files-.*\.zip"/)
+    const reader = result.body.getReader()
+    assert.deepEqual((await reader.read()).value, new Uint8Array([80,75]))
+    finish()
+    assert.equal((await reader.read()).done, true)
+    const refused = await withVbrRecovery(request, ({send}) => send('/api/v1/tasks', {method:'POST', archive:true}))
+    assert.equal(refused.status, 400)
+    assert.equal(calls, 1)
   } finally { global.fetch = originalFetch }
 })

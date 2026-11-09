@@ -1,0 +1,18 @@
+.back,.related { display:inline-flex; align-items:center; gap:.35rem; color:var(--ops-accent); font-size:.8rem; }
+.back { margin-bottom:.65rem; }.back:hover,.related:hover {text-decoration:underline}
+.commands,.progressNote,.child {display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
+.commands p {flex-basis:100%;font-size:.875rem}
+.progressNote {padding:1.2rem;gap:.9rem}
+.glyph {display:grid;place-items:center;width:2.8rem;height:2.8rem;border-radius:12px;background:color-mix(in srgb,var(--ops-accent) 12%,transparent);color:var(--ops-accent)}
+.lastEvent {display:grid;gap:.25rem;flex:1;min-width:10rem}.lastEvent strong {font-size:.95rem;overflow-wrap:anywhere}
+.lastEvent small,.lastEvent time,.facts dt,.properties dt,.note,.progressNote p {font-size:.75rem;color:var(--muted-foreground)}
+.progress {width:7rem;display:grid;gap:.3rem;text-align:right;font-size:.8rem}.progress progress {width:100%;height:.35rem;accent-color:var(--ops-accent)}
+.facts,.properties {display:flex;flex-wrap:wrap;gap:1rem 2.25rem;padding:.9rem 1.2rem}.facts {border-top:1px solid var(--border)}
+.facts dd,.properties dd {font-size:.85rem;margin-top:.25rem;font-weight:500;overflow-wrap:anywhere}
+.tabs {width:100%;height:auto;justify-content:flex-start;flex-wrap:wrap;gap:.25rem;padding:.5rem;border-radius:0;background:transparent;border-bottom:1px solid var(--border)}
+.tabs button {flex:0 1 auto;padding:.5rem .7rem;height:auto}.tabs button[data-state=active] {background:color-mix(in srgb,var(--ops-accent) 12%, transparent);color:var(--ops-accent);border-color:color-mix(in srgb,var(--ops-accent) 35%,transparent)}
+.tabs small {font-variant-numeric:tabular-nums;opacity:.8}.inset {padding:1.15rem}.inset h2 {font-size:1rem;font-weight:600}.inset p,.note {line-height:1.55}.inset p {margin-block:.5rem}.note {padding:.35rem 1.2rem .65rem}
+.properties {padding:.75rem 0 1rem}.recovery + .recovery {margin-top:1.25rem}
+.child {padding:.85rem 0;border-bottom:1px solid var(--border)}.child span:first-of-type {flex:1}.related {margin-inline-start:.75rem}
+.filePanel[hidden] {display:none}
+.paths {display:grid;gap:.35rem;padding-bottom:1rem;font-size:.8rem}.paths code {overflow-wrap:anywhere;user-select:all}

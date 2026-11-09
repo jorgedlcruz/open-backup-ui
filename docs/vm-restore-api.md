@@ -72,7 +72,7 @@ Use the full native objects returned by the lookup routes in the tables below. T
 | Disk publish | The branch uses `{restorePointId, type: "ISCSITarget", diskNames, allowedIps, reason}`. VBR also defines Windows iSCSI mount and Linux FUSE mount modes. |
 | Cloud Director | The branch offers original-location recovery for an eligible Cloud Director point. The public customized spec also defines a target vApp, name, datastore and network in the Cloud Director inventory. |
 
-The branch's [payload builders](../lib/recovery/start.ts), [network resolution](../lib/recovery/networks.ts) and [guest file operations](../lib/recovery/files.ts) implement the transitions. The tables below include additional cataloged options such as file download, search and comparison. [VBR Backup Browser reference](https://helpcenter.veeam.com/references/vbr/13/rest/1.3-rev2/tag/Backup-Browser/index.html)
+The branch's [payload builders](../lib/recovery/start.ts), [network resolution](../lib/recovery/networks.ts) and [guest file operations](../lib/recovery/files.ts) implement the transitions. The tables also catalog provider capabilities such as file comparison. [VBR Backup Browser reference](https://helpcenter.veeam.com/references/vbr/13/rest/1.3-rev2/tag/Backup-Browser/index.html)
 
 
 ## Source, inventory and shared settings
@@ -237,6 +237,12 @@ Console client routes for this workflow.
 | GET | `/private-api/v1/flr/validation/{backupObjectId}/audit` |
 
 ## Activity and mounted recovery
+
+Selecting a timestamp shows the backup evidence first. Each restore starts once from the reviewed settings. Activity follows the request and opens the new session as soon as VBR returns its ID. Reloading a pending request cannot resubmit it. If acknowledgement was lost, check the Activity list for the run.
+
+The detail page starts on the session log, newest first. It keeps the session result distinct from the current mount state: a successful mount operation can still have a live filesystem. Mounted instant VMs expose migration and stop-publishing controls. A running entire-VM restore can be stopped after confirmation. For application browse sessions, the Application items tab lists the child restore sessions returned by VBR and links to their logs. Item selection and recovery in Veeam Explorer still require the Explorer service.
+
+The Guest files tab browses drives and folders, runs cancellable VBR searches, and collects items across folders and search results into a cart. The cart stays with that source and mount in the current browser tab. Recover its paths in one VBR task with the chosen destination and conflict policy, or prepare them for download. An unmounted session retains its log in Activity.
 
 | Method | Public REST path | Request body | Success response |
 | --- | --- | --- | --- |

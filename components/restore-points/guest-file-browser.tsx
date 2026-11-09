@@ -1,28 +1,38 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ChevronRight, File, Folder, HardDrive, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { veeamApi } from '@/lib/api/veeam-client'
-import { guestItemPath, uncertainRestore, type GuestDirectory, type GuestRestoreRequest, type GuestTask, type RestoreInventoryItem, type RestorePlatform } from '@/lib/restore-points/workflow'
+import { uncertainRestore, type GuestRestoreRequest, type GuestTask, type RestoreInventoryItem, type RestorePlatform } from '@/lib/restore-points/workflow'
+import { isTaskRunning, readWorkspace, workspaceKey, type GuestWorkspace } from '@/lib/restore-points/guest-workspace'
+import { GuestFileExplorer } from './guest-file-explorer'
 import { TargetPicker } from './target-picker'
 import { useRecoveryPresentation } from './use-presentation'
 import styles from './workflow.module.css'
 
-export function GuestFileBrowser(props: { sessionId: string; sourceKey: string }) {
-  return <Browser key={props.sourceKey + props.sessionId} {...props} />
+type BrowserProps = { sessionId: string; sourceKey: string; onUnmount?: () => void }
+
+export function GuestFileBrowser(props: BrowserProps) {
+  return <MountedBrowser key={props.sourceKey + props.sessionId} {...props} />
 }
 
-function Browser({ sessionId, sourceKey }: { sessionId: string; sourceKey: string }) {
-  const { t, diagnostic, size } = useRecoveryPresentation()
-  const [history, setHistory] = useState<string[]>([])
-  const [skip, setSkip] = useState(0)
-  const [directory, setDirectory] = useState<GuestDirectory>()
-  const [selected, setSelected] = useState<string[]>([])
-  const [revision, setRevision] = useState(0)
+function MountedBrowser(props: BrowserProps) {
+  const [initial, setInitial] = useState<GuestWorkspace>()
+  const storageKey = workspaceKey(props.sourceKey, props.sessionId)
+  useEffect(() => {
+    try { setInitial(readWorkspace(sessionStorage.getItem(storageKey))) }
+    catch { setInitial({ cart: [] }) }
+  }, [storageKey])
+  return initial ? <Browser {...props} storageKey={storageKey} initial={initial} /> : null
+}
+
+function Browser({ sessionId, sourceKey, onUnmount, initial, storageKey }: BrowserProps & { initial: GuestWorkspace; storageKey: string }) {
+  const { t, diagnostic } = useRecoveryPresentation()
+  const [workspace, setWorkspace] = useState(initial)
+  const selected = workspace.cart.map(item => item.path)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
   const [action, setAction] = useState<'restore' | 'unmount'>()
   const [restoreType, setRestoreType] = useState<GuestRestoreRequest['restoreType']>('Keep')
   const [custom, setCustom] = useState(false)
@@ -35,22 +45,15 @@ function Browser({ sessionId, sourceKey }: { sessionId: string; sourceKey: strin
   const [closed, setClosed] = useState(false)
   const [uncertain, setUncertain] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [task, setTask] = useState<GuestTask>()
+  const [task, setTask] = useState<GuestTask | undefined>(initial.task)
   const [taskError, setTaskError] = useState('')
   const lock = useRef(false)
-  const path = history[history.length - 1]
   useEffect(() => {
-    if (closed) return
-    const controller = new AbortController()
-    setLoading(true)
-    setDirectory(undefined)
-    setError('')
-    veeamApi.browseGuestFiles(sessionId, sourceKey, path, skip, controller.signal).then(value => {
-      if (!controller.signal.aborted) setDirectory(value)
-    }).catch(err => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : t('Recovery request failed.')) })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
-  }, [sessionId, sourceKey, path, skip, revision, closed, t])
+    try {
+      if (closed) sessionStorage.removeItem(storageKey)
+      else sessionStorage.setItem(storageKey, JSON.stringify({ ...workspace, task }))
+    } catch { /* The current tab still holds the cart in memory. */ }
+  }, [storageKey, workspace, task, closed])
   useEffect(() => {
     if (action !== 'restore') return
     const controller = new AbortController()
@@ -60,7 +63,7 @@ function Browser({ sessionId, sourceKey }: { sessionId: string; sourceKey: strin
     return () => controller.abort()
   }, [action, sourceKey, sessionId])
   const taskId = task?.id
-  const runningTask = !!taskId && !['stopped','finished','completed','failed','succeeded','canceled','cancelled'].includes(task?.state?.toLowerCase() || '')
+  const runningTask = isTaskRunning(task)
   useEffect(() => {
     if (!taskId || !runningTask || closed) return
     const controller = new AbortController()
@@ -91,10 +94,12 @@ function Browser({ sessionId, sourceKey }: { sessionId: string; sourceKey: strin
           ...(custom && { targetHost: host, targetPath: targetPath.trim() }),
         })
         setTask(result)
-        setSelected([])
+        setWorkspace(current => ({ ...current, cart: [] }))
       } else {
         await veeamApi.modifyGuestFiles({ action, sessionId, sourceKey })
         setClosed(true)
+        try { sessionStorage.removeItem(storageKey) } catch { /* Tab storage can be unavailable. */ }
+        onUnmount?.()
       }
       setAction(undefined)
     } catch (err) {
@@ -125,29 +130,8 @@ function Browser({ sessionId, sourceKey }: { sessionId: string; sourceKey: strin
         {!!credentials.length && <label className={styles.field}>{t('Credentials')}<select value={credentialsId} onChange={event => setCredentialsId(event.target.value)}>
           <option value="">{t('Automatic selection')}</option>{credentials.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
       </div>
-    </> : <>
-      <div className={styles.bar}>
-        <Button variant="ghost" size="sm" disabled={!history.length || loading} onClick={() => { setHistory(previous => previous.slice(0,-1)); setSkip(0) }}><ArrowLeft size={14} />{t('Back')}</Button>
-        <strong>{path || directory?.path || t('Guest file system')}</strong>
-        <Button variant="ghost" size="sm" disabled={loading} onClick={() => setRevision(n => n+1)}>{t('Refresh')}</Button>
-      </div>
-      {loading ? <p className={styles.status}><Loader2 size={15} className="animate-spin" />{t('Loading…')}</p>
-        : directory && <><ul className={styles.files}>{directory.items.map(item => {
-          const fullPath = guestItemPath(item,directory)
-          const canOpen = item.type === 'Drive' || item.type === 'Folder'
-          const Icon = item.type === 'Drive' ? HardDrive : canOpen ? Folder : File
-          return <li key={fullPath}>
-            {item.type !== 'Drive' && <input type="checkbox" aria-label={fullPath} checked={selected.includes(fullPath)} onChange={event => setSelected(current => event.target.checked ? [...current,fullPath] : current.filter(value => value !== fullPath))} />}
-            <Icon size={15} />{canOpen ? <button type="button" onClick={() => { setHistory(previous => [...previous,fullPath]); setSkip(0) }}>{item.displayName || item.name}<ChevronRight size={14} /></button> : <span>{item.displayName || item.name}</span>}
-            {item.type === 'File' && <small>{size(item.size)}</small>}
-          </li>
-        })}</ul>{!directory.items.length && <p>{t('This folder is empty.')}</p>}
-        {(skip > 0 || directory.pagination.count + skip < directory.pagination.total) && <div className={styles.bar}>
-          <Button size="sm" variant="outline" disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip-directory.pagination.limit))}>{t('Previous')}</Button>
-          <Button size="sm" variant="outline" disabled={!directory.pagination.count || skip + directory.pagination.count >= directory.pagination.total} onClick={() => setSkip(skip+directory.pagination.count)}>{t('Next')}</Button>
-        </div>}</>}
-      <div className={styles.actions}><Button disabled={!selected.length || runningTask || uncertain} onClick={() => { setAction('restore'); setError('') }}>{t('Restore selected files')}</Button></div>
-    </>}
+    </> : <GuestFileExplorer sessionId={sessionId} sourceKey={sourceKey} workspace={workspace} setWorkspace={setWorkspace}
+      restoreDisabled={runningTask || uncertain} onRestore={() => { setAction('restore'); setError('') }} />}
     {error && <p role="alert" className={styles.error}>{diagnostic(error)}</p>}
     {uncertain && <p>{t('Check Activity before submitting another request.')}</p>}
     {action && <div className={styles.actions}><Button variant="outline" disabled={busy} onClick={() => setAction(undefined)}>{t('Cancel')}</Button>

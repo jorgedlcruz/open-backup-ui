@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { checkSource, VbrRecoveryError } from '../recovery/error'
 import type { RecoverySend } from '../server/vbr-recovery'
 import { inventorySchema } from '../recovery/inventory'
-import { validId } from '../investigation/model'
-import { mountPaths, parseMount } from './model'
+import { investigationSessionSchema, validId } from '../investigation/model'
+import { mountBelongsToSession, mountPaths, parseMount } from './model'
 
 const ref = inventorySchema.extend({ platform: z.literal('VSphere') })
 export const mountAction = z.object({
@@ -20,7 +20,12 @@ export async function runMountAction(send: RecoverySend, resolve: Resolve, sourc
   checkSource(action.sourceKey, sourceKey)
   const path = `${mountPaths[action.kind]}/${mountId}`
   const mount = parseMount(action.kind, await send(path))
-  if (mount.id !== mountId || mount.sessionId !== action.sessionId || !(mount.state === 'Mounted' || (action.action === 'unmount' && ['Failed', 'MountFailed', 'UnmountFailed'].includes(mount.state)))) {
+  let linked = mount.sessionId === action.sessionId
+  if (!linked && mount.kind === 'publish') {
+    const session = investigationSessionSchema.safeParse(await send(`/api/v1/sessions/${action.sessionId}`))
+    linked = session.success && session.data.id === action.sessionId && mountBelongsToSession(mount, session.data)
+  }
+  if (mount.id !== mountId || !linked || !(mount.state === 'Mounted' || (action.action === 'unmount' && ['Failed', 'MountFailed', 'UnmountFailed'].includes(mount.state)))) {
     throw new VbrRecoveryError('The mount state changed. Refresh Activity.', 409)
   }
 

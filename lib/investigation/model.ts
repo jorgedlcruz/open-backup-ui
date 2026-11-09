@@ -11,8 +11,8 @@ const result = z.object({ result: text, message: text, isCanceled: z.boolean().n
 export const progressSchema = z.object({ duration: text, processingRate: text, bottleneck: text, processedSize: number, readSize: number, transferredSize: number, progressPercent: number }).nullish()
 export const investigationSessionSchema = z.object({
   id, jobId: reference, name: text, sessionType: text, creationTime: text, endTime: text,
-  state: text, result, progress: progressSchema, progressPercent: number, initiatedBy: text,
-  originalSessionId: reference, parentSessionId: reference, relatedSessionId: reference,
+  state: text, result, progress: progressSchema, progressPercent: number, initiatedBy: text, platformName: text, algorithm: text,
+  originalSessionId: reference, parentSessionId: reference, relatedSessionId: reference, resourceId: reference, resourceReference: text,
   retryInfo: z.object({ isRecheckRetry: z.boolean().nullish(), retryNumber: z.number().int().positive().nullish() }).nullish(),
 })
 export const taskSchema = z.object({
