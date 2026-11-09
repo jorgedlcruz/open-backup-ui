@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, Loader2, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { veeamApi } from '@/lib/api/veeam-client'
@@ -10,6 +10,7 @@ import { beginRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/lau
 import type { InventoryKind, RestoreDraft, RestoreInventoryItem, RestoreOperation, RestoreOptions, RestoreTarget } from '@/lib/restore-points/workflow'
 import { useRecoveryPresentation } from './use-presentation'
 import { TargetPicker } from './target-picker'
+import { RecoverySignal } from './recovery-signal'
 import styles from './workflow.module.css'
 
 function Check({ label, value, onChange }: { label: string; value: boolean; onChange: (next: boolean) => void }) {
@@ -42,7 +43,7 @@ export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, 
     <RestoreForm point={point} flagged={flagged || isFlagged(options.point.malwareStatus)} options={options} operation={operation} onBack={onBack} onLaunch={onLaunch} />
   </>
   return <div className={styles.flow}>
-    {error ? <p role="alert" className={styles.error}>{diagnostic(error)}</p> : <p className={styles.status} role="status"><Loader2 className="animate-spin" size={16} />{t('Loading recovery options…')}</p>}
+    {error ? <p role="alert" className={styles.error}>{diagnostic(error)}</p> : <RecoverySignal stage="options" />}
     <div className={styles.actions}><Button variant="outline" onClick={onBack}>{t('Back')}</Button>
       {error && <Button variant="outline" onClick={() => setRevision(value => value + 1)}>{t('Retry')}</Button>}</div>
   </div>

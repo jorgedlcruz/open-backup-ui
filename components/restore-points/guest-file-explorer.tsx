@@ -1,30 +1,28 @@
 'use client'
 
 import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
-import { Check, ChevronRight, File, Folder, FolderOpen, HardDrive, Loader2, Search, ShoppingCart, X } from 'lucide-react'
+import { ChevronRight, File, Folder, FolderOpen, HardDrive, Loader2, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { guestItemPath, type GuestDirectory, type GuestTask } from '@/lib/restore-points/workflow'
 import { addToCart, guestCrumbs, isBelow, isTaskRunning, samePath, searchHasResults, type CartEntry, type GuestWorkspace } from '@/lib/restore-points/guest-workspace'
 import { GuestFolderTree } from './guest-folder-tree'
-import { GuestDownloadPanel } from './guest-download'
 import { useRecoveryPresentation } from './use-presentation'
 import styles from './guest-files.module.css'
 
 type Props = {
   sessionId: string; sourceKey: string; workspace: GuestWorkspace; setWorkspace: Dispatch<SetStateAction<GuestWorkspace>>
-  restoreDisabled: boolean; onRestore: () => void
+  onMountAvailable: (ready: boolean) => void
 }
 
-export function GuestFileExplorer({ sessionId, sourceKey, workspace, setWorkspace, restoreDisabled, onRestore }: Props) {
+export function GuestFileExplorer({ sessionId, sourceKey, workspace, setWorkspace, onMountAvailable }: Props) {
   const { t, diagnostic, size, label } = useRecoveryPresentation()
   const { path, search, cart } = workspace
   const [location, setLocation] = useState<{ root: string; separator: string }>()
   const [mode, setMode] = useState<'folder' | 'search'>(isTaskRunning(search) || searchHasResults(search) ? 'search' : 'folder')
   const [query, setQuery] = useState(search?.query || '')
   const [recursive, setRecursive] = useState(search?.recursive ?? true)
-  const [showCart, setShowCart] = useState(false)
   const [skip, setSkip] = useState(0)
   const [directory, setDirectory] = useState<GuestDirectory>()
   const [loading, setLoading] = useState(true)
@@ -78,11 +76,12 @@ export function GuestFileExplorer({ sessionId, sourceKey, workspace, setWorkspac
     work.then(page => {
       if (controller.signal.aborted) return
       setDirectory(page)
+      onMountAvailable(true)
       setLocation({ root: page.guestOs === 'Linux' ? '/' : '', separator: page.pathSeparator })
     }).catch(err => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : t('Recovery request failed.')) })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [canLoad, currentSearch, searchId, searchKey, path, skip, sessionId, sourceKey, revision, t])
+  }, [canLoad, currentSearch, searchId, searchKey, path, skip, sessionId, sourceKey, revision, onMountAvailable, t])
 
   function navigate(next?: string) {
     setMode('folder')
@@ -175,17 +174,6 @@ export function GuestFileExplorer({ sessionId, sourceKey, workspace, setWorkspac
             onClick={() => setSkip(skip + directory.pagination.count)}>{t('Next')}</Button>
         </div>}
       </div>
-    </div>
-    <div className={styles.cart}>
-      <div className={styles.cartBar}>
-        <button type="button" onClick={() => setShowCart(!showCart)} aria-expanded={showCart}><ShoppingCart size={16}/><strong>{t('Recovery cart')}</strong><span>{cart.length}</span></button>
-        <Button type="button" size="sm" disabled={!cart.length || restoreDisabled || !location || busy} onClick={onRestore}><Check size={14}/>{t('Restore selected files')}</Button>
-      </div>
-      {(!!cart.length || workspace.download) && <GuestDownloadPanel sessionId={sessionId} sourceKey={sourceKey} workspace={workspace}
-        setWorkspace={setWorkspace} enabled={!!location && !busy}/>}
-      {showCart && (cart.length ? <ul className={styles.cartList}>{cart.map(entry => <li key={entry.path}>{entry.type === 'Folder' ? <Folder size={14}/> : <File size={14}/>}
-        <span>{entry.path}</span><button type="button" aria-label={t('Remove {name}', {name: entry.path})} className={styles.iconButton} onClick={() => remove(entry.path)}><X size={14}/></button></li>)}</ul>
-        : <p className={styles.note}>{t('Select files or folders to add them to the cart.')}</p>)}
     </div>
   </div>
 }

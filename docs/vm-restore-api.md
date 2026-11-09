@@ -22,7 +22,7 @@ Other backups can advertise `StartEntireVmRestoreHyperV`, `StartEntireVmRestoreC
 2. For instant VMware recovery the console posts `{"restoreItems":[{"pointId":"<point>","backupId":"<backup>"}],"interaction":[]}` to `/private-api/v1/restore/instantRecovery/vSphere/checkVmwareInstantRecoverySourceItems`. In customized mode it posts `{"mode":"Customized","objects":[{"restorePointId":"<point>"}]}` to `resolveBatchDefaults` under the same prefix. Private validation responses can ask the operator a question. Each follow-up response belongs to that validation request.
 3. Browse the permitted target inventory with `POST /api/v1/inventory` followed by `POST /api/v1/inventory/{hostname}`. Set `permissionScope` to `Restore`, choose a hierarchy for the object type, and pass the platform predicate. Reuse the returned inventory identity, including its native object ID and server. Names alone are ambiguous across vCenters.
 4. In the VMware full-restore wizard the name editor is on the Folder page, behind VM selection and **Name**. With a distinct name, the live wizard continued to Network, Reason and Summary. With a colliding name, VMware instant recovery asked for overwrite consent. Open Backup UI places the editable name with the destination and reviews it before launch.
-5. Submit once. VM and disk recovery normally return a session ID. FLR returns a browse mount with a `sessionId`, and a file restore returns a task ID. For a mounted instant VM the public mount’s `id` is the argument to migrate or unmount. Its separate `sessionId` links the mount to history and logs. After an ambiguous upstream response, check Activity before another submission.
+5. Submit once. VM and disk recovery normally return a session ID. FLR returns a browse mount with a `sessionId`, and a file restore returns a task ID. For a mounted instant VM the public mount’s `id` is the argument to migrate or unmount. Its separate `sessionId` links the mount to history and logs. After an ambiguous upstream response, check Sessions before another submission.
 
 The Web UI authenticates its private requests with its own session. Open Backup UI submits through the configured VBR REST connection with its existing bearer credentials. The console’s private validation routes and cookies are not portable to the REST listener. The API map includes provider functionality beyond the controls implemented in this branch.
 
@@ -236,13 +236,13 @@ Console client routes for this workflow.
 | POST | `/private-api/v1/flr/validation/restorePoint` |
 | GET | `/private-api/v1/flr/validation/{backupObjectId}/audit` |
 
-## Activity and mounted recovery
+## Sessions and mounted recovery
 
-Selecting a timestamp shows the backup evidence first. Each restore starts once from the reviewed settings. Activity follows the request and opens the new session as soon as VBR returns its ID. Reloading a pending request cannot resubmit it. If acknowledgement was lost, check the Activity list for the run.
+Selecting a timestamp shows the backup evidence first. Each restore starts once from the reviewed settings. The Sessions view follows the request and opens the new session as soon as VBR returns its ID. Reloading a pending request cannot resubmit it. If acknowledgement was lost, check the Sessions list for the run.
 
 The detail page starts on the session log, newest first. It keeps the session result distinct from the current mount state: a successful mount operation can still have a live filesystem. Mounted instant VMs expose migration and stop-publishing controls. A running entire-VM restore can be stopped after confirmation. For application browse sessions, the Application items tab lists the child restore sessions returned by VBR and links to their logs. Item selection and recovery in Veeam Explorer still require the Explorer service.
 
-The Guest files tab browses drives and folders, runs cancellable VBR searches, and collects items across folders and search results into a cart. The cart stays with that source and mount in the current browser tab. Recover its paths in one VBR task with the chosen destination and conflict policy, or prepare them for download. An unmounted session retains its log in Activity.
+On the Guest files tab, select items in folders or search results, then open the recovery cart at the top right. Search the selected paths, remove items, or clear the cart. Review the destination and existing-file policy and submit the restore in the same drawer. The cart also supports ZIP downloads. Closing it returns to the current folder with the selection saved for this source and mount in the browser tab. After unmounting, the session log remains available in Sessions.
 
 | Method | Public REST path | Request body | Success response |
 | --- | --- | --- | --- |

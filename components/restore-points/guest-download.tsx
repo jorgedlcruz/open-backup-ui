@@ -101,6 +101,6 @@ export function GuestDownloadPanel({ sessionId, sourceKey, workspace, setWorkspa
         }}/>
       </>}
     {error && <span className={styles.error} role="alert">{diagnostic(error)}</span>}
-    {uncertain && <span>{t('Check Activity before submitting another request.')}</span>}
+    {uncertain && <span>{t('Check Sessions before submitting another request.')}</span>}
   </div>
 }

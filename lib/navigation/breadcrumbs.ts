@@ -1,7 +1,7 @@
 import { lenses } from '../lens/navigation'
 
 export const navigationLabels: Record<string,string> = {
-  '/vbr/activity':'Activity',
+  '/vbr/activity':'Sessions',
   '/administration/settings':'Settings',
   '/vbr/lens':'Protection Lens', '/vbr/topology':'Protection Topology', '/vbr/threat-center':'Ransomware Detection',
   '/vbr/jobs':'Jobs & Policies', '/vbr/jobs/profiles':'Policy Profiles', '/vbr/policies':'Policy Profiles', '/vbr/protected-data':'Protected Data',

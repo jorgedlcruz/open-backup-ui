@@ -47,8 +47,14 @@
 .taskError { max-width:400px; min-width:200px; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; }
 .taskError[data-tone=danger] { color:var(--ops-danger); } .taskError[data-tone=warning] { color:var(--ops-warning); }
 .taskTable { min-width:780px; }
-.logSummary { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:0 20px 16px; font-size:var(--ops-small,12px); color:var(--muted-foreground); }
+.logViewer { --log-gutter:20px; --filter-toolbar-padding:12px var(--log-gutter) 16px; }
+.logSummary { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:16px var(--log-gutter) 0; font-size:var(--ops-small,12px); color:var(--muted-foreground); }
 .logSummary strong { color:var(--foreground); font-weight:550; }
+.tabs + [role=tabpanel] .logSummary { padding-top:0; }
+@media (max-width:600px) {
+  .logViewer { --log-gutter:12px; --filter-toolbar-padding:10px var(--log-gutter) 12px; }
+  .logViewer .logSummary { flex-direction:row; align-items:center; padding-top:12px; }
+}
 .logs { padding:0 20px; }
 .logRecord { display:grid; grid-template-columns:155px minmax(0,1fr); gap:18px; border-top:1px solid var(--border); padding:15px 0; }
 .logMeta { display:flex; align-items:flex-start; flex-direction:column; gap:7px; color:var(--muted-foreground); font-size:var(--ops-caption,11px); }

@@ -1,15 +1,15 @@
 .explorer { container-type:inline-size; min-width:0; display:grid; gap:.75rem; color:var(--foreground); }
-.searchForm,.cartBar,.searchStatus,.pager,.note,.node,.crumbs,.crumbs span { display:flex; align-items:center; gap:.5rem; }
+.searchForm,.searchStatus,.pager,.note,.node,.crumbs,.crumbs span { display:flex; align-items:center; gap:.5rem; }
 .searchForm { flex-wrap:wrap; }
 .searchBox { flex:1; min-width:10rem; position:relative; }
 .searchBox svg { position:absolute; inset-inline-start:.7rem; top:50%; transform:translateY(-50%); color:var(--muted-foreground); pointer-events:none; }
 .searchBox input { padding-inline-start:2rem; width:100%; }
 .recursive { display:inline-flex; align-items:center; font-size:.75rem; gap:.4rem; white-space:nowrap; color:var(--muted-foreground); }
 .explorer input[type=checkbox] { width:.95rem; height:.95rem; accent-color:var(--primary); }
-.searchStatus,.cart,.layout { border:1px solid var(--border); border-radius:.55rem; overflow:hidden; }
+.searchStatus,.layout { border:1px solid var(--border); border-radius:.55rem; overflow:hidden; }
 .searchStatus { padding:.5rem .7rem; background:color-mix(in srgb,var(--primary) 7%,transparent); }
 .searchStatus span { flex:1; min-width:0; overflow-wrap:anywhere; }
-.link,.folderLink,.crumbs button,.itemPath,.node button,.cartBar > button:first-child,.iconButton { display:inline-flex; align-items:center; gap:.35rem; cursor:pointer; color:inherit; }
+.link,.folderLink,.crumbs button,.itemPath,.node button,.iconButton { display:inline-flex; align-items:center; gap:.35rem; cursor:pointer; color:inherit; }
 .link,.itemPath { color:var(--primary); }
 .iconButton { justify-content:center; width:1.65rem; height:1.65rem; border-radius:.25rem; }
 .explorer button:focus-visible { outline:2px solid var(--ring); outline-offset:-2px; }
@@ -23,16 +23,16 @@
 .node button { min-width:0; padding:.15rem; font-size:.77rem; text-align:start; }
 .node button:last-child { flex:1; }
 .node span { white-space:nowrap; }
-.node svg,.itemIcon,.cartList svg,.searchStatus > svg { flex:none; }
+.node svg,.itemIcon,.searchStatus > svg { flex:none; }
 .node .chevron { width:1.2rem; flex:none; justify-content:center; }
 .children { border-inline-start:1px solid var(--border); margin-inline-start:.55rem; padding-inline-start:.3rem; }
 .content { min-width:0; }
 .crumbs { flex-wrap:wrap; min-height:2.65rem; font-size:.75rem; padding:.45rem .75rem; border-bottom:1px solid var(--border); color:var(--muted-foreground); }
 .crumbs,.crumbs span { gap:.25rem; }
 .crumbs button { min-height:1.45rem; overflow-wrap:anywhere; }
-.list,.cartList { padding:0; margin:0; list-style:none; max-height:23rem; overflow:auto; }
+.list { padding:0; margin:0; list-style:none; max-height:23rem; overflow:auto; }
 .list li { display:grid; grid-template-columns:1rem 1.05rem minmax(0,1fr) auto; align-items:center; gap:.5rem; min-height:2.3rem; padding:.35rem .75rem; }
-.list li + li,.cartList li + li { border-top:1px solid var(--border); }
+.list li + li { border-top:1px solid var(--border); }
 .list li:has(:checked) { background:color-mix(in srgb,var(--primary) 7%,transparent); }
 .list li > div { min-width:0; overflow-wrap:anywhere; }
 .itemIcon,.list small,.note,.pager { color:var(--muted-foreground); }
@@ -41,13 +41,8 @@
 .pager { justify-content:space-between; font-size:.75rem; border-top:1px solid var(--border); }
 .note { font-size:.8rem; padding:.75rem; }
 .error { color:var(--destructive); }
-.cartBar { justify-content:space-between; padding:.55rem .7rem; background:color-mix(in srgb,var(--primary) 6%,transparent); }
-.cartBar > button:first-child span { background:var(--muted); border-radius:1rem; padding:.05rem .45rem; }
-.cartList { max-height:10rem; border-top:1px solid var(--border); }
 .download { display:grid; justify-items:start; gap:.35rem; padding:.45rem .7rem; border-top:1px solid var(--border); }
 .downloadTask { display:flex; align-items:center; flex-wrap:wrap; gap:.45rem; }
-.cartList li { display:flex; align-items:center; gap:.5rem; padding:.25rem .7rem; }
-.cartList li span { flex:1; min-width:0; overflow-wrap:anywhere; }
 @container (max-width:34rem) {
   .layout { grid-template-columns:minmax(0,1fr); }
   .tree { max-height:8.5rem; border-inline-end:0; border-bottom:1px solid var(--border); }

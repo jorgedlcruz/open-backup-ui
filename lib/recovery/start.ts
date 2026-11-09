@@ -141,6 +141,6 @@ export async function startRestore(send: RecoverySend, sourceKey: string, draft:
   const session = z.object({ id: z.string().uuid().optional(), sessionId: z.string().uuid().optional(),
     state: z.string().optional(), sessionType: z.string().optional(), mountErrors: z.array(z.object({ type: z.string(), message: z.string() })).optional() }).safeParse(result)
   const id = session.success ? (isFiles ? session.data.sessionId : session.data.id) : null
-  if (!session.success || !id) throw new VbrRecoveryError('VBR accepted the operation but returned no session ID. Check Activity before trying again.', 502, true)
+  if (!session.success || !id) throw new VbrRecoveryError('VBR accepted the operation but returned no session ID. Check Sessions before trying again.', 502, true)
   return { id, sourceKey, sessionType: session.data.sessionType, state: session.data.state, mountErrors: session.data.mountErrors }
 }

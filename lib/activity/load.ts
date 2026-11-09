@@ -113,7 +113,7 @@ export async function loadActivity(read: VbrReader, sourceName: string, sourceKe
   ])
   if (historyResult.status === 'rejected' && !mounted.available) {
     if (historyResult.reason instanceof TopologyRequestError) throw historyResult.reason
-    throw new TopologyRequestError('Activity could not be loaded.', 502)
+    throw new TopologyRequestError('Session history unavailable', 502)
   }
   const page = historyResult.status === 'fulfilled' ? historyResult.value : null
   const warnings = mounted.warnings

@@ -6,7 +6,7 @@ require.extensions['.ts'] = (module, path) => module._compile(ts.transpileModule
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText, path)
 const { guestFiles, filesSchema } = require('../lib/recovery/files.ts')
-const { guestCrumbs, addToCart, readWorkspace, workspaceKey, searchHasResults } = require('../lib/restore-points/guest-workspace.ts')
+const { guestCrumbs, addToCart, readWorkspace, workspaceKey, searchHasResults, guestRestoreBusy } = require('../lib/restore-points/guest-workspace.ts')
 const sourceKey = 'a'.repeat(64)
 const sessionId = '11111111-1111-4111-8111-111111111111'
 const taskId = '22222222-2222-4222-8222-222222222222'
@@ -107,4 +107,16 @@ test('guest carts survive reload scoped to mount and source and remove nested se
   assert.deepEqual(addToCart(win, {path:'c:\\users\\OPS\\doc.txt',type:'File'}, '\\'), win)
   assert.deepEqual(guestCrumbs('C:\\Users\\Ops', '\\').map(x => x.path), ['C:\\','C:\\Users','C:\\Users\\Ops'])
   assert.deepEqual(guestCrumbs('/home/ops','/').map(x=>x.path), ['/home','/home/ops'])
+})
+
+test('reopening a cart preserves the destination and requires explicit review of an interrupted submission', () => {
+  const cart = [{ path: '/home/report', type: 'File' }]
+  const receipt = { phase: 'sending', count: 1, target: 'Destination VM', folder: '/srv/recovered', policy: 'Keep' }
+  const pending = readWorkspace(JSON.stringify({ cart, restore: receipt }))
+  assert.deepEqual(pending, { cart, restore: { ...receipt, phase: 'unconfirmed' } })
+  assert.equal(guestRestoreBusy(pending), true)
+  assert.equal(guestRestoreBusy({ ...pending, restore: undefined }), false)
+  const accepted = { ...receipt, phase: 'accepted' }
+  assert.equal(guestRestoreBusy({ cart, restore: accepted, task: { id: taskId, state: 'Working' } }), true)
+  assert.equal(guestRestoreBusy({ cart, restore: accepted, task: { id: taskId, state: 'Stopped', result: 'Success' } }), false)
 })

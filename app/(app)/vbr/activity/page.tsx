@@ -5,7 +5,7 @@ import { validId } from '@/lib/investigation/model'
 
 export async function generateMetadata() {
   const {t} = await getRequestI18n()
-  return {title: `${t('Activity')} | Open Backup UI`}
+  return {title: `${t('Sessions')} | Open Backup UI`}
 }
 
 export default async function ActivityPage({searchParams}: {searchParams: Promise<{session?: string}>}) {

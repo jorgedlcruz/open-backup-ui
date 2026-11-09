@@ -3,7 +3,7 @@ import { useRecoveryPresentation } from './use-presentation'
 import { RestoreWorkflow } from './restore-workflow'
 import { RecoveryHandoff } from './preparing-recovery'
 import { isRestoreOperation, type RestoreOperation } from '@/lib/restore-points/workflow'
-import type { RestoreLaunch } from '@/lib/restore-points/launch'
+import { observeRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import workflow from './workflow.module.css'
 
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -67,6 +67,9 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const [handoff, setHandoff] = useState<RestoreLaunch>()
   function openActivity(receipt: RestoreLaunch) {
     setHandoff(receipt)
+    void observeRestoreLaunch(receipt.requestId).then(latest => {
+      if (latest) setHandoff(current => current?.requestId === latest.requestId ? latest : current)
+    })
     setSelectedId(null)
     setOperation(null)
     startTransition(() => router.push('/vbr/activity/preparing?' + new URLSearchParams({request: receipt.requestId})))

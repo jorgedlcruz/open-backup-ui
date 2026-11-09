@@ -69,7 +69,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           const uncertain = mutation && response.status >= 500
           const error = await response.json().catch(() => null)
           const message = typeof error?.message === 'string' ? error.message.slice(0, 1000) : `VBR returned HTTP ${response.status}.`
-          throw new VbrRecoveryError(uncertain ? 'VBR could not confirm the operation. Check Activity before trying again.' : message,
+          throw new VbrRecoveryError(uncertain ? 'VBR could not confirm the operation. Check Sessions before trying again.' : message,
             response.status >= 500 ? 502 : response.status, uncertain)
         }
         if (archive) {
@@ -85,7 +85,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
         return text ? JSON.parse(text) : null
       } catch (error) {
         if (error instanceof VbrRecoveryError) throw error
-        throw new VbrRecoveryError(mutation ? 'The result is unknown. Check Activity before trying again.' : 'The VBR source could not be reached.',
+        throw new VbrRecoveryError(mutation ? 'The result is unknown. Check Sessions before trying again.' : 'The VBR source could not be reached.',
           signal.aborted ? 504 : 502, mutation)
       } finally { if (timer) clearTimeout(timer) }
     }

@@ -5,7 +5,7 @@ import { getRequestI18n } from '@/lib/i18n/server'
 
 export async function generateMetadata() {
   const {t} = await getRequestI18n()
-  return {title: t('Session Investigation') + ' · ' + t('Activity') + ' | Open Backup UI'}
+  return {title: t('Session Investigation') + ' · ' + t('Sessions') + ' | Open Backup UI'}
 }
 export default async function Page({params, searchParams}: {
   params: Promise<{id: string}>; searchParams: Promise<Record<string, string | string[] | undefined>>

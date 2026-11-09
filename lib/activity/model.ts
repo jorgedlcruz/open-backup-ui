@@ -54,6 +54,16 @@ export function parseMount(kind: MountKind, raw: unknown): Mount {
 
 export type ActivityRow = { key: string; sessionId: string; name: string; state: string; session?: Session; mount?: Mount }
 
+export function sessionProgress(session?: Session | null, mount?: Mount) {
+  if (mount?.state === 'Mounted') return undefined
+  const percent = session?.progressPercent ?? session?.progress?.progressPercent
+  return percent != null && percent >= 0 && percent <= 100 ? percent : undefined
+}
+
+export function canUnmountGuestFiles(mount: Mount | undefined, session: Session | null | undefined) {
+  return mount?.kind === 'flr' && mount.state === 'Mounted' && !session?.endTime && session?.state !== 'Stopped'
+}
+
 export function mountBelongsToSession(mount: Mount, session: Session) {
   if (mount.kind !== 'publish') return mount.sessionId === session.id
   if (session.sessionType !== 'PublishBackupContentViaMount') return false

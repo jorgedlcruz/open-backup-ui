@@ -119,6 +119,6 @@ export async function guestFiles(send: RecoverySend, currentSource: string, inpu
     targetPath: input.targetPath, targetHost,
   } })
   const task = taskSchema.safeParse(result)
-  if (!task.success) throw new VbrRecoveryError('VBR accepted the file restore but its task ID is unavailable. Check Activity before trying again.', 502, true)
+  if (!task.success) throw new VbrRecoveryError('VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.', 502, true)
   return task.data
 }

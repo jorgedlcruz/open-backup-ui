@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import { veeamApi } from '@/lib/api/veeam-client'
-import { type ActivityFeed, type ActivityRow } from '@/lib/activity/model'
+import { sessionProgress, type ActivityFeed, type ActivityRow } from '@/lib/activity/model'
 import { buildActivityParams, defaultFilters, sessionGroups, sessionPlatforms, sessionResults, sessionStates, sessionTypes, type ActivityQuery } from '@/lib/activity/filters'
 import { useI18n } from '@/components/providers/i18n-provider'
 import { investigationLabel } from '@/lib/investigation/presentation'
@@ -76,7 +76,7 @@ export function ActivityWorkspace() {
         const data = await veeamApi.requestActivity<ActivityFeed>(`/api/vbr/activity?${key}`, {signal: controller.signal})
         if (!controller.signal.aborted) {setSnapshot({key, feed: data}); setError('')}
       } catch (err) {
-        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Activity could not be loaded.')
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Session history unavailable')
       } finally {
         pending = false
         if (!controller.signal.aborted) setBusy(false)
@@ -96,7 +96,7 @@ export function ActivityWorkspace() {
     ? formatDate(value, {dateStyle: 'medium', timeStyle: 'short'}) : '—'
   return <main className={ops.console}>
     <header className={ops.header}>
-      <div><h1>{t('Activity')}</h1><p>{t('Backup sessions, restores and mounted workloads.')}</p></div>
+      <div><h1>{t('Sessions')}</h1><p>{t('Backup sessions, restores and mounted workloads.')}</p></div>
       <div className={ops.headerActions}>
         {feed && <span className={ops.source}>{feed.sourceName}</span>}
         <Button variant="outline" size="sm" disabled={busy} onClick={() => setRevision(value => value + 1)}>
@@ -104,11 +104,11 @@ export function ActivityWorkspace() {
         </Button>
       </div>
     </header>
-    {error && <p role="alert" className={ops.notice}>{error}</p>}
+    {error && <p role="alert" className={ops.notice}>{error === 'Session history unavailable' ? t('Session history unavailable') : error}</p>}
     {!!feed?.warnings.length && <div role="status" className={ops.warnings}>
-      {t('Partial activity data')} · {feed.warnings.map(key => t(mountLabels[key] || key)).join(', ')}
+      {t('Partial collection')} · {feed.warnings.map(key => t(mountLabels[key] || key)).join(', ')}
     </div>}
-    <section className={ops.panel} aria-label={t('Activity')}>
+    <section className={ops.panel} aria-label={t('Sessions')}>
       <FilterWorkspace label="Grid filters" activeCount={activeCount}
         search={<SearchBox label={t('Search sessions')} value={search} onChange={value => {setSearch(value.slice(0, 200)); setOffsets([{skip:0}])}}/>}
         onClear={() => {setSearch(''); setFilters(defaultFilters); setOffsets([{skip:0}])}}
@@ -136,15 +136,17 @@ export function ActivityWorkspace() {
         </FilterFields>}>
         {feed?.rows.length ? <div className={ops.tableScroll}><table className={ops.table}>
           <thead><tr>{['Name','Platform','Status','Started','Progress'].map(label => <th key={label} scope="col">{t(label)}</th>)}</tr></thead>
-          <tbody>{feed.rows.map(row => <tr key={row.key}>
+          <tbody>{feed.rows.map(row => {
+            const progress = sessionProgress(row.session, row.mount)
+            return <tr key={row.key}>
             <td><Link prefetch={false} className={ops.jobName} href={detailLink(row, feed.sourceKey)}>{row.name}</Link>
               <div className={ops.subtext}>{operationLabel(row,t)}</div></td>
             <td>{row.session?.platformName ? enumLabel(t, row.session.platformName) : '—'}</td>
             <td><ActivityStatus row={row}/></td>
             <td className={ops.dateCell}>{date(row.session?.creationTime)}</td>
-            <td>{row.session?.progressPercent == null ? '—' : formatNumber(row.session.progressPercent / 100, {style: 'percent'})}</td>
-          </tr>)}</tbody>
-        </table></div> : <div className={ops.empty}>{!feed && (busy || !error) ? t('Loading…') : feed?.hasMore
+            <td>{progress == null ? '—' : formatNumber(progress / 100, {style: 'percent'})}</td>
+          </tr>})}</tbody>
+        </table></div> : !feed && error ? null : <div className={ops.empty}>{!feed ? t('Loading…') : feed.hasMore
           ? t('No matches in this part of the history. Continue to older sessions.') : t('No matching sessions.')}</div>}
         <div className={ops.pagination}>
           <span>{feed?.total == null || !feed.total && feed.rows.length ? '' : t('{count} sessions', {count: formatNumber(feed.total)})}</span>

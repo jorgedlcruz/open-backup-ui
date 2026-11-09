@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import type { Mount } from '@/lib/activity/model'
 import { useI18n } from '@/components/providers/i18n-provider'
+import { vbrError } from '@/lib/i18n/vbr-errors'
 import { Button } from '@/components/ui/button'
 import { TargetPicker } from '@/components/restore-points/target-picker'
 import type { RestoreInventoryItem } from '@/lib/restore-points/workflow'
@@ -103,8 +104,8 @@ export function MountControls({mount, sourceKey, onAccepted}: {
         <input type="checkbox" checked={quick} onChange={event => setQuick(event.target.checked)}/>{t('Use Veeam Quick Migration')}
       </label>}
     </fieldset>}
-    {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    {uncertain && <p role="status" className="text-sm">{t('Check Activity before submitting another request.')}</p>}
+    {error && <p role="alert" className="text-sm text-destructive">{vbrError(t, error)}</p>}
+    {uncertain && <p role="status" className="text-sm">{t('Check Sessions before submitting another request.')}</p>}
     <div className="flex flex-wrap gap-2">
       <Button size="sm" disabled={busy || uncertain || !ready} variant={action === 'unmount' ? 'destructive' : 'default'} onClick={submit}>
         {busy ? t('Submitting…') : label}
