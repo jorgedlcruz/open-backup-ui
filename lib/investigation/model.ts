@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { jobSchema, type Collection } from '../operations/model'
 
 const text = z.string().nullish()
+// VBR can report this placeholder end time for a task that is still running.
+const endTime = z.string().transform(value => /^1900-01-01T00:00:00(?:\.0+)?(?:Z|[+-]\d\d:\d\d)?$/i.test(value) ? null : value).nullish()
 const number = z.number().finite().nullish()
 export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const validId = (id?: string | null): id is string => !!id && uuid.test(id) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(id)
@@ -11,13 +13,13 @@ const reference = text.transform(value => value?.toLowerCase())
 const result = z.object({ result: text, message: text, isCanceled: z.boolean().nullish() }).nullish()
 export const progressSchema = z.object({ duration: text, processingRate: text, bottleneck: text, processedSize: number, readSize: number, transferredSize: number, progressPercent: number }).nullish()
 export const investigationSessionSchema = z.object({
-  id, jobId: reference, name: text, sessionType: text, creationTime: text, endTime: text,
+  id, jobId: reference, name: text, sessionType: text, creationTime: text, endTime,
   state: text, result, progress: progressSchema, progressPercent: number, initiatedBy: text, platformName: text, algorithm: text,
   originalSessionId: reference, parentSessionId: reference, relatedSessionId: reference, resourceId: reference, resourceReference: text,
   retryInfo: z.object({ isRecheckRetry: z.boolean().nullish(), retryNumber: z.number().int().positive().nullish() }).nullish(),
 })
 export const taskSchema = z.object({
-  id, sessionId: reference, type: text, sessionType: text, name: text, creationTime: text, endTime: text,
+  id, sessionId: reference, type: text, sessionType: text, name: text, creationTime: text, endTime,
   state: text, result, progress: progressSchema, platformType: text, algorithm: text, repositoryId: reference,
   restorePointId: reference, scanState: text, scanResult: text, scanType: text, antivirusName: text,
 })
