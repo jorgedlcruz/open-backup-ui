@@ -8,9 +8,12 @@ import { loadActivityMounts } from './load'
 import { mountBelongsToSession, type Mount } from './model'
 import { enrichInstantVm, sessionMigrations, type ScopedMigration } from './instant-vm-evidence'
 import { isEntireRestore, loadEntireRestore, type EntireRestore } from './entire-restore'
+import type { ThroughputHistory } from './throughput'
 
 export type MountHint = Pick<Mount, 'id'|'kind'>
 export type ActivityDetail = {
+  throughput?: ThroughputHistory
+  migrationThroughput?: ThroughputHistory
   entireRestore?: EntireRestore
   instantMigration?: Session | null
   instantMigrations?: ScopedMigration[]

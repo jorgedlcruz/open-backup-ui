@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "Восстановление завершено с предупреждениями",
   "Restore failed": "Ошибка восстановления",
   "Restore canceled": "Восстановление отменено",
-  "VM configuration": "Конфигурация ВМ"
+  "VM configuration": "Конфигурация ВМ",
+  "Write": "Запись",
+  "Disk transfer": "Передача данных диска",
+  "Transfer speed": "Скорость передачи",
+  "Speed history": "История скорости",
+  "Speed metric": "Показатель скорости",
+  "One recorded sample": "Один замер",
+  "Awaiting speed data": "Ожидание данных о скорости"
 }

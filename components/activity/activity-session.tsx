@@ -26,6 +26,7 @@ import { canStopPublishing, isInstantVmMount, migrationForMount, mountKey, recov
 import { UnmountGuestFiles } from './unmount-guest-files'
 import { EntireVmRecoveryMap } from './entire-vm-recovery-map'
 import { MigrationMap } from './migration-map'
+import { SessionSpeedChart } from './session-speed-chart'
 import ops from '@/components/operations/operations.module.css'
 import investigation from '@/components/investigation/investigation.module.css'
 import styles from './session.module.css'
@@ -318,6 +319,10 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
               !readyToBrowse && latest?.startTime && <time>{date(latest.updateTime || latest.startTime)}</time>}</div>
           {readyToBrowse && activeTab !== 'files' && <Button size="sm" onClick={() => {selectTab('files'); filesTab.current?.focus()}}>
             <FolderOpen size={16}/>{t('Browse guest files')}</Button>}
+          <SessionSpeedChart key={data.sourceKey + (childState && data.instantMigration ? data.instantMigration.id : id)}
+            history={childState ? data.migrationThroughput : data.throughput}
+            preferDisk={!!data.entireRestore && !childState}
+            running={childState ? migrationPending : !!session && !jobDone}/>
           {(childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
         </div>
         {!!facts.length && <dl className={styles.facts}>{facts.map(([key,value]) => <div key={String(key)}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>}

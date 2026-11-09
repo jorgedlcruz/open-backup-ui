@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "पुनर्स्थापना चेतावनियों के साथ पूरी हुई",
   "Restore failed": "पुनर्स्थापना विफल रही",
   "Restore canceled": "पुनर्स्थापना रद्द की गई",
-  "VM configuration": "VM कॉन्फ़िगरेशन"
+  "VM configuration": "VM कॉन्फ़िगरेशन",
+  "Write": "लेखन",
+  "Disk transfer": "डिस्क स्थानांतरण",
+  "Transfer speed": "स्थानांतरण गति",
+  "Speed history": "गति का इतिहास",
+  "Speed metric": "गति माप",
+  "One recorded sample": "एक दर्ज माप",
+  "Awaiting speed data": "गति के डेटा की प्रतीक्षा है"
 }

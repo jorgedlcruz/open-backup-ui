@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "Restauration terminée avec des avertissements",
   "Restore failed": "Échec de la restauration",
   "Restore canceled": "Restauration annulée",
-  "VM configuration": "Configuration de la VM"
+  "VM configuration": "Configuration de la VM",
+  "Write": "Écriture",
+  "Disk transfer": "Transfert de disque",
+  "Transfer speed": "Débit de transfert",
+  "Speed history": "Historique du débit",
+  "Speed metric": "Mesure de débit",
+  "One recorded sample": "Une mesure enregistrée",
+  "Awaiting speed data": "En attente de mesures de débit"
 }

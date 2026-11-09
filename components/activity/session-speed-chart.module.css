@@ -1,0 +1,33 @@
+/* Open Backup UI v1.0.2 */
+.chart,.empty {
+  --speed-accent:var(--ops-accent,var(--primary));
+  flex:0 1 clamp(14rem,23vw,20rem);
+  min-width:0;
+  margin:0;
+  padding-inline-start:1rem;
+  border-inline-start:1px solid var(--border);
+  color:var(--foreground);
+}
+.heading,.axis,.reading {display:flex;align-items:baseline;justify-content:space-between;gap:.5rem}
+.heading > div:first-child {display:grid;gap:.08rem;min-width:0}
+.title,.empty figcaption {font-size:.74rem;line-height:1.3;font-weight:600}
+.source,.select,.axis,.empty > span {font-size:.68rem;line-height:1.35;color:var(--muted-foreground)}
+.source {white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.select {max-width:100%;height:1.4rem;border:1px solid var(--border);border-radius:.35rem;padding:0 .25rem;color:var(--foreground);background:var(--field-background,var(--background))}
+.reading {justify-content:flex-end;gap:.25rem;white-space:nowrap;align-self:center;font-variant-numeric:tabular-nums}
+.reading strong {font-size:1.25rem;letter-spacing:-.035em;line-height:1;font-weight:650}
+.reading span {font-size:.68rem;color:var(--muted-foreground)}
+.plot {display:block;width:100%;height:2.6rem;margin:.25rem 0 .1rem;overflow:visible;color:var(--speed-accent)}
+.plot[role=slider] {cursor:crosshair;touch-action:pan-y}
+.plot:focus-visible,.select:focus-visible {outline:2px solid var(--speed-accent);outline-offset:3px;border-radius:.18rem}
+.grid,.cursor,.trace {fill:none;vector-effect:non-scaling-stroke}
+.grid {stroke:var(--border);stroke-width:1;stroke-dasharray:2 4}
+.trace {stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cursor {stroke:currentColor;stroke-opacity:.55;stroke-dasharray:2 2}
+.dot {fill:var(--speed-accent);stroke:var(--card);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.axis {font-variant-numeric:tabular-nums;font-size:.64rem}
+.empty {flex:0 1 auto;display:grid;gap:.25rem}
+@media (max-width:700px) {
+  .chart,.empty {flex:1 0 100%;order:2;border-inline-start:0;border-top:1px solid var(--border);padding:.75rem 0 0}
+  .plot {height:2.8rem}
+}

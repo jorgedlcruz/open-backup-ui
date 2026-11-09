@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "警告付きで復元が完了しました",
   "Restore failed": "復元に失敗しました",
   "Restore canceled": "復元がキャンセルされました",
-  "VM configuration": "VM 構成"
+  "VM configuration": "VM 構成",
+  "Write": "書き込み",
+  "Disk transfer": "ディスク転送",
+  "Transfer speed": "転送速度",
+  "Speed history": "速度履歴",
+  "Speed metric": "速度の指標",
+  "One recorded sample": "記録済みサンプル 1 件",
+  "Awaiting speed data": "速度データを待機中"
 }

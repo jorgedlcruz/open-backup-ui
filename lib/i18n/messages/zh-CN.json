@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "还原已完成，但有警告",
   "Restore failed": "还原失败",
   "Restore canceled": "还原已取消",
-  "VM configuration": "虚拟机配置"
+  "VM configuration": "虚拟机配置",
+  "Write": "写入",
+  "Disk transfer": "磁盘传输",
+  "Transfer speed": "传输速度",
+  "Speed history": "速度历史记录",
+  "Speed metric": "速度指标",
+  "One recorded sample": "已记录一个样本",
+  "Awaiting speed data": "正在等待速度数据"
 }

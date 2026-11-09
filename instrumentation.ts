@@ -5,5 +5,7 @@ export async function register() {
     startCapacityCollector()
     const {startForecastRefresh}=await import('./lib/server/forecast-cache')
     startForecastRefresh()
+    const {startSessionThroughputCollector}=await import('./lib/server/session-throughput-collector')
+    startSessionThroughputCollector()
   }
 }

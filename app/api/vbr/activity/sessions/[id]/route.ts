@@ -7,6 +7,7 @@ import { validId } from '@/lib/investigation/model'
 import { loadActivitySession, type MountHint } from '@/lib/activity/session'
 import { platforms } from '@/lib/activity/model'
 import { stopEntireVm } from '@/lib/activity/stop-session'
+import { readSessionThroughput, recordSessionThroughput } from '@/lib/server/session-throughput'
 
 type Context = { params: Promise<{id: string}> }
 export const dynamic = 'force-dynamic'
@@ -16,9 +17,15 @@ export async function GET(request: NextRequest, {params}: Context) {
   const mount = search.get('mount')?.toLowerCase(), kind = search.get('kind'), expected = search.get('sourceKey')
   if (!validId(id) || ((mount || kind) && (!validId(mount) || ![...platforms, 'other'].includes(kind || ''))) ||
     (expected !== null && !/^[a-f0-9]{64}$/.test(expected))) return NextResponse.json({error:'Invalid session link.'}, {status:400})
-  return withVbrRead(request, (read, sourceName, _inventory, ctx) => {
+  return withVbrRead(request, async (read, sourceName, _inventory, ctx) => {
     if (expected && expected !== ctx.sourceKey) throw new TopologyRequestError('This session belongs to a different VBR source.', 409)
-    return loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries, ctx.vmPower)
+    const detail = await loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries, ctx.vmPower)
+    // The VBR read above authorizes each session before its principal-scoped history can be used.
+    const [throughput, migrationThroughput] = await Promise.all([
+      detail.session && recordSessionThroughput(ctx.cacheKey, detail.session, detail.logs, Date.now(), detail.tasks).catch(() => undefined),
+      detail.instantMigration && readSessionThroughput(ctx.cacheKey, detail.instantMigration.id, detail.instantMigration.endTime).catch(() => undefined),
+    ])
+    return {...detail, throughput:throughput || undefined, migrationThroughput:migrationThroughput || undefined}
   })
 }
 export async function POST(request: NextRequest, {params}: Context) {

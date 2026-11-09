@@ -137,6 +137,8 @@
   background:currentColor; clip-path:polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,45% 50%);
 }
 .connection[data-phase="active"] .strand > i + i { left:65%; }
+.connection[data-io] .linkLabel {font-weight:650; color:var(--ink);}
+.connection[data-io="write"][data-phase="active"] {color:color-mix(in srgb,var(--signal) 65%,var(--ink));}
 .linkLabel {
   position:absolute; left:50%; top:100%; transform:translateX(-50%); width:100%; text-align:center;
   color:var(--muted-foreground); font-size:.66rem; font-weight:600; line-height:1.15; overflow-wrap:anywhere;
@@ -181,6 +183,8 @@
   .destination, .choose, .dragHandle { transition: background-color .15s, border-color .15s; }
   .connection[data-phase="active"] .strand > i { animation: moveData 1.55s linear infinite; }
   .connection[data-phase="active"] .strand > i + i { animation-delay:-.775s; }
+  .connection[data-io="write"][data-phase="active"] .strand > i {animation-delay:-.38s;}
+  .connection[data-io="write"][data-phase="active"] .strand > i + i {animation-delay:-1.155s;}
   @keyframes moveData { from { left:0; } to { left:calc(100% - .72rem); } }
 }
 

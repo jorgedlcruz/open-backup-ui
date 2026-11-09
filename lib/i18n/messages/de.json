@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "Wiederherstellung mit Warnungen abgeschlossen",
   "Restore failed": "Wiederherstellung fehlgeschlagen",
   "Restore canceled": "Wiederherstellung abgebrochen",
-  "VM configuration": "VM-Konfiguration"
+  "VM configuration": "VM-Konfiguration",
+  "Write": "Schreiben",
+  "Disk transfer": "Datenträgerübertragung",
+  "Transfer speed": "Übertragungsgeschwindigkeit",
+  "Speed history": "Geschwindigkeitsverlauf",
+  "Speed metric": "Geschwindigkeitsmesswert",
+  "One recorded sample": "Ein Messwert",
+  "Awaiting speed data": "Warten auf Geschwindigkeitsdaten"
 }

@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "Restore completed with warnings",
   "Restore failed": "Restore failed",
   "Restore canceled": "Restore canceled",
-  "VM configuration": "VM configuration"
+  "VM configuration": "VM configuration",
+  "Write": "Write",
+  "Disk transfer": "Disk transfer",
+  "Transfer speed": "Transfer speed",
+  "Speed history": "Speed history",
+  "Speed metric": "Speed metric",
+  "One recorded sample": "One recorded sample",
+  "Awaiting speed data": "Awaiting speed data"
 }

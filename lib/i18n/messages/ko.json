@@ -4303,5 +4303,12 @@
   "Restore completed with warnings": "경고와 함께 복원 완료",
   "Restore failed": "복원 실패",
   "Restore canceled": "복원 취소됨",
-  "VM configuration": "VM 구성"
+  "VM configuration": "VM 구성",
+  "Write": "쓰기",
+  "Disk transfer": "디스크 전송",
+  "Transfer speed": "전송 속도",
+  "Speed history": "속도 기록",
+  "Speed metric": "속도 지표",
+  "One recorded sample": "기록된 측정값 1개",
+  "Awaiting speed data": "속도 데이터 대기 중"
 }
