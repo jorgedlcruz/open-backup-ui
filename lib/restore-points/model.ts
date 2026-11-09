@@ -1,5 +1,6 @@
 // Open Backup UI v1.0.2
 export interface RestorePoint {
+  applications?: {kind:'activeDirectory'|'sql'; objectId:string}[];
   id: string; backupId: string; name?: string | null; creationTime?: string | null;
   type?: string | null; platformName?: string | null; backupFileId?: string | null;
   malwareStatus?: string | null; allowedOperations?: string[] | null; gfsPeriods?: string[] | null;

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { observeRestoreLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { activeDirectoryOperation, sqlOperation, observeRestoreLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import { restoreActivityUrl } from '@/lib/restore-points/workflow'
 import { useRecoveryPresentation } from './use-presentation'
 import { RecoverySignal } from './recovery-signal'
@@ -24,7 +24,8 @@ export function PreparingRecovery({ requestId }: { requestId: string }) {
     void observeRestoreLaunch(requestId).then(value => {
       if (!active) return
       setReceipt(value)
-      if (value?.phase === 'accepted' && value.sessionId) router.replace(restoreActivityUrl(value.sessionId, value.sourceKey) + '#session-log')
+      if (value?.phase === 'accepted' && value.sessionId) router.replace(restoreActivityUrl(value.sessionId, value.sourceKey) +
+        (value.operation === activeDirectoryOperation || value.operation === sqlOperation ? '#application-items' : '#session-log'))
     })
     return () => { active = false }
   }, [requestId, router])

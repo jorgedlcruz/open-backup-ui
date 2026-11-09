@@ -23,6 +23,8 @@
   background-size: auto, 14px 14px;
 }
 .canvas[data-nodes="2"] {grid-template-columns: minmax(0,1fr) clamp(3.5rem,12cqi,9rem) minmax(0,1fr);}
+.canvas[data-nodes="4"] {grid-template-columns: repeat(3,minmax(0,1fr) var(--connector)) minmax(0,1fr);}
+.canvas[data-nodes="5"] {--connector:clamp(3.1rem,5.2cqi,5.3rem);grid-template-columns: repeat(4,minmax(0,1fr) var(--connector)) minmax(0,1fr);}
 .canvas[data-editing] {--connector:clamp(2.4rem,5cqi,4.5rem);grid-template-columns: minmax(0,.9fr) var(--connector) minmax(0,1fr) var(--connector) minmax(0,1.6fr);}
 .repository, .machine, .destination {
   display: flex;
@@ -143,6 +145,12 @@
   position:absolute; left:50%; top:100%; transform:translateX(-50%); width:100%; text-align:center;
   color:var(--muted-foreground); font-size:.66rem; font-weight:600; line-height:1.15; overflow-wrap:anywhere;
 }
+.linkMeasure {
+  position:absolute;bottom:100%;inset-inline:0;display:grid;gap:.2rem;text-align:center;
+  font-size:.7rem;line-height:1.15;color:var(--ink);overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
+}
+.linkMeasure small {font-size:.62rem;color:var(--muted-foreground);}
+.linkMeasure strong {font-weight:650;}
 .destination {
   align-self: stretch;
 }
@@ -189,7 +197,7 @@
 }
 
 @container (max-width: 43rem) {
-  .canvas, .canvas[data-editing], .canvas[data-nodes="2"] { grid-template-columns: minmax(0,1fr); padding: .75rem; }
+  .canvas, .canvas[data-editing], .canvas[data-nodes] { grid-template-columns: minmax(0,1fr); padding: .75rem; }
   .repository, .machine, .destination {
     display: grid; grid-template-columns: 4.3rem minmax(0,1fr); column-gap: .8rem; align-items: start; text-align: start;
     padding: .8rem .75rem; align-self: auto;
@@ -207,6 +215,7 @@
   .connection {display:flex;align-items:center;gap:.1rem;min-height:2.7rem;margin:0 0 0 1.65rem;}
   .rail {width:2.7rem; flex:none; transform:rotate(90deg);}
   .linkLabel {position:static;transform:none;text-align:start;width:auto;}
+  .linkMeasure {position:static;order:2;display:flex;align-items:baseline;gap:.35rem;margin-inline-start:.55rem;text-align:start;}
 }
 @media (forced-colors: active) {
   .strand, .transferState i, .connection[data-phase="active"] .strand > i {background:CanvasText;forced-color-adjust:none;}

@@ -2,9 +2,10 @@
 // Open Backup UI v1.0.2
 import { useRecoveryPresentation } from './use-presentation'
 import { RestoreWorkflow } from './restore-workflow'
+import { ApplicationExplorerLaunch } from './active-directory-launch'
 import { RecoveryHandoff } from './preparing-recovery'
 import { isRestoreOperation, type RestoreOperation } from '@/lib/restore-points/workflow'
-import { observeRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { activeDirectoryOperation, sqlOperation, observeRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import workflow from './workflow.module.css'
 
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -19,7 +20,7 @@ import { VBRRestorePointsTable } from '@/components/vbr-restore-points-table'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { enrichPoints,fileAccounting,isFlagged,pointTime,recoveryReadiness,usableId,type RestorePointSnapshot } from '@/lib/restore-points/model'
 import { cn } from '@/lib/utils'
-import { ArrowLeft,ArrowUpRight,CalendarDays,CheckCircle2,CircleHelp,Clock3,Cloud,Database,FileStack,FolderOpen,HardDrive,HardDriveUpload,Layers3,List,Loader2,LockKeyhole,MonitorUp,MonitorPlay,RefreshCw,RotateCcw,Search,Server,ShieldCheck,TriangleAlert } from 'lucide-react'
+import { ArrowLeft,ArrowUpRight,CalendarDays,CheckCircle2,CircleHelp,Clock3,Cloud,Database,FileStack,FolderOpen,FolderTree,HardDrive,HardDriveUpload,Layers3,List,Loader2,LockKeyhole,MonitorUp,MonitorPlay,RefreshCw,RotateCcw,Search,Server,ShieldCheck,TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect,useMemo,useState,useTransition,type ReactNode } from 'react'
@@ -62,7 +63,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const [repository, setRepository] = useState('all');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [operation, setOperation] = useState<RestoreOperation | null>(null);
+  const [operation, setOperation] = useState<RestoreLaunch['operation'] | null>(null);
   const router = useRouter()
   const [navigating, startTransition] = useTransition()
   const [handoff, setHandoff] = useState<RestoreLaunch>()
@@ -96,6 +97,8 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const accounting = useMemo(() => fileAccounting(rows), [rows]);
   const readiness = useMemo(() => data ? recoveryReadiness(data, rows, Date.parse(data.fetchedAt)) : null, [data, rows]);
   const selected = rows.find(row => row.point.id === selectedId);
+  const directory = selected?.point.applications?.find(app => app.kind === 'activeDirectory')
+  const sql = selected?.point.applications?.find(app => app.kind === 'sql')
   const filtered = useMemo(() => rows.filter(row => {
     if (malware === 'flagged' && !row.flagged) return false;
     if (malware === 'clean' && (row.point.malwareStatus !== 'Clean' || row.flagged)) return false;
@@ -171,7 +174,10 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
       {selected && <><DialogHeader><DialogTitle>{operation ? label(operation) : t("Restore point")}</DialogTitle><DialogDescription>{selected.point.name || title} · {date(selected.point.creationTime)}</DialogDescription></DialogHeader>
         <div className={styles.detailBadges}><span className={ops.badge}>{label(selected.type)}</span><MalwareBadge value={selected.point.malwareStatus} fileFlagged={isFlagged(selected.file?.severity)} />{selected.gfs.map(flag => <span className={ops.badge} key={flag}>{label(flag)}</span>)}</div>
         {selected.flagged && <div className={styles.securityNotice}><TriangleAlert size={18} />{t("Review the reported threat and scan evidence before choosing this point.")}</div>}
-        {operation ? <RestoreWorkflow key={selected.point.id + operation} point={selected.point} flagged={selected.flagged} sourceKey={data?.sourceKey} operation={operation} onBack={() => setOperation(null)} onLaunch={openActivity} /> : <>
+        {operation === activeDirectoryOperation || operation === sqlOperation ? ((operation===sqlOperation?sql:directory) && data?.sourceKey ?
+          <ApplicationExplorerLaunch key={selected.point.id+operation} sql={operation===sqlOperation} point={selected.point} backupObjectId={(operation===sqlOperation?sql:directory)!.objectId} sourceKey={data.sourceKey} onBack={() => setOperation(null)} onLaunch={openActivity}/> :
+          <p role="status">{t('Application browsing is unavailable for this restore point.')}</p>) :
+        operation ? <RestoreWorkflow key={selected.point.id + operation} point={selected.point} flagged={selected.flagged} sourceKey={data?.sourceKey} operation={operation} onBack={() => setOperation(null)} onLaunch={openActivity} /> : <>
         <dl className={cn(styles.detailGrid, workflow.primaryEvidence)} aria-label={t('Recovery point evidence')}>
           <div><dt>{t("Job / backup")}</dt><dd>{usableId(selected.backup?.jobId) ? <Link href={`/vbr/jobs/${encodeURIComponent(selected.backup.jobId)}`}>{selected.backup.name || selected.backup.jobId}</Link> : selected.backup?.name || t("Unknown")}</dd></div>
           <div><dt>{t("Repository")}</dt><dd>{usableId(selected.backup?.repositoryId) ? <Link href={`/vbr/infrastructure/repositories/${encodeURIComponent(selected.backup.repositoryId)}`}>{selected.backup.repositoryName || selected.backup.repositoryId}</Link> : t("Unknown")}</dd></div>
@@ -186,6 +192,11 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
             return <li key={item}><button type="button" onClick={() => setOperation(item)}><Icon size={16} aria-hidden="true" />{label(item)}</button></li>
           })}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
         </section>
+        {(directory || sql) && data?.sourceKey && <section className={styles.detailSection}><h3>{t('Application items')}</h3>
+          <ul className={workflow.operations}>{directory && <li><button type="button" onClick={() => setOperation(activeDirectoryOperation)}>
+            <FolderTree size={16} aria-hidden/>{t('Microsoft Active Directory')}</button></li>}
+            {sql && <li><button type="button" onClick={()=>setOperation(sqlOperation)}><Database size={16} aria-hidden/>{t('Microsoft SQL Server')}</button></li>}</ul>
+        </section>}
         <section className={styles.detailSection}><h3>{t("Recovery point evidence")}</h3><dl className={styles.detailGrid}>
           <div><dt>{t("Type evidence")}</dt><dd>{label(selected.typeSource)}</dd></div><div><dt>{t("GFS flags")}</dt><dd>{selected.gfs.length ? selected.gfs.map(label).join(', ') : selected.gfsSource === 'Not reported' ? t("Unknown") : t("None reported")}<small>{label(selected.gfsSource)}</small></dd></div>
           <div><dt>{t("Point malware status")}</dt><dd>{selected.point.malwareStatus ? label(selected.point.malwareStatus) : t("Unknown")}<small>{t("Scan time and provenance not reported")}</small></dd></div><div><dt>{t("File malware status")}</dt><dd>{selected.file?.severity ? label(selected.file.severity) : t("Unknown")}</dd></div>

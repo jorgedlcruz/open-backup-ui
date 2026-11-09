@@ -38,6 +38,8 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
     case 'StartEntireVmRestoreHyperV': return t('Hyper-V VM restore')
     case 'StartFCDInstantRecovery': return t('First Class Disk recovery')
     case 'StartFlrRestore': return t('Guest file restore')
+    case 'BrowseActiveDirectory': return t('Microsoft Active Directory')
+    case 'BrowseSql': return t('Microsoft SQL Server')
     case 'StartDiskPublish': return t('Publish disks')
     case 'Increment': case 'Incremental': return t('Incremental')
     case 'Full': return t('Full')

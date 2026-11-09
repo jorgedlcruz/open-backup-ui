@@ -1,0 +1,14 @@
+/* Open Backup UI v1.0.2 */
+.context{display:flex;align-items:center;flex-wrap:wrap;gap:1rem 2rem;min-width:0;padding:.85rem 1rem;border:1px solid var(--border);border-inline-start:3px solid var(--primary);border-radius:.65rem;background:linear-gradient(102deg,color-mix(in srgb,var(--primary) 8%,transparent),transparent 72%);font-size:.84rem}
+.identity,.identity small,.window small,.times{display:flex;align-items:center;gap:.45rem}
+.identity{gap:.75rem;min-width:0;flex:1 1 13rem}
+.identity>div:last-child,.window,.selection{display:grid;min-width:0;gap:.18rem}
+.context small{font-size:.72rem;color:var(--muted-foreground);line-height:1.4}
+.context strong,.context time{font-weight:620;overflow-wrap:anywhere}
+.symbol{position:relative;display:grid;place-items:center;flex:none;width:2.65rem;height:2.65rem;color:var(--primary);border:1px solid color-mix(in srgb,var(--primary) 50%,transparent);border-radius:.65rem;background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.symbol svg+svg{position:absolute;inset:auto -.2rem -.12rem auto;border-radius:3px;color:var(--foreground);background:var(--card)}
+.window{flex:1.2 1 13rem}.times{flex-wrap:wrap;gap:.25rem .55rem;font-variant-numeric:tabular-nums}
+.times i{width:clamp(1rem,3vw,3.1rem);height:2px;position:relative;background:var(--primary)}
+.times i:before,.times i:after{content:'';position:absolute;top:-2px;height:6px;width:6px;background:var(--primary);border-radius:50%}.times i:after{right:0}
+.selection{flex:0 1 auto;max-width:17rem;text-align:end}
+@media(max-width:640px){.context{gap:.6rem 1rem}.selection{text-align:start}.identity,.window{flex-basis:100%}}

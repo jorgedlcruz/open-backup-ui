@@ -10,6 +10,7 @@ import { isSameApplicationOrigin } from './request-origin'
 import { getChunkedCookie } from '../utils/cookie-manager'
 
 import { VbrRecoveryError } from '../recovery/error'
+import { explorerConnection } from './vbr-explorer'
 export { VbrRecoveryError }
 
 export type RecoverySend = (path: string, options?: {
@@ -47,6 +48,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
   send: RecoverySend
   sourceKey: string
   bearerOnly: boolean
+  getExplorer: () => ReturnType<typeof explorerConnection>
 }) => Promise<unknown>, options: {backgroundMigration?: boolean} = {}) {
   const headers = { 'Cache-Control': 'private, no-store' }
   try {
@@ -63,6 +65,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
     if (!['https:', 'http:'].includes(destination.protocol)) throw new VbrRecoveryError('Invalid VBR source.')
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
     let token = sourceId ? await tokenManager.getToken(sourceId) : null
+    const configured = !!token && !!source
     token ||= getChunkedCookie(jar, 'veeam_vbr_token') || null
     const bearerOnly = !token
     token ||= request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1] || null
@@ -119,7 +122,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           transferSignal.aborted ? 504 : 502, mutation)
       } finally { if (timer) clearTimeout(timer) }
     }
-    const result = await run({ send, sourceKey, bearerOnly })
+    const result = await run({ send, sourceKey, bearerOnly, getExplorer:()=>explorerConnection(configured ? source : undefined,request.signal) })
     return result instanceof Response ? result : NextResponse.json(result, { headers })
   } catch (error) {
     const failure = error instanceof VbrRecoveryError ? error : new VbrRecoveryError('The VBR response could not be processed.', 502)

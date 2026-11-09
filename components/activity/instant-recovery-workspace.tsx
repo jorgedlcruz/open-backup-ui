@@ -4,6 +4,8 @@
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ArrowRight, Database, GripVertical, HardDrive, Layers, MapPin, Power, Server } from 'lucide-react'
 import type { Mount } from '@/lib/activity/model'
+import {migrationHops, type MigrationProxies, type MigrationSpeed} from '@/lib/activity/migration-plan'
+import {MigrationPath} from './migration-path'
 import { useInvestigationPresentation } from '@/components/investigation/shared'
 import { RecoveryConnector, RecoveryDiagram, RecoveryHostArt, RecoveryNode, type RecoveryFact, type RecoveryPhase } from './recovery-diagram'
 import styles from './instant-recovery-workspace.module.css'
@@ -14,6 +16,8 @@ export type InstantRecoveryTransfer = {
   message?: string
   transferredBytes?: number
   totalBytes?: number
+  proxies?: MigrationProxies
+  speed?: MigrationSpeed
 }
 
 type WorkspaceProps = {
@@ -114,7 +118,8 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
       {transfer.message && <div className={styles.transferDetail}>{transfer.message}</div>}
     </div>}
   </>
-  return <RecoveryDiagram label={t('Instant Recovery workspace')} nodes={3} editing={configuring} footer={footer}>
+  const proxies=transfer?.proxies ?? {}
+  return <RecoveryDiagram label={t('Instant Recovery workspace')} nodes={3+migrationHops(proxies).length} editing={configuring} footer={footer}>
     <RecoveryNode kind="repository" label={t('Source backup')} name={evidence?.backupName || missing} facts={sourceFacts}/>
     <RecoveryConnector mounted={mount.state === 'Mounted'} label={mount.state === 'Mounted' ? t('Mounted') : undefined}/>
     <RecoveryNode kind="machine" label={t('Recovered VM')} name={vmName || missing} facts={vmFacts}
@@ -123,7 +128,7 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
         onDragStart={dragStart} onDragEnd={() => {setDragging(false); setOverTarget(false)}} onClick={configure}>
         <RecoveryHostArt/><GripVertical aria-hidden className={styles.grip} size={14}/></button> : undefined}
       status={<div className={styles.power} data-power={power}><Power size={12} aria-hidden/>{powerLabel}</div>}/>
-    <RecoveryConnector phase={transfer?.phase}/>
+    <MigrationPath phase={transfer?.phase} proxies={proxies} speed={transfer?.speed}/>
     <RecoveryNode kind="destination" phase={transfer?.phase} label={t('Production destination')} name={configuring ? undefined : destinationName}
       facts={!configuring && destination?.datastore ? [{label:t('Destination datastore'),value:destination.datastore,icon:HardDrive,primary:!destination.host}] : undefined}
       available={available} editing={configuring} data-dragging={dragging || undefined} data-over={overTarget || undefined} onDragOver={dragOver}

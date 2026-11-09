@@ -6,6 +6,7 @@ import { tokenManager } from '@/lib/server/token-manager'
 import { getChunkedCookie } from '@/lib/utils/cookie-manager'
 import { TopologyRequestError } from '@/lib/topology/load'
 import { readCacheScope } from './read-cache-scope'
+import { explorerConnection, explorerPrincipal } from './vbr-explorer'
 import { createHash } from 'node:crypto'
 
 export type VbrRevision = '1.3-rev1' | '1.3-rev2'
@@ -17,7 +18,7 @@ export type VbrInventoryReader = (host: string | null, skip: number, limit: numb
 // VBR exposes this read-only cross-platform mount list as a POST with query parameters.
 export type PublishedRecoveryReader = (skip: number, limit: number) => Promise<unknown>
 export type VmPowerReader = (manager: string, platform: 'VSphere'|'HyperV', vmName: string) => Promise<unknown>
-export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; serverCredentials: boolean; sourceId?: string; signal: AbortSignal; publishedRecoveries: PublishedRecoveryReader; vmPower: VmPowerReader }) => Promise<unknown>) {
+export async function withVbrRead(request: NextRequest, load: (read: VbrReader, sourceName: string, inventory: VbrInventoryReader, context: { cacheKey: string; sourceKey: string; explorerPrincipalKey?: string; getExplorer: () => ReturnType<typeof explorerConnection>; serverCredentials: boolean; sourceId?: string; signal: AbortSignal; publishedRecoveries: PublishedRecoveryReader; vmPower: VmPowerReader }) => Promise<unknown>) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60000)
   const abort = () => controller.abort()
@@ -78,7 +79,7 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       }))
     }
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
-    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, publishedRecoveries, vmPower, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
+    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, explorerPrincipalKey:configuredPrincipal && source?.password ? explorerPrincipal(source):undefined, getExplorer:()=>explorerConnection(configuredPrincipal ? source:undefined,controller.signal), publishedRecoveries, vmPower, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
   } catch (error) {
     return NextResponse.json({ error: error instanceof TopologyRequestError ? error.message
       : controller.signal.aborted ? 'Loading took too long. Retry or narrow the source environment.'

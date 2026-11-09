@@ -6,6 +6,8 @@ import { TopologyRequestError } from '@/lib/topology/load'
 import { validId } from '@/lib/investigation/model'
 import { loadActivitySession, type MountHint } from '@/lib/activity/session'
 import { platforms } from '@/lib/activity/model'
+import { explorerSession } from '@/lib/server/explorer-session-records'
+import { nativeExplorerKind } from '@/lib/recovery/explorer-resume'
 import { stopEntireVm } from '@/lib/activity/stop-session'
 import { readSessionThroughput, recordSessionThroughput } from '@/lib/server/session-throughput'
 
@@ -19,13 +21,15 @@ export async function GET(request: NextRequest, {params}: Context) {
     (expected !== null && !/^[a-f0-9]{64}$/.test(expected))) return NextResponse.json({error:'Invalid session link.'}, {status:400})
   return withVbrRead(request, async (read, sourceName, _inventory, ctx) => {
     if (expected && expected !== ctx.sourceKey) throw new TopologyRequestError('This session belongs to a different VBR source.', 409)
-    const detail = await loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries, ctx.vmPower)
+    const marker=ctx.explorerPrincipalKey ? await explorerSession({sourceKey:ctx.sourceKey,principalKey:ctx.explorerPrincipalKey,sessionId:id}) : undefined
+    const detail = await loadActivitySession(read, sourceName, ctx.sourceKey, id, mount && kind ? {id: mount, kind} as MountHint : undefined, ctx.publishedRecoveries, ctx.vmPower, marker ? {kind:marker.kind,closed:!!marker.closedAt} : undefined)
     // The VBR read above authorizes each session before its principal-scoped history can be used.
     const [throughput, migrationThroughput] = await Promise.all([
       detail.session && recordSessionThroughput(ctx.cacheKey, detail.session, detail.logs, Date.now(), detail.tasks).catch(() => undefined),
       detail.instantMigration && readSessionThroughput(ctx.cacheKey, detail.instantMigration.id, detail.instantMigration.endTime).catch(() => undefined),
     ])
-    return {...detail, throughput:throughput || undefined, migrationThroughput:migrationThroughput || undefined}
+    const nativeKind = !marker && ctx.explorerPrincipalKey ? nativeExplorerKind(detail.session) : undefined
+    return {...detail,...(nativeKind && {appExplorer:{kind:nativeKind,closed:!!detail.session?.endTime || detail.session?.state==='Stopped',needsResume:true}}),throughput:throughput || undefined, migrationThroughput:migrationThroughput || undefined}
   })
 }
 export async function POST(request: NextRequest, {params}: Context) {

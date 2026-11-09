@@ -9,6 +9,8 @@ import { useI18n } from '@/components/providers/i18n-provider'
 import { ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { migrationTransfer } from '@/lib/activity/instant-vm'
+import {migrationSpeed} from '@/lib/activity/migration-plan'
+import {useMigrationTask} from './migration-path'
 import { migrationReceiptEvent, migrationReceipts, storeMigration, type MigrationReceipt } from '@/lib/activity/migration-receipt'
 import type { ActivityDetail } from '@/lib/activity/session'
 import type { Mount } from '@/lib/activity/model'
@@ -18,29 +20,33 @@ import { InstantRecoveryWorkspace, type InstantRecoveryTransfer } from './instan
 import { MigrationForm, type MigrationPlacement } from './migration-form'
 import { migrationDestination } from './session-commands'
 
-function useMigrationSession(sourceKey: string, sessionId?: string) {
-  const [record, setRecord] = useState<{id: string; session?: Session; unavailable?: boolean}>()
+function useMigrationSession(sourceKey: string, parentId:string, sessionId?: string) {
+  const [record, setRecord] = useState<{id: string; sourceKey:string; detail?: ActivityDetail; unavailable?: boolean}>()
   useEffect(() => {
     if (!sessionId) return
     const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout>
+    let timer: ReturnType<typeof setTimeout>, running=false, finished=false
     async function poll() {
-      let finished = false
+      if (document.hidden || running || finished || controller.signal.aborted) return
+      running=true
       try {
         const data = await veeamApi.requestActivity<ActivityDetail>(`/api/vbr/activity/sessions/${sessionId}?sourceKey=${sourceKey}`, {signal:controller.signal})
         if (controller.signal.aborted) return
-        if (data.sourceKey !== sourceKey || data.session?.id !== sessionId || !data.session) throw new Error('Unverified migration session')
-        setRecord({id:sessionId!, session:data.session})
+        if (data.sourceKey !== sourceKey || data.id !== sessionId || data.session?.id !== sessionId ||
+          data.session?.sessionType !== 'QuickMigration' || validId(data.session.parentSessionId) && data.session.parentSessionId !== parentId) throw new Error('Unverified migration session')
+        setRecord({id:sessionId!,sourceKey,detail:data})
         finished = !!data.session.endTime || data.session.state === 'Stopped'
       } catch {
-        if (!controller.signal.aborted) setRecord({id:sessionId!, unavailable:true})
-      }
-      if (!finished && !controller.signal.aborted) timer = setTimeout(poll, 5000)
+        if (!controller.signal.aborted) setRecord({id:sessionId!,sourceKey,unavailable:true})
+      } finally {running=false}
+      if (!finished && !controller.signal.aborted) timer = setTimeout(poll, 15000)
     }
     void poll()
-    return () => {controller.abort(); clearTimeout(timer)}
-  }, [sourceKey, sessionId])
-  return sessionId && record?.id === sessionId ? record : undefined
+    function visible(){if(!document.hidden){clearTimeout(timer);void poll()}}
+    document.addEventListener('visibilitychange',visible)
+    return () => {controller.abort(); clearTimeout(timer);document.removeEventListener('visibilitychange',visible)}
+  }, [sourceKey, parentId, sessionId])
+  return sessionId && record?.id === sessionId && record.sourceKey === sourceKey ? record : undefined
 }
 
 const phases = {pending:'accepted', migrating:'active', succeeded:'completed', warning:'warning', failed:'failed', canceled:'canceled', unknown:'unknown'} as const
@@ -110,8 +116,17 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
   }, [trackingId, sourceKey, mount.kind, mount.id, mount.sessionId, refresh, t])
   const linked = migrationSession && migrationSession.id !== receipt?.previousChildId &&
     (association || !receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
-  const child = useMigrationSession(sourceKey, linked ? undefined : receipt?.childId)
-  const operation = child?.session ?? linked
+  const childId = linked?.id || receipt?.childId
+  const child = useMigrationSession(sourceKey,mount.sessionId,childId)
+  const detail=child?.detail
+  const terminalChild=detail?.session?.endTime || detail?.session?.state==='Stopped'
+  const operation = terminalChild ? detail?.session : linked ?? detail?.session
+  // A mount is one VM. Only a completely enumerated, single-VM child identifies
+  // its task without guessing by VM name. Multi-VM children have their own selector.
+  const single=!!detail?.tasks.available && detail.tasks.complete && detail.tasks.data.length===1 && detail.tasks.data[0].sessionId===childId
+  const task=single ? detail?.tasks.data[0] : undefined
+  const {proxies,task:detailTask}=useMigrationTask(sourceKey,childId,task?.id,!!operation && !operation.endTime && operation.state!=='Stopped')
+  const speed=single ? migrationSpeed(operation,task,true,detail?.throughput) ?? migrationSpeed(operation,detailTask,true) : undefined
   const evidence = migrationTransfer(mount, session, operation)
   const recoverable = ['failed','canceled'].includes(evidence.phase) && mount.state === 'Mounted'
   const locked = !recoverable && (!!receipt || evidence.phase !== 'idle')
@@ -151,8 +166,7 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
   const phase: InstantRecoveryTransfer['phase'] | undefined = evidence.phase !== 'idle' ? phases[evidence.phase] : receipt?.status === 'checking' ? 'checking' : receipt?.status === 'accepted' ? 'accepted'
     : receipt?.status === 'unknown' ? 'unknown' : undefined
   const transfer = !configuring && phase ? {phase:child?.unavailable && phase === 'accepted' ? 'unknown' as const : phase,
-    percent:evidence.progress, transferredBytes:evidence.transferredBytes, message:operation?.result?.message || undefined} : undefined
-  const childId = linked?.id || receipt?.childId
+    percent:evidence.progress, transferredBytes:evidence.transferredBytes, message:operation?.result?.message || undefined,proxies,speed} : undefined
   const destination = migrationDestination(mount.id, childId, association, receipt)
   return <>
     <InstantRecoveryWorkspace mount={mount} destination={configuring ? undefined : destination} transfer={transfer}

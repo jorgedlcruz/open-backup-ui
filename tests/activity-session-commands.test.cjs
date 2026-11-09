@@ -76,8 +76,11 @@ test('recovery map uses phase-specific production icons and renders known placem
     const component = new Module(file,module), localRequire = Module.createRequire(file)
     component.require = key => {
       if (key === '@/components/investigation/shared') return {useInvestigationPresentation:() => ({t:key=>key,date:String,bytes:String,formatNumber:String})}
+      if (key === '@/components/providers/i18n-provider') return {useI18n:()=>({t:key=>key,formatNumber:String})}
+      if (key === '@/lib/activity/migration-plan') return require('../lib/activity/migration-plan.ts')
+      if (key === '@/lib/api/application-request' || key === '@/lib/api/veeam-client') return {}
       if (key.endsWith('.module.css')) return {default:new Proxy({}, {get:(_,key)=>key}),__esModule:true}
-      if (key === './recovery-diagram') return loadComponent(localRequire.resolve('./recovery-diagram.tsx'))
+      if (key === './recovery-diagram' || key === './migration-path') return loadComponent(localRequire.resolve(key+'.tsx'))
       return localRequire(key)
     }
     component._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{
@@ -101,4 +104,22 @@ test('recovery map uses phase-specific production icons and renders known placem
     assert.ok(output.includes(icon),phase);assert.match(output,/esx-prod/);assert.match(output,/prod-ds/);assert.doesNotMatch(output,/lucide-plus|Not reported/)
   }
   assert.doesNotMatch(render('active',{datastore:'prod-ds'}),/Not reported/)
+  const proxy = {name:'proxy1',transport:'nbd'}
+  function transfer(proxies,phase='active') {
+    const html=renderToStaticMarkup(React.createElement(InstantRecoveryWorkspace,{mount,transfer:{
+      phase,proxies,speed:{basis:'processing',bytesPerSecond:356700},
+    }}))
+    return {html,nodes:[...html.matchAll(/data-node="([^"]+)"/g)].map(match=>match[1])}
+  }
+  const shared=transfer({source:proxy,target:proxy})
+  assert.deepEqual(shared.nodes,['repository','machine','proxy','destination'])
+  assert.match(shared.html,/Source and target proxy/); assert.match(shared.html,/356.7 KB\/s/)
+  assert.equal((shared.html.match(/data-migration-speed/g)||[]).length,1)
+  const separate=transfer({source:proxy,target:{name:'proxy2',transport:'hotadd'}})
+  assert.deepEqual(separate.nodes,['repository','machine','proxy','proxy','destination'])
+  assert.match(separate.html,/Source proxy/);assert.match(separate.html,/Target proxy/);assert.match(separate.html,/hotadd/)
+  const partial=transfer({source:proxy})
+  assert.match(partial.html,/data-io="read"/);assert.doesNotMatch(partial.html,/data-io="write"/)
+  const terminal=transfer({source:proxy,target:proxy},'completed')
+  assert.doesNotMatch(terminal.html,/data-migration-speed|class="strand"><i>/)
 })

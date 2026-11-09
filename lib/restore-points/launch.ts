@@ -1,11 +1,14 @@
 // Open Backup UI v1.0.2
 import { v4 as uuid } from 'uuid'
-import { isRestoreOperation, uncertainRestore, type RestoreDraft, type RestoreOperation, type RestoreResult } from './workflow'
+import { isRestoreOperation, uncertainRestore, type RestoreOperation, type RestoreResult } from './workflow'
+
+export const activeDirectoryOperation = 'BrowseActiveDirectory'
+export const sqlOperation = 'BrowseSql'
 
 export type RestoreLaunch = {
   requestId: string
   sourceKey: string
-  operation: RestoreOperation
+  operation: RestoreOperation | typeof activeDirectoryOperation | typeof sqlOperation
   workload: string
   pointTime?: string
   phase: 'starting' | 'accepted' | 'rejected' | 'unknown'
@@ -24,7 +27,7 @@ function storedLaunches(): RestoreLaunch[] {
     const items: unknown = JSON.parse(sessionStorage.getItem(storageKey) || '[]')
     if (!Array.isArray(items)) return []
     return items.filter(value => value && uuidPattern.test(value.requestId) && /^[a-f0-9]{64}$/.test(value.sourceKey)
-      && isRestoreOperation(value.operation) && typeof value.workload === 'string'
+      && (isRestoreOperation(value.operation) || value.operation === activeDirectoryOperation || value.operation === sqlOperation) && typeof value.workload === 'string'
       && ['starting', 'accepted', 'rejected', 'unknown'].includes(value.phase)
       && (value.message == null || typeof value.message === 'string')
       && (value.mountErrors == null || Array.isArray(value.mountErrors) && value.mountErrors.every((issue: {type?: unknown; message?: unknown} | null) =>
@@ -41,7 +44,7 @@ function remember(receipt: RestoreLaunch) {
   return receipt
 }
 
-export function beginRestoreLaunch(draft: RestoreDraft, workload: string, pointTime: string | undefined, start: (draft: RestoreDraft) => Promise<RestoreResult>) {
+export function beginRestoreLaunch<Draft extends Pick<RestoreLaunch, 'sourceKey' | 'operation'>>(draft: Draft, workload: string, pointTime: string | undefined, start: (draft: Draft) => Promise<RestoreResult>) {
   const receipt = remember({ requestId: uuid(), sourceKey: draft.sourceKey, operation: draft.operation, workload, pointTime, phase: 'starting' })
   // The mutation belongs to the user's submit event. A page mount or refresh only observes its receipt.
   const result = Promise.resolve().then(() => start(draft)).then(response => {

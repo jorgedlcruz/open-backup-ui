@@ -900,6 +900,10 @@ export class VeeamApiClient {
     return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(draft) });
   }
 
+  applicationExplorerRequest<T>(provider:'ad'|'sql-explorer', body: {action: string; sourceKey: string; [key: string]: unknown}, signal?: AbortSignal): Promise<T> {
+    return this.request('/restore/'+provider, { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(body), signal })
+  }
+
   browseGuestFiles(sessionId: string, sourceKey: string, path: string | undefined, skip: number, signal?: AbortSignal, foldersOnly?: boolean): Promise<GuestDirectory> {
     return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'browse', sessionId, sourceKey, path, skip, foldersOnly }) });
   }

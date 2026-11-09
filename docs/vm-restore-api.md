@@ -240,7 +240,7 @@ Console client routes for this workflow.
 
 Selecting a timestamp shows the backup evidence first. Each restore starts once from the reviewed settings. The Sessions view follows the request and opens the new session as soon as VBR returns its ID. Reloading a pending request cannot resubmit it. If acknowledgement was lost, check the Sessions list for the run.
 
-The detail page starts on the session log, newest first. It keeps the session result distinct from the current mount state: a successful mount operation can still have a live filesystem. Mounted instant VMs expose migration and stop-publishing controls. A running entire-VM restore can be stopped after confirmation. For application browse sessions, the Application items tab lists the child restore sessions returned by VBR and links to their logs. Item selection and recovery in Veeam Explorer still require the Explorer service.
+The detail page keeps the session result distinct from the current mount state: a successful mount can still have a live filesystem. The Quick Migration map follows the selected VM's task evidence from source to target. When VBR names one proxy for both roles the map shows it once; when VBR names two proxies it shows both. The indicated processing rate belongs to the task, not to two independent link measurements.
 
 On the Guest files tab, select items in folders or search results, then open the recovery cart at the top right. Search the selected paths, remove items, or clear the cart. Review the destination and existing-file policy and submit the restore in the same drawer. The cart also supports ZIP downloads. Closing it returns to the current folder with the selection saved for this source and mount in the browser tab. After unmounting, the session log remains available in Sessions.
 
@@ -274,7 +274,17 @@ Quick Migration has its own destination and transfer settings. The live publishe
 
 ## Application-aware and plug-in actions
 
-On the inspected domain controller, the object menu additionally exposed **Application Items → Microsoft Active Directory**. The console opens `/explorer/microsoft-ad/browse?backupId=…&backupObjectId=…` in a separate tab. The installed router accepts a `restorePointId` query parameter. The inspected Explorer reported **Not found** before a browse session started. Object-level Explorer capability and the chosen point’s five public VM operations come from different models. This branch catalogs the Explorer endpoints and leaves application-item recovery in Veeam Explorer.
+Select a restore point in Protected Data. **Application items** offers Microsoft Active Directory or Microsoft SQL Server when VBR enables the Explorer for that backup object and the connected account can use it. Opening it starts a browse session for the selected point; restore, export and other operations are separate actions inside the session. Sessions retains the log and links to children reported by VBR.
+
+The public VM point's `allowedOperations` does not contain these capabilities. The web listener supplies the current user's permissions and the backup object's `operations[].enabled` flags (`ExploreForMsAd` and `ExploreForMsSql`). Before creating a mount, the app rechecks the provider, point, backup, object membership and malware status. Database names, VM names and guest OS do not establish eligibility.
+
+The application server signs in to the configured VBR host's HTTPS web listener with the same saved VBR account, using `POST /private-api/oauth2/token`. The web token stays on the server and is separate from the public REST token. Browser-only bearer connections cannot borrow a saved account's Explorer permissions. The web port defaults to 443; set `VBR_EXPLORER_HTTPS_PORT` if the web console uses a different port. See [deployment and TLS settings](deployment.md).
+
+Both providers create a browse task and poll its result for the native session ID. Public session history confirms that SQL browsing creates an ordinary `ApplicationLevelRestore` session. Task and workflow handles are scoped to the source and operator. Polling never replays a start. Closing a browse session does not initiate a data restore.
+
+AD supports container and object browsing, standard or LDAP search, attribute inspection, and restore or export of selected objects. The SQL workspace shows servers, instances, databases and files. When a database's available time range contains a single timestamp, no alternate transaction time is available at that point. This VBR build's web client does not implement schema/table-level restore or export; those desktop features are not presented as web actions.
+
+Select one or more databases to restore, publish, recover instantly, or export a backup. Each action prepares a native workflow, validates the requested destination and settings with VBR, then waits for the operator's final review. The Operations view follows the resulting jobs and offers the follow-up actions VBR supports in their current state, including published database export and instant recovery switchover. Closing the browser session leaves separately published databases visible under Operations. Open Backup UI does not change the global staging-server configuration from an individual recovery wizard.
 
 The Nutanix plug-in added an AHV destination to both native VM menus. In both wizards the VMware source forced a new location, and the plug-in rejected that mode on this installation. See the [Nutanix endpoints and target availability](vm-recovery-nutanix.md).
 

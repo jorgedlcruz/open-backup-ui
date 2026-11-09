@@ -23,7 +23,7 @@ function newTab() {
 
 test('every supported operation hands off its exact session, and observers never resubmit', async () => {
   const launch = newTab()
-  for (const operation of restoreOperations) {
+  for (const operation of [...restoreOperations, launch.activeDirectoryOperation, launch.sqlOperation]) {
     const draft = { sourceKey, restorePointId: id, backupId: id, operation, mode: 'OriginalLocation' }
     let calls = 0, resolve
     const request = launch.beginRestoreLaunch(draft, 'VM A', undefined, input => {

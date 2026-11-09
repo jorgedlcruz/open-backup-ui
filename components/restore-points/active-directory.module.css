@@ -1,0 +1,39 @@
+/* Open Backup UI v1.0.2 */
+.explorer {display:grid; gap:.85rem; min-width:0; color:var(--foreground); font-size:.85rem}
+.header, .toolbar, .crumbs, .pager, .actions, .selection {display:flex; align-items:center; flex-wrap:wrap; gap:.55rem}
+.header {justify-content:space-between; padding-bottom:.6rem; border-bottom:1px solid var(--border)}
+.header h3 {display:flex; align-items:center; gap:.5rem; font-size:1rem; font-weight:650}
+.crumbs {line-height:1.8; font-size:.79rem}
+.crumbs button, .object {color:var(--foreground); cursor:pointer; overflow-wrap:anywhere; text-align:start}
+.crumbs button:hover, .object:hover {color:var(--primary); text-decoration:underline}
+.crumbs svg, .object svg {color:var(--primary); flex:none}
+.crumbs [aria-current] {font-weight:650}
+.search {display:flex; gap:.4rem; min-width:0; flex:1 1 14rem}
+.search input, .form input:not([type=checkbox]), .form select, .form textarea {border:1px solid var(--border); border-radius:.4rem; background:var(--field-background,var(--card)); color:var(--foreground); padding:.45rem .6rem; min-width:0}
+.search input {width:100%}
+.form {display:grid; gap:.8rem}
+.form label {display:grid; gap:.35rem; font-size:.82rem}
+.form .check {display:flex; align-items:center; gap:.5rem}
+.form input[type=checkbox], .table input {accent-color:var(--primary)}
+.form fieldset {display:grid; gap:.55rem; border:1px solid var(--border); border-radius:.5rem; padding:.7rem}
+.form legend {font-weight:600; padding-inline:.25rem}
+.table {width:100%; border-collapse:collapse; font-size:.82rem}
+.table th, .table td {padding:.55rem .65rem; text-align:start; overflow-wrap:anywhere; border-bottom:1px solid var(--border)}
+.table th {font-weight:550; color:var(--muted-foreground); font-size:.75rem}
+.table th:first-child, .table td:first-child {width:2rem}
+.table tr[data-selected] {background:color-mix(in srgb,var(--primary) 8%,transparent)}
+.object {display:inline-flex; align-items:center; gap:.5rem; font-weight:550}
+.selection {padding:.5rem .65rem; border:1px solid var(--border); border-radius:.45rem}
+.selection span, .pager span {flex:1}
+.pager, .quiet {color:var(--muted-foreground); font-size:.78rem}
+.error {color:var(--ops-danger,var(--destructive)); overflow-wrap:anywhere}
+.feedback, .empty {padding:.7rem .8rem; border:1px solid var(--border); border-radius:.45rem; overflow-wrap:anywhere}
+.actions {justify-content:flex-end}
+.dialog {max-height:85dvh; overflow:auto; width:min(94vw,37rem)}
+.attributes {display:grid; gap:.35rem; font-size:.82rem}
+.attributes > div {display:grid; grid-template-columns:minmax(5rem,1fr) minmax(0,2fr); gap:.7rem; padding:.35rem 0; border-bottom:1px solid var(--border)}
+.attributes dt {color:var(--muted-foreground)}
+.attributes dd {white-space:pre-wrap; overflow-wrap:anywhere}
+.area {display:grid; gap:.4rem; min-width:0}
+.area h4 {font-size:.85rem; font-weight:650}
+@media(max-width:600px){.toolbar,.search{width:100%}.table th,.table td{padding:.5rem .3rem}.actions{justify-content:flex-start}}

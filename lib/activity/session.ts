@@ -12,6 +12,7 @@ import type { ThroughputHistory } from './throughput'
 
 export type MountHint = Pick<Mount, 'id'|'kind'>
 export type ActivityDetail = {
+  appExplorer?: {kind:'activeDirectory'|'sql';closed:boolean;needsResume?:boolean}
   throughput?: ThroughputHistory
   migrationThroughput?: ThroughputHistory
   entireRestore?: EntireRestore
@@ -33,7 +34,7 @@ function authError(error: unknown) {
 }
 
 export async function loadActivitySession(raw: VbrReader, sourceName: string, sourceKey: string, id: string,
-  hint?: MountHint, published?: PublishedRecoveryReader, vmPower?: VmPowerReader): Promise<ActivityDetail> {
+  hint?: MountHint, published?: PublishedRecoveryReader, vmPower?: VmPowerReader, appExplorer?: ActivityDetail['appExplorer']): Promise<ActivityDetail> {
   if (!validId(id)) throw new TopologyRequestError('Select a valid session.', 400)
   const version = await raw('/api/v1/serverInfo').catch(error => { authError(error); return null })
   const revision = revisionForBuild((version as {buildVersion?:string} | null)?.buildVersion)
@@ -42,7 +43,7 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
   let session: Session | null = null, sessionError: unknown
   try { session = investigationSessionSchema.parse(await read(path)) } catch (error) { authError(error); sessionError = error }
   if (session && session.id !== id) throw new TopologyRequestError('VBR returned a different session than requested.', 502)
-  const checkMounts = !!hint || !session || mayHaveMount.test(session.sessionType || '')
+  const checkMounts = !appExplorer && (!!hint || !session || mayHaveMount.test(session.sessionType || ''))
   const type = session?.sessionType || ''
   const kinds: Mount['kind'][] | undefined = hint ? [hint.kind] :
     /FileLevelRestore/.test(type) ? ['flr'] : /FirstClassDisk/.test(type) ? ['fcd'] :
@@ -51,12 +52,12 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
     checkMounts ? loadActivityMounts(raw, published, kinds) : { mounts: [], warnings: [] as string[] },
     session ? loadLogs(read, path + '/logs') : { ...unavailable(), total: null } as Logs,
     session ? readOperationsCollection(read, path + '/taskSessions', taskSchema, 4000).catch(error => { authError(error); return unavailable<Task>() }) : unavailable<Task>(),
-    isApplicationBrowse(session?.sessionType) ? readOperationsCollection(read, '/api/v1/restore/applicationItems/' + id + '/childSessions', investigationSessionSchema, 1000)
+    appExplorer || isApplicationBrowse(session?.sessionType) ? readOperationsCollection(read, '/api/v1/restore/applicationItems/' + id + '/childSessions', investigationSessionSchema, 1000)
       .catch(error => { authError(error); return unavailable<Session>() }) : null,
   ])
   const mounts = inventory.mounts.filter(m => (session ? mountBelongsToSession(m, session) : m.sessionId === id) && m.state !== 'Unmounted' && (!hint || m.id === hint.id && m.kind === hint.kind))
     .map(m => m.sessionId === id ? m : { ...m, sessionId: id })
-  if (!session && !mounts.length) throw sessionError instanceof TopologyRequestError ? sessionError : new TopologyRequestError('The session is not available on this source.', 404)
+  if (!session && !mounts.length && !(appExplorer && sessionError instanceof TopologyRequestError && sessionError.status===404)) throw sessionError instanceof TopologyRequestError ? sessionError : new TopologyRequestError('The session is not available on this source.', 404)
   const tasks = { ...taskRecords, data: taskRecords.data.filter(t => t.sessionId === id) }
   if (tasks.data.length !== taskRecords.data.length) tasks.complete = false
   if (children) {
@@ -68,5 +69,5 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
     Promise.all(mounts.map(mount => enrichInstantVm(raw, mount, vmPower))), sessionMigrations(raw, sourceKey, session, hint),
     loadEntireRestore(read, sourceKey, session, tasks, logs),
   ])
-  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, ...migrations, entireRestore, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
+  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, ...migrations, entireRestore, ...(appExplorer&&{appExplorer}), mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
 }

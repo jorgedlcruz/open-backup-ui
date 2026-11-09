@@ -30,7 +30,7 @@ function RepositoryArt() {
 }
 
 export function RecoveryDiagram({label, nodes, editing, footer, children}: {
-  label: string; nodes: 2 | 3; editing?: boolean; footer?: ReactNode; children: ReactNode
+  label: string; nodes: number; editing?: boolean; footer?: ReactNode; children: ReactNode
 }) {
   return <section aria-label={label} className={styles.workspace}>
     <div className={styles.canvas} data-nodes={nodes} data-editing={editing || undefined}>{children}</div>
@@ -57,9 +57,11 @@ export function RecoveryNode({kind, label, name, facts, phase, artwork, status, 
   </div>
 }
 
-export function RecoveryConnector({phase, label, mounted, io}: {phase?: RecoveryPhase; label?: string; mounted?: boolean; io?: 'read'|'write'}) {
+export function RecoveryConnector({phase, label, mounted, io, measurement}: {phase?: RecoveryPhase; label?: string; mounted?: boolean; io?: 'read'|'write'; measurement?:{label:string;value:string}}) {
   return <div className={styles.connection} data-phase={phase} data-mounted={mounted || undefined} data-transfer={!mounted || undefined} data-io={io}>
     <div className={styles.rail} aria-hidden="true"><span className={styles.strand}>{phase === 'active' && <><i/><i/></>}</span><ChevronRight className={styles.arrow}/></div>
+    {measurement && <span className={styles.linkMeasure} data-migration-speed title={measurement.label}>
+      <small>{measurement.label}</small><strong>{measurement.value}</strong></span>}
     {label && <span className={styles.linkLabel}>{label}</span>}
   </div>
 }

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map as MapIcon, RefreshCw, Server, Square } from 'lucide-react'
-import { ApplicationRequestError } from '@/lib/api/application-request'
+import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
 import type { ActivityDetail } from '@/lib/activity/session'
 import { migrationTransfer } from '@/lib/activity/instant-vm'
@@ -13,6 +13,10 @@ import { canUnmountGuestFiles, sessionProgress, type Mount } from '@/lib/activit
 import { recordStatus, time, validId } from '@/lib/investigation/model'
 import { findSessionLaunch } from '@/lib/restore-points/launch'
 import { GuestFileBrowser } from '@/components/restore-points/guest-file-browser'
+import { ActiveDirectoryExplorer } from '@/components/restore-points/active-directory-explorer'
+import { SqlExplorer } from '@/components/restore-points/sql-explorer'
+import { adRequest,sqlRequest } from '@/lib/restore-points/ad-client'
+import { uncertainRestore } from '@/lib/restore-points/workflow'
 import { RecoverySignal } from '@/components/restore-points/recovery-signal'
 import { LogViewer, Status, useInvestigationPresentation } from '@/components/investigation/shared'
 import { Workloads, TaskDetails } from '@/components/investigation/session-investigation'
@@ -45,6 +49,25 @@ function RecoveryProperties({mount}: {mount: Mount}) {
 }
 
 type StopPhase = 'sending' | 'uncertain' | 'accepted'
+function EndExplorer({id,sourceKey,kind,onEnded}:{id:string;sourceKey:string;kind:'activeDirectory'|'sql';onEnded:()=>void}) {
+  const {t,notice}=useInvestigationPresentation()
+  const [open,setOpen]=useState(false),[phase,setPhase]=useState<StopPhase>(),[message,setMessage]=useState('')
+  const lock=useRef(false)
+  async function finish() {
+    if(lock.current)return
+    lock.current=true;setMessage('');setPhase('sending')
+    try {await (kind==='sql'?sqlRequest:adRequest)({action:'finish',sourceKey,sessionId:id});setPhase('accepted');setOpen(false);onEnded()}
+    catch(e) {setMessage(e instanceof Error?e.message:'Request failed.');const uncertain=uncertainRestore(e);lock.current=uncertain;setPhase(uncertain?'uncertain':undefined)}
+  }
+  if(phase==='accepted')return null
+  return <AlertDialog open={open} onOpenChange={v=>{if(phase!=='sending')setOpen(v)}}>
+    <Button variant="outline" size="sm" onClick={()=>setOpen(true)}><Square size={14}/>{t('End browsing')}</Button>
+    <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('End browsing')}</AlertDialogTitle>
+      <AlertDialogDescription>{kind==='sql'?t('Close this SQL browsing session?'):t('Close this Active Directory browsing session?')}</AlertDialogDescription>
+    </AlertDialogHeader>{message && <p role="alert">{notice(message)}</p>}<AlertDialogFooter>
+      <AlertDialogCancel disabled={phase==='sending'}>{t('Cancel')}</AlertDialogCancel><AlertDialogAction disabled={!!phase} onClick={e=>{e.preventDefault();void finish()}}>{phase==='sending'?t('Submitting…'):t('End browsing')}</AlertDialogAction>
+    </AlertDialogFooter></AlertDialogContent></AlertDialog>
+}
 function StopPublishing({mount, sourceKey, migrationLocked, phase, onPhase, onAccepted, distinguish}: {
   mount: Mount; sourceKey: string; migrationLocked: boolean; phase?: StopPhase
   onPhase: (key: string, phase?: StopPhase) => void; onAccepted: (next?: string) => void; distinguish: boolean
@@ -198,6 +221,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const {data, error, loading, refresh, revision} = useSession(id, query)
   const [tab, setTab] = useState('default'), [taskId, setTaskId] = useState<string>()
   const [fileOpened, setFileOpened] = useState(false)
+  const [appVisited,setAppVisited]=useState(false)
   const [recoveryOpened, setRecoveryOpened] = useState(false)
   const [filesUnmounted, setFilesUnmounted] = useState(false)
   const [stopPhases, setStopPhases] = useState<Record<string, StopPhase | undefined>>({})
@@ -220,13 +244,14 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       } else if (window.location.hash === '#recovery-map') {
         setRecoveryOpened(true)
         setTab('recovery')
-      } else setTab(window.location.hash === '#session-log' ? 'logs' : 'default')
+      } else setTab(window.location.hash === '#application-items' ? 'application' : window.location.hash === '#session-log' ? 'logs' : 'default')
     }
     restoreTab()
     window.addEventListener('hashchange', restoreTab)
     return () => window.removeEventListener('hashchange', restoreTab)
   }, [])
   const [accepted, setAccepted] = useState(false)
+  const [resuming,setResuming]=useState(false),[resumeError,setResumeError]=useState('')
   const session = data?.session, mounts = data?.mounts.filter(m => !filesUnmounted || m.kind !== 'flr') ?? []
   const [receipt,setReceipt] = useState<ReturnType<typeof findSessionLaunch>>()
   useEffect(() => { if (sourceKey) setReceipt(findSessionLaunch(sourceKey, id)) }, [sourceKey, id])
@@ -237,6 +262,16 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const jobDone = !!session && (!!session.endTime || session.state === 'Stopped')
   const status = mounts[0]?.state ?? (filesUnmounted && !jobDone ? 'Unmounted' : session ? recordStatus(session) : undefined)
   const child = data?.children
+  const directory = data?.appExplorer
+  const providerName = directory?.kind==='sql' ? t('Microsoft SQL Server') : t('Active Directory')
+  const directoryOpen = directory && !directory.closed && !jobDone
+  async function resumeExplorer() {
+    if(!directoryOpen || !data || resuming) return
+    setResuming(true);setResumeError('')
+    try { await applicationRequest('/api/vbr/restore/explorer-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:directory!.kind,sessionId:id,sourceKey:data.sourceKey})});refresh() }
+    catch(e){setResumeError(e instanceof Error ? e.message : 'Request failed.')}
+    finally{setResuming(false)}
+  }
   const storedMounts = data ? readPendingMigrationMounts(data.sourceKey, id) : []
   const mapMounts = data ? recoveryMapMounts(data, [...storedMounts, ...Object.values(migrationLocks).map(entry => entry.mount)], query) : []
   const migration = migrationTransfer(null, session, data?.instantMigration)
@@ -266,15 +301,16 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   }
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
-  const activeTab = tab === 'default' ? (hasMap ? 'recovery' : 'logs')
-    : (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child) ? 'logs' : tab
+  const activeTab = tab === 'default' ? (directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
+    : (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
   function selectTab(value: string) {
+    if(value==='application' || activeTab==='application') setAppVisited(true)
     setTab(value)
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && hasMap ? '#session-log' : ''
-    if (location.hash !== hash && (hash || ['#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
+    const hash = value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && (hasMap || directory) ? '#session-log' : ''
+    if (location.hash !== hash && (hash || ['#application-items','#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
     }
@@ -294,6 +330,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       <h1>{mounts[0]?.name || session?.name || receipt?.workload || t('Session Investigation')}</h1><p>{typeLabel}{data?.sourceName && ' · ' + data.sourceName}</p></div>
       <div className={styles.commands}>{childState && data?.instantMigration ? <Status value={recordStatus(data.instantMigration)}/> : status && <Status value={status}/>}
         {data?.canStop && !error && <StopRestore key={data.sourceKey + id} data={data} refresh={refresh}/>}
+        {data && directoryOpen && !directory.needsResume && !error && <EndExplorer key={data.sourceKey+id} id={id} kind={directory.kind} sourceKey={data.sourceKey} onEnded={refresh}/>}
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         {data && mapMounts.filter(mount => canStopPublishing(mount, data, error)).map(mount => {
           const key = mountKey(mount)
@@ -336,7 +373,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             <TabsTrigger value="logs"><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
             {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!fileMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
-            {child && <TabsTrigger value="application"><Layers/>{t('Application items')}</TabsTrigger>}
+            {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
             {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
@@ -363,9 +400,15 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             {mounts.filter(m => m.kind !== 'flr' && !isInstantVmMount(m)).map(m => <div key={m.kind + m.id} className={styles.recovery}><h2>{m.name || typeLabel}</h2>
               <RecoveryProperties mount={m}/>{!error && <MountControls key={m.id + m.state} mount={m} sourceKey={data.sourceKey} onAccepted={onAccepted}/>}</div>)}
           </TabsContent>}
-          {child && <TabsContent value="application" className={styles.inset}><h2>{t('Application item restores')}</h2>
+          {(child || directory) && (activeTab==='application' || appVisited) && <TabsContent value="application" forceMount hidden={activeTab!=='application'} className={styles.inset}>
+            {directoryOpen && !error && (directory.needsResume ? <div className={styles.commands}>
+              <Button disabled={resuming} onClick={()=>void resumeExplorer()}><FolderOpen size={15}/>{t('Open')} · {providerName}</Button>{resumeError && <p role="alert">{notice(resumeError)}</p>}
+            </div> : directory.kind==='sql' ? <SqlExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/> : <ActiveDirectoryExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/>)}
+            {directory?.kind==='sql' && !directoryOpen && !directory.needsResume && !error && <SqlExplorer key={data.sourceKey+id+'-operations'} sourceKey={data.sourceKey} sessionId={id} operationsOnly onOperation={refresh}/>}
+            {child && <><h2>{t('Application item restores')}</h2>
             {child.data.map(s => <Link className={styles.child} key={s.id} href={link(s.id)}><Files size={17}/><span>{s.name || s.id}</span><Status value={recordStatus(s)}/><ArrowUpRight size={15}/></Link>)}
             {!child.available ? <p>{t('Application item sessions could not be loaded.')}</p> : !child.data.length ? <p>{t('No application item restores have been reported.')}</p> : !child.complete && <p>{t('Partial collection')}</p>}
+            </>}
           </TabsContent>}
         </Tabs>
         {isFile && !fileMount && !data.mountWarnings.includes('flr') && <p className={styles.note}>{jobDone || filesUnmounted ? t('This session has no active guest file mount.') : t('Guest files become available when VBR reports a mount.')}</p>}
