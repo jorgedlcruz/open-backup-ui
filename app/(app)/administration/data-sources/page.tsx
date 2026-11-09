@@ -1,2 +1,4 @@
 import { SourcesConsole } from '@/components/data-sources/sources-console'
-export default function DataSourcesPage() { return <SourcesConsole/> }
+import { vmwareAdminEnabled } from '@/lib/server/vmware-console-admin'
+export const dynamic = 'force-dynamic'
+export default function DataSourcesPage() { return <SourcesConsole vmwareAdminEnabled={vmwareAdminEnabled()}/> }

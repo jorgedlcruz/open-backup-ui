@@ -7,6 +7,7 @@ import { isSameApplicationOrigin } from './request-origin'
 import { getChunkedCookie } from '../utils/cookie-manager'
 
 import { VbrRecoveryError } from '../recovery/error'
+import { hasVmwareRestoreGrant } from '../activity/vmware-grant'
 export { VbrRecoveryError }
 
 export type RecoverySend = (path: string, options?: {
@@ -20,7 +21,8 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
   send: RecoverySend
   sourceKey: string
   bearerOnly: boolean
-}) => Promise<unknown>) {
+  canStartVmwareRecovery: () => boolean
+}) => Promise<unknown>, options?: { preferOperatorToken?: boolean }) {
   const headers = { 'Cache-Control': 'private, no-store' }
   try {
     if (request.method !== 'GET' && !isSameApplicationOrigin(request)) {
@@ -35,10 +37,13 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
     const destination = new URL(base)
     if (!['https:', 'http:'].includes(destination.protocol)) throw new VbrRecoveryError('Invalid VBR source.')
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
-    let token = sourceId ? await tokenManager.getToken(sourceId) : null
-    token ||= getChunkedCookie(jar, 'veeam_vbr_token') || null
+    const bearer = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1]
+    const cookieToken = getChunkedCookie(jar, 'veeam_vbr_token')
+    const operatorToken = options?.preferOperatorToken && (bearer || cookieToken)
+    let token = operatorToken || (sourceId ? await tokenManager.getToken(sourceId) : null)
+    token ||= cookieToken || null
     const bearerOnly = !token
-    token ||= request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1] || null
+    token ||= bearer || null
     if (!token) throw new VbrRecoveryError('Reconnect your VBR source.', 401)
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(60000)])
     const send: RecoverySend = async (path, { method = 'GET', body, mutation = false, archive = false } = {}) => {
@@ -60,7 +65,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       })
       try {
         let response = await fetchOnce()
-        if (response.status === 401 && sourceId) {
+        if (response.status === 401 && sourceId && !operatorToken) {
           await response.body?.cancel()
           token = await tokenManager.refreshToken(sourceId)
           if (token) response = await fetchOnce()
@@ -89,7 +94,8 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           signal.aborted ? 504 : 502, mutation)
       } finally { if (timer) clearTimeout(timer) }
     }
-    const result = await run({ send, sourceKey, bearerOnly })
+    // The console route reads the grant only after VBR accepts this same token for the exact session and mount.
+    const result = await run({ send, sourceKey, bearerOnly, canStartVmwareRecovery: () => hasVmwareRestoreGrant(token) })
     return result instanceof Response ? result : NextResponse.json(result, { headers })
   } catch (error) {
     const failure = error instanceof VbrRecoveryError ? error : new VbrRecoveryError('The VBR response could not be processed.', 502)

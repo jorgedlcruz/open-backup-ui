@@ -16,4 +16,6 @@
 .properties {padding:.75rem 0 1rem}.recovery + .recovery {margin-top:1.25rem}
 .child {padding:.85rem 0;border-bottom:1px solid var(--border)}.child span:first-of-type {flex:1}.related {margin-inline-start:.75rem}
 .filePanel[hidden] {display:none}
+.vmConsoleActions {display:flex;align-items:center;flex-wrap:wrap;gap:.45rem}.vmConsoleActions strong,.vmPower {font-size:.78rem}
+.vmPower {display:inline-flex;align-items:center;gap:.35rem;color:var(--muted-foreground);white-space:nowrap}.vmPower[data-on] {color:var(--foreground)}.vmPower[data-on] svg {color:var(--ops-accent)}
 .paths {display:grid;gap:.35rem;padding-bottom:1rem;font-size:.8rem}.paths code {overflow-wrap:anywhere;user-select:all}

@@ -21,7 +21,7 @@ function matchesKind(item: InventoryRef, kind: Kind) {
   return kind === 'Server' || item.type === kind || (kind === 'Network' && item.type === 'DVSNetwork')
 }
 
-export async function browseInventory(send: RecoverySend, platform: Platform, kind: Kind, server?: string, skip = 0, reference?: InventoryRef): Promise<{
+export async function browseInventory(send: RecoverySend, platform: Platform, kind: Kind, server?: string, skip = 0, reference?: InventoryRef, exactName?: string): Promise<{
   data: InventoryRef[]; pagination: { total: number; count: number; skip: number; limit: number }
 }> {
   if (kind !== 'Server' && (!server || /[\\/?#\x00-\x1f]/.test(server) || ['.', '..'].includes(server))) {
@@ -35,6 +35,7 @@ export async function browseInventory(send: RecoverySend, platform: Platform, ki
   if (kind !== 'Server' && kind !== 'Network') items.push({ type: 'PredicateExpression', operation: 'In', property: 'type', value: kind })
   if (kind === 'Server' && server) items.push({ type: 'PredicateExpression', operation: 'Equals', property: 'hostName', value: server })
   if (reference) items.push({ type: 'PredicateExpression', operation: 'Equals', property: reference.urn ? 'urn' : 'objectId', value: reference.urn || reference.objectId! })
+  if (exactName) items.push({ type: 'PredicateExpression', operation: 'Equals', property: 'name', value: exactName })
   const criteria = kind === 'Network' ? [...items, { type: 'GroupExpression', operation: 'Or',
     items: (platform === 'VSphere' ? ['Network', 'DVSNetwork'] : ['Network']).map(value => ({ type: 'PredicateExpression', operation: 'In', property: 'type', value })) }] : items
   const result = await send(`/api/v1/inventory${kind === 'Server' ? '' : '/' + encodeURIComponent(server!)}`, { method: 'POST', body: {

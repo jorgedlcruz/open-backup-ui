@@ -64,6 +64,7 @@ export default async function RootLayout({
   const sharedId = /^\/share\/kiosk\/([A-Za-z0-9_-]{43})\/?$/.exec(pathname)?.[1];
   const shared = sharedId ? await readShare(sharedId).catch(() => null) : null;
   const publicPage = pathname.startsWith('/share/kiosk/');
+  const consolePage = /^\/vbr\/activity\/[^/]+\/console\/?$/.test(pathname);
   const themeSettings = normalizeTheme(shared?.theme ?? Object.fromEntries(
     Object.entries(THEME_COOKIES).map(([key, cookie]) => [key, cookieStore.get(cookie)?.value])
   ));
@@ -92,7 +93,7 @@ export default async function RootLayout({
           forcedTheme={publicPage ? shared?.mode ?? 'dark' : undefined}
         >
           <ActiveThemeProvider initialTheme={themeSettings} persist={!publicPage}>
-            {pathname.startsWith('/share/kiosk/') ? children : <PostHogProvider>
+            {publicPage || consolePage ? children : <PostHogProvider>
               {children}
               <Toaster />
             </PostHogProvider>}

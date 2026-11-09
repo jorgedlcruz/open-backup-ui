@@ -11,12 +11,14 @@ export function middleware(request: NextRequest) {
   const headers = new Headers(request.headers)
   headers.set('x-pathname', pathname)
   const response = NextResponse.next({ request: { headers } })
-  if (pathname.startsWith('/share/kiosk/') || pathname.startsWith('/api/public/kiosks/')) {
+  const consolePage = /^\/vbr\/activity\/[^/]+\/console\/?$/.test(pathname)
+  if (pathname.startsWith('/share/kiosk/') || pathname.startsWith('/api/public/kiosks/') || consolePage) {
     response.headers.set('Cache-Control', 'private, no-store')
     response.headers.set('Referrer-Policy', 'no-referrer')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
     response.headers.set('X-Content-Type-Options', 'nosniff')
     response.headers.set('X-Frame-Options', 'DENY')
+    if (consolePage) response.headers.set('Content-Security-Policy', "frame-ancestors 'none'")
   }
   return response
 }
