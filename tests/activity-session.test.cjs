@@ -5,6 +5,7 @@ require.extensions['.ts'] = (mod, file) => mod._compile(ts.transpileModule(fs.re
   compilerOptions: {module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},
 }).outputText, file)
 const {loadActivitySession} = require('../lib/activity/session.ts')
+const {loadEntireRestore} = require('../lib/activity/entire-restore.ts')
 const {stopEntireVm} = require('../lib/activity/stop-session.ts')
 const {canUnmountGuestFiles, mountPaths, sessionProgress} = require('../lib/activity/model.ts')
 const {breadcrumbsForPath} = require('../lib/navigation/breadcrumbs.ts')
@@ -21,6 +22,53 @@ function provider(rows) {
     return row ?? (pathname === '/api/v1/serverInfo' ? {buildVersion:'13.1.0.411'} : page([]))
   }
 }
+test('historical entire VM restore map uses the exact task and native placement events; config filename remains a distinct fact', async () => {
+  const task = {id:id(2),sessionId:sid,type:'Restore',name:'Source',state:'Stopped'}
+  const records = ['Restoring from Linux repository', 'Restoring [NVME01] New VM/New VM.vmx',
+    'Registering restored VM on host: esx.example, pool: Resources, folder: vm, storage: NVME01'].map(title=>({title}))
+  const data = await loadActivitySession(provider({[path]:session('RestoreVm',{state:'Stopped',progressPercent:100,result:{result:'Success'}}),
+    [path + '/logs']:{records,totalRecords:3},[path+'/taskSessions']:page([task])}),'vbr',source,sid)
+  assert.deepEqual(data.entireRestore.vms,[{taskId:task.id,sourceVm:'Source',host:'esx.example',datastore:'NVME01',vmConfigFile:'New VM.vmx',repository:'Linux repository'}])
+  assert.equal(data.entireRestore.mode,undefined)
+  assert.equal(data.session.progressPercent,100)
+  assert.equal(data.tasks.data[0].progress,undefined)
+  assert.equal(data.canStop,false)
+})
+
+test('ambiguous or incomplete restore evidence never assigns one VM’s destination to another task', async () => {
+  const parent=session('RestoreVm'), task={id:id(2),sessionId:sid,type:'Restore',name:'Source'}, second={...task,id:id(3)}
+  const logs={data:[{title:'Registering restored VM on host: Other, pool: R, folder: vm, storage: X'}],available:true,complete:true}
+  const receipt={sourceKey:source,sessionId:sid,restorePointId:id(4),backupId:id(5),sourceVm:'Source',mode:'Customized',host:'Requested'}
+  const reader=async()=>assert.fail('no point lookup without a verified association')
+  for (const tasks of [{data:[task,second],complete:true},{data:[task],complete:false}]) {
+    const result=await loadEntireRestore(reader,source,parent,{...tasks,available:true},logs,async()=>receipt)
+    assert.ok(result.vms.every(row=>row.host===undefined))
+    assert.ok(result.vms.every(row=>row.pointTime===undefined))
+    assert.equal(result.mode,undefined)
+  }
+  const conflict=await loadEntireRestore(reader,source,parent,{data:[task],complete:true,available:true},
+    {...logs,data:[...logs.data,{title:'Registering restored VM on host: Different, pool: R, folder: vm, storage: Y'}]},async()=>undefined)
+  assert.equal(conflict.vms[0].host,undefined)
+  assert.equal(conflict.vms[0].datastore,undefined)
+  assert.equal(await loadEntireRestore(reader,source,session('BackupJob'),{},logs,()=>assert.fail()),undefined)
+})
+
+test('a verified restore receipt joins a current point and backup only on matching identifiers', async () => {
+  const parent=session('RestoreVm'), tasks={data:[],available:true,complete:true}, logs={data:[],available:true,complete:true}
+  const receipt={sourceKey:source,sessionId:sid,restorePointId:id(4),backupId:id(5),sourceVm:'Source',mode:'Customized',targetVm:'Recovered',host:'Host',storagePath:'D:\\VMs',pointTime:'2026-01-01T10:00:00Z'}
+  const current=async url=>url.includes('restorePoints') ? {id:id(4),backupId:id(5),name:'Source',creationTime:receipt.pointTime} : {id:id(5),name:'Backup A',repositoryName:'Repo A'}
+  const result=await loadEntireRestore(current,source,parent,tasks,logs,async()=>receipt)
+  assert.equal(result.mode,'Customized')
+  assert.deepEqual(result.vms,[{sourceVm:'Source',pointTime:receipt.pointTime,backupName:'Backup A',repository:'Repo A',host:'Host',datastore:undefined,targetVm:'Recovered',storagePath:'D:\\VMs'}])
+  const foreign=await loadEntireRestore(()=>assert.fail(),source,parent,tasks,logs,async()=>({...receipt,sourceKey:'b'.repeat(64)}))
+  assert.deepEqual(foreign.vms,[{}])
+  const mismatch=await loadEntireRestore(async url=>{
+    assert.equal(url,'/api/v1/restorePoints/'+id(4))
+    return {id:id(4),backupId:id(9),name:'Other'}
+  },source,parent,tasks,logs,async()=>receipt)
+  assert.equal(mismatch.vms[0].sourceVm,'Source')
+  assert.equal(mismatch.vms[0].backupName,undefined)
+})
 test('a successful file restore can still have a mounted filesystem; evidence and actions refer to the exact session', async () => {
   const read = provider({[path]: session('FileLevelRestore',{state:'Stopped',result:{result:'Success'}}),
     [path + '/logs']:{records:[{title:'Mounting restore point'},{title:'Mounted the drive'}],totalRecords:2},

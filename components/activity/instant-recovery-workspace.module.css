@@ -14,21 +14,27 @@
 
 .canvas {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(2.4rem, .32fr) minmax(0, 1.15fr) minmax(1.5rem, .3fr) minmax(0, 1.12fr);
-  align-items: start;
-  padding: clamp(1rem, 2.8cqi, 2.2rem);
+  --connector: clamp(3.15rem, 6.7cqi, 6rem);
+  grid-template-columns: minmax(0,1fr) var(--connector) minmax(0,1fr) var(--connector) minmax(0,1fr);
+  align-items: stretch;
+  padding: clamp(1rem, 2.15cqi, 2rem);
   background-image: radial-gradient(ellipse at 47% 5%, color-mix(in srgb, var(--signal) 9%, transparent), transparent 46%),
     radial-gradient(color-mix(in srgb, var(--ink) 11%, transparent) .7px, transparent .8px);
   background-size: auto, 14px 14px;
 }
-.canvas[data-editing] {grid-template-columns: minmax(0, .86fr) minmax(2.1rem, .23fr) minmax(0, 1fr) minmax(1rem, .18fr) minmax(0, 1.9fr);}
+.canvas[data-nodes="2"] {grid-template-columns: minmax(0,1fr) clamp(3.5rem,12cqi,9rem) minmax(0,1fr);}
+.canvas[data-editing] {--connector:clamp(2.4rem,5cqi,4.5rem);grid-template-columns: minmax(0,.9fr) var(--connector) minmax(0,1fr) var(--connector) minmax(0,1.6fr);}
 .repository, .machine, .destination {
   display: flex;
   flex-direction: column;
   align-items: center;
   min-width: 0;
   text-align: center;
-  padding: .75rem .55rem;
+  padding: .95rem clamp(.6rem,1.2cqi,1rem);
+  border: 1px solid color-mix(in srgb,var(--ink) 24%,var(--border));
+  border-radius: .7rem;
+  background: color-mix(in srgb,var(--surface) 94%,var(--signal) 6%);
+  box-shadow: 0 2px 5px color-mix(in srgb,var(--ink) 6%,transparent);
 }
 .art, .dragHandle {
   display: grid;
@@ -109,22 +115,38 @@
 .serverUnit b { width: .25rem; height: .25rem; border-radius: 50%; background: var(--metal-edge); }
 .hostArt[data-production] { --metal: color-mix(in srgb, var(--muted-foreground) 23%, var(--surface)); --metal-light: var(--surface); }
 
-.connection { position: relative; display: flex; align-items: center; align-self: start; height: 1rem; margin-top: 4.1rem; color: var(--line); }
-.strand { position: relative; flex: 1; height: 1px; background: currentColor; }
-.connection[data-mounted] { color: color-mix(in srgb, var(--signal) 75%, var(--muted-foreground)); }
-.connection[data-mounted] .strand { height: 2px; background: repeating-linear-gradient(to right,currentColor 0 2px,transparent 2px 5px); }
-.linkLabel { position: absolute; left: 50%; top: 1.1rem; transform: translateX(-50%); color: var(--muted-foreground); font-size: .65rem; line-height: 1.1; }
-.connection > svg { flex: none; width: .87rem; height: .87rem; margin-inline-start: -.35rem; }
-.connection[data-transfer] .strand { background: repeating-linear-gradient(to right, currentColor 0 4px, transparent 4px 7px); }
-.connection[data-phase="active"], .connection[data-phase="completed"] { color: var(--signal); }
-.connection[data-phase="active"] .strand > i { position: absolute; top: -2px; left: 0; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.destination {
-  align-self: stretch; border: 1px dashed var(--line); border-radius: .7rem;
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
+.connection {
+  position: relative; align-self: start; min-width: 0; margin-top: 3.35rem;
+  color: var(--muted-foreground);
 }
-.destination[data-enabled] { border-color: color-mix(in srgb, var(--signal) 55%, var(--border)); }
+.rail { display:flex; align-items:center; position:relative; height:1.6rem; width:100%; padding-inline: 2px 5px; }
+.strand {
+  display:block; position:relative; width:100%; height:3px; border-radius:4px;
+  background:repeating-linear-gradient(to right,currentColor 0 6px,transparent 6px 10px);
+}
+.arrow { position:absolute; inset-inline-end:0; width:1.1rem; height:1.1rem; stroke-width:3; }
+.strand > i { display:none; }
+.connection[data-mounted], .connection[data-phase="completed"], .connection[data-phase="active"] { color:color-mix(in srgb,var(--signal) 75%,var(--ink)); }
+.connection[data-mounted] .strand, .connection[data-phase="completed"] .strand { background:currentColor; }
+.connection[data-phase="active"] .strand {
+  height:5px; background:color-mix(in srgb,currentColor 40%,var(--surface));
+  box-shadow:0 0 0 1px color-mix(in srgb,currentColor 28%,transparent);
+}
+.connection[data-phase="active"] .strand > i {
+  display:block; position:absolute; left:24%; top:50%; width:.72rem; height:.64rem; transform:translateY(-50%);
+  background:currentColor; clip-path:polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,45% 50%);
+}
+.connection[data-phase="active"] .strand > i + i { left:65%; }
+.linkLabel {
+  position:absolute; left:50%; top:100%; transform:translateX(-50%); width:100%; text-align:center;
+  color:var(--muted-foreground); font-size:.66rem; font-weight:600; line-height:1.15; overflow-wrap:anywhere;
+}
+.destination {
+  align-self: stretch;
+}
+.destination[data-enabled]:not([data-phase]):not([data-configuring]) {border-style:dashed;border-color:color-mix(in srgb,var(--signal) 70%,var(--ink));}
 .destination[data-phase] {border-style: solid;}
-.destination[data-phase="active"], .destination[data-phase="completed"] {border-color: var(--line); background: color-mix(in srgb, var(--signal) 6%, var(--surface));}
+.destination[data-phase="active"], .destination[data-phase="completed"] {border-color:color-mix(in srgb,var(--signal) 55%,var(--ink));background:color-mix(in srgb,var(--signal) 9%,var(--surface));}
 .destination[data-phase="failed"] {--signal: var(--ops-danger, var(--destructive));}
 .destination[data-phase="warning"] {--signal: var(--ops-warning, var(--foreground));}
 .destination:is([data-phase="unknown"], [data-phase="canceled"]) {--signal: var(--muted-foreground);}
@@ -157,17 +179,16 @@
 .srOnly { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) {
   .destination, .choose, .dragHandle { transition: background-color .15s, border-color .15s; }
-  .connection[data-mounted] .strand { animation: mountedLink 3.2s ease-in-out infinite; }
-  .connection[data-phase="active"] .strand > i { animation: moveData 1.8s linear infinite; }
-  @keyframes mountedLink { 50% { opacity: .56; } }
-  @keyframes moveData { from { left: 0; } to { left: calc(100% - 5px); } }
+  .connection[data-phase="active"] .strand > i { animation: moveData 1.55s linear infinite; }
+  .connection[data-phase="active"] .strand > i + i { animation-delay:-.775s; }
+  @keyframes moveData { from { left:0; } to { left:calc(100% - .72rem); } }
 }
 
-@container (max-width: 34rem) {
-  .canvas, .canvas[data-editing] { grid-template-columns: minmax(0,1fr); padding: .75rem; }
+@container (max-width: 43rem) {
+  .canvas, .canvas[data-editing], .canvas[data-nodes="2"] { grid-template-columns: minmax(0,1fr); padding: .75rem; }
   .repository, .machine, .destination {
     display: grid; grid-template-columns: 4.3rem minmax(0,1fr); column-gap: .8rem; align-items: start; text-align: start;
-    padding: .6rem .55rem; align-self: auto;
+    padding: .8rem .75rem; align-self: auto;
   }
   .art, .dragHandle { grid-column: 1; grid-row: 1 / span 4; width: 4.3rem; height: 4.15rem; align-self: center; }
   .repositoryArt, .hostArt { scale: .74; transform-origin: center; align-self: center; }
@@ -179,10 +200,11 @@
   .grip { top: .1rem; inset-inline-end: -.2rem; }
   .choose { justify-self: start; min-height: 2.5rem; }
   .destination[data-configuring] { display: block; }
-  .connection { width: 1.25rem; margin: .05rem 0 .05rem 2.13rem; transform: rotate(90deg); }
-  .linkLabel { inset: auto auto 50% 50%; transform-origin: left bottom; transform: rotate(-90deg) translate(.8rem, .3rem); }
+  .connection {display:flex;align-items:center;gap:.1rem;min-height:2.7rem;margin:0 0 0 1.65rem;}
+  .rail {width:2.7rem; flex:none; transform:rotate(90deg);}
+  .linkLabel {position:static;transform:none;text-align:start;width:auto;}
 }
 @media (forced-colors: active) {
-  .strand, .transferState i { background: CanvasText; }
-  .machineBadge, .serverUnit, .repositoryArt > i, .choose, .destination { border-color: ButtonText; }
+  .strand, .transferState i, .connection[data-phase="active"] .strand > i {background:CanvasText;forced-color-adjust:none;}
+  .machineBadge, .serverUnit, .repositoryArt > i, .choose, .repository, .machine, .destination { border-color: ButtonText; }
 }

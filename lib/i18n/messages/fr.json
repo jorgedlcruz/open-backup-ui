@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "On étiquette les deux bouts du même câble.",
   "Saving the last rack screw for later.": "On garde la dernière vis de la baie pour plus tard.",
   "Asking the blinking lights for directions.": "On demande son chemin aux voyants qui clignotent.",
-  "VBR is checking the migration.": "VBR vérifie la migration."
+  "VBR is checking the migration.": "VBR vérifie la migration.",
+  "Restore progress": "Progression de la restauration",
+  "Virtual machine {number}": "Machine virtuelle {number}",
+  "Destination VM": "VM de destination",
+  "VM task": "Tâche de la VM",
+  "Restore in progress": "Restauration en cours",
+  "Restore completed": "Restauration terminée",
+  "Restore completed with warnings": "Restauration terminée avec des avertissements",
+  "Restore failed": "Échec de la restauration",
+  "Restore canceled": "Restauration annulée",
+  "VM configuration": "Configuration de la VM"
 }

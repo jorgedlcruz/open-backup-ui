@@ -1,0 +1,18 @@
+/* Open Backup UI v1.0.2 */
+.map {min-width:0; color:var(--foreground)}
+.picker {display:flex; flex-wrap:wrap; align-items:center; gap:.55rem; margin-block-end:.7rem; font-size:.82rem}
+.picker > span, .detail, .task > span {color:var(--muted-foreground)}
+.picker select {min-width:0; max-width:100%; border:1px solid var(--border); border-radius:.45rem; background:var(--card); color:var(--foreground); padding:.45rem .75rem}
+.picker select:focus-visible {outline:2px solid var(--ops-accent, var(--ring)); outline-offset:2px}
+.summary {display:grid; gap:.45rem; padding:1rem clamp(.85rem,3%,1.5rem); border-top:1px solid var(--border); --restore-accent:var(--ops-accent,var(--ring))}
+.summary[data-phase="failed"] {--restore-accent:var(--ops-danger,var(--destructive))}
+.summary[data-phase="warning"] {--restore-accent:var(--ops-warning,var(--foreground))}
+.status, .task {display:flex; align-items:baseline; flex-wrap:wrap; gap:.3rem .65rem}
+.status > span, .task > span {font-size:.76rem}
+.status strong {font-size:.92rem; font-weight:650}
+.status b, .task b {margin-inline-start:auto; font-size:.85rem; font-variant-numeric:tabular-nums}
+.bar {display:block; width:100%; height:.4rem; accent-color:var(--restore-accent)}
+.detail, .task {font-size:.78rem; line-height:1.45; overflow-wrap:anywhere}
+.detail > span {color:var(--foreground)}
+.task {width:100%; padding-block-start:.65rem; border-top:1px solid var(--border)}
+.task > strong {font-weight:600}

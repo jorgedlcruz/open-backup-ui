@@ -24,6 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InstantRecoveryControls, MountControls, readPendingMigrationMounts } from './mount-controls'
 import { canStopPublishing, isInstantVmMount, migrationForMount, mountKey, recoveryMapMounts } from './session-commands'
 import { UnmountGuestFiles } from './unmount-guest-files'
+import { EntireVmRecoveryMap } from './entire-vm-recovery-map'
+import { MigrationMap } from './migration-map'
 import ops from '@/components/operations/operations.module.css'
 import investigation from '@/components/investigation/investigation.module.css'
 import styles from './session.module.css'
@@ -109,27 +111,36 @@ function RecoveryMap({mount, data, migrationSession, disabled, refresh, onMigrat
 
 function StopRestore({data, refresh}: {data: ActivityDetail; refresh: () => void}) {
   const {t, notice} = useInvestigationPresentation()
-  const [phase, setPhase] = useState<'ready'|'confirm'|'sending'|'accepted'|'uncertain'>('ready')
+  const [open, setOpen] = useState(false)
+  const [phase, setPhase] = useState<'ready'|'sending'|'accepted'|'uncertain'>('ready')
   const [error, setError] = useState('')
   const lock = useRef(false)
   async function stop() {
-    if (phase !== 'confirm' || lock.current) return
+    if (!open || phase !== 'ready' || lock.current) return
     lock.current = true; setPhase('sending'); setError('')
     try {
       await veeamApi.requestActivity('/api/vbr/activity/sessions/' + data.id, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'stop',sourceKey:data.sourceKey})})
-      setPhase('accepted'); refresh()
+      setPhase('accepted'); setOpen(false); refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Request failed.'))
-      setPhase(err instanceof ApplicationRequestError && err.status > 0 && err.status < 500 ? 'confirm' : 'uncertain')
+      const rejected = err instanceof ApplicationRequestError && err.status >= 400 && err.status < 500 && err.status !== 408
+      setPhase(rejected ? 'ready' : 'uncertain')
+      refresh()
     } finally { lock.current = false }
   }
-  if (phase === 'ready') return <Button size="sm" variant="outline" onClick={() => setPhase('confirm')}>{t('Stop restore')}</Button>
-  return <div className={styles.commands}>
-    {phase === 'accepted' ? <p role="status">{t('VBR accepted the request.')}</p> : phase === 'uncertain' ? <p>{t('Check Sessions before submitting another request.')}</p> :
-      <><p>{t('Stop this VM restore before it finishes?')}</p><Button size="sm" variant="destructive" disabled={phase === 'sending'} onClick={stop}>{t('Stop restore')}</Button>
-        <Button size="sm" variant="outline" disabled={phase === 'sending'} onClick={() => {setPhase('ready'); setError('')}}>{t('Cancel')}</Button></>}
-    {error && <p role="alert">{notice(error)}</p>}
-  </div>
+  if (phase === 'accepted') return <span role="status" className={styles.note}>{t('VBR accepted the request.')}</span>
+  return <AlertDialog open={open} onOpenChange={next => {if (!lock.current) setOpen(next)}}>
+    <AlertDialogTrigger asChild><Button type="button" size="sm" variant="outline"><Square size={14}/>{t('Stop restore')}</Button></AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader><AlertDialogTitle>{t('Stop restore')}{data.session?.name && ' · ' + data.session.name}</AlertDialogTitle>
+        <AlertDialogDescription>{t('Stop this VM restore before it finishes?')}</AlertDialogDescription></AlertDialogHeader>
+      {error && <p role="alert" className="text-sm text-destructive">{notice(error)}</p>}
+      {phase === 'uncertain' && <p role="status">{t('Check the session log before trying again.')}</p>}
+      <AlertDialogFooter><AlertDialogCancel disabled={phase === 'sending'}>{t('Cancel')}</AlertDialogCancel>
+        <AlertDialogAction disabled={phase !== 'ready'} className="bg-destructive text-white hover:bg-destructive/90"
+          onClick={event => {event.preventDefault(); void stop()}}>{phase === 'sending' ? t('Submitting…') : t('Stop restore')}</AlertDialogAction></AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 }
 
 // Wait for each read to settle before scheduling another, even when a VBR source is slow.
@@ -172,11 +183,19 @@ function useSession(id: string, query: string) {
   return { data, error, loading, refresh, revision }
 }
 
+function LinkedMigrationMap({id, sourceKey}: {id: string; sourceKey: string}) {
+  const {t, notice} = useInvestigationPresentation()
+  const {data, error} = useSession(id, new URLSearchParams({sourceKey}).toString())
+  if (error) return <p role="alert" className={ops.notice}>{notice(error)}</p>
+  if (!data) return <p role="status" className={styles.note}>{t('Loading…')}</p>
+  return data.session?.sessionType === 'QuickMigration' ? <MigrationMap data={data}/> : null
+}
+
 export function ActivitySession({id, query}: {id: string; query: string}) {
   const {t, date, label, duration, bytes, rate, formatNumber, notice} = useInvestigationPresentation()
   const router = useRouter()
   const {data, error, loading, refresh, revision} = useSession(id, query)
-  const [tab, setTab] = useState('logs'), [taskId, setTaskId] = useState<string>()
+  const [tab, setTab] = useState('default'), [taskId, setTaskId] = useState<string>()
   const [fileOpened, setFileOpened] = useState(false)
   const [recoveryOpened, setRecoveryOpened] = useState(false)
   const [filesUnmounted, setFilesUnmounted] = useState(false)
@@ -200,9 +219,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       } else if (window.location.hash === '#recovery-map') {
         setRecoveryOpened(true)
         setTab('recovery')
-      } else {
-        setTab(previous => previous === 'files' || previous === 'recovery' ? 'logs' : previous)
-      }
+      } else setTab(window.location.hash === '#session-log' ? 'logs' : 'default')
     }
     restoreTab()
     window.addEventListener('hashchange', restoreTab)
@@ -232,8 +249,9 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const percent = childState ? migration.progress : sessionProgress(session, fileMount || mounts[0])
   const linkedMigrations = Array.from(new Map([...(data?.instantMigrations || []).map(row => row.session), ...(data?.instantMigration ? [data.instantMigration] : [])]
     .map(record => [record.id, record])).values())
-  const hasMap = mapMounts.length > 0
-  const hasRecovery = hasMap || linkedMigrations.length > 0 || mounts.some(m => m.kind !== 'flr') || !!data?.canStop
+  const directMigration = type === 'QuickMigration'
+  const hasMap = mapMounts.length > 0 || !!data?.entireRestore || directMigration || linkedMigrations.length > 0
+  const hasRecovery = hasMap || mounts.some(m => m.kind !== 'flr')
   const isRecovery = isFile || hasRecovery || !!child || /Restore|Recovery|Publish|Migration/.test(type || '')
   const link = (next: string) => '/vbr/activity/' + next + (sourceKey ? '?sourceKey=' + sourceKey : '')
   function onAccepted(next?: string) {
@@ -247,14 +265,15 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   }
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
-  const activeTab = (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child) ? 'logs' : tab
+  const activeTab = tab === 'default' ? (hasMap ? 'recovery' : 'logs')
+    : (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child) ? 'logs' : tab
   function selectTab(value: string) {
     setTab(value)
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'files' ? '#guest-files' : value === 'recovery' && (hasMap || linkedMigrations.length > 0) ? '#recovery-map' : ''
-    if (location.hash !== hash && (hash || ['#guest-files', '#recovery-map'].includes(location.hash))) {
+    const hash = value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && hasMap ? '#session-log' : ''
+    if (location.hash !== hash && (hash || ['#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
     }
@@ -273,6 +292,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     <header className={ops.header}><div><Link href="/vbr/activity" className={styles.back}><ArrowLeft size={14}/>{t('Sessions')}</Link>
       <h1>{mounts[0]?.name || session?.name || receipt?.workload || t('Session Investigation')}</h1><p>{typeLabel}{data?.sourceName && ' · ' + data.sourceName}</p></div>
       <div className={styles.commands}>{childState && data?.instantMigration ? <Status value={recordStatus(data.instantMigration)}/> : status && <Status value={status}/>}
+        {data?.canStop && !error && <StopRestore key={data.sourceKey + id} data={data} refresh={refresh}/>}
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         {data && mapMounts.filter(mount => canStopPublishing(mount, data, error)).map(mount => {
           const key = mountKey(mount)
@@ -310,7 +330,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           <TabsList className={styles.tabs} aria-label={t('Session evidence type')}>
             <TabsTrigger value="logs"><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
             {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!fileMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
-            {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : linkedMigrations.length ? t('Migration session') : t('Recovery actions')}</TabsTrigger>}
+            {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {child && <TabsTrigger value="application"><Layers/>{t('Application items')}</TabsTrigger>}
             {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
@@ -319,7 +339,9 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           {fileOpened && fileMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
             <GuestFileBrowser key={data.sourceKey + fileMount.id} sourceKey={data.sourceKey} sessionId={fileMount.sessionId}/>
           </TabsContent>}
-          {(recoveryOpened || storedMounts.length > 0 || migrationPending || mapMounts.some(m => m.state === 'Migrating')) && <TabsContent value="recovery" forceMount hidden={activeTab !== 'recovery'} className={styles.inset}>
+          {(activeTab === 'recovery' || recoveryOpened || storedMounts.length > 0 || migrationPending || mapMounts.some(m => m.state === 'Migrating')) && <TabsContent value="recovery" forceMount hidden={activeTab !== 'recovery'} className={styles.inset}>
+            {data.entireRestore && <EntireVmRecoveryMap data={data}/>}
+            {directMigration && activeTab === 'recovery' && <MigrationMap data={data}/>}
             {mapMounts.map(mount => {
               const key = mountKey(mount)
               const live = mounts.some(item => mountKey(item) === key)
@@ -329,10 +351,12 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
                   unscopedTransfer || session?.state === 'Stopping' || data.mountWarnings.includes(mount.kind)}/>
             })}
             {linkedMigrations.filter(record => !mapMounts.some(mount => scopedMigration(mount)?.id === record.id)).map(record =>
-              <Link className={styles.child} key={record.id} href={link(record.id)}><Database size={17}/><span>{t('Migration session')}</span><Status value={recordStatus(record)}/><ArrowUpRight size={15}/></Link>)}
+              <div key={record.id}>
+                {activeTab === 'recovery' && <LinkedMigrationMap id={record.id} sourceKey={data.sourceKey}/>}
+                <Link className={styles.child} href={link(record.id)}><Database size={17}/><span>{t('Migration session')}</span><Status value={recordStatus(record)}/><ArrowUpRight size={15}/></Link>
+              </div>)}
             {mounts.filter(m => m.kind !== 'flr' && !isInstantVmMount(m)).map(m => <div key={m.kind + m.id} className={styles.recovery}><h2>{m.name || typeLabel}</h2>
               <RecoveryProperties mount={m}/>{!error && <MountControls key={m.id + m.state} mount={m} sourceKey={data.sourceKey} onAccepted={onAccepted}/>}</div>)}
-            {data.canStop && !error && <StopRestore data={data} refresh={refresh}/>}
           </TabsContent>}
           {child && <TabsContent value="application" className={styles.inset}><h2>{t('Application item restores')}</h2>
             {child.data.map(s => <Link className={styles.child} key={s.id} href={link(s.id)}><Files size={17}/><span>{s.name || s.id}</span><Status value={recordStatus(s)}/><ArrowUpRight size={15}/></Link>)}

@@ -24,7 +24,7 @@ export function PreparingRecovery({ requestId }: { requestId: string }) {
     void observeRestoreLaunch(requestId).then(value => {
       if (!active) return
       setReceipt(value)
-      if (value?.phase === 'accepted' && value.sessionId) router.replace(restoreActivityUrl(value.sessionId, value.sourceKey))
+      if (value?.phase === 'accepted' && value.sessionId) router.replace(restoreActivityUrl(value.sessionId, value.sourceKey) + '#session-log')
     })
     return () => { active = false }
   }, [requestId, router])

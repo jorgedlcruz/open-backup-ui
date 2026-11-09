@@ -35,7 +35,7 @@ async function launch(operation, input = {}, opts = {}) {
     if (path.includes('/mountServers/')) return { id: backupId, type: 'Linux' }
     throw Error(path)
   }
-  const result = await startRestore(send, opts.sourceKey || sourceKey, draft)
+  const result = await startRestore(send, opts.sourceKey || sourceKey, draft, opts.saveReceipt)
   assert.equal(result.id, sessionId)
   assert.equal(calls.filter(call => call.mutation).length, 1)
   return calls.at(-1)
@@ -46,6 +46,27 @@ test('selected point is pinned to source, backup and currently allowed action', 
   await assert.rejects(launch('StartEntireVmRestore', {}, { point: { backupId: sessionId } }), /no longer belongs/)
   await assert.rejects(launch('StartEntireVmRestore', {}, { point: { allowedOperations: [] } }), /no longer allows/)
   await assert.rejects(launch('StartEntireVmRestore', { reviewedMalwareStatus: 'Clean' }, { point: { malwareStatus: 'Infected' } }), /flagged/)
+})
+
+test('accepted entire restores persist only verified display evidence, survive reload, and tolerate a storage failure', async () => {
+  const {saveEntireRestore,readEntireRestore}=require('../lib/server/entire-restore-records.ts')
+  const path=require('node:path'),cwd=process.cwd(),dir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'entire-vm-'))
+  try {
+    process.chdir(dir)
+    await launch('StartEntireVmRestore',{mode:'Customized',reason:'private reason',target:{
+      host:{...ref('Host'),name:'Unverified'},datastore:ref('Datastore'),folder:ref('Folder'),vmName:'Recovered',
+    }},{saveReceipt:saveEntireRestore})
+    const item=await readEntireRestore(sourceKey,sessionId)
+    assert.equal(item.sourceVm,'my VM'); assert.equal(item.host,'Authoritative Host'); assert.equal(item.datastore,'Authoritative Datastore')
+    assert.equal(item.targetVm,'Recovered'); assert.equal(item.restorePointId,pointId); assert.equal(item.backupId,backupId)
+    assert.doesNotMatch(JSON.stringify(item),/private reason|Unverified|credentials|objectId/)
+    assert.equal(await readEntireRestore('b'.repeat(64),sessionId),undefined)
+    await launch('StartEntireVmRestoreHyperV',{}, {saveReceipt:saveEntireRestore})
+    const original=await readEntireRestore(sourceKey,sessionId)
+    assert.equal(original.mode,'OriginalLocation'); assert.equal(original.targetVm,'my VM'); assert.equal(original.host,undefined)
+    await launch('StartEntireVmRestore',{}, {saveReceipt:async()=>{throw Error('disk unavailable')}})
+    await launch('StartViVMInstantRecovery',{}, {saveReceipt:async()=>assert.fail('only entire VM restore records placement')})
+  } finally {process.chdir(cwd); fs.rmSync(dir,{recursive:true,force:true})}
 })
 
 test('instant VMware uses the selected point and native inventory with independent network and write cache settings', async () => {

@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "एक ही केबल के दोनों सिरों पर लेबल लगा रहे हैं।",
   "Saving the last rack screw for later.": "रैक का आखिरी पेंच बाद के लिए रख रहे हैं।",
   "Asking the blinking lights for directions.": "टिमटिमाती बत्तियों से रास्ता पूछ रहे हैं।",
-  "VBR is checking the migration.": "VBR माइग्रेशन की जाँच कर रहा है।"
+  "VBR is checking the migration.": "VBR माइग्रेशन की जाँच कर रहा है।",
+  "Restore progress": "पुनर्स्थापना की प्रगति",
+  "Virtual machine {number}": "वर्चुअल मशीन {number}",
+  "Destination VM": "गंतव्य VM",
+  "VM task": "VM कार्य",
+  "Restore in progress": "पुनर्स्थापना जारी है",
+  "Restore completed": "पुनर्स्थापना पूरी हुई",
+  "Restore completed with warnings": "पुनर्स्थापना चेतावनियों के साथ पूरी हुई",
+  "Restore failed": "पुनर्स्थापना विफल रही",
+  "Restore canceled": "पुनर्स्थापना रद्द की गई",
+  "VM configuration": "VM कॉन्फ़िगरेशन"
 }

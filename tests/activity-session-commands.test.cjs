@@ -72,19 +72,27 @@ test('recovery map uses phase-specific production icons and renders known placem
   const React = require('react'), {renderToStaticMarkup} = require('react-dom/server')
   const Module = require('node:module')
   const file = require.resolve('../components/activity/instant-recovery-workspace.tsx')
-  const component = new Module(file,module), localRequire = Module.createRequire(file)
-  component.require = key => {
-    if (key === '@/components/investigation/shared') return {useInvestigationPresentation:() => ({t:key=>key,date:String,bytes:String,formatNumber:String})}
-    if (key.endsWith('.module.css')) return {default:new Proxy({}, {get:(_,key)=>key}),__esModule:true}
-    return localRequire(key)
+  function loadComponent(file) {
+    const component = new Module(file,module), localRequire = Module.createRequire(file)
+    component.require = key => {
+      if (key === '@/components/investigation/shared') return {useInvestigationPresentation:() => ({t:key=>key,date:String,bytes:String,formatNumber:String})}
+      if (key.endsWith('.module.css')) return {default:new Proxy({}, {get:(_,key)=>key}),__esModule:true}
+      if (key === './recovery-diagram') return loadComponent(localRequire.resolve('./recovery-diagram.tsx'))
+      return localRequire(key)
+    }
+    component._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{
+      jsx:ts.JsxEmit.ReactJSX, module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022, esModuleInterop:true,
+    }}).outputText,file)
+    return component.exports
   }
-  component._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{
-    jsx:ts.JsxEmit.ReactJSX, module:ts.ModuleKind.CommonJS, target:ts.ScriptTarget.ES2022, esModuleInterop:true,
-  }}).outputText,file)
+  const {InstantRecoveryWorkspace}=loadComponent(file)
   const render = (phase,destination) => {
-    const html=renderToStaticMarkup(React.createElement(component.exports.InstantRecoveryWorkspace,{
+    const html=renderToStaticMarkup(React.createElement(InstantRecoveryWorkspace,{
       mount, canConfigure:!phase,onConfigure:()=>{},destination,transfer:phase && {phase},
     }))
+    assert.deepEqual([...html.matchAll(/data-node="([^"]+)"/g)].map(match=>match[1]),['repository','machine','destination'])
+    const movingPackets=(html.match(/class="strand"><i><\/i><i><\/i>/g)||[]).length
+    assert.equal(movingPackets,phase==='active' ? 1 : 0)
     return html.split('class="destination"')[1].split('class="transfer"')[0]
   }
   assert.match(render(undefined),/lucide-plus/)

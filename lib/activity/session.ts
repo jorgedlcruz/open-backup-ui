@@ -7,9 +7,11 @@ import { TopologyRequestError } from '../topology/load'
 import { loadActivityMounts } from './load'
 import { mountBelongsToSession, type Mount } from './model'
 import { enrichInstantVm, sessionMigrations, type ScopedMigration } from './instant-vm-evidence'
+import { isEntireRestore, loadEntireRestore, type EntireRestore } from './entire-restore'
 
 export type MountHint = Pick<Mount, 'id'|'kind'>
 export type ActivityDetail = {
+  entireRestore?: EntireRestore
   instantMigration?: Session | null
   instantMigrations?: ScopedMigration[]
   id: string; sourceKey: string; sourceName: string; updatedAt: string; session: Session | null
@@ -19,7 +21,7 @@ export type ActivityDetail = {
 const mayHaveMount = /InstantRecovery|InstantRestore|FileLevelRestore|InstantDiskRecovery|PublishBackupContent/i
 export const isApplicationBrowse = (type?: string | null) => type === 'ApplicationLevelRestore' || type === 'AdForestRestore'
 export function canStopEntireVm(session: Session | null) {
-  return !!session && ['RestoreVm','CloudDirectorVmRestore','CloudDirectorVAppRestore'].includes(session.sessionType || '') &&
+  return !!session && isEntireRestore(session.sessionType) &&
     ['Starting','Working','WaitingRepository','WaitingSlot'].includes(session.state || '') && !session.endTime
 }
 const unavailable = <T>(): Evidence<T> => ({ data: [], available: false, complete: false })
@@ -59,8 +61,9 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
     if (scoped.length !== children.data.length) children.complete = false
     children.data = scoped
   }
-  const [enriched, migrations] = await Promise.all([
+  const [enriched, migrations, entireRestore] = await Promise.all([
     Promise.all(mounts.map(mount => enrichInstantVm(raw, mount, vmPower))), sessionMigrations(raw, sourceKey, session, hint),
+    loadEntireRestore(read, sourceKey, session, tasks, logs),
   ])
-  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, ...migrations, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
+  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, ...migrations, entireRestore, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
 }

@@ -2,6 +2,7 @@
 import { isIP } from 'node:net'
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
+import type { saveEntireRestore } from '../server/entire-restore-records'
 import { VbrRecoveryError, checkSource } from './error'
 import { inventorySchema, resolveInventory, type InventoryRef } from './inventory'
 import { findPoint, pointDisks, type SourcePoint } from './options'
@@ -127,7 +128,7 @@ async function diskPayload(send: RecoverySend, point: SourcePoint, draft: Draft)
     ...(cacheDatastore ? { writeCache: { redirectIsEnabled: true, cacheDatastore } } : {}) }
 }
 
-export async function startRestore(send: RecoverySend, sourceKey: string, draft: Draft) {
+export async function startRestore(send: RecoverySend, sourceKey: string, draft: Draft, saveReceipt?: typeof saveEntireRestore) {
   checkSource(draft.sourceKey, sourceKey)
   const point = await findPoint(send, draft.restorePointId, draft.backupId)
   if ((point.malwareStatus === 'Infected' || point.malwareStatus === 'Suspicious') && point.malwareStatus !== draft.reviewedMalwareStatus) {
@@ -143,5 +144,8 @@ export async function startRestore(send: RecoverySend, sourceKey: string, draft:
     state: z.string().optional(), sessionType: z.string().optional(), mountErrors: z.array(z.object({ type: z.string(), message: z.string() })).optional() }).safeParse(result)
   const id = session.success ? (isFiles ? session.data.sessionId : session.data.id) : null
   if (!session.success || !id) throw new VbrRecoveryError('VBR accepted the operation but returned no session ID. Check Sessions before trying again.', 502, true)
+  if (saveReceipt && ['StartEntireVmRestore','StartEntireVmRestoreHyperV','StartEntireVmRestoreCloudDirector'].includes(draft.operation)) {
+    await saveReceipt(sourceKey, id, point, payload).catch(() => {})
+  }
   return { id, sourceKey, sessionType: session.data.sessionType, state: session.data.state, mountErrors: session.data.mountErrors }
 }

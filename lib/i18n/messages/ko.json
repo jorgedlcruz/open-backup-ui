@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "같은 케이블의 양쪽 끝에 라벨을 붙이는 중입니다.",
   "Saving the last rack screw for later.": "마지막 랙 나사는 나중을 위해 남겨 두는 중입니다.",
   "Asking the blinking lights for directions.": "깜빡이는 표시등에 길을 묻는 중입니다.",
-  "VBR is checking the migration.": "VBR에서 마이그레이션을 사전 확인 중입니다."
+  "VBR is checking the migration.": "VBR에서 마이그레이션을 사전 확인 중입니다.",
+  "Restore progress": "복원 진행률",
+  "Virtual machine {number}": "가상 머신 {number}",
+  "Destination VM": "대상 VM",
+  "VM task": "VM 작업",
+  "Restore in progress": "복원 진행 중",
+  "Restore completed": "복원 완료",
+  "Restore completed with warnings": "경고와 함께 복원 완료",
+  "Restore failed": "복원 실패",
+  "Restore canceled": "복원 취소됨",
+  "VM configuration": "VM 구성"
 }

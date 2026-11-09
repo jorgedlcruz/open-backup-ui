@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "同じケーブルの両端にラベルを貼っています。",
   "Saving the last rack screw for later.": "ラックの最後のネジはあとで使います。",
   "Asking the blinking lights for directions.": "点滅するランプに道を聞いています。",
-  "VBR is checking the migration.": "VBR が移行の事前チェックを実行しています。"
+  "VBR is checking the migration.": "VBR が移行の事前チェックを実行しています。",
+  "Restore progress": "復元の進行状況",
+  "Virtual machine {number}": "仮想マシン {number}",
+  "Destination VM": "復元先 VM",
+  "VM task": "VM タスク",
+  "Restore in progress": "復元中",
+  "Restore completed": "復元が完了しました",
+  "Restore completed with warnings": "警告付きで復元が完了しました",
+  "Restore failed": "復元に失敗しました",
+  "Restore canceled": "復元がキャンセルされました",
+  "VM configuration": "VM 構成"
 }

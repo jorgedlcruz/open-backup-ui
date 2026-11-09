@@ -2,13 +2,14 @@
 // Open Backup UI v1.0.2
 
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { ArrowDownToLine, ArrowRight, Ban, Box, Check, CircleHelp, Clock3, Database, GripVertical, HardDrive, Layers, MapPin, Plus, Power, Server, TriangleAlert, X, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Database, GripVertical, HardDrive, Layers, MapPin, Power, Server } from 'lucide-react'
 import type { Mount } from '@/lib/activity/model'
 import { useInvestigationPresentation } from '@/components/investigation/shared'
+import { RecoveryConnector, RecoveryDiagram, RecoveryHostArt, RecoveryNode, type RecoveryFact, type RecoveryPhase } from './recovery-diagram'
 import styles from './instant-recovery-workspace.module.css'
 
 export type InstantRecoveryTransfer = {
-  phase: 'checking' | 'accepted' | 'active' | 'completed' | 'warning' | 'failed' | 'canceled' | 'unknown'
+  phase: RecoveryPhase
   percent?: number
   message?: string
   transferredBytes?: number
@@ -26,41 +27,6 @@ type WorkspaceProps = {
 }
 
 const dragType = 'application/x-open-backup-ui-instant-vm'
-
-function ServerUnit() {
-  return <span className={styles.serverUnit}><i/><b/></span>
-}
-
-const transferIcons: Record<InstantRecoveryTransfer['phase'], LucideIcon> = {
-  checking: Clock3, accepted: Clock3, active: ArrowDownToLine, completed: Check,
-  warning: TriangleAlert, failed: X, canceled: Ban, unknown: CircleHelp,
-}
-
-function HostArt({production, phase, available}: {production?: boolean; phase?: InstantRecoveryTransfer['phase']; available?: boolean}) {
-  const empty = production && !phase && available
-  const Icon = phase ? transferIcons[phase] : empty ? Plus : Box
-  return <span aria-hidden="true" className={styles.hostArt} data-production={production || undefined}>
-    <span className={styles.machineBadge} data-empty={empty || undefined}>
-      <Icon/>
-    </span>
-    <span className={styles.uplink}/>
-    <span className={styles.chassis}><ServerUnit/><ServerUnit/></span>
-  </span>
-}
-
-function RepositoryArt() {
-  return <span aria-hidden="true" className={styles.repositoryArt}>
-    <i/><i/><i/><span><Database size={15}/></span>
-  </span>
-}
-
-function Connection({transfer, phase, mountedLabel}: {transfer?: boolean; phase?: InstantRecoveryTransfer['phase']; mountedLabel?: string}) {
-  return <div className={styles.connection} data-mounted={!!mountedLabel || undefined} data-transfer={transfer || undefined} data-phase={phase}>
-    <span className={styles.strand}><i/></span>
-    {phase === 'completed' ? <Check aria-hidden/> : <ArrowRight aria-hidden/>}
-    {mountedLabel && <span className={styles.linkLabel}>{mountedLabel}</span>}
-  </div>
-}
 
 export function InstantRecoveryWorkspace({mount, destination, transfer, canConfigure, configuring, onConfigure, children}: WorkspaceProps) {
   const { t, date, bytes, formatNumber } = useInvestigationPresentation()
@@ -128,48 +94,15 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
     if (event.dataTransfer.getData(dragType) === dropKey) configure()
   }
 
-  const machine = <><HostArt/>{available && <GripVertical aria-hidden className={styles.grip} size={14}/>}</>
-  return <section aria-label={t('Instant Recovery workspace')} className={styles.workspace}>
-    <div className={styles.canvas} data-editing={configuring || undefined}>
-      <div className={styles.repository}>
-        <div className={styles.art}><RepositoryArt/></div>
-        <div className={styles.identity}><span className={styles.role}>{t('Source backup')}</span><strong>{evidence?.backupName || missing}</strong></div>
-        <dl className={styles.facts}>
-          <div><dt><Database/>{t('Backup repository')}</dt><dd>{evidence?.repository || missing}</dd></div>
-          {!evidence?.backupName && mount.backup && <div><dt>{t('Backup job')}</dt><dd>{mount.backup}</dd></div>}
-          {evidence?.sourceVm && evidence.sourceVm !== vmName && <div><dt>{t('Source VM')}</dt><dd>{evidence.sourceVm}</dd></div>}
-          {mount.pointTime && <div><dt><Layers/>{t('Restore point')}</dt><dd>{date(mount.pointTime)}</dd></div>}
-        </dl>
-      </div>
-      <Connection mountedLabel={mount.state === 'Mounted' ? t('Mounted') : undefined}/>
-      <div className={styles.machine}>
-        {available ? <button type="button" className={styles.dragHandle} aria-label={t('Choose destination for {name}', {name: vmName || t('Virtual machine')})}
-          aria-controls={configuring ? formId : undefined} aria-expanded={!!configuring} aria-describedby={helperId} draggable
-          onDragStart={dragStart} onDragEnd={() => {setDragging(false); setOverTarget(false)}} onClick={configure}>{machine}</button> :
-          <div className={styles.art}>{machine}</div>}
-        <div className={styles.identity}><span className={styles.role}>{t('Recovered VM')}</span><strong>{vmName || missing}</strong></div>
-        <div className={styles.power} data-power={power}><Power size={12} aria-hidden/>{powerLabel}</div>
-        <dl className={styles.facts}>
-          <div><dt><Server/>{isHyperV ? t('Hyper-V host') : t('ESXi host')}</dt><dd>{host || missing}</dd></div>
-          {evidence?.cluster && <div><dt><Layers/>{t('Cluster')}</dt><dd>{evidence.cluster}</dd></div>}
-          {evidence?.writeCache && <div><dt><HardDrive/>{t('Write cache')}</dt><dd>{evidence.writeCache}</dd></div>}
-        </dl>
-      </div>
-      <Connection transfer phase={transfer?.phase}/>
-      <div className={styles.destination} data-phase={transfer?.phase} data-enabled={available || undefined} data-dragging={dragging || undefined}
-        data-over={overTarget || undefined} data-configuring={configuring || undefined} onDragOver={dragOver}
-        onDragLeave={event => {if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setOverTarget(false)}}
-        onDrop={drop}>
-        {!configuring && <div className={styles.art}><HostArt production phase={transfer?.phase} available={available}/></div>}
-        <div className={styles.identity}><span className={styles.role}>{t('Production destination')}</span>
-          {!configuring && (destination?.host || !destination?.datastore) && <strong>{destination?.host || (!transfer && available ? t('Drop the VM here') : missing)}</strong>}</div>
-        {!configuring && destination?.datastore && <dl className={styles.facts}><div><dt><HardDrive/>{t('Destination datastore')}</dt>
-          <dd className={!destination.host ? styles.primaryDatastore : undefined}>{destination.datastore}</dd></div></dl>}
-        {available && !configuring && <button type="button" className={styles.choose} onClick={configure} aria-expanded={false}>
-          <MapPin size={14} aria-hidden/>{t('Choose destination')}<ArrowRight size={13} aria-hidden/></button>}
-        {configuring && <div className={styles.form} tabIndex={-1} role="region" id={formId} ref={form} aria-label={t('Production destination')}>{children}</div>}
-      </div>
-    </div>
+  const sourceFacts: RecoveryFact[] = [{label:t('Backup repository'), value:evidence?.repository || missing, icon:Database}]
+  if (!evidence?.backupName && mount.backup) sourceFacts.push({label:t('Backup job'),value:mount.backup})
+  if (evidence?.sourceVm && evidence.sourceVm !== vmName) sourceFacts.push({label:t('Source VM'),value:evidence.sourceVm})
+  if (mount.pointTime) sourceFacts.push({label:t('Restore point'),value:date(mount.pointTime),icon:Layers})
+  const vmFacts: RecoveryFact[] = [{label:isHyperV ? t('Hyper-V host') : t('ESXi host'),value:host || missing,icon:Server}]
+  if (evidence?.cluster) vmFacts.push({label:t('Cluster'),value:evidence.cluster,icon:Layers})
+  if (evidence?.writeCache) vmFacts.push({label:t('Write cache'),value:evidence.writeCache,icon:HardDrive})
+  const destinationName = destination?.host || (destination?.datastore ? undefined : !transfer && available ? t('Drop the VM here') : missing)
+  const footer = <>
     {available && <span id={helperId} className={styles.srOnly}>{t('Drag the VM here or choose a destination.')}</span>}
     {transfer && <div className={styles.transfer} data-phase={transfer.phase}>
       <div className={styles.transferHeading}><span className={styles.transferState} role="status"><i aria-hidden/>{phaseLabel}</span>
@@ -180,5 +113,25 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
       </div>}
       {transfer.message && <div className={styles.transferDetail}>{transfer.message}</div>}
     </div>}
-  </section>
+  </>
+  return <RecoveryDiagram label={t('Instant Recovery workspace')} nodes={3} editing={configuring} footer={footer}>
+    <RecoveryNode kind="repository" label={t('Source backup')} name={evidence?.backupName || missing} facts={sourceFacts}/>
+    <RecoveryConnector mounted={mount.state === 'Mounted'} label={mount.state === 'Mounted' ? t('Mounted') : undefined}/>
+    <RecoveryNode kind="machine" label={t('Recovered VM')} name={vmName || missing} facts={vmFacts}
+      artwork={available ? <button type="button" className={styles.dragHandle} aria-label={t('Choose destination for {name}', {name:vmName || t('Virtual machine')})}
+        aria-controls={configuring ? formId : undefined} aria-expanded={!!configuring} aria-describedby={helperId} draggable
+        onDragStart={dragStart} onDragEnd={() => {setDragging(false); setOverTarget(false)}} onClick={configure}>
+        <RecoveryHostArt/><GripVertical aria-hidden className={styles.grip} size={14}/></button> : undefined}
+      status={<div className={styles.power} data-power={power}><Power size={12} aria-hidden/>{powerLabel}</div>}/>
+    <RecoveryConnector phase={transfer?.phase}/>
+    <RecoveryNode kind="destination" phase={transfer?.phase} label={t('Production destination')} name={configuring ? undefined : destinationName}
+      facts={!configuring && destination?.datastore ? [{label:t('Destination datastore'),value:destination.datastore,icon:HardDrive,primary:!destination.host}] : undefined}
+      available={available} editing={configuring} data-dragging={dragging || undefined} data-over={overTarget || undefined} onDragOver={dragOver}
+      onDragLeave={event => {if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setOverTarget(false)}}
+      onDrop={drop}>
+      {available && !configuring && <button type="button" className={styles.choose} onClick={configure} aria-expanded={false}>
+        <MapPin size={14} aria-hidden/>{t('Choose destination')}<ArrowRight size={13} aria-hidden/></button>}
+      {configuring && <div className={styles.form} tabIndex={-1} role="region" id={formId} ref={form} aria-label={t('Production destination')}>{children}</div>}
+    </RecoveryNode>
+  </RecoveryDiagram>
 }

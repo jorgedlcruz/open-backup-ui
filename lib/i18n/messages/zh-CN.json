@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "正在给同一根线缆的两端贴标签。",
   "Saving the last rack screw for later.": "把机架的最后一颗螺丝留着备用。",
   "Asking the blinking lights for directions.": "正在向闪烁的指示灯问路。",
-  "VBR is checking the migration.": "VBR 正在执行迁移前检查。"
+  "VBR is checking the migration.": "VBR 正在执行迁移前检查。",
+  "Restore progress": "还原进度",
+  "Virtual machine {number}": "虚拟机 {number}",
+  "Destination VM": "目标虚拟机",
+  "VM task": "虚拟机任务",
+  "Restore in progress": "正在还原",
+  "Restore completed": "还原已完成",
+  "Restore completed with warnings": "还原已完成，但有警告",
+  "Restore failed": "还原失败",
+  "Restore canceled": "还原已取消",
+  "VM configuration": "虚拟机配置"
 }

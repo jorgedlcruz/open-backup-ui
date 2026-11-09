@@ -4293,5 +4293,15 @@
   "Labeling both ends of the same cable.": "Подписываем оба конца одного кабеля.",
   "Saving the last rack screw for later.": "Оставляем последний винт для стойки на потом.",
   "Asking the blinking lights for directions.": "Спрашиваем дорогу у мигающих индикаторов.",
-  "VBR is checking the migration.": "VBR выполняет предварительную проверку миграции."
+  "VBR is checking the migration.": "VBR выполняет предварительную проверку миграции.",
+  "Restore progress": "Ход восстановления",
+  "Virtual machine {number}": "Виртуальная машина {number}",
+  "Destination VM": "Целевая ВМ",
+  "VM task": "Задача ВМ",
+  "Restore in progress": "Выполняется восстановление",
+  "Restore completed": "Восстановление завершено",
+  "Restore completed with warnings": "Восстановление завершено с предупреждениями",
+  "Restore failed": "Ошибка восстановления",
+  "Restore canceled": "Восстановление отменено",
+  "VM configuration": "Конфигурация ВМ"
 }
