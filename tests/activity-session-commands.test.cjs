@@ -88,7 +88,7 @@ test('recovery map uses phase-specific production icons and renders known placem
     return html.split('class="destination"')[1].split('class="transfer"')[0]
   }
   assert.match(render(undefined),/lucide-plus/)
-  for (const [phase,icon] of Object.entries({checking:'clock',accepted:'clock',active:'arrow-down-to-line',completed:'check',warning:'triangle-alert',failed:'lucide-x',canceled:'ban',unknown:'circle-help'})) {
+  for (const [phase,icon] of Object.entries({checking:'clock',accepted:'clock',active:'arrow-down-to-line',completed:'check',warning:'triangle-alert',failed:'lucide-x',canceled:'ban',unknown:'circle-question-mark'})) {
     const output=render(phase,{host:'esx-prod',datastore:'prod-ds'})
     assert.ok(output.includes(icon),phase);assert.match(output,/esx-prod/);assert.match(output,/prod-ds/);assert.doesNotMatch(output,/lucide-plus|Not reported/)
   }
