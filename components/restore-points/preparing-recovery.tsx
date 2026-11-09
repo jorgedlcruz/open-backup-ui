@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -44,7 +45,7 @@ export function RecoveryHandoff({receipt, loading = false}: {receipt?: RestoreLa
       <div className={styles.launchStatus} role={pending ? undefined : 'alert'}>
         {!pending && <TriangleAlert aria-hidden size={23} />}
         <div><h2>{pending ? t('Preparing recovery') : receipt?.phase === 'rejected' ? t('Recovery request failed.') : t('Recovery status unconfirmed')}</h2>
-          {pending && receipt && <RecoverySignal stage={accepted ? 'accepted' : 'request'} />}
+          {pending && <RecoverySignal stage={accepted ? 'accepted' : receipt ? 'request' : 'data'} />}
           {!pending && <p>{receipt?.phase === 'rejected' ? diagnostic(receipt.message || t('Recovery request failed.')) : t('Check Sessions before submitting another request.')}</p>}
           {!pending && receipt?.phase === 'unknown' && receipt.message && <p>{diagnostic(receipt.message)}</p>}
           {!pending && <Button asChild variant="outline" size="sm"><Link href="/vbr/activity">{t('View sessions')}</Link></Button>}

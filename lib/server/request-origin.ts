@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 type ApplicationRequest = { headers: Headers; nextUrl: URL }
 
 // TLS terminates at the reverse proxy. Host remains the requested application

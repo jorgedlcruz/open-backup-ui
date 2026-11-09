@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -10,6 +11,7 @@ import { useI18n } from '@/components/providers/i18n-provider'
 import { investigationLabel } from '@/lib/investigation/presentation'
 import { enumLabel, type Translator } from '@/lib/i18n/presentation'
 import { SearchBox, Status } from '@/components/investigation/shared'
+import { DataLoading } from '@/components/ui/data-loading'
 import { FilterWorkspace } from '@/components/operations/filter-workspace'
 import { FilterFields } from '@/components/operations/filter-fields'
 import { FilterFacet, FilterSelect } from '@/components/operations/filter-facet'
@@ -134,7 +136,8 @@ export function ActivityWorkspace() {
             <option value="7d">{t('Last 7 days')}</option><option value="30d">{t('Last 30 days')}</option>
           </FilterSelect>
         </FilterFields>}>
-        {feed?.rows.length ? <div className={ops.tableScroll}><table className={ops.table}>
+        {!feed && !error && <div className={ops.empty}>{snapshot ? t('Loading…') : <DataLoading status={t('Loading session history…')} compact/>}</div>}
+        {feed && (feed.rows.length ? <div className={ops.tableScroll}><table className={ops.table}>
           <thead><tr>{['Name','Platform','Status','Started','Progress'].map(label => <th key={label} scope="col">{t(label)}</th>)}</tr></thead>
           <tbody>{feed.rows.map(row => {
             const progress = sessionProgress(row.session, row.mount)
@@ -146,8 +149,8 @@ export function ActivityWorkspace() {
             <td className={ops.dateCell}>{date(row.session?.creationTime)}</td>
             <td>{progress == null ? '—' : formatNumber(progress / 100, {style: 'percent'})}</td>
           </tr>})}</tbody>
-        </table></div> : !feed && error ? null : <div className={ops.empty}>{!feed ? t('Loading…') : feed.hasMore
-          ? t('No matches in this part of the history. Continue to older sessions.') : t('No matching sessions.')}</div>}
+        </table></div> : <div className={ops.empty}>{feed.hasMore
+          ? t('No matches in this part of the history. Continue to older sessions.') : t('No matching sessions.')}</div>)}
         <div className={ops.pagination}>
           <span>{feed?.total == null || !feed.total && feed.rows.length ? '' : t('{count} sessions', {count: formatNumber(feed.total)})}</span>
           <div><Button size="sm" variant="outline" disabled={busy || offsets.length < 2}

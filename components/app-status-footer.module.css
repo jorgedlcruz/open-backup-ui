@@ -1,0 +1,42 @@
+/* Open Backup UI v1.0.2 */
+.footer {
+  position: sticky;
+  z-index: 9;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: auto;
+  pointer-events: none;
+  color: var(--muted-foreground);
+  font-size: var(--ops-small, .75rem);
+  line-height: 1.4;
+}
+.strip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .35rem .8rem;
+  padding: .35rem max(1rem, env(safe-area-inset-right)) max(.35rem, env(safe-area-inset-bottom)) .8rem;
+  border: 1px solid var(--border);
+  border-inline-end: 0;
+  border-bottom: 0;
+  border-start-start-radius: var(--radius);
+  background: var(--popover);
+  pointer-events: auto;
+}
+.link,.state { display: inline-flex; align-items: center; gap: .4rem; }
+.link { min-height: 24px; padding-inline: .15rem; }
+.link:hover { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }
+.link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; }
+.state { color: var(--foreground); }
+.state i { width: .43rem; height: .43rem; flex-shrink: 0; background: var(--muted-foreground); border-radius: 50%; }
+.state[data-status=ok] i { background: var(--ops-success); }
+.state[data-status=warning] i,.state[data-status=unverified] i { background: var(--ops-warning); }
+.state[data-status=error] i { background: var(--ops-danger); }
+.version { border-inline-start: 1px solid var(--border); padding-inline-start: .8rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) {
+  .strip { max-width: 100%; gap: .2rem .5rem; padding-inline: .65rem; }
+  .version { padding-inline-start: .5rem; }
+}
+@media print { .footer { display: none; } }

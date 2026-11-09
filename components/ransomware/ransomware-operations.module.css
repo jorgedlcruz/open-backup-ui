@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .page { min-width:0; }
 .metric { text-align:left; cursor:pointer; }
 .coverage { display:flex; align-items:center; gap:10px 24px; flex-wrap:wrap; margin-bottom:20px; padding:14px 18px; border:1px solid var(--border); background:var(--card); border-radius:var(--ops-panel-radius,10px); font-size:var(--ops-small,11px); color:var(--muted-foreground); line-height:1.6; }

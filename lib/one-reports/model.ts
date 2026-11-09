@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export type Row = Record<string, unknown>
 export const obj = (value: unknown): Row => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Row : {}
 export const str = (value: unknown) => typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''

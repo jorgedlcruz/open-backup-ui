@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .header { display:inline-flex; align-items:center; gap:6px; width:100%; color:inherit; font:inherit; text-align:inherit; cursor:pointer; background:none; border:0; padding:0; }
 .header svg { flex-shrink:0; opacity:.55; }
 .header:hover { color:var(--foreground); }.header:hover svg,[aria-sort=ascending] .header svg,[aria-sort=descending] .header svg { opacity:1; color:var(--ops-accent,var(--primary)); }

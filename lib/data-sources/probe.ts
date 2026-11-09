@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { type Health, type Platform, unchecked } from './model'
 
 export const probes: Record<Platform, {path:string;version:string} | null> = {

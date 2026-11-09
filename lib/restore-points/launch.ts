@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { v4 as uuid } from 'uuid'
 import { isRestoreOperation, uncertainRestore, type RestoreDraft, type RestoreOperation, type RestoreResult } from './workflow'
 

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export class VbrRecoveryError extends Error {
   constructor(message: string, readonly status = 400, readonly uncertain = false) { super(message) }
 }

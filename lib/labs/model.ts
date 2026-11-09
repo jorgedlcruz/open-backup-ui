@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { defaultColumns, fieldsFor, type Field } from './catalog'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, MAX_CANVAS_HEIGHT, normalizeLayout } from './layout'

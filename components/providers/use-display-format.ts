@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useI18n } from './i18n-provider'
 import { enumLabel } from '@/lib/i18n/presentation'

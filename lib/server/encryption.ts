@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import crypto from 'crypto';
 import os from 'os';
 import path from 'path';

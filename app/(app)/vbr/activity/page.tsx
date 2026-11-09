@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { redirect } from 'next/navigation'
 import { ActivityWorkspace } from '@/components/activity/activity-workspace'
 import { getRequestI18n } from '@/lib/i18n/server'

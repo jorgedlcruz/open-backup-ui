@@ -1,6 +1,8 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { usePlanningFormat } from '@/components/forecast/localized-format'
+import { DataLoading } from '@/components/ui/data-loading'
 
 import { Trans, useI18n } from '@/components/providers/i18n-provider'
 import { localizedPolicy, localizedSchedule, localizedFull, planningMessage } from '@/lib/forecast/presentation'
@@ -124,7 +126,7 @@ export function ForecastConsole({initialRepository='',initialMode='files'}:{init
   return <div className={ops.console}>
     <header className={ops.header}><div><h1><Trans>{"Capacity Forecast"}</Trans></h1><p>{localText("See what is consuming storage. Plan for the next full, the next cycle, and the next quarter.")}</p></div><div className={ops.headerActions}><div className={ops.headerControls}><LensSwitcher view="forecast" snapshot={null} loading={false} stale={false}/><Button size="sm" variant="outline" disabled={loading} onClick={()=>setRequest(previous=>({version:previous.version+1,force:true}))}><RefreshCw size={14} className={loading?'animate-spin':''}/>{loading ? localText("Reading evidence…") : localText("Refresh")}</Button></div><span className={ops.source}>{localText("{value} · Read-only planning", { value: data?.sourceName || localText("Selected VBR source") })}</span></div></header>
     {error&&<div className={ops.notice} role="alert"><TriangleAlert size={18}/><div><strong>{data ? localText("Previous snapshot · refresh failed") : localText("Forecast could not load")}</strong><p>{planningMessage(localText, error)}</p></div><Link href="/connect"><Trans>{"Connect"}</Trans></Link></div>}
-    {!data?<div className={ops.empty}>{loading ? localText("Collecting repositories, workload files and job policies…") : localText("No forecast evidence available.")}</div>:<>
+    {!data?<div className={ops.empty}>{loading ? <DataLoading status={localText("Collecting repositories, workload files and job policies…")}/> : localText("No forecast evidence available.")}</div>:<>
       {data.cache&&<div role="status" className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border bg-card/50 p-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-2 font-medium text-foreground"><Clock3 size={14} aria-hidden="true"/>{localText("Cached planning snapshot")}</span>
         <span>{localText("Updated {time}",{time:date(data.cache.updatedAt||data.fetchedAt)})}</span>

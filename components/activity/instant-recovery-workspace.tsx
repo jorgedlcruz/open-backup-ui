@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ArrowRight, Box, Check, Database, GripVertical, HardDrive, Layers, MapPin, Plus, Power, Server } from 'lucide-react'
@@ -7,7 +8,7 @@ import { useInvestigationPresentation } from '@/components/investigation/shared'
 import styles from './instant-recovery-workspace.module.css'
 
 export type InstantRecoveryTransfer = {
-  phase: 'accepted' | 'active' | 'completed' | 'warning' | 'failed' | 'canceled' | 'unknown'
+  phase: 'checking' | 'accepted' | 'active' | 'completed' | 'warning' | 'failed' | 'canceled' | 'unknown'
   percent?: number
   message?: string
   transferredBytes?: number
@@ -75,6 +76,7 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
   const reportedPercent = typeof percent === 'number' && Number.isFinite(percent) && percent >= 0 && percent <= 100 ? percent : undefined
   const transferred = transfer?.transferredBytes, total = transfer?.totalBytes
   const phaseLabel = transfer && {
+    checking: t('VBR is checking the migration.'),
     accepted: t('Migration requested'), active: t('Transfer in progress'), completed: t('Migration completed'),
     warning: t('Migration completed with warnings'), failed: t('Migration failed'), canceled: t('Migration canceled'),
     unknown: t('Migration status unavailable'),

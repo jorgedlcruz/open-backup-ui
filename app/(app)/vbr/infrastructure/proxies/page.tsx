@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { ProxyOperations } from '@/components/proxies/proxy-operations'
 
 export const metadata = { title: 'Backup Proxies', description: 'Backup proxy availability, transport policy, and task limits.' }

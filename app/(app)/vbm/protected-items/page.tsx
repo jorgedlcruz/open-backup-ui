@@ -1,2 +1,3 @@
+// Open Backup UI v1.0.2
 import { ProtectedConsole } from '@/components/vbm-protected/protected-console'
 export default async function Page({searchParams}:{searchParams:Promise<{organizationId?:string;organization?:string}>}) {const params=await searchParams;const organizationId=typeof params.organizationId==='string' ? params.organizationId:'',legacyOrganization=typeof params.organization==='string' ? params.organization:'';return <ProtectedConsole key={`${organizationId}:${legacyOrganization}`} organizationId={organizationId} legacyOrganization={legacyOrganization}/>}

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { capacityTrend, DAY, GB, dayStart, projectBackup, repositoryBackups, uniqueFiles, type ForecastSnapshot } from '../forecast/model'
 
 type Point = { at: number; bytes: number }

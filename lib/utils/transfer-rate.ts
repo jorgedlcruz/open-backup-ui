@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 // Utility functions for calculating transfer rates from session data
 
 import { VeeamSession, TransferRateDataPoint } from '@/lib/types/veeam';

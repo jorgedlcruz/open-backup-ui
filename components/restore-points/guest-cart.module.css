@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .trigger,.taskPill,.count,.header,.title,.iconButton,.listTools,.footer,.progressLabel { display:flex; align-items:center; }
 .trigger { flex:none; gap:.45rem; }
 .count { min-width:1.3rem; height:1.25rem; justify-content:center; padding-inline:.3rem; border-radius:1rem; background:color-mix(in srgb,var(--primary) 14%,transparent); font-size:.72rem; }

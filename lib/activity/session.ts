@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { PublishedRecoveryReader, VbrReader, VmPowerReader } from '../server/vbr-read'
 import { investigationSessionSchema, taskSchema, validId, revisionForBuild, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
 import { loadLogs } from '../investigation/load'
@@ -5,11 +6,12 @@ import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
 import { loadActivityMounts } from './load'
 import { mountBelongsToSession, type Mount } from './model'
-import { enrichInstantVm, relatedMigration } from './instant-vm-evidence'
+import { enrichInstantVm, sessionMigrations, type ScopedMigration } from './instant-vm-evidence'
 
 export type MountHint = Pick<Mount, 'id'|'kind'>
 export type ActivityDetail = {
   instantMigration?: Session | null
+  instantMigrations?: ScopedMigration[]
   id: string; sourceKey: string; sourceName: string; updatedAt: string; session: Session | null
   mounts: Mount[]; mountWarnings: string[]; logs: Logs; tasks: Evidence<Task>; children: Evidence<Session> | null; canStop: boolean
 }
@@ -57,8 +59,8 @@ export async function loadActivitySession(raw: VbrReader, sourceName: string, so
     if (scoped.length !== children.data.length) children.complete = false
     children.data = scoped
   }
-  const [enriched, instantMigration] = await Promise.all([
-    Promise.all(mounts.map(mount => enrichInstantVm(raw, mount, vmPower))), relatedMigration(raw, session),
+  const [enriched, migrations] = await Promise.all([
+    Promise.all(mounts.map(mount => enrichInstantVm(raw, mount, vmPower))), sessionMigrations(raw, sourceKey, session, hint),
   ])
-  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, instantMigration, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
+  return { id, sourceName, sourceKey, updatedAt: new Date().toISOString(), session, mounts:enriched, ...migrations, mountWarnings: inventory.warnings, logs, tasks, children, canStop: canStopEntireVm(session) }
 }

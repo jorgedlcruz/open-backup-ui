@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import en from './messages/en.json'
 import es from './messages/es.json'
 import de from './messages/de.json'

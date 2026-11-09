@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .operations { display:flex; flex-wrap:wrap; gap:.4rem; }
 .operations button, .operations li > span { min-height:2rem; display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border:1px solid var(--border); border-radius:.4rem; font-size:.75rem; text-align:start; }
 .operations button { cursor:pointer; background:color-mix(in srgb,var(--primary) 5%,transparent); }
@@ -9,6 +10,7 @@
 .primaryEvidence a:hover { text-decoration:underline; }
 .fullWidth { grid-column:1/-1; }
 .launchStatus { display:flex; align-items:flex-start; gap:.8rem; padding:1.25rem; }
+.launchStatus > div { flex:1; min-width:0; }
 .launchStatus > svg,.returnLink { color:var(--primary); }
 .launchStatus h2 { font-size:1rem; font-weight:600; margin-bottom:.4rem; }
 .launchStatus p { color:var(--muted-foreground); margin-top:.3rem; overflow-wrap:anywhere; }

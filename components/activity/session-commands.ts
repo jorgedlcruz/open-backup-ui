@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { Mount } from '@/lib/activity/model'
 import type { ActivityDetail } from '@/lib/activity/session'
 
@@ -9,9 +10,12 @@ export function mountKey(mount: Mount) {
   return mount.kind + '/' + mount.id
 }
 
-export function migrationForMount(mount: Mount, mounts: Mount[], child: ActivityDetail['instantMigration']) {
-  if (!child || mounts.length === 1) return child
-  return child.resourceId === mount.id ? child : undefined
+export function migrationForMount(mount: Mount, mounts: Mount[], child: ActivityDetail['instantMigration'], scoped: ActivityDetail['instantMigrations'] = []) {
+  const receipt = scoped.find(row => row.mountId === mount.id)
+  if (receipt) return receipt.session
+  if (!child || scoped.some(row => row.session.id === child.id)) return undefined
+  if (child.resourceId) return child.resourceId === mount.id ? child : undefined
+  return mounts.length === 1 ? child : undefined
 }
 
 export function canStopPublishing(mount: Mount, data: ActivityDetail, readError: string) {

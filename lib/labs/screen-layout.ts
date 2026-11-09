@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { Box } from './layout'
 
 /** Fit the occupied composition, including portrait/tall layouts, without distortion.

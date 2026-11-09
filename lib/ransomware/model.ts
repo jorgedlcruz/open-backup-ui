@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { type Evidence, type Session, type Task, validId, time } from '../investigation/model'
 import { knownSize } from '../restore-points/model'

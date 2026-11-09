@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import {redirect} from 'next/navigation'
 import {legacyLensTarget} from '@/lib/lens/navigation'
 export default async function LegacyLensPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){

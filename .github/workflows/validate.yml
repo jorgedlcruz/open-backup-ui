@@ -1,3 +1,4 @@
+# Open Backup UI v1.0.2
 name: Validate
 
 on:
@@ -29,5 +30,7 @@ jobs:
         run: npm ls --all
       - name: Regression tests
         run: npm test
+      - name: Verify file versions
+        run: npm run version:files -- --check
       - name: Production build, lint, and type checks
         run: npm run build

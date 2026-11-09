@@ -1,3 +1,4 @@
+# Open Backup UI v1.0.2
 name: Release
 
 on:
@@ -26,7 +27,9 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run version:files -- --check
+          npm run build
 
       - name: Prepare release notes
         id: notes

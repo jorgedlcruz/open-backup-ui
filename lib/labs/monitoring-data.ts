@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { buildProxies, proxyIssues, proxyType, taskLimit, transport, networkFallback, type ProxyInventory } from '../proxies/model'
 import { buildServers, hostUpdate, roleNames, serverType, type ServerInventory } from '../managed-servers/model'
 import { entitlements, type Snapshot as LicenseSnapshot } from '../licensing/model'

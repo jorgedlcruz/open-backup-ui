@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Read-only source audit. This deliberately never imports application code or reads
 // data/, environment files, API responses, or browser/server state.

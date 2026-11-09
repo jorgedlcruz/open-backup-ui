@@ -1,8 +1,10 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
-import { validId, investigationSessionSchema, type Session } from '../investigation/model'
+import { validId, investigationSessionSchema, taskSchema, type Session } from '../investigation/model'
 import type { VbrReader, VmPowerReader } from '../server/vbr-read'
 import { TopologyRequestError } from '../topology/load'
 import type { Mount } from './model'
+import { readMigrationLinks, type MigrationLink } from '../server/migration-links'
 
 async function optional<T>(fn: () => Promise<T>) {
   try { return await fn() }
@@ -54,10 +56,49 @@ export async function enrichInstantVm(read: VbrReader, mount: Mount, inventory?:
   return { ...mount, instantVm:{ ...info, sourceVm:point.name, backupName:confirmed?.name, repository:confirmed?.repositoryName || undefined, powerState:power } }
 }
 
-export async function relatedMigration(read: VbrReader, parent: Session | null): Promise<Session | null> {
-  const related = parent?.relatedSessionId
-  if (parent?.sessionType !== 'InstantRecovery' || !validId(related) || related === parent.id) return null
+function mountReference(session: Session) {
+  const match = /^\/api\/v1\/restore\/instantRecovery\/(?:vSphere|hyperV)\/vm\/([^/?#]+)\/?$/i.exec(session.resourceReference || '')
+  return match?.[1].toLowerCase()
+}
+
+export async function relatedMigration(read: VbrReader, parent: Session | null, link?: MigrationLink): Promise<Session | null> {
+  if (parent?.sessionType !== 'InstantRecovery') return null
+  const related = link?.childSessionId ?? parent.relatedSessionId
+  if (!validId(related) || related === parent.id) return null
+  if (link && (link.parentSessionId !== parent.id || validId(parent.relatedSessionId) && parent.relatedSessionId !== related ||
+    mountReference(parent) && mountReference(parent) !== link.mountId)) return null
   const child = await optional(async () => investigationSessionSchema.parse(await read('/api/v1/sessions/' + related, '1.3-rev2')))
-  return child && child.id === related && child.sessionType === 'QuickMigration' && (!validId(child.parentSessionId) || child.parentSessionId === parent.id)
-    ? child : null
+  if (!child || child.id !== related || child.sessionType !== 'QuickMigration' || validId(child.parentSessionId) && child.parentSessionId !== parent.id) return null
+  if (link && (validId(child.resourceId) && child.resourceId !== link.mountId || mountReference(child) && mountReference(child) !== link.mountId)) return null
+  if (child.progress?.transferredSize == null && child.state === 'Working') {
+    const tasks = await optional(async () => z.object({
+      data:z.array(taskSchema).length(1), pagination:z.object({total:z.literal(1), skip:z.literal(0), count:z.literal(1)}),
+    }).parse(await read('/api/v1/sessions/' + child.id + '/taskSessions?skip=0&limit=2', '1.3-rev2')))
+    const task = tasks?.data[0]
+    if (task?.sessionId === child.id && task.progress?.transferredSize != null && Number.isSafeInteger(task.progress.transferredSize) && task.progress.transferredSize >= 0) {
+      return {...child,progress:{...child.progress,transferredSize:task.progress.transferredSize}}
+    }
+  }
+  return child
+}
+
+export type ScopedMigration = {mountId: string; session: Session}
+export async function sessionMigrations(read: VbrReader, sourceKey: string, parent: Session | null, hint?: Pick<Mount,'id'|'kind'>,
+  receipts = readMigrationLinks) {
+  const empty = {instantMigration:null, instantMigrations:[] as ScopedMigration[]}
+  if (parent?.sessionType !== 'InstantRecovery' || (hint && !['vSphere','hyperV'].includes(hint.kind))) return empty
+  const links = await optional(() => receipts(sourceKey, parent.id, hint?.id)) ?? []
+  const scoped = links.filter(link => link.sourceKey === sourceKey && (!hint || link.mountId === hint.id))
+  const children = await Promise.all(scoped.map(async link => {
+    const session = await relatedMigration(read, parent, link)
+    return session ? {mountId:link.mountId, session} : null
+  }))
+  const instantMigrations = children.filter((row): row is ScopedMigration => row !== null)
+  // Only an unambiguous child can describe the entire view. Per-mount evidence stays keyed separately.
+  const native = validId(parent.relatedSessionId) && !scoped.some(link => link.childSessionId === parent.relatedSessionId)
+    ? await relatedMigration(read, parent) : null
+  const nativeMount = native && (mountReference(native) || native.resourceId || mountReference(parent))
+  const instantMigration = instantMigrations.length === 1 && scoped.length === 1 ? instantMigrations[0].session
+    : native && (!hint || hint.id === nativeMount) ? native : null
+  return {instantMigration, instantMigrations}
 }

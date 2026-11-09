@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .workspace { container-type:inline-size; min-width:0; }
 .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:var(--filter-toolbar-padding,18px 20px); }
 .search { flex:1 1 280px; min-width:180px; }

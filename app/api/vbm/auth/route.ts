@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 // API Route for Veeam Backup for Microsoft 365 Authentication
 // This route handles authentication with the VBM API server-side (same pattern as VBR)
 

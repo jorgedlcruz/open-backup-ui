@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { OrganizationInvestigation } from '@/components/vbm-organizations/organization-investigation'
 import { getRequestI18n } from '@/lib/i18n/server'
 export const dynamic='force-dynamic'

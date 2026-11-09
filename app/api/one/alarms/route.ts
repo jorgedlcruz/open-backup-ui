@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { NextRequest } from 'next/server'
 import { readAlarms, mutateAlarms } from '@/lib/server/one-alarms'
 export const dynamic = 'force-dynamic'

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { idSchema, roleSchema, userSchema, userTypes } from './model'

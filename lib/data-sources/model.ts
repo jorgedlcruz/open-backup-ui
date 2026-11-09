@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 
 export const platformSchema = z.enum(['vbr', 'vb365', 'vro', 'one', 'kasten'])

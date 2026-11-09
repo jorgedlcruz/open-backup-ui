@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { RepositoryInvestigation } from '@/components/vbm-repositories/repository-investigation'
 import { getRequestI18n } from '@/lib/i18n/server'
 export const dynamic='force-dynamic'

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { roleSchema, userSchema, type Evidence, type Role, type RoleDetail, type RoleRow, type Scope, type Snapshot, type User } from './model'
 

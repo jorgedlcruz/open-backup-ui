@@ -1,8 +1,10 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import Link from 'next/link'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
+import { v4 as uuid } from 'uuid'
 import { useI18n } from '@/components/providers/i18n-provider'
 import { ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
@@ -42,6 +44,14 @@ function useMigrationSession(sourceKey: string, sessionId?: string) {
 
 const phases = {pending:'accepted', migrating:'active', succeeded:'completed', warning:'warning', failed:'failed', canceled:'canceled', unknown:'unknown'} as const
 
+type MigrationCheck = {state:'checking'|'accepted'|'rejected'|'unknown'; sessionId?:string; error?:string}
+
+function applyCheck(source: string, entry: MigrationReceipt, result: MigrationCheck) {
+  const childId = validId(result.sessionId) && result.sessionId !== entry.mount.sessionId ? result.sessionId : undefined
+  if (result.state === 'rejected') storeMigration(source,entry.mount,undefined)
+  else storeMigration(source,entry.mount,{...entry,status:result.state,childId})
+}
+
 export function InstantRecoveryControls({mount, sourceKey, session, migrationSession, disabled, refresh, onMigrationLockChange}: {
   mount: Mount; sourceKey: string; session?: Session|null; migrationSession?: Session|null; disabled: boolean
   refresh: () => void; onMigrationLockChange: (locked: boolean) => void
@@ -56,6 +66,46 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
     window.addEventListener(migrationReceiptEvent, reread)
     return () => window.removeEventListener(migrationReceiptEvent, reread)
   }, [])
+  const trackingId = receipt?.status === 'checking' ? receipt.requestId : undefined
+  useEffect(() => {
+    if (!trackingId) return
+    const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout>
+    const params = new URLSearchParams({requestId:trackingId, sourceKey, kind:mount.kind, sessionId:mount.sessionId})
+    const path = `/api/vbr/activity/mounts/${mount.id}?${params}`
+    let misses = 0
+    async function observe() {
+      const current = migrationReceipts(sourceKey,mount.sessionId).find(r => r.requestId === trackingId)
+      if (!current || current.status !== 'checking') return
+      try {
+        const result = await veeamApi.requestActivity<MigrationCheck>(path,{signal:controller.signal})
+        if (controller.signal.aborted) return
+        misses = 0
+        setError('')
+        if (result.state !== 'checking') {
+          applyCheck(sourceKey,current,result)
+          if (result.error) setError(result.error)
+          refresh()
+          return
+        }
+      } catch (err) {
+        if (controller.signal.aborted) return
+        if (err instanceof ApplicationRequestError && [401,403,409].includes(err.status)) {
+          setError(err.message)
+          storeMigration(sourceKey,current.mount,{...current,status:'unknown'})
+          return
+        }
+        if (err instanceof ApplicationRequestError && err.status === 404 && ++misses >= 3) {
+          storeMigration(sourceKey,current.mount,{...current,status:'unknown'})
+          return
+        }
+        setError(err instanceof Error ? err.message : t('Request failed.'))
+      }
+      timer = setTimeout(observe, 4000)
+    }
+    void observe()
+    return () => {controller.abort(); clearTimeout(timer)}
+  }, [trackingId, sourceKey, mount.kind, mount.id, mount.sessionId, refresh, t])
   const linked = migrationSession && migrationSession.id !== receipt?.previousChildId &&
     (!receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
   const child = useMigrationSession(sourceKey, receipt?.childId !== linked?.id ? receipt?.childId : undefined)
@@ -74,29 +124,29 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
       mount:{id:mount.id,sessionId:mount.sessionId,kind:mount.kind,state:mount.state,name:mount.name,
         host:mount.host,backup:mount.backup,pointTime:mount.pointTime,instantVm:mount.instantVm},
       destination:{host:placement.host?.name || (placement.useOriginalPlacement ? mount.instantVm?.host : undefined), datastore:placement.datastore?.name},
-      status:'submitting', previousChildId:operation?.id,
+      status:'submitting', previousChildId:operation?.id, requestId:uuid(),
     }
     storeMigration(sourceKey, mount, pending)
     onMigrationLockChange(true)
     try {
-      const result = await veeamApi.requestActivity<{accepted:boolean; sessionId:string|null}>(`/api/vbr/activity/mounts/${mount.id}`, {
+      const result = await veeamApi.requestActivity<MigrationCheck>(`/api/vbr/activity/mounts/${mount.id}`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({kind:mount.kind, action:'migrate', sessionId:mount.sessionId, sourceKey, ...placement}),
+        body:JSON.stringify({kind:mount.kind, action:'migrate', sessionId:mount.sessionId, requestId:pending.requestId, sourceKey, ...placement}),
       })
-      const childId = validId(result.sessionId) && result.sessionId !== mount.sessionId ? result.sessionId : undefined
-      storeMigration(sourceKey, mount, {...pending, status:result.accepted ? 'accepted' : 'unknown', childId})
-      setConfiguring(false)
+      applyCheck(sourceKey,pending,result)
+      if (result.error) setError(result.error)
+      setConfiguring(result.state === 'rejected')
       refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('Request failed.'))
       const rejected = err instanceof ApplicationRequestError && err.status >= 400 && err.status < 500 && err.status !== 408
-      storeMigration(sourceKey, mount, rejected ? receipt : {...pending, status:'unknown'})
+      storeMigration(sourceKey, mount, rejected ? receipt : {...pending, status:'checking'})
       if (!rejected) setConfiguring(false)
       refresh()
     } finally {submitting.current = false}
   }
 
-  const phase: InstantRecoveryTransfer['phase'] | undefined = evidence.phase !== 'idle' ? phases[evidence.phase] : receipt?.status === 'accepted' ? 'accepted'
+  const phase: InstantRecoveryTransfer['phase'] | undefined = evidence.phase !== 'idle' ? phases[evidence.phase] : receipt?.status === 'checking' ? 'checking' : receipt?.status === 'accepted' ? 'accepted'
     : receipt?.status === 'unknown' ? 'unknown' : undefined
   const transfer = !configuring && phase ? {phase:child?.unavailable && phase === 'accepted' ? 'unknown' as const : phase,
     percent:evidence.progress, transferredBytes:evidence.transferredBytes, message:operation?.result?.message || undefined} : undefined

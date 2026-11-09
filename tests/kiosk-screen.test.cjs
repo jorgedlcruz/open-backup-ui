@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), ts = require('typescript'), assert = require('node:assert/strict'), { test } = require('node:test')
 require.extensions['.ts'] = (mod, file) => mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file)

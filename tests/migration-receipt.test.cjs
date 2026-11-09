@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
@@ -23,6 +24,8 @@ test('a page reload follows the exact accepted operation and never treats an int
     const reopened = reload()
     assert.equal(reopened.migrationReceipts(source,mount.sessionId)[0].status,'unknown')
     assert.equal(reopened.readPendingMigrationMounts(source,mount.sessionId)[0].state,'Not reported')
+    reopened.storeMigration(source,mount,{...pending,requestId:'76833140-88d2-4d20-a56d-2f8394c50ba2'})
+    assert.equal(reload().migrationReceipts(source,mount.sessionId)[0].status,'checking')
     reopened.storeMigration(source,mount,{...pending,status:'accepted',childId})
     const completedRequest = reload()
     assert.equal(completedRequest.migrationReceipts(source,mount.sessionId)[0].childId,childId)

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -6,9 +7,13 @@ import { tokenManager } from './token-manager'
 import { getChunkedCookie, setChunkedCookie, deleteChunkedCookie } from '../utils/cookie-manager'
 import { connectInput, editInput, endpoint, normalizePlatform, sourceId, sourceInput, unchecked, type Source, type Row, type Platform } from '../data-sources/model'
 import { probe } from '../data-sources/probe'
+import { ConnectionChecks } from '../data-sources/connection-summary'
+import { readCacheScope } from './read-cache-scope'
 import { isSameApplicationOrigin, isSecureApplicationRequest } from './request-origin'
 
 const headers = {'Cache-Control':'private, no-store'}
+const processState = globalThis as typeof globalThis & {sourceConnectionChecks?: ConnectionChecks}
+const connectionChecks = processState.sourceConnectionChecks ??= new ConnectionChecks()
 type Jar = Awaited<ReturnType<typeof cookies>>
 export const sessionKeys: Record<Platform,{id:string;token:string}> = {
   vbr:{id:'veeam_source_id',token:'veeam_vbr_token'}, vb365:{id:'veeam_vb365_source_id',token:'veeam_vb365_token'},
@@ -24,8 +29,8 @@ function selected(source:Pick<Source,'id'|'type'|'url'>, jar:Jar) {
   const url=jar.get(`${keys.token}_url`)?.value
   try {return !!getChunkedCookie(jar,keys.token) && !!url && endpoint(url).url===source.url}catch{return false}
 }
-export function catalog(jar:Jar):Source[] {
-  const stored=configStore.getAll(), all=[...stored]
+export function catalog(jar:Jar, strict=false):Source[] {
+  const stored=configStore.getAll(strict), all=[...stored]
   for(const id of ['env-vbr','env-vb365','env-one','env-vro']) {
     const source=configStore.getById(id)
     if(source && !all.some(row=>row.platform===source.platform && sourceUrl(row)===sourceUrl(source))) all.push(source)
@@ -50,24 +55,37 @@ function transportSignal(request:NextRequest) { return AbortSignal.any([request.
 function sameConnection(a:VBRSource,b:VBRSource) {
   return a.platform===b.platform && a.host===b.host && a.port===b.port && a.protocol===b.protocol && a.username===b.username && a.password===b.password
 }
-async function check(source:Source,jar:Jar,request:NextRequest):Promise<Row> {
+function cookieToken(source:Source, jar:Jar) {
+  if (!source.selected) return null
+  const key = sessionKeys[source.type].token
+  try {
+    if (endpoint(jar.get(key + '_url')?.value || '').url === source.url) return getChunkedCookie(jar, key) || null
+  } catch { /* A cookie with no verified endpoint cannot be forwarded. */ }
+  return null
+}
+function sampleKey(source:Source, original:VBRSource, jar:Jar) {
+  const token = cookieToken(source, jar)
+  const configuration = readCacheScope(JSON.stringify([source.type, source.id, source.url]), '', original)
+  return token ? readCacheScope(configuration, token) : configuration
+}
+async function check(source:Source,jar:Jar,request:NextRequest,background=false):Promise<Row> {
   if(source.type==='kasten')return {...source,health:await probe(source.type,async()=>{throw Error('unsupported')},false)}
   const original=resolve(source.id)
   if(sourceUrl(original)!==source.url || normalizePlatform(original.platform)!==source.type)throw new SourceError('Configuration changed during the check. Refresh to retry.',409)
-  const keys=sessionKeys[source.type]
   let token:string|null=null
   let authFailure:SourceError|null=null
-  if(source.type==='vbr' || source.type==='vb365') token=await tokenManager.getToken(source.id)
+  if(!background && (source.type==='vbr' || source.type==='vb365')) token=await tokenManager.getToken(source.id)
   else { const cached=tokenManager.peek(source.id); if(cached && cached.expiresAt>Date.now()/1000)token=cached.accessToken }
-  if(!token && source.selected)token=getChunkedCookie(jar,keys.token) || null
-  if(!token && source.hasCredentials && (source.type==='one' || source.type==='vro')) {
+  if(!token)token=cookieToken(source, jar)
+  if(!background && !token && source.hasCredentials && (source.type==='one' || source.type==='vro')) {
     try {const login=await authenticateSource(original,request);if(!sameConnection(original,resolve(source.id)))throw new SourceError('Configuration changed during authentication. Refresh to retry.',409);token=login.token;tokenManager.remember(source.id,token,login.expiresIn)}
     catch(error){if(error instanceof SourceError)authFailure=error}
   }
   if(!sameConnection(original,resolve(source.id)))throw new SourceError('Configuration changed during the check. Refresh to retry.',409)
+  const signal = background ? AbortSignal.timeout(5000) : transportSignal(request)
   const health=await probe(source.type,async(path,revision,authenticated)=>fetch(new URL(path,source.url),{
     headers:{Accept:'application/json',...(authenticated && token ? {Authorization:`Bearer ${token}`} : {}),...(source.type==='vbr' ? {'x-api-version':revision}:{})},
-    signal:transportSignal(request),redirect:'error',cache:'no-store',
+    signal,redirect:'error',cache:'no-store',
   }),!!token)
   if(authFailure && health.authentication!=='verified') {
     if(authFailure.status===401)health.authentication='rejected'
@@ -77,7 +95,29 @@ async function check(source:Source,jar:Jar,request:NextRequest):Promise<Row> {
   const cached=tokenManager.peek(source.id)
   health.tokenExpiresAt=cached?.expiryReported ? new Date(cached.expiresAt*1000).toISOString():null
   health.lastAuthenticated=cached?.authenticatedAt ? new Date(cached.authenticatedAt*1000).toISOString():null
+  if (!background && !request.signal.aborted) connectionChecks.remember(sampleKey(source, original, jar), health)
   return {...source,health}
+}
+export async function readConnectionSummary(request:NextRequest) {
+  try {
+    const jar = await cookies()
+    const sources = catalog(jar, true)
+    const entries = sources.map(source => ({
+      key: sampleKey(source, resolve(source.id), jar),
+      check: async () => (await check(source, jar, request, true)).health,
+    }))
+    // Unmatched legacy sessions do not authorize probing a URL supplied by a browser cookie.
+    for (const type of Object.keys(sessionKeys) as Platform[]) {
+      const keys = sessionKeys[type]
+      const sessionId = jar.get(keys.id)?.value
+      const legacy = getChunkedCookie(jar, keys.token)
+      if ((sessionId || legacy) && !sources.some(row => row.type === type && row.selected)) entries.push({
+        key: readCacheScope('unresolved/' + type, JSON.stringify([sessionId, legacy])),
+        check: async () => unchecked(type),
+      })
+    }
+    return NextResponse.json(await connectionChecks.summary(entries), {headers})
+  } catch { return NextResponse.json({error:'Connection status unavailable.'}, {status:503, headers}) }
 }
 export async function readSources(request:NextRequest) {
   try {

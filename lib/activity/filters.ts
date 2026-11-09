@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 
 // VBR 1.3-rev2 ESessionType. The group is an app filter; each value sent to VBR is an exact sessionType.

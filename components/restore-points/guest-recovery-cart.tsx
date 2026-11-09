@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { ArrowLeft, ArrowRight, Check, File, Folder, Loader2, Search, ShoppingCart, X } from 'lucide-react'

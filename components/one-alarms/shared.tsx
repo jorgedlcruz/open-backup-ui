@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 import { Trans, useI18n } from '@/components/providers/i18n-provider'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'

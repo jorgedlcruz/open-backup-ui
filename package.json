@@ -9,6 +9,7 @@
     "start:https": "node scripts/https-server.cjs",
     "start:kiosk": "node scripts/kiosk-server.cjs",
     "package:source": "node scripts/package-source.cjs",
+    "version:files": "node scripts/file-versions.cjs",
     "lint": "eslint",
     "test": "node --test tests/*.test.cjs",
     "test:labs": "node --test tests/labs.test.cjs tests/kiosk-sharing.test.cjs tests/kiosk-gateway.test.cjs tests/kiosk-monitoring.test.cjs tests/kiosk-screen.test.cjs",

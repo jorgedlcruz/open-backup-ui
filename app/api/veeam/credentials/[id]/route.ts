@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;

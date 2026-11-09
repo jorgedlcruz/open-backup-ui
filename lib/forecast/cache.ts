@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { ForecastSnapshot } from './model'
 
 export const FORECAST_CACHE_INTERVAL = 30 * 60 * 1000

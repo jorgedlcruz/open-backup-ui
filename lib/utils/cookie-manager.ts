@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { cookies } from 'next/headers'
 import { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 

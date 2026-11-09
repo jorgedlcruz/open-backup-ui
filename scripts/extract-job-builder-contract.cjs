@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 // Regenerate with: node scripts/extract-job-builder-contract.cjs path/to/swagger.json
 // Keep the native validation keywords; omit descriptions/examples and unrelated
 // polymorphic job branches. The tests select each concrete job/inventory type.

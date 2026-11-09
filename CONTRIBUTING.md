@@ -15,6 +15,10 @@ Please note we have a [Code of Conduct](#code-of-conduct). Please follow it in a
 
 We use GitHub's Issue Tracker to track bugs/feature Requests. Report a bug or feature request by [opening a new issue](https://github.com/VeeamCommunity/{repo-name}/issues/new/choose). It's that easy!
 
+## Release version
+
+The footer, source headers and [file version manifest](docs/file-versions.json) use the version in `package.json`. After changing the release version or staging added, renamed, or removed files, run `npm run version:files` and commit the updated headers and manifest. The manifest covers every tracked file, including formats that cannot carry a source comment.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the projects original open source license.

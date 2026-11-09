@@ -1,9 +1,10 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map, RefreshCw, Server, Square } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map as MapIcon, RefreshCw, Server, Square } from 'lucide-react'
 import { ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
 import type { ActivityDetail } from '@/lib/activity/session'
@@ -152,7 +153,7 @@ function useSession(id: string, query: string) {
         const result = await veeamApi.requestActivity<ActivityDetail>('/api/vbr/activity/sessions/' + id + '?' + params, {signal:controller.signal})
         if (controller.signal.aborted) return
         pinned.current = result.sourceKey; setData(result); setError('')
-        if (result.session?.endTime && !result.mounts.length) delay = 60000
+        if (result.session?.endTime && !result.mounts.length && !result.instantMigration && !result.instantMigrations?.length) delay = 60000
       } catch (err) {
         if (controller.signal.aborted) return
         setError(err instanceof Error ? err.message : 'Request failed.')
@@ -216,14 +217,22 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const isFile = !!fileMount || /FileLevelRestore/.test(type || '') || receipt?.operation === 'StartFlrRestore'
   const jobDone = !!session && (!!session.endTime || session.state === 'Stopped')
   const status = mounts[0]?.state ?? (filesUnmounted && !jobDone ? 'Unmounted' : session ? recordStatus(session) : undefined)
-  const percent = sessionProgress(session, fileMount || mounts[0])
   const child = data?.children
   const storedMounts = data ? readPendingMigrationMounts(data.sourceKey, id) : []
   const mapMounts = data ? recoveryMapMounts(data, [...storedMounts, ...Object.values(migrationLocks).map(entry => entry.mount)], query) : []
-  const migrationPhase = migrationTransfer(null, session, data?.instantMigration).phase
-  const migrationPending = migrationPhase === 'migrating' || migrationPhase === 'pending' || migrationPhase === 'unknown'
+  const migration = migrationTransfer(null, session, data?.instantMigration)
+  const migrationPending = ['migrating','pending','unknown'].includes(migration.phase)
+  const scopedMigration = (mount: Mount) => migrationForMount(mount, mapMounts, data?.instantMigration, data?.instantMigrations)
+  const unscopedTransfer = migrationPending && !mapMounts.some(scopedMigration)
+  const childState = data?.instantMigration && migration.phase !== 'idle' ? {
+    pending:t('Migration requested'), migrating:t('Transfer in progress'), succeeded:t('Migration completed'),
+    warning:t('Migration completed with warnings'), failed:t('Migration failed'), canceled:t('Migration canceled'), unknown:t('Migration status unavailable'),
+  }[migration.phase] : undefined
+  const percent = childState ? migration.progress : sessionProgress(session, fileMount || mounts[0])
+  const linkedMigrations = Array.from(new Map([...(data?.instantMigrations || []).map(row => row.session), ...(data?.instantMigration ? [data.instantMigration] : [])]
+    .map(record => [record.id, record])).values())
   const hasMap = mapMounts.length > 0
-  const hasRecovery = hasMap || mounts.some(m => m.kind !== 'flr') || !!data?.canStop
+  const hasRecovery = hasMap || linkedMigrations.length > 0 || mounts.some(m => m.kind !== 'flr') || !!data?.canStop
   const isRecovery = isFile || hasRecovery || !!child || /Restore|Recovery|Publish|Migration/.test(type || '')
   const link = (next: string) => '/vbr/activity/' + next + (sourceKey ? '?sourceKey=' + sourceKey : '')
   function onAccepted(next?: string) {
@@ -243,7 +252,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : ''
+    const hash = value === 'files' ? '#guest-files' : value === 'recovery' && (hasMap || linkedMigrations.length > 0) ? '#recovery-map' : ''
     if (location.hash !== hash && (hash || ['#guest-files', '#recovery-map'].includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
@@ -254,6 +263,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     ...(isRecovery ? [[t('Restore point'), (mounts[0]?.pointTime || receipt?.pointTime) && date(mounts[0]?.pointTime || receipt?.pointTime)],
       [t('Destination host'), mounts[0]?.host]] : [[t('Transferred'), session?.progress?.transferredSize != null && bytes(session.progress.transferredSize)],
       [t('Processing rate'), session?.progress?.processingRate && rate(session.progress.processingRate)]]),
+    ...(childState && migration.transferredBytes != null ? [[t('Transferred'),bytes(migration.transferredBytes)]] : []),
     [t('Ended'), session?.endTime && date(session.endTime)], [t('Duration'), session && (jobDone || session.progress?.duration) && duration(session)],
   ].filter(([,value]) => !!value)
   const related = [...new Set([session?.parentSessionId, session?.relatedSessionId, session?.originalSessionId].filter((v): v is string => validId(v) && v !== id))]
@@ -261,13 +271,14 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   return <main className={ops.console}>
     <header className={ops.header}><div><Link href="/vbr/activity" className={styles.back}><ArrowLeft size={14}/>{t('Sessions')}</Link>
       <h1>{mounts[0]?.name || session?.name || receipt?.workload || t('Session Investigation')}</h1><p>{typeLabel}{data?.sourceName && ' · ' + data.sourceName}</p></div>
-      <div className={styles.commands}>{status && <Status value={status}/>}
+      <div className={styles.commands}>{childState && data?.instantMigration ? <Status value={recordStatus(data.instantMigration)}/> : status && <Status value={status}/>}
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         {data && mapMounts.filter(mount => canStopPublishing(mount, data, error)).map(mount => {
           const key = mountKey(mount)
-          const locked = migrationPending ||
+          const phase = migrationTransfer(mount, session, scopedMigration(mount)).phase
+          const locked = ['migrating','pending','unknown'].includes(phase) || unscopedTransfer ||
             (migrationLocks[key]?.locked ?? storedMounts.some(saved => mountKey(saved) === key))
-          const completed = migrationForMount(mount, mapMounts, data.instantMigration) && (migrationPhase === 'succeeded' || migrationPhase === 'warning')
+          const completed = phase === 'succeeded' || phase === 'warning'
           return !completed && stopPhases[key] !== 'accepted' && <StopPublishing key={data.sourceKey + key} mount={mount} sourceKey={data.sourceKey}
             distinguish={mapMounts.length > 1} migrationLocked={locked} phase={stopPhases[key]} onAccepted={onAccepted}
             onPhase={(which, phase) => setStopPhases(previous => ({...previous, [which]:phase}))}/>
@@ -280,12 +291,13 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     {data && <div className={investigation.workspace}>
       <section className={ops.panel}>
         <div className={styles.progressNote}><div className={styles.glyph}>{isFile ? <FolderTree/> : isRecovery ? <Database/> : <Activity/>}</div>
-          <div className={styles.lastEvent}><small>{readyToBrowse ? t('Current state') : t('Latest event')}</small>
-            <strong>{readyToBrowse ? t('Guest files are ready to browse.') : latest?.title || session?.result?.message || (status ? label(status) : t('No log records'))}</strong>
-            {!readyToBrowse && latest?.startTime && <time>{date(latest.updateTime || latest.startTime)}</time>}</div>
+          <div className={styles.lastEvent}><small>{readyToBrowse || childState ? t('Current state') : t('Latest event')}</small>
+            <strong>{childState || (readyToBrowse ? t('Guest files are ready to browse.') : latest?.title || session?.result?.message || (status ? label(status) : t('No log records')))}</strong>
+            {childState && data.instantMigration ? <Link className={styles.related} href={link(data.instantMigration.id)}>{t('Migration session')} <ArrowUpRight size={12}/></Link> :
+              !readyToBrowse && latest?.startTime && <time>{date(latest.updateTime || latest.startTime)}</time>}</div>
           {readyToBrowse && activeTab !== 'files' && <Button size="sm" onClick={() => {selectTab('files'); filesTab.current?.focus()}}>
             <FolderOpen size={16}/>{t('Browse guest files')}</Button>}
-          {!jobDone && !filesUnmounted && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
+          {(childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
         </div>
         {!!facts.length && <dl className={styles.facts}>{facts.map(([key,value]) => <div key={String(key)}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>}
         {session?.result?.message && session.result.message !== latest?.title && !['Success','None'].includes(session.result.message) && <p className={investigation.message}>{session.result.message}</p>}
@@ -297,7 +309,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           <TabsList className={styles.tabs} aria-label={t('Session evidence type')}>
             <TabsTrigger value="logs"><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
             {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!fileMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
-            {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <Map/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
+            {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : linkedMigrations.length ? t('Migration session') : t('Recovery actions')}</TabsTrigger>}
             {child && <TabsTrigger value="application"><Layers/>{t('Application items')}</TabsTrigger>}
             {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
@@ -310,12 +322,13 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             {mapMounts.map(mount => {
               const key = mountKey(mount)
               const live = mounts.some(item => mountKey(item) === key)
-              const migrationSession = migrationForMount(mount, mapMounts, data.instantMigration)
-              const unscopedTransfer = !migrationSession && migrationPending
+              const migrationSession = scopedMigration(mount)
               return <RecoveryMap key={data.sourceKey + key} data={data} mount={mount} refresh={refresh} onMigrationLock={onMigrationLock}
                 migrationSession={migrationSession} disabled={!!error || !!stopPhases[key] || !live || jobDone ||
                   unscopedTransfer || session?.state === 'Stopping' || data.mountWarnings.includes(mount.kind)}/>
             })}
+            {linkedMigrations.filter(record => !mapMounts.some(mount => scopedMigration(mount)?.id === record.id)).map(record =>
+              <Link className={styles.child} key={record.id} href={link(record.id)}><Database size={17}/><span>{t('Migration session')}</span><Status value={recordStatus(record)}/><ArrowUpRight size={15}/></Link>)}
             {mounts.filter(m => m.kind !== 'flr' && !isInstantVmMount(m)).map(m => <div key={m.kind + m.id} className={styles.recovery}><h2>{m.name || typeLabel}</h2>
               <RecoveryProperties mount={m}/>{!error && <MountControls key={m.id + m.state} mount={m} sourceKey={data.sourceKey} onAccepted={onAccepted}/>}</div>)}
             {data.canStop && !error && <StopRestore data={data} refresh={refresh}/>}

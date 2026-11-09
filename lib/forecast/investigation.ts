@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import {DAY,repositoryBackups,uniqueFiles,type BackupPlan,type ForecastFile,type ForecastSnapshot,type Policy} from './model'
 import type {RepositoryConfig} from '../repositories/model'
 

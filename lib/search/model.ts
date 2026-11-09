@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export type SearchPlatform = 'vbr' | 'vb365'
 export type SearchKind = 'VBR Workload' | 'VBR Job' | 'VB365 Job' | 'VB365 Item' | 'VBR Repository' | 'VB365 Repository'
 export const searchScopes = ['all', 'workloads', 'jobs', 'repositories'] as const

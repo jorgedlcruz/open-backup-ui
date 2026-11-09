@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .back,.related { display:inline-flex; align-items:center; gap:.35rem; color:var(--ops-accent); font-size:.8rem; }
 .back { margin-bottom:.65rem; }.back:hover,.related:hover {text-decoration:underline}
 .commands,.progressNote,.child {display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { EntityKind, TopologyEntity, TopologyGraph, TopologyPath } from './model'
 
 export type TopologyIssue = 'all' | 'attention' | 'unlinked' | 'unknown'

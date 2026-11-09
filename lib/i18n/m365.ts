@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { enumLabel, type Translator } from './presentation'
 import type { Locale } from './model'
 

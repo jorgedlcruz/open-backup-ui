@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.0.2
 
 import { useState, useEffect } from "react"
 import { startReportSession, getReportSessionStatus } from "@/app/(app)/analytics/actions"

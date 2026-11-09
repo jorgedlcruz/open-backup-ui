@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Repository Markdown stays portable; GitHub release bodies need absolute URLs.
 const fs = require('node:fs')

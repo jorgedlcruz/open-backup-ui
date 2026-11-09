@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.0.2
 
 import { TrendingUp, TrendingDown, Activity } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"

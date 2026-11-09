@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export type RpoUnit = 'minutes' | 'hours' | 'days'
 export type RpoThreshold = { value: number; unit: RpoUnit }
 const minutes: Record<RpoUnit, number> = { minutes: 1, hours: 60, days: 1440 }

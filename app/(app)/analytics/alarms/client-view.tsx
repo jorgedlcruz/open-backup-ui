@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.0.2
 
 import { TriggeredAlarmItem } from "@/lib/types/veeam-one-alarms"
 import { AlarmsDataTable } from "@/components/analytics/alarms/alarms-data-table"

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { createHash } from 'node:crypto'
 
 // Configured credentials identify the principal across OAuth renewals. Legacy sessions

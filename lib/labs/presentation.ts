@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { aggregate, categoryFor, filterRows, metricOperation, sortRows, type Dataset, type Field, type RecordRow, type Widget } from './model'
 import { chartModel, type Series } from './chart'
 import { defaultColumns } from './catalog'

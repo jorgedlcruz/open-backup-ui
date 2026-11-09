@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .explorer { container-type:inline-size; min-width:0; display:grid; gap:.75rem; color:var(--foreground); }
 .searchForm,.searchStatus,.pager,.note,.node,.crumbs,.crumbs span { display:flex; align-items:center; gap:.5rem; }
 .searchForm { flex-wrap:wrap; }
@@ -27,6 +28,7 @@
 .node .chevron { width:1.2rem; flex:none; justify-content:center; }
 .children { border-inline-start:1px solid var(--border); margin-inline-start:.55rem; padding-inline-start:.3rem; }
 .content { min-width:0; }
+.reading { padding:.75rem; }
 .crumbs { flex-wrap:wrap; min-height:2.65rem; font-size:.75rem; padding:.45rem .75rem; border-bottom:1px solid var(--border); color:var(--muted-foreground); }
 .crumbs,.crumbs span { gap:.25rem; }
 .crumbs button { min-height:1.45rem; overflow-wrap:anywhere; }

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { parsePreference, type Preference } from './telemetry/model'
 
 export const TELEMETRY_CONFIG = {

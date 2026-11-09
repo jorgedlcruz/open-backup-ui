@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { checkSource, VbrRecoveryError } from '../recovery/error'
 import type { RecoverySend } from '../server/vbr-recovery'
 import { investigationSessionSchema, validId } from '../investigation/model'

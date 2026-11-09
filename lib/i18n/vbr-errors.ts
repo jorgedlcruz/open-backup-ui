@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { Translator } from './presentation'
 
 /** Exact application-authored errors only; upstream diagnostics pass through unchanged. */

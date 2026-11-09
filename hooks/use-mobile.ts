@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768

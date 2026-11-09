@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { notFound } from 'next/navigation'
 import { ActivitySession } from '@/components/activity/activity-session'
 import { validId } from '@/lib/investigation/model'

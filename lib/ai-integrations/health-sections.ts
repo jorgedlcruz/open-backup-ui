@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export type HealthSection = { title: string; content: string; thinkingProcess: string | null }
 
 /** Share the same complete report between the tabbed view and PDF export. */

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import {activityBuckets,capacitySummary,isRunning,needsAttention,repositoryRisk,sessionSummary,utilization,type OperationsSnapshot} from '../operations/model'
 
 export function lensPreviews(snapshot:OperationsSnapshot|null) {

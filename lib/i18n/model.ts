@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export const LOCALES = [
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'es', name: 'Spanish', nativeName: 'Español' },

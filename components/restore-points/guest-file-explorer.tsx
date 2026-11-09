@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import { ChevronRight, File, Folder, FolderOpen, HardDrive, Loader2, Search, X } from 'lucide-react'
@@ -8,6 +9,7 @@ import { veeamApi } from '@/lib/api/veeam-client'
 import { guestItemPath, type GuestDirectory, type GuestTask } from '@/lib/restore-points/workflow'
 import { addToCart, guestCrumbs, isBelow, isTaskRunning, samePath, searchHasResults, type CartEntry, type GuestWorkspace } from '@/lib/restore-points/guest-workspace'
 import { GuestFolderTree } from './guest-folder-tree'
+import { RecoverySignal } from './recovery-signal'
 import { useRecoveryPresentation } from './use-presentation'
 import styles from './guest-files.module.css'
 
@@ -146,7 +148,7 @@ export function GuestFileExplorer({ sessionId, sourceKey, workspace, setWorkspac
             <button type="button" onClick={() => navigate(crumb.path)}>{crumb.label}</button></span>)}
           {mode === 'search' && <span><ChevronRight size={12}/>{t('Search results')}</span>}
         </nav>
-        {loading && <p className={styles.note} role="status"><Loader2 size={15} className="animate-spin"/>{t('Loading…')}</p>}
+        {loading && <div className={styles.reading}><RecoverySignal stage="guest" status={currentSearch ? t('Loading…') : undefined} compact/></div>}
         {directory && <ul className={styles.list}>{directory.items.map(item => {
           const full = guestItemPath(item, directory)
           const covered = cart.some(entry => entry.type === 'Folder' && isBelow(full, entry.path, separator))

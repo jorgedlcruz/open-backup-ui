@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 const fs = require('node:fs')
 const ts = require('typescript')
 const test = require('node:test')
@@ -49,4 +50,7 @@ test('related migration evidence is never attributed to several VM mounts', () =
   const verified = {...child,resourceId:second.id}
   assert.equal(migrationForMount(mount,[mount,second],verified),undefined)
   assert.equal(migrationForMount(second,[mount,second],verified),verified)
+  const scoped = [{mountId:second.id,session:child}]
+  assert.equal(migrationForMount(mount,[mount],child,scoped),undefined)
+  assert.equal(migrationForMount(second,[mount,second],null,scoped),child)
 })

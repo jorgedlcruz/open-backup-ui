@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { PreparingRecovery } from '@/components/restore-points/preparing-recovery'
 
 export default async function PreparingPage({ searchParams }: { searchParams: Promise<{ request?: string }> }) {

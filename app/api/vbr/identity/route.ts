@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { NextRequest } from 'next/server'
 import { readIdentity, mutateIdentity } from '@/lib/server/identity'
 export const dynamic = 'force-dynamic'

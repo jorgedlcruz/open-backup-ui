@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export interface RestorePoint {
   id: string; backupId: string; name?: string | null; creationTime?: string | null;
   type?: string | null; platformName?: string | null; backupFileId?: string | null;

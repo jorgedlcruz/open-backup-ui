@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { NextRequest,NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { configStore } from './config-store'

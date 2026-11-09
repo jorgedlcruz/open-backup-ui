@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";

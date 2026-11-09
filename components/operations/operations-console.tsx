@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.0.2
 import { Trans , useI18n } from "@/components/providers/i18n-provider"
 import { FilterSelect } from '@/components/operations/filter-facet'
 import { FilterCondition,FilterFields } from '@/components/operations/filter-fields'
@@ -6,6 +7,7 @@ import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
 import { AiHealthSummary } from '@/components/ai-health-summary'
 import { LensSwitcher } from '@/components/lens/lens-switcher'
+import { DataLoading } from '@/components/ui/data-loading'
 import { Button } from '@/components/ui/button'
 import { Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle } from '@/components/ui/dialog'
 import { SortableGrid } from '@/components/ui/sortable-grid'
@@ -15,7 +17,7 @@ import { activityBuckets,capacitySummary,exportJobsCsv,filterJobs,filterReposito
 import { cn } from '@/lib/utils'
 import { enumLabel } from '@/lib/i18n/presentation'
 import { vbrError } from '@/lib/i18n/vbr-errors'
-import { Activity,ArrowDownToLine,ArrowRight,ArrowUpRight,Check,CheckCircle2,ChevronLeft,ChevronRight,CircleHelp,CirclePause,Clock3,Database,HardDrive,ListFilter,Loader2,Network,RefreshCw,Search,ShieldCheck,TriangleAlert,XCircle } from 'lucide-react'
+import { Activity,ArrowDownToLine,ArrowRight,ArrowUpRight,Check,CheckCircle2,ChevronLeft,ChevronRight,CircleHelp,CirclePause,Clock3,Database,HardDrive,ListFilter,Network,RefreshCw,Search,ShieldCheck,TriangleAlert,XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect,useMemo,useState,type ReactNode } from 'react'
 import { Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis } from 'recharts'
@@ -169,7 +171,7 @@ export function OperationsConsole({ view = 'overview', initialFilter = 'attentio
     </div>
     {error && <div className={styles.notice} role="alert"><TriangleAlert size={18} /><div><strong>{data ? t('Refresh failed — showing the previous snapshot.') : t('Unable to load operations.')}</strong><p>{notice(error)}</p></div><Link href="/connect"><Trans>{"Reconnect "}</Trans><ArrowRight size={14} /></Link></div>}
     {data && data.warnings.length > 0 && <details className={styles.warnings}><summary>{t('Partial visibility · {count} collection notices', { count: formatNumber(data.warnings.length) })}</summary><ul>{data.warnings.map(w => <li key={w}>{notice(w)}</li>)}</ul></details>}
-    {!data ? <div className={styles.loading}>{loading ? <><Loader2 className="animate-spin" size={28} /><h2><Trans>{"Building your operations picture"}</Trans></h2><p><Trans>{"Reading jobs, session history, repository states, and security checks."}</Trans></p></> : <><Database size={28} /><h2><Trans>{"Connect your backup environment"}</Trans></h2><p><Trans>{"Connect a VBR source to see live operations data."}</Trans></p><Button asChild><Link href="/connect"><Trans>{"Open connections "}</Trans><ArrowRight size={16} /></Link></Button></>}</div> : <>
+    {!data ? <div className={styles.loading}>{loading ? <DataLoading status={t('Reading jobs, session history, repository states, and security checks.')}/> : <><Database size={28} /><h2><Trans>{"Connect your backup environment"}</Trans></h2><p><Trans>{"Connect a VBR source to see live operations data."}</Trans></p><Button asChild><Link href="/connect"><Trans>{"Open connections "}</Trans><ArrowRight size={16} /></Link></Button></>}</div> : <>
       <div className={styles.metrics} role="group" aria-label={t('{view} metrics', { view: t(titles[view][0]) })}>
         {view === 'overview' && <>
         <Metric title="Session success" value={data.sessions.available ? percent(summary?.percent ?? null) : '—'} detail={data.sessions.available ? withPartial(t('{success} of {completed} completed protection runs', { success: formatNumber(summary?.success ?? 0), completed: formatNumber(summary?.completed ?? 0) }), data.sessions.complete) : 'Session history unavailable'} href="/vbr/lens/operations?filter=all" icon={<ShieldCheck size={19} />} accent="success" />

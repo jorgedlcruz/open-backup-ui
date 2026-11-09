@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { CredentialSource, Provider } from './model'
 
 export type StoredAi = { provider: string; modelName?: string; apiKey?: string; encryptedApiKey?: string }

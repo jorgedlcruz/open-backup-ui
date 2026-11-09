@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { DataSource, PlatformType } from '../context/data-sources-context'
 import { applicationRequest } from '../api/application-request'
 

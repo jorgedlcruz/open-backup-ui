@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { settingsStore } from './settings-store'

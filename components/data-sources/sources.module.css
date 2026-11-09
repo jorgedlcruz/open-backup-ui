@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .page {min-width:0;}
 .healthSummary {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;padding:16px 20px;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);}
 .healthSummary dt {display:flex;align-items:center;gap:7px;font-size:var(--ops-small,12px);color:var(--muted-foreground);}

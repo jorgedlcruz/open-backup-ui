@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { enumLabel, type Translator } from '@/lib/i18n/presentation'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 import { knownSize } from '@/lib/restore-points/model'

@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 import { Trans } from "@/components/providers/i18n-provider"
 import {useEffect,useState,type ReactNode} from 'react'
 import Link from 'next/link'

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { uuid, validId, type Evidence } from '../investigation/model'
 import { proxyConfigSchema, proxyStateSchema, proxyHref, proxyType, type ProxyConfig, type ProxyState } from '../proxies/model'

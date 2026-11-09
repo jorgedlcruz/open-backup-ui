@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 /* eslint-disable @typescript-eslint/no-require-imports */
 const http = require('node:http'), assert = require('node:assert/strict'), { test } = require('node:test')
 const { createKioskServer } = require('../scripts/lib/kiosk-gateway.cjs')

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { validId } from '../investigation/model'
 export const actionSchema=z.enum(['rescan','enableMaintenance','disableMaintenance'])

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 
 import { enumLabel } from '@/lib/i18n/presentation'
 import { backupCopyMessage } from './presentation'

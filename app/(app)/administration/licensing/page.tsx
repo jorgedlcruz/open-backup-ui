@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { LicensingClient } from "@/components/administration/licensing-client"
 import { cookies } from "next/headers"
 import { configStore } from "@/lib/server/config-store"

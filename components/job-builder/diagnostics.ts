@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { MessageValues } from '@/lib/i18n/model'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 

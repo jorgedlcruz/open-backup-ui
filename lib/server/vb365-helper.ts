@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 // Helper for VB365 API routes to get token and base URL (same pattern as VBR)
 import { cookies } from 'next/headers';
 import { getChunkedCookie } from '@/lib/utils/cookie-manager';

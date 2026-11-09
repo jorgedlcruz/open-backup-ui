@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { Board, Widget } from './model'
 import type { Presentation } from './presentation'
 import type { ThemeType } from '../themes'

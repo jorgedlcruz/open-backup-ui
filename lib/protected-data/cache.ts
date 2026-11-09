@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import type { Snapshot } from './model'
 
 export const PROTECTED_DATA_TTL = 15 * 60 * 1000

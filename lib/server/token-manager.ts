@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { configStore } from './config-store';
 
 interface TokenCache {

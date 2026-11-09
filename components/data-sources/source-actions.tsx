@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useI18n } from '@/components/providers/i18n-provider'
 import { useState, type FormEvent } from 'react'
@@ -16,7 +17,9 @@ import { applicationRequest } from '@/lib/api/application-request'
 
 export type Action = { type: 'add' } | { type: 'edit' | 'remove' | 'connect' | 'disconnect'; row: Row }
 export async function sourceRequest<T = Snapshot>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal) {
-  return applicationRequest<T>(`/api/administration/data-sources${path}`, { method, signal, ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
+  const result = await applicationRequest<T>(`/api/administration/data-sources${path}`, { method, signal, ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
+  window.dispatchEvent(new Event('source-connections-updated'))
+  return result
 }
 function validatedEndpoint(value: string) {
   try { return endpoint(value).url }

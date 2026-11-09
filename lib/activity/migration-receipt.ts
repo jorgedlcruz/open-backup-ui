@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { validId } from '../investigation/model'
 import type { Mount } from './model'
@@ -14,7 +15,8 @@ const receiptSchema = z.object({
       backupName:z.string().optional(), repository:z.string().optional(), sourceVm:z.string().optional(), writeCache:z.string().optional(),
     }).optional(),
   }),
-  status: z.enum(['submitting', 'accepted', 'unknown']),
+  status: z.enum(['submitting', 'checking', 'accepted', 'unknown']),
+  requestId: guid.optional(),
   childId: guid.optional(),
   previousChildId: guid.optional(),
   destination: z.object({host: z.string().optional(), datastore: z.string().optional()}),
@@ -34,7 +36,7 @@ export function migrationReceipts(source: string, session: string): MigrationRec
     const result = receiptSchema.array().parse(JSON.parse(sessionStorage.getItem(key) || '[]'))
     // A refreshed tab cannot tell whether an interrupted POST reached VBR.
     return result.filter(entry => entry.mount.sessionId === session)
-      .map(entry => entry.status === 'submitting' ? {...entry, status:'unknown'} : entry)
+      .map(entry => entry.status === 'submitting' ? {...entry, status:entry.requestId ? 'checking' : 'unknown'} : entry)
   } catch { return [] }
 }
 

@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { backupSchema as objectBase, backupKey } from '../virtual-infrastructure/model'
 import { backupSchema as baseBackupSchema, type Consumption } from '../repositories/model'

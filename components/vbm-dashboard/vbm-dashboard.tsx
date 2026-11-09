@@ -1,13 +1,15 @@
 'use client'
+// Open Backup UI v1.0.2
 
-import { Trans } from '@/components/providers/i18n-provider'
+import { Trans, useI18n } from '@/components/providers/i18n-provider'
+import { DataLoading } from '@/components/ui/data-loading'
 import { FilterSelect } from '@/components/operations/filter-facet'
 import { FilterCondition,FilterFields } from '@/components/operations/filter-fields'
 import { FilterWorkspace } from '@/components/operations/filter-workspace'
 import { SortableGrid } from '@/components/ui/sortable-grid'
 import { useCallback,useMemo,useState } from 'react'
 
-import { date,Empty,Loading,Notice,Pager,Panel,SearchBox,useEvidence } from '@/components/investigation/shared'
+import { date,Empty,Notice,Pager,Panel,SearchBox,useEvidence } from '@/components/investigation/shared'
 import ops from '@/components/operations/operations.module.css'
 import { Button } from '@/components/ui/button'
 import { veeamApi } from '@/lib/api/veeam-client'
@@ -23,6 +25,7 @@ import styles from './vbm-dashboard.module.css'
 
 const issueOptions:{key:JobIssue;label:string}[]=[{key:'all',label:'All jobs'},{key:'attention',label:'Needs attention'},{key:'failed',label:'Failed'},{key:'warning',label:'Warnings'},{key:'running',label:'Running'},{key:'disabled',label:'Disabled'},{key:'unscheduled',label:'Unscheduled'},{key:'unknown',label:'Unknown state'}]
 export function VbmDashboard() {
+  const {t}=useI18n()
   const [days,setDays]=useState<7|30>(7),[revision,setRevision]=useState(0)
   const load=useCallback((signal:AbortSignal)=>veeamApi.getVBMDashboard(days,signal),[days])
   const {data,error,loading}=useEvidence(load,revision)
@@ -31,7 +34,7 @@ export function VbmDashboard() {
   const usage=useMemo(()=>data ? cacheObjectUsage(data):null,[data])
   const countLabel=(available:boolean,complete:boolean,count:number)=>available ? `${number(count)}${complete ? '':'+'}`:'Unknown'
   function selectIssue(next:JobIssue){setIssue(next);setPage(0);setTab('jobs')}
-  if(!data) return <div className={ops.console}><header className={ops.header}><div><h1>Microsoft 365 operations</h1></div><Button disabled={loading} variant="outline" onClick={()=>setRevision(n=>n+1)}><Trans>{"Refresh"}</Trans></Button></header>{error && <Notice error>{error}</Notice>}{loading ? <Loading>Reading Microsoft 365 jobs, protection evidence, repository usage, and service health…</Loading>:<Empty>Dashboard data is unavailable. Connect your Microsoft 365 source and refresh.</Empty>}</div>
+  if(!data) return <div className={ops.console}><header className={ops.header}><div><h1>Microsoft 365 operations</h1></div><Button disabled={loading} variant="outline" onClick={()=>setRevision(n=>n+1)}><Trans>{"Refresh"}</Trans></Button></header>{error && <Notice error>{error}</Notice>}{loading ? <div className={ops.empty}><DataLoading status={t('Reading Microsoft 365 jobs, protection evidence, repository usage, and service health…')}/></div>:<Empty>Dashboard data is unavailable. Connect your Microsoft 365 source and refresh.</Empty>}</div>
   const jobs=data.jobs.data,repositories=data.repositories.data
   const visibleJobs=jobs.filter(job=>jobMatches(job,issue) && (org==='all'||job.organizationId===org) && (repoId==='all'||job.repositoryId===repoId) && [job.name,job.id,job.description,orgName(data,job.organizationId),repoName(data,job.repositoryId)].join(' ').toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a,b)=>Number(jobMatches(b,'attention'))-Number(jobMatches(a,'attention')) || (a.name || a.id).localeCompare(b.name || b.id))

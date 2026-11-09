@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { isIP } from 'node:net'
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'

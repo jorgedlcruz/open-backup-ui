@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 const fs=require('node:fs'),ts=require('typescript'),{test}=require('node:test'),assert=require('node:assert/strict');
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,filename);
 const {breadcrumbsForPath,navigationLabels}=require('../lib/navigation/breadcrumbs.ts');

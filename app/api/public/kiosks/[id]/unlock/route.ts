@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { NextRequest } from 'next/server'
 import { ShareError, unlockShare } from '@/lib/server/kiosk-shares'
 import { ACCESS_COOKIE, cookieOptions, failure, json, readBody, sameOrigin } from '@/lib/server/kiosk-http'

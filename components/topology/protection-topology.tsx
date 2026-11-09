@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { usePlanningFormat } from '@/components/forecast/localized-format'
 

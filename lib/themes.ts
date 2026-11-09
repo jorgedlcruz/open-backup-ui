@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 export const DEFAULT_THEME = {
     preset: "default",
     radius: "default",

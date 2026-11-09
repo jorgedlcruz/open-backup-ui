@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 /* eslint-disable @typescript-eslint/no-require-imports */
 require('dotenv').config();
 const { veeamOneClient } = require('./lib/api/veeam-one-client');

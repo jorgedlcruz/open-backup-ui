@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 
 import { useEffect, useRef, useState } from 'react'
 import { HardDrive, Loader2 } from 'lucide-react'

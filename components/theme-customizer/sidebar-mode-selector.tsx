@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.0.2
 import { useSidebar } from "@/components/ui/sidebar"
 import { AppearanceOptions } from "./appearance-options"
 export function SidebarModeSelector() {

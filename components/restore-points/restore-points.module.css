@@ -1,3 +1,4 @@
+/* Open Backup UI v1.0.2 */
 .explorer { min-width:0; }
 .back { display:inline-flex; align-items:center; gap:7px; color:var(--muted-foreground); font-size:var(--breadcrumb-font-size,.75rem); line-height:1.5; margin-bottom:22px; }
 .back:hover,.accent { color:var(--ops-accent); }

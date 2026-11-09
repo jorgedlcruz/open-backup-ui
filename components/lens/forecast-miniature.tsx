@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.0.2
 import { useI18n } from '@/components/providers/i18n-provider'
 import { usePlanningFormat } from '@/components/forecast/localized-format'
 import type { ForecastPreview } from '@/lib/lens/forecast-preview'

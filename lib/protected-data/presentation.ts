@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { enumLabel, type Translator } from '../i18n/presentation'
 import { vbrError } from '../i18n/vbr-errors'
 import { repositoryId, type Row } from './model'

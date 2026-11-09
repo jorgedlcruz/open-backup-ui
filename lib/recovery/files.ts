@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 import { z } from 'zod'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { RecoverySend } from '../server/vbr-recovery'

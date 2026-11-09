@@ -1,3 +1,4 @@
+// Open Backup UI v1.0.2
 const fs = require('node:fs')
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
@@ -150,10 +151,10 @@ test('VMware network mapping resolves original distributed port group against ba
   assert.equal(hv.network.mappings[0].sourceNetwork.disconnect, true)
 })
 
-function mockRecoveryTransport() {
+function mockRecoveryTransport(overrides = {}) {
   const Module = require('node:module')
   const originalLoad = Module._load
-  const source = { id: 'source', platform: 'vbr', protocol: 'https', host: 'vbr.example', port: 9419 }
+  const source = { id: 'source', platform: 'vbr', protocol: 'https', host: 'vbr.example', port: 9419, ...overrides }
   const mocks = {
     'next/headers': { cookies: async () => ({ get: name => name === 'veeam_source_id' ? { value: 'source' } : undefined }) },
     'next/server': { NextResponse: Response },
@@ -166,6 +167,7 @@ function mockRecoveryTransport() {
       if (parent?.filename.endsWith('vbr-recovery.ts') && Object.hasOwn(mocks, name)) return mocks[name]
       return originalLoad.call(this, name, parent, isMain)
     }
+    delete require.cache[require.resolve('../lib/server/vbr-recovery.ts')]
     ;({ withVbrRecovery } = require('../lib/server/vbr-recovery.ts'))
   } finally { Module._load = originalLoad }
   const request = { method: 'POST', headers: new Headers({ host: 'ui.example', origin: 'https://ui.example' }),
@@ -186,6 +188,31 @@ test('an ambiguous recovery submission is never replayed', async () => {
       assert.equal((await result.json()).uncertain, true)
     }
   } finally { global.fetch = originalFetch }
+})
+
+test('migration receives the session even after the browser disconnects and the ordinary read deadline expires', async t => {
+  const http = require('node:http')
+  const inbound = new AbortController(), readDeadline = new AbortController()
+  let posts = 0
+  const server = http.createServer((req, res) => {
+    posts++
+    assert.equal(req.method, 'POST')
+    assert.equal(req.headers.authorization, 'Bearer test-token')
+    inbound.abort()
+    readDeadline.abort()
+    setTimeout(() => {res.writeHead(200, {'Content-Type':'application/json'}); res.end(JSON.stringify({id:sessionId}))}, 15)
+  })
+  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve))
+  t.after(() => {server.closeAllConnections(); server.close()})
+  const nativeTimeout = AbortSignal.timeout.bind(AbortSignal)
+  t.mock.method(AbortSignal,'timeout',ms => ms === 60000 ? readDeadline.signal : nativeTimeout(ms))
+  const {request,withVbrRecovery} = mockRecoveryTransport({protocol:'http',host:'127.0.0.1',port:server.address().port})
+  request.signal = inbound.signal
+  const result = await withVbrRecovery(request, ({send}) => send('/api/v1/restore/instantRecovery/vSphere/vm/'+pointId+'/migrate',
+    {method:'POST',body:{},mutation:true}), {backgroundMigration:true})
+  assert.equal(result.status,200)
+  assert.deepEqual(await result.json(),{id:sessionId})
+  assert.equal(posts,1)
 })
 
 test('the scoped binary endpoint sends the bearer only to VBR and streams the archive without reading it into memory', async () => {
