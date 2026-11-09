@@ -11,13 +11,15 @@ const id = n => '00000000-0000-4000-8000-' + String(n).padStart(12,'0')
 const source = 'a'.repeat(64), parent = {id:id(1),sessionType:'InstantRecovery'}
 const child = {id:id(4),sessionType:'QuickMigration',state:'Working',progressPercent:0}
 const link = {sourceKey:source,parentSessionId:parent.id,mountId:id(2),childSessionId:child.id}
+const destination = {host:'Production Cluster',datastore:'Production Datastore'}
 
 test('receipts persist across reads, isolate VBR sources and mounts, and validate disk contents', async () => {
   const cwd = process.cwd(), dir = fs.mkdtempSync(path.join(os.tmpdir(),'open-backup-migration-'))
   try {
     process.chdir(dir)
-    await Promise.all([saveMigrationLink(source,id(1),id(2),id(4)),saveMigrationLink(source,id(1),id(3),id(5))])
+    await Promise.all([saveMigrationLink(source,id(1),id(2),id(4)),saveMigrationLink(source,id(1),id(3),id(5),destination)])
     assert.deepEqual(await readMigrationLink(source,id(1),id(2)),link)
+    assert.deepEqual((await readMigrationLink(source,id(1),id(3))).destination,destination)
     assert.equal(await readMigrationLink(source,id(1)),null)
     assert.equal(await readMigrationLink('b'.repeat(64),id(1),id(2)),null)
     assert.equal(await readMigrationLink(source,id(6),id(2)),null)
@@ -26,6 +28,8 @@ test('receipts persist across reads, isolate VBR sources and mounts, and validat
       await assert.rejects(saveMigrationLink(...args))
     }
     const target = path.join(dir,'data','migration-links',source,id(1),id(2)+'.json')
+    fs.writeFileSync(target,JSON.stringify({...link,destination:{host:24,datastore:'bad\nname',token:'ignored'}}))
+    assert.deepEqual(await readMigrationLink(source,id(1),id(2)),link)
     for (const contents of ['{',JSON.stringify({...link,parentSessionId:id(7)}),JSON.stringify({...link,mountId:id(9)}),JSON.stringify({...link,sourceKey:'b'.repeat(64)})]) {
       fs.writeFileSync(target,contents)
       assert.equal(await readMigrationLink(source,id(1),id(2)),null)
@@ -59,7 +63,7 @@ test('conflicting native links, a different VBR source, and inaccessible childre
     const found = await sessionMigrations(async()=>record,source,subject,undefined,async()=>[receipt])
     assert.deepEqual(found,{instantMigration:null,instantMigrations:[]})
   }
-  const denied = await sessionMigrations(async()=>{throw new TopologyRequestError('forbidden',403)},source,parent,undefined,async()=>[link])
+  const denied = await sessionMigrations(async()=>{throw new TopologyRequestError('forbidden',403)},source,parent,undefined,async()=>[{...link,destination}])
   assert.deepEqual(denied,{instantMigration:null,instantMigrations:[]})
   await assert.rejects(sessionMigrations(async()=>{throw new TopologyRequestError('expired',401)},source,parent,undefined,async()=>[link]))
   const unavailableParent = await sessionMigrations(()=>assert.fail(),source,null,undefined,()=>assert.fail())
@@ -67,13 +71,14 @@ test('conflicting native links, a different VBR source, and inaccessible childre
 })
 
 test('multiple receipts stay attributed to their individual mounts and an incomplete task collection has no byte estimate', async () => {
-  const other = {...link,mountId:id(3),childSessionId:id(5)}
+  const other = {...link,mountId:id(3),childSessionId:id(5),destination}
   for (const [total,taskParent] of [[2,child.id],[1,id(8)]]) {
     const found = await sessionMigrations(async path => {
       if (path.includes('taskSessions')) return {data:[{id:id(9),sessionId:taskParent,progress:{transferredSize:100}}],pagination:{skip:0,count:1,total}}
       return {...child,id:path.split('/').at(-1)}
     },source,parent,undefined,async()=>[link,other])
     assert.equal(found.instantMigration,null)
+    assert.deepEqual(found.instantMigrations.map(row=>row.destination),[undefined,destination])
     assert.deepEqual(found.instantMigrations.map(row=>[row.mountId,row.session.id,row.session.progress]),[[id(2),id(4),undefined],[id(3),id(5),undefined]])
   }
 })

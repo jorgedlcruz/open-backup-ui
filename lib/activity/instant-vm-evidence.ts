@@ -4,7 +4,7 @@ import { validId, investigationSessionSchema, taskSchema, type Session } from '.
 import type { VbrReader, VmPowerReader } from '../server/vbr-read'
 import { TopologyRequestError } from '../topology/load'
 import type { Mount } from './model'
-import { readMigrationLinks, type MigrationLink } from '../server/migration-links'
+import { readMigrationLinks, type MigrationDestination, type MigrationLink } from '../server/migration-links'
 
 async function optional<T>(fn: () => Promise<T>) {
   try { return await fn() }
@@ -82,7 +82,7 @@ export async function relatedMigration(read: VbrReader, parent: Session | null, 
   return child
 }
 
-export type ScopedMigration = {mountId: string; session: Session}
+export type ScopedMigration = {mountId: string; session: Session; destination?: MigrationDestination}
 export async function sessionMigrations(read: VbrReader, sourceKey: string, parent: Session | null, hint?: Pick<Mount,'id'|'kind'>,
   receipts = readMigrationLinks) {
   const empty = {instantMigration:null, instantMigrations:[] as ScopedMigration[]}
@@ -91,7 +91,7 @@ export async function sessionMigrations(read: VbrReader, sourceKey: string, pare
   const scoped = links.filter(link => link.sourceKey === sourceKey && (!hint || link.mountId === hint.id))
   const children = await Promise.all(scoped.map(async link => {
     const session = await relatedMigration(read, parent, link)
-    return session ? {mountId:link.mountId, session} : null
+    return session ? {mountId:link.mountId, session, ...(link.destination && {destination:link.destination})} : null
   }))
   const instantMigrations = children.filter((row): row is ScopedMigration => row !== null)
   // Only an unambiguous child can describe the entire view. Per-mount evidence stays keyed separately.

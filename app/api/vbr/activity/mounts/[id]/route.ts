@@ -46,9 +46,9 @@ export async function POST(request: NextRequest, {params}: Context) {
     if (action.action === 'migrate' && (action.kind === 'vSphere' || action.kind === 'hyperV') &&
       result.accepted && validId(result.sessionId) && result.sessionId.toLowerCase() !== action.sessionId) {
       // An optional map link cannot undo an accepted migration or justify replaying it.
-      await saveMigrationLink(sourceKey, action.sessionId, id, result.sessionId.toLowerCase()).catch(() => {})
+      await saveMigrationLink(sourceKey, action.sessionId, id, result.sessionId.toLowerCase(), result.destination).catch(() => {})
     }
-    return result
+    return {accepted:result.accepted, sessionId:result.sessionId}
   }
   if (!requestId) return withVbrRecovery(request, ({send, sourceKey}) => run(send, sourceKey))
   const binding = migrationBinding.safeParse({...action, sessionId:action.sessionId.toLowerCase(), mountId:id, requestId})

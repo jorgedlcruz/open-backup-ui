@@ -4,7 +4,16 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { validId } from '../investigation/model'
 
-export type MigrationLink = { sourceKey: string; parentSessionId: string; mountId: string; childSessionId: string }
+export type MigrationDestination = {host?: string; datastore?: string}
+export type MigrationLink = { sourceKey: string; parentSessionId: string; mountId: string; childSessionId: string; destination?: MigrationDestination }
+
+function destinationFields(value: unknown): {destination?: MigrationDestination} {
+  if (!value || typeof value !== 'object') return {}
+  const {host, datastore} = value as MigrationDestination
+  const name = (text: unknown) => typeof text === 'string' && text.length <= 1024 && !/[\u0000-\u001f\u007f]/.test(text) ? text.trim() : ''
+  const hostName = name(host), datastoreName = name(datastore)
+  return hostName || datastoreName ? {destination:{...(hostName && {host:hostName}), ...(datastoreName && {datastore:datastoreName})}} : {}
+}
 
 function id(value: string) {
   if (typeof value !== 'string' || !validId(value)) throw new Error('Invalid migration identifier.')
@@ -20,9 +29,9 @@ function missing(error: unknown) { return (error as NodeJS.ErrnoException).code 
 
 // Save only the distinct session ID returned by the accepted migrate call for this exact mount.
 // Each mount has its own file so simultaneous migrations on the same parent do not overwrite one another.
-export async function saveMigrationLink(sourceKey: string, parentSessionId: string, mountId: string, childSessionId: string) {
+export async function saveMigrationLink(sourceKey: string, parentSessionId: string, mountId: string, childSessionId: string, destination?: MigrationDestination) {
   const dir = directory(sourceKey, parentSessionId)
-  const link: MigrationLink = { sourceKey, parentSessionId:id(parentSessionId), mountId:id(mountId), childSessionId:id(childSessionId) }
+  const link: MigrationLink = { sourceKey, parentSessionId:id(parentSessionId), mountId:id(mountId), childSessionId:id(childSessionId), ...destinationFields(destination) }
   if (link.childSessionId === link.parentSessionId || link.childSessionId === link.mountId) throw new Error('Expected a distinct migration session.')
   await fs.mkdir(dir, {recursive:true, mode:0o700})
   const file = path.join(dir, link.mountId + '.json'), temp = file + '.' + randomUUID() + '.tmp'
@@ -46,7 +55,7 @@ export async function readMigrationLinks(sourceKey: string, parentSessionId: str
       const record = JSON.parse(await fs.readFile(path.join(dir, mount + '.json'), 'utf8')) as Partial<MigrationLink> | null
       if (record?.sourceKey !== sourceKey || record.parentSessionId !== parent || record.mountId !== mount ||
         typeof record.childSessionId !== 'string' || !validId(record.childSessionId) || record.childSessionId === parent || record.childSessionId === mount) return null
-      return {sourceKey, parentSessionId:parent, mountId:mount, childSessionId:record.childSessionId.toLowerCase()}
+      return {sourceKey, parentSessionId:parent, mountId:mount, childSessionId:record.childSessionId.toLowerCase(), ...destinationFields(record.destination)}
     } catch (error) { if (missing(error) || error instanceof SyntaxError) return null; throw error }
   }))
   return rows.filter((record): record is MigrationLink => record !== null)

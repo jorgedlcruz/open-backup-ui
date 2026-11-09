@@ -2,7 +2,7 @@
 // Open Backup UI v1.0.2
 
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { ArrowRight, Box, Check, Database, GripVertical, HardDrive, Layers, MapPin, Plus, Power, Server } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, Ban, Box, Check, CircleHelp, Clock3, Database, GripVertical, HardDrive, Layers, MapPin, Plus, Power, Server, TriangleAlert, X, type LucideIcon } from 'lucide-react'
 import type { Mount } from '@/lib/activity/model'
 import { useInvestigationPresentation } from '@/components/investigation/shared'
 import styles from './instant-recovery-workspace.module.css'
@@ -31,10 +31,17 @@ function ServerUnit() {
   return <span className={styles.serverUnit}><i/><b/></span>
 }
 
-function HostArt({production, complete}: {production?: boolean; complete?: boolean}) {
+const transferIcons: Record<InstantRecoveryTransfer['phase'], LucideIcon> = {
+  checking: Clock3, accepted: Clock3, active: ArrowDownToLine, completed: Check,
+  warning: TriangleAlert, failed: X, canceled: Ban, unknown: CircleHelp,
+}
+
+function HostArt({production, phase, available}: {production?: boolean; phase?: InstantRecoveryTransfer['phase']; available?: boolean}) {
+  const empty = production && !phase && available
+  const Icon = phase ? transferIcons[phase] : empty ? Plus : Box
   return <span aria-hidden="true" className={styles.hostArt} data-production={production || undefined}>
-    <span className={styles.machineBadge} data-empty={production && !complete || undefined}>
-      {production && !complete ? <Plus/> : <Box/>}
+    <span className={styles.machineBadge} data-empty={empty || undefined}>
+      <Icon/>
     </span>
     <span className={styles.uplink}/>
     <span className={styles.chassis}><ServerUnit/><ServerUnit/></span>
@@ -149,14 +156,15 @@ export function InstantRecoveryWorkspace({mount, destination, transfer, canConfi
         </dl>
       </div>
       <Connection transfer phase={transfer?.phase}/>
-      <div className={styles.destination} data-enabled={available || undefined} data-dragging={dragging || undefined}
+      <div className={styles.destination} data-phase={transfer?.phase} data-enabled={available || undefined} data-dragging={dragging || undefined}
         data-over={overTarget || undefined} data-configuring={configuring || undefined} onDragOver={dragOver}
         onDragLeave={event => {if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setOverTarget(false)}}
         onDrop={drop}>
-        {!configuring && <div className={styles.art}><HostArt production complete={transfer?.phase === 'completed' || transfer?.phase === 'warning'}/></div>}
+        {!configuring && <div className={styles.art}><HostArt production phase={transfer?.phase} available={available}/></div>}
         <div className={styles.identity}><span className={styles.role}>{t('Production destination')}</span>
-          {!configuring && <strong>{destination?.host || (available ? t('Drop the VM here') : missing)}</strong>}</div>
-        {!configuring && (destination?.datastore || transfer) && <dl className={styles.facts}><div><dt><HardDrive/>{t('Destination datastore')}</dt><dd>{destination?.datastore || missing}</dd></div></dl>}
+          {!configuring && (destination?.host || !destination?.datastore) && <strong>{destination?.host || (!transfer && available ? t('Drop the VM here') : missing)}</strong>}</div>
+        {!configuring && destination?.datastore && <dl className={styles.facts}><div><dt><HardDrive/>{t('Destination datastore')}</dt>
+          <dd className={!destination.host ? styles.primaryDatastore : undefined}>{destination.datastore}</dd></div></dl>}
         {available && !configuring && <button type="button" className={styles.choose} onClick={configure} aria-expanded={false}>
           <MapPin size={14} aria-hidden/>{t('Choose destination')}<ArrowRight size={13} aria-hidden/></button>}
         {configuring && <div className={styles.form} tabIndex={-1} role="region" id={formId} ref={form} aria-label={t('Production destination')}>{children}</div>}

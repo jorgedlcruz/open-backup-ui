@@ -2,7 +2,8 @@
 import { z } from 'zod'
 import { checkSource, VbrRecoveryError } from '../recovery/error'
 import type { RecoverySend } from '../server/vbr-recovery'
-import { inventorySchema } from '../recovery/inventory'
+import { inventorySchema, type InventoryRef } from '../recovery/inventory'
+import type { MigrationDestination } from '../server/migration-links'
 import { investigationSessionSchema, validId } from '../investigation/model'
 import { mountBelongsToSession, mountPaths, parseMount } from './model'
 
@@ -14,7 +15,7 @@ export const mountAction = z.object({
   useOriginalPlacement: z.boolean().optional(), quickMigration: z.boolean().optional(),
 }).strict()
 type Action = z.infer<typeof mountAction>
-type Resolve = (selection: z.infer<typeof ref>, kind: 'Host'|'Cluster'|'ResourcePool'|'Folder'|'Datastore') => Promise<unknown>
+type Resolve = (selection: z.infer<typeof ref>, kind: 'Host'|'Cluster'|'ResourcePool'|'Folder'|'Datastore') => Promise<InventoryRef>
 
 export async function runMountAction(send: RecoverySend, resolve: Resolve, sourceKey: string, mountId: string, action: Action) {
   if (!validId(mountId) || !validId(action.sessionId)) throw new VbrRecoveryError('Select a valid mount point.', 400)
@@ -33,6 +34,9 @@ export async function runMountAction(send: RecoverySend, resolve: Resolve, sourc
   if (action.kind === 'publish' && action.action === 'migrate') throw new VbrRecoveryError('Invalid recovery action.', 400)
 
   let body: unknown
+  let destination: MigrationDestination | undefined
+  // Hyper-V migrates the specified publication in place; its native mount reports the destination host.
+  if (action.action === 'migrate' && action.kind === 'hyperV' && mount.host) destination = {host:mount.host}
   if (action.action === 'migrate' && action.kind !== 'hyperV') {
     if (!action.datastore || action.datastore.type !== 'Datastore') throw new VbrRecoveryError('Select a destination datastore.', 400)
     if (action.kind === 'fcd') {
@@ -57,11 +61,14 @@ export async function runMountAction(send: RecoverySend, resolve: Resolve, sourc
       ])
       body = { ...(destinationHost ? {destinationHost} : {}), ...(resourcePool ? {resourcePool} : {}), ...(folder ? {folder} : {}),
         datastore: {defaultDatastore}, VeeamQMEnabled: !!action.quickMigration, DeleteSourceVmsFiles: false }
+      // Keep display names from the same VBR inventory objects used in the accepted payload.
+      const host = destinationHost?.name || (action.useOriginalPlacement ? mount.host : undefined)
+      destination = {...(host && {host}), datastore:defaultDatastore.name}
     }
   }
   const operation = action.kind === 'publish' ? 'unpublish' : action.action === 'unmount' && action.kind === 'fcd' ? 'dismount' : action.action
   const result = await send(`${path}/${operation}`, {method: 'POST', ...(body ? {body} : {}), mutation: true})
   const accepted = z.object({id: z.string().refine(validId)}).safeParse(result)
   // A successful response may arrive after VBR has removed the mount; never replay it to obtain a session ID.
-  return {accepted: true, sessionId: accepted.success ? accepted.data.id : null}
+  return {accepted: true, sessionId: accepted.success ? accepted.data.id : null, ...(destination && {destination})}
 }

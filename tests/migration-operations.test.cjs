@@ -71,7 +71,7 @@ test('the tracked HTTP route responds before VBR finishes and observes the exact
     calls.push({url,config})
     if (denyBearer) throw new VbrRecoveryError('Denied.',401)
     if (url === '/api/v1/sessions/' + child) return childRecord
-    if (!config?.mutation) return {id:binding.mountId,sessionId:binding.sessionId,state:'Mounted'}
+    if (!config?.mutation) return {id:binding.mountId,sessionId:binding.sessionId,state:'Mounted',hostName:'hv-01.example'}
     await wait;return {id:child}
   }
   const ops = require('../lib/server/migration-operations.ts')
@@ -103,7 +103,7 @@ test('the tracked HTTP route responds before VBR finishes and observes the exact
   assert.equal((await get(params)).status,202);assert.equal((await post(body)).status,202);assert.equal(scheduled.length,1)
   finish();await work
   assert.deepEqual(await (await get(params)).json(),{state:'accepted',sessionId:child})
-  assert.deepEqual(links,[[sourceKey,binding.sessionId,mountId,child]])
+  assert.deepEqual(links,[[sourceKey,binding.sessionId,mountId,child,{host:'hv-01.example'}]])
   assert.equal(calls.filter(c=>c.config?.mutation).length,1)
   for (const record of [childRecord,{...childRecord,state:'Stopped',result:{result:'Success'}},
     {...childRecord,state:'Stopped',result:{result:'Failed'},parentSessionId:randomUUID()}]) {

@@ -16,6 +16,7 @@ import { validId, type Session } from '@/lib/investigation/model'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 import { InstantRecoveryWorkspace, type InstantRecoveryTransfer } from './instant-recovery-workspace'
 import { MigrationForm, type MigrationPlacement } from './migration-form'
+import { migrationDestination } from './session-commands'
 
 function useMigrationSession(sourceKey: string, sessionId?: string) {
   const [record, setRecord] = useState<{id: string; session?: Session; unavailable?: boolean}>()
@@ -52,8 +53,9 @@ function applyCheck(source: string, entry: MigrationReceipt, result: MigrationCh
   else storeMigration(source,entry.mount,{...entry,status:result.state,childId})
 }
 
-export function InstantRecoveryControls({mount, sourceKey, session, migrationSession, disabled, refresh, onMigrationLockChange}: {
+export function InstantRecoveryControls({mount, sourceKey, session, migrationSession, association, disabled, refresh, onMigrationLockChange}: {
   mount: Mount; sourceKey: string; session?: Session|null; migrationSession?: Session|null; disabled: boolean
+  association?: NonNullable<ActivityDetail['instantMigrations']>[number]
   refresh: () => void; onMigrationLockChange: (locked: boolean) => void
 }) {
   const {t} = useI18n()
@@ -107,8 +109,8 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
     return () => {controller.abort(); clearTimeout(timer)}
   }, [trackingId, sourceKey, mount.kind, mount.id, mount.sessionId, refresh, t])
   const linked = migrationSession && migrationSession.id !== receipt?.previousChildId &&
-    (!receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
-  const child = useMigrationSession(sourceKey, receipt?.childId !== linked?.id ? receipt?.childId : undefined)
+    (association || !receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
+  const child = useMigrationSession(sourceKey, linked ? undefined : receipt?.childId)
   const operation = child?.session ?? linked
   const evidence = migrationTransfer(mount, session, operation)
   const recoverable = ['failed','canceled'].includes(evidence.phase) && mount.state === 'Mounted'
@@ -150,9 +152,10 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
     : receipt?.status === 'unknown' ? 'unknown' : undefined
   const transfer = !configuring && phase ? {phase:child?.unavailable && phase === 'accepted' ? 'unknown' as const : phase,
     percent:evidence.progress, transferredBytes:evidence.transferredBytes, message:operation?.result?.message || undefined} : undefined
-  const childId = receipt?.childId || linked?.id
+  const childId = linked?.id || receipt?.childId
+  const destination = migrationDestination(mount.id, childId, association, receipt)
   return <>
-    <InstantRecoveryWorkspace mount={mount} destination={configuring ? undefined : receipt?.destination} transfer={transfer}
+    <InstantRecoveryWorkspace mount={mount} destination={configuring ? undefined : destination} transfer={transfer}
       canConfigure={canConfigure} configuring={configuring && (canConfigure || receipt?.status === 'submitting')}
       onConfigure={() => {if (canConfigure) {setError(''); setConfiguring(true)}}}>
       <MigrationForm mount={mount} sourceKey={sourceKey} busy={disabled || !!submitting.current}

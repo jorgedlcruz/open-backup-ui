@@ -131,11 +131,12 @@ function transport(raw = vmMount(13,15)) {
 }
 test('migration resolves selected inventory and posts once to the mount ID', async () => {
   const {calls, send} = transport()
-  const result = await runMountAction(send, async ref => ({...ref, verified:true}), 'scope', mountId,
+  const result = await runMountAction(send, async ref => ({...ref, name:'VBR ' + ref.type, verified:true}), 'scope', mountId,
     mountAction.parse({...base, host, datastore, quickMigration:true}))
   assert.equal(result.sessionId, id(99)); assert.equal(calls.length,2)
+  assert.deepEqual(result.destination,{host:'VBR Host',datastore:'VBR Datastore'})
   assert.equal(calls[1].path, mountPaths.vSphere+'/'+mountId+'/migrate')
-  assert.deepEqual(calls[1].options.body, {destinationHost:{...host,verified:true},datastore:{defaultDatastore:{...datastore,verified:true}}, VeeamQMEnabled:true,DeleteSourceVmsFiles:false})
+  assert.deepEqual(calls[1].options.body, {destinationHost:{...host,name:'VBR Host',verified:true},datastore:{defaultDatastore:{...datastore,name:'VBR Datastore',verified:true}}, VeeamQMEnabled:true,DeleteSourceVmsFiles:false})
 })
 test('stale source, state, mount and session identity prevent mutations', async () => {
   for (const [raw,source] of [[vmMount(13,15),'different'],[vmMount(13,16),'scope'],[vmMount(14,15),'scope'],[{...vmMount(13,15),state:'Dismounting'},'scope']]) {
@@ -184,8 +185,9 @@ test('optional migration placement uses verified pool and folder, including clus
 })
 test('original-location mounts can keep source placement while selecting production storage', async () => {
   const request = mountAction.parse({...base, useOriginalPlacement:true, datastore})
-  const original = transport({...vmMount(13,15),spec:{type:'OriginalLocation'}})
-  await runMountAction(original.send,async ref => ref,'scope',mountId,request)
+  const original = transport({...vmMount(13,15),hostName:'original.example',spec:{type:'OriginalLocation'}})
+  const result = await runMountAction(original.send,async ref => ref,'scope',mountId,request)
+  assert.deepEqual(result.destination,{host:'original.example',datastore:datastore.name})
   assert.deepEqual(original.calls[1].options.body,{datastore:{defaultDatastore:datastore},VeeamQMEnabled:false,DeleteSourceVmsFiles:false})
   const customized = transport({...vmMount(13,15),spec:{type:'Customized'}})
   await assert.rejects(runMountAction(customized.send,async ref => ref,'scope',mountId,request))

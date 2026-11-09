@@ -123,6 +123,12 @@
   background: color-mix(in srgb, var(--surface) 70%, transparent);
 }
 .destination[data-enabled] { border-color: color-mix(in srgb, var(--signal) 55%, var(--border)); }
+.destination[data-phase] {border-style: solid;}
+.destination[data-phase="active"], .destination[data-phase="completed"] {border-color: var(--line); background: color-mix(in srgb, var(--signal) 6%, var(--surface));}
+.destination[data-phase="failed"] {--signal: var(--ops-danger, var(--destructive));}
+.destination[data-phase="warning"] {--signal: var(--ops-warning, var(--foreground));}
+.destination:is([data-phase="unknown"], [data-phase="canceled"]) {--signal: var(--muted-foreground);}
+.primaryDatastore {font-size: 1rem; font-weight: 650;}
 .destination[data-dragging], .destination[data-configuring] { background: color-mix(in srgb, var(--signal) 8%, var(--surface)); }
 .destination[data-configuring] { align-items: stretch; text-align: start; padding: clamp(.7rem,1.7cqi,1.2rem); border-style: solid; }
 .destination[data-configuring] .identity { margin: 0 0 .8rem; }

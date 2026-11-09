@@ -1,6 +1,16 @@
 // Open Backup UI v1.0.2
 import type { Mount } from '@/lib/activity/model'
 import type { ActivityDetail } from '@/lib/activity/session'
+import type { MigrationReceipt } from '@/lib/activity/migration-receipt'
+
+export function migrationDestination(mountId: string, childId: string | undefined,
+  association: NonNullable<ActivityDetail['instantMigrations']>[number] | undefined, receipt: MigrationReceipt | undefined) {
+  const verified = association?.mountId === mountId && association.session.id === childId ? association.destination : undefined
+  const local = receipt?.mount.id === mountId && (!childId || childId !== receipt.previousChildId &&
+    (!receipt.childId || receipt.childId === childId)) ? receipt.destination : undefined
+  const host = verified?.host || local?.host, datastore = verified?.datastore || local?.datastore
+  return host || datastore ? {host, datastore} : undefined
+}
 
 export function isInstantVmMount(mount: Mount) {
   return mount.kind === 'vSphere' || mount.kind === 'hyperV'

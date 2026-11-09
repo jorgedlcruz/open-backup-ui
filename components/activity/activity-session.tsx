@@ -102,8 +102,9 @@ function RecoveryMap({mount, data, migrationSession, disabled, refresh, onMigrat
   const current = useRef(mount)
   useEffect(() => { current.current = mount }, [mount])
   const onMigrationLockChange = useCallback((locked: boolean) => onMigrationLock(current.current, locked), [onMigrationLock])
+  const association = data.instantMigrations?.find(row => row.mountId === mount.id && row.session.id === migrationSession?.id)
   return <InstantRecoveryControls mount={mount} sourceKey={data.sourceKey} session={data.session} migrationSession={migrationSession}
-    disabled={disabled} refresh={refresh} onMigrationLockChange={onMigrationLockChange}/>
+    association={association} disabled={disabled} refresh={refresh} onMigrationLockChange={onMigrationLockChange}/>
 }
 
 function StopRestore({data, refresh}: {data: ActivityDetail; refresh: () => void}) {
