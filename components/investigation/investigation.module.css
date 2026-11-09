@@ -41,7 +41,11 @@
 .tabs button { display:flex; align-items:center; gap:7px; padding:16px 0; border-bottom:2px solid transparent; cursor:pointer; font-size:var(--ops-small,12px); color:var(--muted-foreground); }
 .tabs button[aria-selected=true] { color:var(--foreground); border-bottom-color:var(--ops-accent); }
 .tabs span { padding:1px 6px; background:var(--muted); border-radius:4px; font-size:var(--ops-caption,11px); }
-.taskSummary { display:flex; flex-wrap:wrap; gap:15px; align-items:center; padding:0 20px 18px; color:var(--muted-foreground); font-size:var(--ops-small,12px); }
+.taskSummary { display:flex; flex-wrap:wrap; gap:6px 15px; align-items:center; padding:16px 20px 0; color:var(--muted-foreground); font-size:var(--ops-small,12px); }
+.tabs + [role=tabpanel] .taskSummary { padding-top:0; }
+@media (max-width:600px) {
+  .taskSummary { padding:12px 12px 0; }
+}
 .taskSummary strong { color:var(--foreground); }
 .taskName { font-weight:600; font-size:var(--ops-small,12px); cursor:pointer; text-align:left; overflow-wrap:anywhere; }
 .taskName:hover { color:var(--ops-accent); }
