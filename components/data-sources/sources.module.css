@@ -43,5 +43,3 @@
 @media(max-width:1200px){.healthSummary{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:500px){.healthSummary{gap:14px;padding:14px;}.healthSummary dd{align-items:flex-start;flex-direction:column;gap:2px;}.healthSummary dt{font-size:11px;}.resultSummary{padding-inline:12px;}}
 @media(max-width:500px){.facts {grid-template-columns:minmax(0,1fr);}.address{grid-template-columns:minmax(0,1fr) 80px;}}
-.managerRow {display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:12px}
-.managerName {font-size:.875rem;overflow-wrap:anywhere}

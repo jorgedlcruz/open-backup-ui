@@ -2,14 +2,6 @@
 
 This map covers backup restore points in VBR 13, REST revision `1.3-rev2`. It follows a VMware VM through the native Backups page, the selected restore point, destination questions, submission, and mounted recovery actions. The tables identify public request and response schemas from the installed `Backup/RestApiService/specs/latest/swagger.json`. Console route names and HTTP methods come from the installed BackupWebUI client. The separate Explorer and Nutanix sections cover options that appear at the VM level.
 
-## Opening a published VMware VM
-
-The Instant Recovery session shows the recovered VM's power state and a link to its VM page in ESXi or vCenter once its current registration can be identified. VMware handles sign-in for this link. For vCenter, the application reads the manager's instance UUID over trusted HTTPS. If the manager uses a private CA, add the CA when configuring the connection below.
-
-For an interactive console in Open Backup UI, open **Administration → Data Sources → VMware console connections**. Unlock the settings with the application's `HTTPS_ADMIN_TOKEN`, select the recovery destination's vCenter or standalone ESXi manager, and enter a VMware account with inventory read and **Virtual machine → Interaction → Console interaction** on the recovered VM. Save checks the VMware login over HTTPS. Scope the account to the intended recovery inventory. Each saved connection belongs to one VBR source and one VMware management endpoint.
-
-**Open web console** is available for a verified powered-on VM when the active VBR identity can start VMware Instant Recovery and the restore point permits it. The server checks the current VM name and power state in VMware, requests a single-use `webmks` ticket, and logs out. The browser uses noVNC to connect to the secure WebSocket endpoint in the ticket. It needs network access to that endpoint and must trust its TLS certificate. A CA entered in Open Backup UI applies to the application's VMware connection. Use HTTPS for Open Backup UI or a loopback address for local development. [VMware console ticket API](https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.VirtualMachine.html#acquireTicket) · [WebMKS transport](https://developer.broadcom.com/xapis/vsphere-web-services-api/latest/vim.VirtualMachine.TicketType.html)
-
 ## Starting from the calendar
 
 Keep the exact object, backup, and restore-point IDs when a user chooses a timestamp. More than one point can exist on a day. Fetch the point again before submission and use its `allowedOperations`. The captured VMware point returned five values. The table gives the smallest set of decisions needed to reach each endpoint. [VBR restore reference](https://helpcenter.veeam.com/references/vbr/13/rest/1.3-rev2/tag/Restore/index.html)

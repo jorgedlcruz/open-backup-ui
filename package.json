@@ -51,7 +51,6 @@
     "@ai-sdk/anthropic": "^3.0.71",
     "@ai-sdk/google": "^3.0.64",
     "@ai-sdk/openai": "^3.0.53",
-    "@novnc/novnc": "1.7.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -95,7 +94,6 @@
     "tailwindcss-animate": "^1.0.7",
     "unified": "^11.0.5",
     "uuid": "^13.0.0",
-    "xmldoc": "2.0.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {

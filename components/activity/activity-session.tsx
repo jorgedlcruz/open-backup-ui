@@ -19,7 +19,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MountControls } from './mount-controls'
 import { UnmountGuestFiles } from './unmount-guest-files'
-import { VmwareConsoleActions } from './vmware-console-actions'
 import ops from '@/components/operations/operations.module.css'
 import investigation from '@/components/investigation/investigation.module.css'
 import styles from './session.module.css'
@@ -129,7 +128,6 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const [receipt,setReceipt] = useState<ReturnType<typeof findSessionLaunch>>()
   useEffect(() => { if (sourceKey) setReceipt(findSessionLaunch(sourceKey, id)) }, [sourceKey, id])
   const fileMount = mounts.find(m => m.kind === 'flr')
-  const vmwareMounts = mounts.filter(m => m.kind === 'vSphere' && m.state === 'Mounted')
   const readyToBrowse = fileMount?.state === 'Mounted' && !fileMount.error && !error
   const type = session?.sessionType || mounts[0]?.operation
   const isFile = !!fileMount || /FileLevelRestore/.test(type || '') || receipt?.operation === 'StartFlrRestore'
@@ -175,8 +173,6 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     <header className={ops.header}><div><Link href="/vbr/activity" className={styles.back}><ArrowLeft size={14}/>{t('Sessions')}</Link>
       <h1>{mounts[0]?.name || session?.name || receipt?.workload || t('Session Investigation')}</h1><p>{typeLabel}{data?.sourceName && ' · ' + data.sourceName}</p></div>
       <div className={styles.commands}>{status && <Status value={status}/>}
-        {data && !error && vmwareMounts.map(mount => <VmwareConsoleActions key={data.sourceKey + mount.id} sessionId={id}
-          sourceKey={data.sourceKey} mountId={mount.id} revision={revision} mountName={vmwareMounts.length > 1 ? mount.name || mount.id : undefined}/>)}
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         <Button variant="outline" size="sm" onClick={refresh} disabled={loading}><RefreshCw size={14} className={loading ? 'animate-spin' : ''}/>{t('Refresh')}</Button></div>
     </header>

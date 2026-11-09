@@ -17,7 +17,6 @@ import { Activity, Database, Edit2, ExternalLink, Plus, RefreshCw, ShieldAlert, 
 import Link from 'next/link'
 import { SourceActionDialog, sourceRequest, type Action } from './source-actions'
 import { SourceFilters } from './source-filters'
-import { VmwareConnections } from './vmware-connections'
 import styles from './sources.module.css'
 
 const columns = [{ id: 'name', name: 'Data source' }, { id: 'connection', name: 'Connection health' }, { id: 'authentication', name: 'Authentication' }, { id: 'api', name: 'API / product version' }, { id: 'checked', name: 'Last checked' }, { id: 'configuration', name: 'Configuration' }]
@@ -29,7 +28,7 @@ function Authentication({ row }: { row: Row }) {
   const { t } = useI18n()
   return <><span className={cn(ops.badge, row.health.authentication === 'verified' ? ops.success : ['required', 'rejected', 'forbidden'].includes(row.health.authentication) ? ops.warning : ops.neutral)}>{t(authLabels[row.health.authentication])}</span><p className={shared.sub}>{t(row.hasCredentials ? 'Saved credentials available' : 'No saved credentials')}</p></>
 }
-export function SourcesConsole({vmwareAdminEnabled = false}: {vmwareAdminEnabled?:boolean}) {
+export function SourcesConsole() {
   const { t, formatNumber, formatDate } = useI18n()
   const date = (value?: string | null) => value && Number.isFinite(Date.parse(value)) ? formatDate(value, { dateStyle: 'medium', timeStyle: 'short' }) : t('Not reported')
   const [, setClock] = useState(0)
@@ -92,7 +91,6 @@ export function SourcesConsole({vmwareAdminEnabled = false}: {vmwareAdminEnabled
       {detail && <Panel title={t('Source investigation · {name}', { name: detail.name })} subtitle={detail.url} action={<Button size="sm" variant="ghost" onClick={() => setSelected(null)}>{t('Close investigation')}</Button>}><dl className={styles.facts}>{facts.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl><p className={styles.detailNote}>{sourceMessage(t, detail.health.detail)}{' '}{t('Token expiry is the current cached token’s expiry, not the credential expiration date; server integrations can renew it.')}</p><div className={styles.detailNote}>{actions(detail)}<Link className={ops.textLink} href={platforms[detail.type].home}>{t('Open platform view')}<ExternalLink size={12} /></Link></div></Panel>}
       {all.some(row => row.managed === 'environment') && <Notice>{t('Environment-managed sources remain visible and can be checked or connected. Edit their endpoint and credentials in the server environment.')}</Notice>}
     </>}
-    <VmwareConnections enabled={vmwareAdminEnabled}/>
     <footer className={ops.footer}><span><span className={ops.dot} />{t('Inventory')} {date(data?.fetchedAt)} · {t('{count} configured sources', { count: formatNumber(all.length) })}</span><Link className={ops.textLink} href="/connect">{t('Connection portal')}<ExternalLink size={12} /></Link></footer>
     {action && <SourceActionDialog action={action} onClose={() => setAction(null)} onComplete={refresh} />}
   </div>
