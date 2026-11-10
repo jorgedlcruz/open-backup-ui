@@ -7,7 +7,7 @@ import {VbrRecoveryError} from './error'
 export const sqlGuid=z.string().refine(validId).transform(v=>v.toLowerCase())
 export const sqlScope=z.string().regex(/^[a-f0-9]{64}$/)
 export const sqlTicket=z.string().min(1).max(120000)
-export type SqlContext={sourceKey:string;principalKey:string;secret:string}
+export type SqlContext={sourceKey:string;principalKey:string;secret:string;stagingGateway?:string}
 const lifetime=4*3600000
 function sign(ctx:SqlContext,kind:string,value:string) {
   return createHmac('sha256',ctx.secret).update(JSON.stringify(['vesql',ctx.sourceKey,ctx.principalKey,kind,value])).digest('base64url')

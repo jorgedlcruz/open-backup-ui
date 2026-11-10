@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { recoveryCenterPath, sessionHomeFor, sessionHref } from '@/lib/navigation/recovery'
-import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map as MapIcon, RefreshCw, Server, Square } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map as MapIcon, RefreshCw, Server, Settings2, Square } from 'lucide-react'
 import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
 import type { ActivityDetail } from '@/lib/activity/session'
@@ -20,6 +20,7 @@ import { UnstructuredSession } from '@/components/restore-points/unstructured-se
 import { EndStorageSession,useStorageStatus } from '@/components/restore-points/unstructured-session-controls'
 import { storageView } from '@/lib/restore-points/unstructured-workspace'
 import { SqlExplorer } from '@/components/restore-points/sql-explorer'
+import { SqlStagingSettings } from '@/components/restore-points/sql-staging-settings'
 import { adRequest,sqlRequest } from '@/lib/restore-points/ad-client'
 import { uncertainRestore } from '@/lib/restore-points/workflow'
 import { RecoverySignal } from '@/components/restore-points/recovery-signal'
@@ -39,6 +40,11 @@ import { SessionSpeedChart } from './session-speed-chart'
 import ops from '@/components/operations/operations.module.css'
 import investigation from '@/components/investigation/investigation.module.css'
 import styles from './session.module.css'
+
+const sessionTabHashes: Record<string, string> = {
+  logs: '#session-log', application: '#application-items', staging: '#sql-staging-server',
+  storage: '#unstructured-data', files: '#guest-files', recovery: '#recovery-map',
+}
 
 function RecoveryProperties({mount}: {mount: Mount}) {
   const {t, date, label} = useInvestigationPresentation()
@@ -243,6 +249,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const [tab, setTab] = useState('default'), [taskId, setTaskId] = useState<string>()
   const [fileOpened, setFileOpened] = useState(false)
   const [appVisited,setAppVisited]=useState(false)
+  const [stagingVisited,setStagingVisited]=useState(false)
   const [recoveryOpened, setRecoveryOpened] = useState(false)
   const [filesUnmounted, setFilesUnmounted] = useState(false)
   const [storageEnded,setStorageEnded]=useState('')
@@ -261,12 +268,10 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const focusedGuestMount=useRef('')
   useEffect(() => {
     const restoreTab = () => {
-      if (window.location.hash === '#guest-files') {
-        setTab('files')
-      } else if (window.location.hash === '#recovery-map') {
-        setRecoveryOpened(true)
-        setTab('recovery')
-      } else setTab(window.location.hash === '#unstructured-data' ? 'storage' : window.location.hash === '#application-items' ? 'application' : window.location.hash === '#session-log' ? 'logs' : 'default')
+      const next = Object.keys(sessionTabHashes).find(key => sessionTabHashes[key] === window.location.hash)
+      if (next === 'recovery') setRecoveryOpened(true)
+      if (next === 'staging') setStagingVisited(true)
+      setTab(next || 'default')
     }
     restoreTab()
     window.addEventListener('hashchange', restoreTab)
@@ -295,6 +300,8 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const showChildSessions = child && (!directory || child.data.length > 0 || !child.available || !child.complete)
   const providerName = directory?.kind==='sql' ? t('Microsoft SQL Server') : t('Active Directory')
   const directoryOpen = directory && !directory.closed && !jobDone
+  const sqlBrowsing = directoryOpen && directory?.kind === 'sql'
+  const stagingAvailable = sqlBrowsing && !directory.needsResume && !error
   const storedMounts = data ? readPendingMigrationMounts(data.sourceKey, id) : []
   const mapMounts = data ? recoveryMapMounts(data, [...storedMounts, ...Object.values(migrationLocks).map(entry => entry.mount)], query) : []
   const migration = migrationTransfer(null, session, data?.instantMigration)
@@ -325,6 +332,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
   const activeTab = tab === 'default' ? (readyToBrowse ? 'files' : storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
+    : tab === 'staging' ? (stagingAvailable ? 'staging' : sqlBrowsing ? 'application' : 'logs')
     : (tab === 'storage'&&!storage.status) || (tab === 'files' && !(readyToBrowse || fileOpened&&browsableMount)) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
   const guestMountKey=browsableMount&&data?.sourceKey+'/'+browsableMount.sessionId
   useEffect(()=>{
@@ -334,13 +342,14 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     if(!document.querySelector('[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"]'))filesTab.current?.focus()
   },[activeTab,guestMountKey])
   function selectTab(value: string) {
-    if(value==='application' || activeTab==='application') setAppVisited(true)
+    if(value==='application' || activeTab==='application' || activeTab==='staging') setAppVisited(true)
+    if(value==='staging') setStagingVisited(true)
     setTab(value)
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'storage' ? '#unstructured-data' : value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' ? '#session-log' : ''
-    if (location.hash !== hash && (hash || ['#unstructured-data','#application-items','#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
+    const hash = value === 'recovery' && !hasMap ? '' : sessionTabHashes[value] || ''
+    if (location.hash !== hash && (hash || Object.values(sessionTabHashes).includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
     }
@@ -406,6 +415,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             {storage.status&&<TabsTrigger value="storage"><FolderOpen/>{storageKind==='instant'?t('Published share'):t('Files and folders')}</TabsTrigger>}
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
+            {stagingAvailable && <TabsTrigger value="staging"><Settings2/>{t('SQL staging server')}</TabsTrigger>}
             {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
@@ -433,13 +443,16 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             {mounts.filter(m => m.kind !== 'flr' && !isInstantVmMount(m)).map(m => <div key={m.kind + m.id} className={styles.recovery}><h2>{m.name || typeLabel}</h2>
               <RecoveryProperties mount={m}/>{!error && <MountControls key={m.id + m.state} mount={m} sourceKey={data.sourceKey} onAccepted={onAccepted}/>}</div>)}
           </TabsContent>}
-          {(child || directory) && (activeTab==='application' || appVisited) && <TabsContent value="application" forceMount hidden={activeTab!=='application'} className={styles.inset}>
+          {(child || directory) && (activeTab==='application' || activeTab==='staging' || appVisited) && <TabsContent value="application" forceMount hidden={activeTab!=='application'} className={styles.inset}>
             {directoryOpen && !error && (directory.needsResume ? <ConnectExplorer key={data.sourceKey+id+directory.kind} active={activeTab==='application'} sourceKey={data.sourceKey} id={id} kind={directory.kind} refresh={refresh}/> : directory.kind==='sql' ? <SqlExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/> : <ActiveDirectoryExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/>)}
             {directory?.kind==='sql' && !directoryOpen && !directory.needsResume && !error && <SqlExplorer key={data.sourceKey+id+'-operations'} sourceKey={data.sourceKey} sessionId={id} operationsOnly onOperation={refresh}/>}
             {showChildSessions && <section className={styles.childSessions}><h2>{t('Application item restores')}</h2>
             {child.data.map(s => <Link className={styles.child} key={s.id} href={link(s.id)}><Files size={17}/><span>{s.name || s.id}</span><Status value={recordStatus(s)}/><ArrowUpRight size={15}/></Link>)}
             {!child.available ? <p>{t('Application item sessions could not be loaded.')}</p> : !child.complete ? <p>{t('Partial collection')}</p> : !child.data.length && <p>{t('No application item restores have been reported.')}</p>}
             </section>}
+          </TabsContent>}
+          {stagingAvailable && (activeTab==='staging' || stagingVisited) && <TabsContent value="staging" forceMount hidden={activeTab!=='staging'} className={styles.inset}>
+            <SqlStagingSettings key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id}/>
           </TabsContent>}
         </Tabs>
         {isFile && !fileMount && !data.mountWarnings.includes('flr') && <p className={styles.note}>{jobDone || filesUnmounted ? t('This session has no active guest file mount.') : t('Guest files become available when VBR reports a mount.')}</p>}

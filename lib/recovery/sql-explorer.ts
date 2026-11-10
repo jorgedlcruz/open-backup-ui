@@ -7,6 +7,7 @@ import {sqlBrowseCursor} from '../server/sql-browse-cursor'
 import {checkSource,VbrRecoveryError} from './error'
 import {pageRequest,parentGrant,sqlGuid,sqlOpen,sqlScope,sqlSeal,sqlTicket,type SqlContext} from './sql-protocol'
 import {sqlWorkflowInput,runSqlWorkflow,pollSqlValidation} from './sql-workflow'
+import {runSqlStaging,stagingInput} from './sql-staging'
 
 const scope={sourceKey:sqlScope}, session={...scope,sessionId:sqlGuid}
 const base='/private-api/v1/backupBrowser/applicationItems/vesql'
@@ -22,7 +23,7 @@ export const sqlExplorerSchema=z.union([z.discriminatedUnion('action',[
   z.object({...session,action:z.literal('browse'),view:pageRequest.shape.view,parent:sqlTicket.optional(),skip:pageRequest.shape.skip.default(0),limit:pageRequest.shape.limit.default(100)}).strict(),
   z.object({...session,action:z.literal('keepAlive')}).strict(),
   z.object({...session,action:z.literal('finish')}).strict(),
-]),sqlWorkflowInput])
+]),sqlWorkflowInput,stagingInput])
 export type SqlInput=z.infer<typeof sqlExplorerSchema>
 
 export function sqlRequestSession(input:SqlInput,ctx:SqlContext) {
@@ -51,6 +52,8 @@ export async function sqlAfterClose(input:SqlInput,ctx:SqlContext,store=sqlWorkf
 export async function runSqlExplorer(send:RecoverySend,input:SqlInput,ctx:SqlContext,store=sqlWorkflows,cursor=sqlBrowseCursor) {
   checkSource(input.sourceKey,ctx.sourceKey)
   if(!ctx.secret || !ctx.principalKey)throw new VbrRecoveryError('Reconnect the VBR source before opening Explorer.',401)
+  if(input.action==='stagingRead'||input.action==='stagingSave'||input.action==='stagingChoose'||input.action==='stagingPoll')
+    return runSqlStaging(send,input,ctx)
   if(input.action==='start') {
     const id=taskId(await send(base,{method:'POST',mutation:true,body:{restorePointId:input.restorePointId}}))
     return {pending:sqlSeal(ctx,'pending',{operation:'start',taskId:id,restorePointId:input.restorePointId})}

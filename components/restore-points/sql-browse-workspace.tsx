@@ -1,6 +1,6 @@
 'use client'
 // Open Backup UI v1.0.2
-import {useState, type ReactNode} from 'react'
+import {useId,useState, type ReactNode} from 'react'
 import {ArrowLeft, ChevronDown, ChevronRight, Database, File, Folder, Layers3, Search, Server} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import type {AdScope} from '@/lib/restore-points/ad-client'
@@ -14,7 +14,7 @@ import {RecoverySignal} from './recovery-signal'
 import css from './sql-browse-workspace.module.css'
 
 type Focus = {level:'auto'|'server'|'instance'|'database'; server?:string; instance?:string; database?:string}
-type Props = {scope:AdScope; revision:number; selectionReset:number; disabled:boolean; active:boolean;
+type Props = {scope:AdScope; revision:number; selectionReset:number; disabled:boolean; commands:ReactNode;
   onPrepare:(intent:SqlIntent, preset:SqlRecoveryPreset, databases:SqlItem[])=>void}
 const listSize = 30
 const maxSelected = 128
@@ -53,21 +53,22 @@ function Fact({label,children}:{label:string;children:ReactNode}) {
   return <div><dt>{label}</dt><dd>{children}</dd></div>
 }
 
-export function SqlBrowseWorkspace({scope,revision,selectionReset,disabled,active,onPrepare}:Props) {
+export function SqlBrowseWorkspace({scope,revision,selectionReset,disabled,commands,onPrepare}:Props) {
   const {t,date,formatNumber}=useRecoveryPresentation()
+  const selectionId=useId()
   const [focus,setFocus]=useState<Focus>({level:'auto'})
   const [collapsed,setCollapsed]=useState<string[]>([])
   const [chosen,setChosen]=useState<{scope:string;reset:number;ids:string[]}>({scope:'',reset:0,ids:[]})
   const [search,setSearch]=useState(''),[page,setPage]=useState(0),[treeCount,setTreeCount]=useState(listSize)
-  const servers=useSqlCatalog(scope,'servers',undefined,revision,active)
+  const servers=useSqlCatalog(scope,'servers',undefined,revision)
   const server=servers.items.find(row=>sqlNodeId(row)===focus.server) || (servers.complete&&servers.items.length===1?servers.items[0]:undefined)
-  const instances=useSqlCatalog(scope,'instances',server,revision,active)
+  const instances=useSqlCatalog(scope,'instances',server,revision)
   const instance=instances.items.find(row=>sqlNodeId(row)===focus.instance) || (focus.level==='auto'&&instances.complete&&instances.items.length===1?instances.items[0]:undefined)
-  const dbs=useSqlCatalog(scope,'databases',instance,revision,active)
+  const dbs=useSqlCatalog(scope,'databases',instance,revision)
   const serverFocus=!!server&&!instance&&instances.complete&&instances.items.length>0
-  const descendants=useSqlCatalog(scope,'databases',instances.items,revision,active&&serverFocus)
+  const descendants=useSqlCatalog(scope,'databases',instances.items,revision,serverFocus)
   const focusedDb=focus.level==='database'?dbs.items.find(row=>sqlNodeId(row)===focus.database):undefined
-  const files=useSqlCatalog(scope,'files',focusedDb,revision,active)
+  const files=useSqlCatalog(scope,'files',focusedDb,revision)
   const serverId=server&&sqlNodeId(server),instanceId=instance&&sqlNodeId(instance),dbId=focusedDb&&sqlNodeId(focusedDb)
   const branch=JSON.stringify([serverId,instanceId]),marked=chosen.scope===branch&&chosen.reset===selectionReset?chosen.ids:[]
   const selected=dbs.items.filter(db=>marked.includes(sqlNodeId(db)))
@@ -100,7 +101,16 @@ export function SqlBrowseWorkspace({scope,revision,selectionReset,disabled,activ
   const showActions=(!!instance||serverFocus)&&target.length>0
   const loading=t(view==='servers'?'Loading SQL servers…':view==='server'?'Loading SQL instances…':'Loading databases…')
   const emptyText=t(view==='servers'?'VBR returned no SQL servers for this restore point.':view==='server'?'VBR returned no instances for this server.':'VBR returned no databases for this instance.')
-  return <div className={css.workspace}>
+  return <><div className={css.commandBar}>
+    <div className={css.commandHeading}><h3><Database size={18} aria-hidden/>{t('Microsoft SQL Server')}</h3>
+      {showActions&&<div className={css.actionScope} aria-live="polite"><span id={selectionId}>{focusedDb?t('Database actions')+' · '+title:marked.length?t('{count} selected',{count:formatNumber(marked.length)}):(serverFocus?t('Server actions'):t('Instance actions'))+' · '+title}</span>
+        {!focusedDb&&marked.length>0&&<button type="button" onClick={()=>selectRows([])}>{t('Clear selection')}</button>}</div>}
+    </div>
+    <div className={css.commandButtons}>{showActions&&<SqlRecoveryActions databases={target} scopeKind={scopeKind} scopeDescription={selectionId} disabled={disabled||!completeSelection||target.length>maxSelected}
+      onAction={(intent,preset)=>{if(completeSelection&&target.length<=maxSelected)onPrepare(intent,preset,target)}}/>}{commands}</div>
+  </div>
+  {target.length>maxSelected&&<p className={css.empty}>{t('Select up to 128 databases for one operation.')}</p>}
+  <div className={css.workspace}>
     <nav className={css.tree} aria-label={t('SQL inventory')}>
       <h4><Layers3 size={15}/>{t('SQL inventory')}</h4>
       <ul>{servers.items.map(s=>{
@@ -121,13 +131,6 @@ export function SqlBrowseWorkspace({scope,revision,selectionReset,disabled,activ
       </div></header>
       {instance?.fullVersion&&<details className={css.version}><summary><span>{t('Version')}</span> {shortVersion(instance.fullVersion)}</summary><p>{instance.fullVersion}</p></details>}
       <SqlRecoveryContext items={completeSelection&&target.length?target:path.slice(-1)}/>
-      {showActions&&<div className={css.actionArea}><div className={css.actionScope}>
-        <span>{focusedDb?t('Database actions'):marked.length?t('{count} selected',{count:formatNumber(marked.length)}):serverFocus?t('Server actions'):t('Instance actions')}</span>
-        {!focusedDb&&marked.length>0&&<button type="button" onClick={()=>selectRows([])}>{t('Clear selection')}</button>}
-      </div><SqlRecoveryActions databases={target} scopeKind={scopeKind} disabled={disabled||!completeSelection||target.length>maxSelected}
-        onAction={(intent,preset)=>{if(completeSelection&&target.length<=maxSelected)onPrepare(intent,preset,target)}}/>
-        {target.length>maxSelected&&<p className={css.empty}>{t('Select up to 128 databases for one operation.')}</p>}
-      </div>}
       {serverFocus&&!descendants.complete&&<ReadState rows={descendants} label={t('Loading databases…')} emptyText=""/>}
       {focusedDb?<><div className={css.objectTitle}><Button size="sm" variant="ghost" onClick={()=>instance&&openInstance(instance)}><ArrowLeft size={14}/>{t('Databases')}</Button></div>
         <dl className={css.facts}>
@@ -165,5 +168,5 @@ export function SqlBrowseWorkspace({scope,revision,selectionReset,disabled,activ
           <Button size="sm" variant="outline" disabled={(currentPage+1)*listSize>=matching.length} onClick={()=>setPage(currentPage+1)}>{t('Next')}</Button></div>}
       </>}
     </section>
-  </div>
+  </div></>
 }

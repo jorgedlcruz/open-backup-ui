@@ -13,7 +13,7 @@ export async function POST(request:NextRequest) {
   const raw=await request.json().catch(()=>null),tracked=isExplorerLaunchRequest(raw)
   return withVbrRecovery(request,async ({send,sourceKey,getExplorer})=>{
     if(ENCRYPTION_KEY===LEGACY_DEFAULT_KEY)throw new VbrRecoveryError('Application recovery requires a private server encryption key.',503)
-    const explorer=getExplorer(),key={sourceKey,principalKey:explorer.principalKey},ctx={...key,secret:ENCRYPTION_KEY}
+    const explorer=getExplorer(),key={sourceKey,principalKey:explorer.principalKey},ctx={...key,secret:ENCRYPTION_KEY,stagingGateway:explorer.origin}
     if(tracked)return explorerLaunchRequest(raw,'sql',ctx,send,explorer.send,after)
     const parsed=sqlExplorerSchema.safeParse(raw)
     if(!parsed.success)throw new VbrRecoveryError('Invalid Explorer request.')

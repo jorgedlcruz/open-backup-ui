@@ -7,14 +7,14 @@ import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger} f
 import {sqlActionGroups,type SqlActionScope,type SqlRecoveryPreset} from '@/lib/restore-points/sql-action-presets'
 import type {SqlIntent,SqlItem} from './sql-explorer'
 import {useRecoveryPresentation} from './use-presentation'
-import styles from './active-directory.module.css'
+import styles from './sql-browse-workspace.module.css'
 
-export function SqlRecoveryActions({databases,scopeKind,onAction,disabled=false}:{
-  databases:SqlItem[];scopeKind:SqlActionScope;onAction:(intent:SqlIntent,preset:SqlRecoveryPreset)=>void;disabled?:boolean
+export function SqlRecoveryActions({databases,scopeKind,scopeDescription,onAction,disabled=false}:{
+  databases:SqlItem[];scopeKind:SqlActionScope;scopeDescription:string;onAction:(intent:SqlIntent,preset:SqlRecoveryPreset)=>void;disabled?:boolean
 }) {
   const {t}=useRecoveryPresentation(),groups=sqlActionGroups(scopeKind,databases)
   if(!groups.length)return null
-  return <div role="group" aria-label={t('Recovery actions')} className={styles.toolbar}>
+  return <div role="group" aria-label={t('Recovery actions')} aria-describedby={scopeDescription} className={styles.recoveryActions}>
     {groups.map(({label,choices})=>{
       const first=choices[0],Icon=first.intent==='instant'?MonitorPlay:first.intent==='restore'?DatabaseBackup:first.intent==='publish'?Upload:HardDriveDownload
       if(choices.length===1)return <Button key={label} type="button" size="sm" variant="outline" disabled={disabled}
