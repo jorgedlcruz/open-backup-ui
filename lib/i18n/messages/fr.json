@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR n’a pas pu vérifier les options de restauration de cette source.",
   "VBR may have received this batch. Check its status before starting another recovery.": "VBR a peut-être reçu ce lot. Vérifiez son état avant de lancer une autre restauration.",
   "{count} virtual machines": "{count} machines virtuelles",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Certains points de récupération n’ont pas pu être associés à une machine virtuelle. Ouvrez la charge de travail pour choisir son point de récupération."
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Certains points de récupération n’ont pas pu être associés à une machine virtuelle. Ouvrez la charge de travail pour choisir son point de récupération.",
+  "Choose a recovery method, then select a restore point.": "Choisissez une méthode de restauration, puis un point de restauration.",
+  "Files and disks": "Fichiers et disques",
+  "Up to {count} VMs": "Jusqu’à {count} VM",
+  "Run a VM directly from backup.": "Exécutez une VM directement depuis sa sauvegarde.",
+  "Restore the VM, its disks, and its configuration.": "Restaurez la VM, ses disques et sa configuration.",
+  "Browse and recover individual files and folders.": "Parcourez et restaurez des fichiers et des dossiers individuels.",
+  "Recover databases from a SQL Server instance.": "Restaurez des bases de données depuis une instance SQL Server.",
+  "Recover directory objects and their attributes.": "Restaurez des objets d’annuaire et leurs attributs.",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "Montez un disque sauvegardé en tant que First Class Disk vSphere.",
+  "Expose backup disks through a mount server.": "Rendez les disques de sauvegarde accessibles via un serveur de montage."
 }

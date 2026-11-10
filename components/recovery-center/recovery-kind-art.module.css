@@ -1,0 +1,28 @@
+/* Open Backup UI v1.0.2 */
+.art {
+  --art-paper: var(--card, Canvas);
+  --art-ink: color-mix(in srgb, var(--foreground, CanvasText) 74%, currentColor);
+  --art-tint: color-mix(in srgb, currentColor 23%, var(--art-paper));
+  width: var(--recovery-art-size, 48px);
+  height: var(--recovery-art-size, 48px);
+  flex: none;
+  display: block;
+  fill: none;
+  stroke: var(--art-ink);
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.metal { fill: var(--art-paper); }
+.shade { fill: color-mix(in srgb, var(--art-ink) 16%, var(--art-paper)); }
+.glass { fill: var(--art-tint); }
+.line { stroke: var(--art-ink); }
+.detail { stroke: var(--art-ink); stroke-width: 1.35; }
+.accent { fill: currentColor; stroke: var(--art-paper); stroke-width: 2.8; paint-order: stroke fill; }
+.action { stroke: currentColor; stroke-width: 2.45; }
+.halo { stroke: var(--art-paper); stroke-width: 5.5; }
+@media (forced-colors: active) {
+  .art { --art-ink: CanvasText; --art-paper: Canvas; --art-tint: Canvas; }
+  .action { stroke: Highlight; }
+  .accent { fill: Highlight; }
+}

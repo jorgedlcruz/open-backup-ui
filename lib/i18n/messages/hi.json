@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR इस स्रोत के रिकवरी विकल्प जाँच नहीं सका।",
   "VBR may have received this batch. Check its status before starting another recovery.": "संभव है कि VBR को यह बैच मिल चुका हो। दूसरी रिकवरी शुरू करने से पहले इसकी स्थिति जाँचें।",
   "{count} virtual machines": "{count} वर्चुअल मशीनें",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "कुछ रिकवरी पॉइंट को वर्चुअल मशीन से जोड़ा नहीं जा सका। उसका रिकवरी पॉइंट चुनने के लिए वर्कलोड खोलें।"
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "कुछ रिकवरी पॉइंट को वर्चुअल मशीन से जोड़ा नहीं जा सका। उसका रिकवरी पॉइंट चुनने के लिए वर्कलोड खोलें।",
+  "Choose a recovery method, then select a restore point.": "पुनर्प्राप्ति विधि चुनें, फिर पुनर्स्थापना बिंदु चुनें।",
+  "Files and disks": "फ़ाइलें और डिस्क",
+  "Up to {count} VMs": "अधिकतम {count} VM",
+  "Run a VM directly from backup.": "VM को सीधे बैकअप से चलाएँ।",
+  "Restore the VM, its disks, and its configuration.": "VM को उसकी डिस्क और कॉन्फ़िगरेशन के साथ पुनर्स्थापित करें।",
+  "Browse and recover individual files and folders.": "अलग-अलग फ़ाइलें और फ़ोल्डर ब्राउज़ करें और उन्हें पुनर्प्राप्त करें।",
+  "Recover databases from a SQL Server instance.": "SQL Server इंस्टेंस से डेटाबेस पुनर्प्राप्त करें।",
+  "Recover directory objects and their attributes.": "डायरेक्टरी ऑब्जेक्ट और उनके एट्रिब्यूट पुनर्प्राप्त करें।",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "बैकअप की गई डिस्क को vSphere First Class Disk के रूप में माउंट करें।",
+  "Expose backup disks through a mount server.": "माउंट सर्वर के माध्यम से बैकअप डिस्क उपलब्ध कराएँ।"
 }

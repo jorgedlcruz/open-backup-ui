@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR 无法检查此数据源的恢复选项。",
   "VBR may have received this batch. Check its status before starting another recovery.": "VBR 可能已收到此批次。请在开始其他恢复前检查其状态。",
   "{count} virtual machines": "{count} 台虚拟机",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "部分恢复点无法与虚拟机关联。请打开工作负载并选择其恢复点。"
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "部分恢复点无法与虚拟机关联。请打开工作负载并选择其恢复点。",
+  "Choose a recovery method, then select a restore point.": "选择恢复方式，然后选择还原点。",
+  "Files and disks": "文件和磁盘",
+  "Up to {count} VMs": "最多 {count} 台虚拟机",
+  "Run a VM directly from backup.": "直接从备份运行虚拟机。",
+  "Restore the VM, its disks, and its configuration.": "还原虚拟机及其磁盘和配置。",
+  "Browse and recover individual files and folders.": "浏览并恢复单个文件和文件夹。",
+  "Recover databases from a SQL Server instance.": "从 SQL Server 实例恢复数据库。",
+  "Recover directory objects and their attributes.": "恢复目录对象及其属性。",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "将备份中的磁盘挂载为 vSphere First Class Disk。",
+  "Expose backup disks through a mount server.": "通过挂载服务器提供对备份磁盘的访问。"
 }

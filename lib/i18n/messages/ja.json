@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR はこのソースの復元オプションを確認できませんでした。",
   "VBR may have received this batch. Check its status before starting another recovery.": "このバッチはすでに VBR に届いている可能性があります。次の復元を開始する前に状態を確認してください。",
   "{count} virtual machines": "仮想マシン {count} 台",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "一部の復元ポイントを仮想マシンに関連付けられませんでした。ワークロードを開いて復元ポイントを選択してください。"
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "一部の復元ポイントを仮想マシンに関連付けられませんでした。ワークロードを開いて復元ポイントを選択してください。",
+  "Choose a recovery method, then select a restore point.": "復元方法を選び、次に復元ポイントを選択してください。",
+  "Files and disks": "ファイルとディスク",
+  "Up to {count} VMs": "最大 {count} 台の VM",
+  "Run a VM directly from backup.": "バックアップから直接 VM を起動します。",
+  "Restore the VM, its disks, and its configuration.": "VM をディスクと構成も含めて復元します。",
+  "Browse and recover individual files and folders.": "個別のファイルやフォルダーを参照して復元します。",
+  "Recover databases from a SQL Server instance.": "SQL Server インスタンスからデータベースを復元します。",
+  "Recover directory objects and their attributes.": "ディレクトリオブジェクトとその属性を復元します。",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "バックアップしたディスクを vSphere First Class Disk としてマウントします。",
+  "Expose backup disks through a mount server.": "マウントサーバー経由でバックアップ内のディスクにアクセスできるようにします。"
 }

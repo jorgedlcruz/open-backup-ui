@@ -2,12 +2,12 @@
 // Open Backup UI v1.0.2
 import {Suspense,useEffect,useRef,useState} from 'react'
 import {useRouter,useSearchParams} from 'next/navigation'
-import {ArrowLeft,ArrowRight,Database,FolderOpen,FolderTree,HardDrive,MonitorPlay,RotateCcw,Server} from 'lucide-react'
+import {ArrowLeft,ArrowRight,RotateCcw} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog'
 import {isFlagged,type RestorePoint} from '@/lib/restore-points/model'
 import type {RestoreLaunch} from '@/lib/restore-points/launch'
-import {bulkKind,isRecoveryKind,recoveryKinds,recoveryKindLabel,type PickedVm,type RecoveryKind,type RecoveryObject,type RecoverySeed} from '@/lib/restore-points/recovery-picker'
+import {bulkKind,isRecoveryKind,recoveryKindLabel,type PickedVm,type RecoveryKind,type RecoveryObject,type RecoverySeed} from '@/lib/restore-points/recovery-picker'
 import {ApplicationExplorerLaunch} from '../restore-points/active-directory-launch'
 import {RestoreWorkflow} from '../restore-points/restore-workflow'
 import {RecoverySignal} from '../restore-points/recovery-signal'
@@ -15,10 +15,10 @@ import {useRecoveryPresentation} from '../restore-points/use-presentation'
 import {RecoveryPicker,catalogRequest,suggestedOperation,type Selection} from './recovery-picker'
 import {BulkRecovery} from './bulk-recovery'
 import {VmIdentity} from './vm-identity'
+import {RecoveryMethods} from './recovery-methods'
 import styles from './launcher.module.css'
 
 type LauncherProps={sourceKey?:string|null;onCreated?:()=>void;initialKind?:RecoveryKind;seeds?:RecoverySeed[]}
-const icons={'instant-vm':MonitorPlay,'entire-vm':RotateCcw,'guest-files':FolderOpen,'active-directory':FolderTree,sql:Database,'instant-disk':HardDrive,'publish-disks':Server}
 const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
 function urlSeeds(params:URLSearchParams){
   const seeds:RecoverySeed[]=[],objectId=params.get('objectId'),backupId=params.get('backupId')||undefined,restorePointId=params.get('restorePointId')||undefined
@@ -34,6 +34,7 @@ export function RecoveryLauncherButton(props:LauncherProps){
 }
 function Launcher({sourceKey,onCreated,initialKind,seeds=[]}:LauncherProps){
   const {t}=useRecoveryPresentation(),router=useRouter(),query=useSearchParams()?.toString()||''
+  const triggerRef=useRef<HTMLButtonElement>(null)
   const [opening,setOpening]=useState<{kind?:RecoveryKind;seeds:RecoverySeed[];mismatch?:boolean}>(),[locked,setLocked]=useState(false),handled=useRef('')
   useEffect(()=>{
     const params=new URLSearchParams(query),kind=params.get('recover')
@@ -53,8 +54,8 @@ function Launcher({sourceKey,onCreated,initialKind,seeds=[]}:LauncherProps){
       router.replace(window.location.pathname+(params.size?'?'+params:''),{scroll:false})
     }
   }
-  return <><Button type="button" disabled={!sourceKey} onClick={()=>setOpening({kind:initialKind,seeds})}><RotateCcw size={15}/>{t('Start recovery')}</Button>
-    {opening&&sourceKey&&<Dialog open onOpenChange={v=>{if(!v)close()}}><DialogContent className={styles.dialog} onInteractOutside={e=>e.preventDefault()} onEscapeKeyDown={e=>{if(locked)e.preventDefault()}}>
+  return <><Button ref={triggerRef} type="button" disabled={!sourceKey} onClick={()=>setOpening({kind:initialKind,seeds})}><RotateCcw size={15}/>{t('Start recovery')}</Button>
+    {opening&&sourceKey&&<Dialog open onOpenChange={v=>{if(!v)close()}}><DialogContent className={styles.dialog} onCloseAutoFocus={e=>{e.preventDefault();triggerRef.current?.focus({preventScroll:true})}} onInteractOutside={e=>e.preventDefault()} onEscapeKeyDown={e=>{if(locked)e.preventDefault()}}>
       <LauncherContent sourceKey={sourceKey} opening={opening} onBusy={setLocked} onSingle={receipt=>{setOpening(undefined);onCreated?.();router.push('/vbr/recovery-center/preparing?'+new URLSearchParams({request:receipt.requestId}))}}
         onBatch={id=>{setOpening(undefined);onCreated?.();router.push('/vbr/recovery-center/batches/'+encodeURIComponent(id)+'?'+new URLSearchParams({sourceKey}))}}/>
     </DialogContent></Dialog>}</>
@@ -63,6 +64,13 @@ function LauncherContent({sourceKey,opening,onBusy,onSingle,onBatch}:{sourceKey:
   onBusy:(busy:boolean)=>void;onSingle:(r:RestoreLaunch)=>void;onBatch:(id:string)=>void}){
   const {t,formatNumber,diagnostic,date}=useRecoveryPresentation()
   const [kind,setKind]=useState<RecoveryKind|undefined>(opening.kind),[stage,setStage]=useState<'type'|'vms'|'settings'>(opening.kind?'vms':'type')
+  const previousStage=useRef(stage),titleRef=useRef<HTMLHeadingElement>(null),bodyRef=useRef<HTMLDivElement>(null)
+  useEffect(()=>{
+    if(previousStage.current===stage)return
+    previousStage.current=stage
+    const target=stage==='type'&&kind?bodyRef.current?.querySelector<HTMLButtonElement>(`[data-recovery-kind="${kind}"]`):titleRef.current
+    target?.focus()
+  },[stage,kind])
   const [chosen,setChosen]=useState<Selection[]>([]),[loading,setLoading]=useState(Boolean(opening.seeds.length)),[notices,setNotices]=useState<string[]>([]),[unavailable,setUnavailable]=useState<string[]>([])
   useEffect(()=>{
     if(!opening.kind||!opening.seeds.length)return
@@ -103,12 +111,12 @@ function LauncherContent({sourceKey,opening,onBusy,onSingle,onBatch}:{sourceKey:
   const selection=chosen.filter((item):item is PickedVm=>!!item.point&&(!!item.operation||kind==='sql'||kind==='active-directory'))
   const vm=selection[0]
   function chooseType(next:RecoveryKind){setKind(next);setChosen([]);setNotices([]);setUnavailable([]);setStage('vms')}
-  return <><DialogHeader><DialogTitle>{stage==='type'?t('Start recovery'):kind?t(recoveryKindLabel[kind]):t('Start recovery')}</DialogTitle>
-    <DialogDescription>{stage==='type'?t('Choose what to recover.'):stage==='vms'?(bulkKind(kind!)?t('Select up to 32 VMs and a restore point for each.'):t('Select a VM and restore point.')):
+  return <><DialogHeader className={stage==='type'?styles.methodHeader:undefined}><DialogTitle ref={titleRef} tabIndex={-1}>{stage==='type'?t('Start recovery'):kind?t(recoveryKindLabel[kind]):t('Start recovery')}</DialogTitle>
+    <DialogDescription>{stage==='type'?t('Choose a recovery method, then select a restore point.'):stage==='vms'?(bulkKind(kind!)?t('Select up to 32 VMs and a restore point for each.'):t('Select a VM and restore point.')):
       chosen.length>1?t('{count} virtual machines',{count:formatNumber(chosen.length)}):[vm?.object.name,vm&&date(vm.point.creationTime)].filter(Boolean).join(' · ')}</DialogDescription>
       {stage==='settings'&&chosen.length===1&&vm&&<VmIdentity object={vm.object}/>}</DialogHeader>
-    <div className={styles.body}>
-      {stage==='type'?<div className={styles.kindGrid}>{recoveryKinds.map(k=>{const Icon=icons[k];return <button type="button" key={k} onClick={()=>chooseType(k)}><Icon size={21}/><strong>{t(recoveryKindLabel[k])}</strong><ArrowRight size={14}/></button>})}</div>:
+    <div className={styles.body} ref={bodyRef}>
+      {stage==='type'?<RecoveryMethods onChoose={chooseType}/>:
         loading?<RecoverySignal stage="options"/>:stage==='vms'&&kind?<>{opening.mismatch&&<p role="alert" className={styles.warning}>{t('The connected VBR source changed. Reopen this workflow.')}</p>}
         {notices.map(n=><p key={n} role="alert" className={styles.warning}>{diagnostic(n)}</p>)}
         {!!unavailable.length&&<details className={styles.notice}><summary>{t('Details')}</summary><ul>{unavailable.map(v=><li key={v}>{v}</li>)}</ul></details>}

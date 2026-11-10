@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "Не удалось проверить варианты восстановления этого источника в VBR.",
   "VBR may have received this batch. Check its status before starting another recovery.": "Возможно, VBR уже получил пакет. Проверьте его состояние перед запуском другой операции восстановления.",
   "{count} virtual machines": "Виртуальных машин: {count}",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Некоторые точки восстановления не удалось сопоставить с виртуальной машиной. Откройте рабочую нагрузку, чтобы выбрать её точку восстановления."
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Некоторые точки восстановления не удалось сопоставить с виртуальной машиной. Откройте рабочую нагрузку, чтобы выбрать её точку восстановления.",
+  "Choose a recovery method, then select a restore point.": "Выберите способ восстановления, затем выберите точку восстановления.",
+  "Files and disks": "Файлы и диски",
+  "Up to {count} VMs": "До {count} ВМ",
+  "Run a VM directly from backup.": "Запустите ВМ непосредственно из резервной копии.",
+  "Restore the VM, its disks, and its configuration.": "Восстановите ВМ вместе с её дисками и конфигурацией.",
+  "Browse and recover individual files and folders.": "Просматривайте и восстанавливайте отдельные файлы и папки.",
+  "Recover databases from a SQL Server instance.": "Восстановите базы данных из экземпляра SQL Server.",
+  "Recover directory objects and their attributes.": "Восстановите объекты каталога и их атрибуты.",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "Подключите диск из резервной копии как vSphere First Class Disk.",
+  "Expose backup disks through a mount server.": "Предоставьте доступ к дискам резервной копии через сервер монтирования."
 }

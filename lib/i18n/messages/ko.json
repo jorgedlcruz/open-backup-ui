@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR에서 이 소스의 복구 옵션을 확인할 수 없습니다.",
   "VBR may have received this batch. Check its status before starting another recovery.": "VBR이 이미 이 일괄 작업을 받았을 수 있습니다. 다른 복구를 시작하기 전에 상태를 확인하세요.",
   "{count} virtual machines": "가상 머신 {count}개",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "일부 복구 지점을 가상 머신과 연결할 수 없습니다. 워크로드를 열어 복구 지점을 선택하세요."
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "일부 복구 지점을 가상 머신과 연결할 수 없습니다. 워크로드를 열어 복구 지점을 선택하세요.",
+  "Choose a recovery method, then select a restore point.": "복구 방법을 선택한 다음 복원 지점을 선택하세요.",
+  "Files and disks": "파일 및 디스크",
+  "Up to {count} VMs": "최대 {count}대의 VM",
+  "Run a VM directly from backup.": "백업에서 VM을 바로 실행합니다.",
+  "Restore the VM, its disks, and its configuration.": "VM과 해당 디스크 및 구성을 복원합니다.",
+  "Browse and recover individual files and folders.": "개별 파일과 폴더를 찾아 복구합니다.",
+  "Recover databases from a SQL Server instance.": "SQL Server 인스턴스에서 데이터베이스를 복구합니다.",
+  "Recover directory objects and their attributes.": "디렉터리 개체와 해당 특성을 복구합니다.",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "백업된 디스크를 vSphere First Class Disk로 마운트합니다.",
+  "Expose backup disks through a mount server.": "마운트 서버를 통해 백업 디스크에 접근할 수 있도록 합니다."
 }

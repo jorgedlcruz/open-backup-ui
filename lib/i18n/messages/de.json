@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR konnte die Wiederherstellungsoptionen für diese Quelle nicht prüfen.",
   "VBR may have received this batch. Check its status before starting another recovery.": "VBR hat den Stapel möglicherweise empfangen. Prüfen Sie den Status, bevor Sie eine weitere Wiederherstellung starten.",
   "{count} virtual machines": "{count} virtuelle Maschinen",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Einige Wiederherstellungspunkte konnten keiner virtuellen Maschine zugeordnet werden. Öffnen Sie den Workload, um seinen Wiederherstellungspunkt auszuwählen."
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Einige Wiederherstellungspunkte konnten keiner virtuellen Maschine zugeordnet werden. Öffnen Sie den Workload, um seinen Wiederherstellungspunkt auszuwählen.",
+  "Choose a recovery method, then select a restore point.": "Wählen Sie eine Wiederherstellungsmethode und anschließend einen Wiederherstellungspunkt.",
+  "Files and disks": "Dateien und Festplatten",
+  "Up to {count} VMs": "Bis zu {count} VMs",
+  "Run a VM directly from backup.": "Starten Sie eine VM direkt aus der Sicherung.",
+  "Restore the VM, its disks, and its configuration.": "Stellen Sie die VM einschließlich ihrer Festplatten und Konfiguration wieder her.",
+  "Browse and recover individual files and folders.": "Durchsuchen Sie einzelne Dateien und Ordner und stellen Sie sie wieder her.",
+  "Recover databases from a SQL Server instance.": "Stellen Sie Datenbanken aus einer SQL Server-Instanz wieder her.",
+  "Recover directory objects and their attributes.": "Stellen Sie Verzeichnisobjekte und deren Attribute wieder her.",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "Binden Sie eine gesicherte Festplatte als vSphere First Class Disk ein.",
+  "Expose backup disks through a mount server.": "Stellen Sie Festplatten aus der Sicherung über einen Mount-Server bereit."
 }

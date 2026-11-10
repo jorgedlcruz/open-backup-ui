@@ -4592,5 +4592,15 @@
   "VBR could not check the recovery options for this source.": "VBR could not check the recovery options for this source.",
   "VBR may have received this batch. Check its status before starting another recovery.": "VBR may have received this batch. Check its status before starting another recovery.",
   "{count} virtual machines": "{count} virtual machines",
-  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point."
+  "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.": "Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.",
+  "Choose a recovery method, then select a restore point.": "Choose a recovery method, then select a restore point.",
+  "Files and disks": "Files and disks",
+  "Up to {count} VMs": "Up to {count} VMs",
+  "Run a VM directly from backup.": "Run a VM directly from backup.",
+  "Restore the VM, its disks, and its configuration.": "Restore the VM, its disks, and its configuration.",
+  "Browse and recover individual files and folders.": "Browse and recover individual files and folders.",
+  "Recover databases from a SQL Server instance.": "Recover databases from a SQL Server instance.",
+  "Recover directory objects and their attributes.": "Recover directory objects and their attributes.",
+  "Mount a backed-up disk as a vSphere First Class Disk.": "Mount a backed-up disk as a vSphere First Class Disk.",
+  "Expose backup disks through a mount server.": "Expose backup disks through a mount server."
 }
