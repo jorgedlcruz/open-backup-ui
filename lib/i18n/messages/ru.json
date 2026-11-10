@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "Эта форма восстановления устарела. Перед запуском обновите Центр восстановления.",
   "Computers": "Компьютеры",
   "The workload list expired. Refresh it to continue.": "Срок действия списка рабочих нагрузок истёк. Обновите его, чтобы продолжить.",
-  "Default": "По умолчанию"
+  "Default": "По умолчанию",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "Если имя уже существует, VBR добавит {suffix} в конец имени восстановленной копии.",
+  "Replace matching files and folders with the versions from the backup.": "Заменить одноимённые файлы и папки версиями из резервной копии.",
+  "Choose a saved account that can write to the original guest.": "Выберите сохранённую учётную запись с правом записи в исходной гостевой системе.",
+  "VBR needs a folder on the original guest for these items.": "Для этих элементов VBR требуется папка в исходной гостевой системе.",
+  "Choose a saved credential compatible with this guest.": "Выберите сохранённые учётные данные, совместимые с этой гостевой системой.",
+  "VBR could not verify the guest restore destination.": "VBR не удалось проверить место восстановления в гостевой системе.",
+  "The target path requirement changed. Review the restore destination again.": "Требования к целевому пути изменились. Проверьте место восстановления ещё раз.",
+  "VBR could not validate the target guest credentials.": "VBR не удалось проверить учётные данные целевой гостевой системы."
 }

@@ -59,7 +59,7 @@ import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLice
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
 import type {BatchInput,BatchReceipt} from '../restore-points/batch';
-import type { GuestDirectory, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
+import type { GuestDirectory, GuestRestoreChallenge, GuestRestoreCheck, GuestRestorePlan, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
 
 interface TokenResponse {
   access_token: string;
@@ -928,6 +928,14 @@ export class VeeamApiClient {
     return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(request) });
   }
 
+  guestRestoreCheck(plan: GuestRestorePlan, signal?: AbortSignal): Promise<GuestRestoreCheck> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ ...plan, action: 'validateRestore' }) });
+  }
+
+  restoreGuestFiles(plan: GuestRestorePlan): Promise<GuestTask | GuestRestoreChallenge> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify({ ...plan, action: 'restore' }) });
+  }
+
   startGuestSearch(sessionId: string, sourceKey: string, path: string, query: string, recursive: boolean): Promise<GuestSearch> {
     return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify({ action: 'search', sessionId, sourceKey, path, query, recursive }) });
   }
@@ -974,8 +982,8 @@ export class VeeamApiClient {
     return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'credentials', sessionId, sourceKey }) });
   }
 
-  guestTask(sessionId: string, sourceKey: string, taskId: string, signal?: AbortSignal): Promise<GuestTask> {
-    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'task', sessionId, sourceKey, taskId }) });
+  guestTask(sessionId: string, sourceKey: string, taskId: string, signal?: AbortSignal, restoreKey?: string): Promise<GuestTask> {
+    return this.request('/restore/files', { apiPrefix: '/api/vbr', method: 'POST', signal, body: JSON.stringify({ action: 'task', sessionId, sourceKey, taskId, restoreKey }) });
   }
 
   async getVBRRestorePoints(params: { objectId?: string; backupId?: string }): Promise<import('@/lib/restore-points/model').RestorePoint[]> {

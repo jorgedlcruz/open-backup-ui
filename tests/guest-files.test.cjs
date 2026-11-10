@@ -13,6 +13,96 @@ const sessionId = '11111111-1111-4111-8111-111111111111'
 const taskId = '22222222-2222-4222-8222-222222222222'
 const key = 'a-test-signing-key'
 
+test('Windows Keep and Linux Overwrite use native guest paths, validate defaults, and only submit after review', async()=>{
+  const {guestItemPath}=require('../lib/restore-points/workflow.ts')
+  for(const [type,restoreType,location,name,separator,expected] of [
+    ['Windows','Keep','?\\Volume{42}\\reports','Q1 & Q2.txt','\\','\\\\?\\Volume{42}\\reports\\Q1 & Q2.txt'],
+    ['Linux','Overwrite','/srv/data','Résumé 2026.txt','/','/srv/data/Résumé 2026.txt'],
+  ]){
+    const calls=[],paths=[guestItemPath({location,name,type:'File'},{path:'',pathSeparator:separator}),type==='Windows'?'D:\\second.txt':'/etc/hosts']
+    assert.equal(paths[0],expected)
+    const base='/api/v1/backupBrowser/flr/'+sessionId,native='/api/v1/restore/flr/'+sessionId
+    const send=async(path,opts)=>{
+      calls.push({path,opts})
+      if(path===base)return {sessionId,type}
+      if(path===native+'/validateCredentials')return {isSuccessful:true,message:'',credentialsId:taskId}
+      if(path===native+'/validateRestoreItemTargetPath')return {isTargetPathNeeded:false,targetPath:''}
+      if(path===base+'/restore')return {id:taskId,type:'FlrRestore',name:'Restore',state:'Starting',result:'None',progressPercent:0}
+      if(path==='/api/v1/tasks/'+taskId)return {id:taskId,type:'FlrRestore',name:'Restore',state:'Stopped',result:'Failed',progressPercent:100,
+        logs:{records:[{status:'Succeeded',title:'Preparations finished'},{status:'Failed',description:'Native guest write failure'}]}}
+      throw Error('unexpected '+path)
+    }
+    const run=(action,extra={},scope='source-and-principal')=>guestFiles(send,sourceKey,filesSchema.parse({action,sourceKey,sessionId,sourcePaths:paths,restoreType,...extra}),key,scope)
+    assert.deepEqual(await run('validateRestore'),{status:'ready'})
+    const task=await run('restore')
+    assert.deepEqual(calls.map(r=>r.path),[base,native+'/validateCredentials',native+'/validateRestoreItemTargetPath',base,native+'/validateCredentials',native+'/validateRestoreItemTargetPath',base+'/restore'])
+    assert.deepEqual(calls[1].opts,{method:'POST',body:{restoreMode:'OriginalLocation'}})
+    assert.deepEqual(calls[2].opts,{method:'POST',body:{isRestoreToOriginal:true,itemPath:expected}})
+    assert.deepEqual(calls[6].opts,{method:'POST',mutation:true,body:{sourcePath:paths,restoreType}})
+    assert.equal(calls.filter(r=>r.opts?.mutation).length,1)
+    assert.ok(task.restoreKey)
+    assert.equal((await run('task',{taskId,restoreKey:task.restoreKey})).message,'Native guest write failure')
+    assert.equal((await run('task',{taskId})).message,undefined)
+    await assert.rejects(run('task',{taskId,restoreKey:task.restoreKey},'another-account'),e=>e.status===409)
+    await assert.rejects(run('task',{sessionId:taskId,taskId,restoreKey:task.restoreKey}),e=>e.status===409)
+  }
+})
+
+test('a rejected guest credential or a changed path challenges before any final mutation; selected credential and confirmed directory are used',async()=>{
+  const credId='33333333-3333-4333-8333-333333333333',otherId='44444444-4444-4444-8444-444444444444'
+  const pointId='55555555-5555-4555-8555-555555555555'
+  const calls=[],native='/api/v1/restore/flr/'+sessionId,base='/api/v1/backupBrowser/flr/'+sessionId
+  let credentialType='Linux',changed=false
+  const send=async(path,opts)=>{
+    calls.push({path,opts})
+    if(path===base)return {sessionId,type:'Windows',restorePointId:pointId}
+    if(path==='/api/v1/restorePoints/'+pointId)return {id:pointId,guestOsFamily:'Linux'}
+    if(path.startsWith('/api/v1/credentials?'))return {data:[
+      {id:credId,type:'Linux',username:'ssh-user'},{id:otherId,type:'Standard',username:'windows-user'}],pagination:{skip:0,total:2}}
+    if(path==='/api/v1/credentials/'+credId)return {id:credId,type:credentialType,username:'ssh-user'}
+    if(path===native+'/validateCredentials')return {isSuccessful:opts.body.credentialsId===credId,message:'VBR guest logon failed',credentialsId:null}
+    if(path===native+'/validateRestoreItemTargetPath')return {isTargetPathNeeded:!changed&&opts.body.itemPath.includes('renamed'),targetPath:'/mnt/target'}
+    if(path===base+'/restore')return {id:taskId,type:'FlrRestore',state:'Starting',result:'None',progressPercent:0,name:'Restore'}
+    throw Error('unexpected '+path)
+  }
+  const run=(action,extra={})=>guestFiles(send,sourceKey,filesSchema.parse({sessionId,sourceKey,sourcePaths:['/etc/hosts'],restoreType:'Overwrite',action,...extra}),key)
+  assert.deepEqual(await run('restore'),{status:'credentialsRequired',message:'VBR guest logon failed'})
+  assert.deepEqual(await run('credentials'),{credentials:[{id:credId,name:'ssh-user'}]})
+  credentialType='ManagedService'
+  assert.equal((await run('restore',{credentialsId:credId})).status,'credentialsRequired')
+  credentialType='Linux'
+  assert.deepEqual(await run('validateRestore',{credentialsId:credId}),{status:'ready'})
+  // Changing the selection after the ready response must recheck the submitted paths.
+  const plan={sourcePaths:['/renamed','/etc/hosts'],credentialsId:credId}
+  assert.deepEqual(await run('restore',plan),{status:'targetPathRequired',targetPath:'/mnt/target'})
+  assert.equal(calls.filter(r=>r.opts?.mutation).length,0)
+  changed=true
+  await assert.rejects(run('restore',{...plan,targetPath:'/approved'}),e=>e.status===409&&!e.uncertain)
+  assert.equal(calls.filter(r=>r.opts?.mutation).length,0)
+  changed=false
+  await run('restore',{...plan,targetPath:'/approved'})
+  assert.deepEqual(calls.at(-1),{path:base+'/restore',opts:{method:'POST',mutation:true,body:{sourcePath:plan.sourcePaths,restoreType:'Overwrite',credentialsId:credId,targetPath:'/approved'}}})
+  assert.equal(calls.filter(r=>r.opts?.mutation).length,1)
+})
+
+test('Windows guest credentials on Linux mounts exclude gMSA; failed or unreadable preflights do not submit',async()=>{
+  const pointId='55555555-5555-4555-8555-555555555555'
+  let mode='path',guest='Windows',mountType='Linux'
+  const send=async(path,opts)=>{
+    assert.ok(!opts?.mutation)
+    if(path.endsWith('/validateCredentials'))return mode==='credentials'?{ok:true}:{isSuccessful:true}
+    if(path.endsWith('/validateRestoreItemTargetPath'))return {ok:true}
+    if(path.includes('/restorePoints/'))return {id:pointId,guestOsFamily:guest}
+    if(path.includes('/credentials?'))return {data:[{id:taskId,type:'Standard'},{id:sessionId,type:'ManagedService'}],pagination:{skip:0,total:2}}
+    return {sessionId,type:mountType,restorePointId:pointId}
+  }
+  const run=action=>guestFiles(send,sourceKey,filesSchema.parse({sessionId,sourceKey,sourcePaths:['C:\\report.txt'],restoreType:'Keep',action}),key)
+  assert.equal((await run('credentials')).credentials.length,1)
+  mountType='Windows';assert.equal((await run('credentials')).credentials.length,2)
+  await assert.rejects(run('restore'),e=>e.status===502&&!e.uncertain)
+  mode='credentials';await assert.rejects(run('restore'),e=>e.status===502&&!e.uncertain)
+})
+
 test('asynchronous search tracks the returned VBR task, pages scoped results, and stops only its own task', async () => {
   const calls = []
   const searchTask = { id: taskId, type: 'FlrSearch', state: 'Working', result: 'None', progressPercent: 25, name: 'Find documents' }
@@ -120,4 +210,12 @@ test('reopening a cart preserves the destination and requires explicit review of
   const accepted = { ...receipt, phase: 'accepted' }
   assert.equal(guestRestoreBusy({ cart, restore: accepted, task: { id: taskId, state: 'Working' } }), true)
   assert.equal(guestRestoreBusy({ cart, restore: accepted, task: { id: taskId, state: 'Stopped', result: 'Success' } }), false)
+})
+
+test('guest cart refresh keeps the exact failed task, scoped key, and provider explanation', () => {
+  const receipt = { phase: 'accepted', count: 2, policy: 'Overwrite' }
+  const task = { id: taskId, state: 'Stopped', result: 'Failed', progressPercent: 12, message: 'Disk full on mounted guest.', restoreKey: 'scoped-flr-task' }
+  assert.deepEqual(readWorkspace(JSON.stringify({ cart: [], restore: receipt, task })), { cart: [], restore: receipt, task })
+  const legacy = { id: taskId, state: 'Working', progressPercent: 5 }
+  assert.deepEqual(readWorkspace(JSON.stringify({ cart: [], task: legacy })).task, legacy)
 })

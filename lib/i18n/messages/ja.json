@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "この復元フォームは古くなっています。開始する前にリカバリ センターを更新してください。",
   "Computers": "コンピューター",
   "The workload list expired. Refresh it to continue.": "ワークロード一覧の有効期限が切れました。一覧を更新して続行してください。",
-  "Default": "既定"
+  "Default": "既定",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "同じ名前が既に存在する場合、VBR は復元するコピーの名前の末尾に {suffix} を追加します。",
+  "Replace matching files and folders with the versions from the backup.": "同名のファイルとフォルダーをバックアップ内のバージョンで置き換えます。",
+  "Choose a saved account that can write to the original guest.": "元のゲスト OS への書き込み権限がある保存済みアカウントを選択してください。",
+  "VBR needs a folder on the original guest for these items.": "これらの項目を格納するため、元のゲスト OS のフォルダーを指定してください。",
+  "Choose a saved credential compatible with this guest.": "このゲスト OS に対応する保存済みの認証情報を選択してください。",
+  "VBR could not verify the guest restore destination.": "VBR はゲスト OS の復元先を確認できませんでした。",
+  "The target path requirement changed. Review the restore destination again.": "復元先パスの要件が変わりました。復元先を再度確認してください。",
+  "VBR could not validate the target guest credentials.": "VBR は復元先ゲスト OS の認証情報を検証できませんでした。"
 }

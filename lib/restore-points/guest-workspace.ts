@@ -4,7 +4,7 @@ import type { GuestSearch, GuestTask, GuestDownload } from './workflow'
 
 const cartEntry = z.object({ path: z.string().min(1).max(32767), type: z.enum(['Folder', 'File', 'Link']) })
 export type CartEntry = z.infer<typeof cartEntry>
-const task = z.object({ id: z.string().uuid(), state: z.string().optional(), result: z.string().optional(), progressPercent: z.number().optional() })
+const task = z.object({ id: z.string().uuid(), state: z.string().optional(), result: z.string().optional(), message: z.string().optional(), progressPercent: z.number().optional() })
 const search = task.extend({ searchKey: z.string().min(1), query: z.string().min(1), path: z.string(), recursive: z.boolean() })
 const restoreReceipt = z.object({
   phase: z.enum(['sending', 'unconfirmed', 'accepted']), count: z.number().int().positive(),
@@ -16,7 +16,7 @@ export const workspaceKey = (source: string, mount: string) => `vbr.guest-files.
 
 export function readWorkspace(value: string | null): GuestWorkspace {
   try {
-    const model = z.object({ path: z.string().max(32767).optional(), cart: z.array(cartEntry), task: task.optional(), search: search.optional(), restore: restoreReceipt.optional(),
+    const model = z.object({ path: z.string().max(32767).optional(), cart: z.array(cartEntry), task: task.extend({ restoreKey: z.string().optional() }).optional(), search: search.optional(), restore: restoreReceipt.optional(),
       download: task.extend({ downloadKey: z.string().min(1), count: z.number().int().positive().optional(), bearerOnly: z.boolean().optional() }).optional() })
     const workspace = model.parse(JSON.parse(value || '{}'))
     if (workspace.restore?.phase === 'sending') workspace.restore.phase = 'unconfirmed'

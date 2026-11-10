@@ -142,6 +142,10 @@ export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'):
     case 'Choose saved Linux SSH credentials for the original host and try again.':
     case 'Select a Linux mount host.':
     case 'Review the selected Linux mount host and credentials.':
+    case 'Choose a saved credential compatible with this guest.':
+    case 'VBR could not verify the guest restore destination.':
+    case 'The target path requirement changed. Review the restore destination again.':
+    case 'VBR could not validate the target guest credentials.':
     case 'Choose one recovery method for the batch.':
     case 'Choose one restore point per virtual machine.':
     case 'Confirm the original VM location before starting this recovery.':

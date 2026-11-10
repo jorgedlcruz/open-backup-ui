@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "Este formulário de recuperação está desatualizado. Atualize o Centro de recuperação antes de começar.",
   "Computers": "Computadores",
   "The workload list expired. Refresh it to continue.": "A lista de cargas de trabalho expirou. Atualize-a para continuar.",
-  "Default": "Padrão"
+  "Default": "Padrão",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "Se o nome já existir, o VBR acrescentará {suffix} ao nome da cópia restaurada.",
+  "Replace matching files and folders with the versions from the backup.": "Substitua os arquivos e as pastas de mesmo nome pelas versões do backup.",
+  "Choose a saved account that can write to the original guest.": "Escolha uma conta salva com permissão de gravação no sistema convidado original.",
+  "VBR needs a folder on the original guest for these items.": "O VBR precisa de uma pasta no sistema convidado original para esses itens.",
+  "Choose a saved credential compatible with this guest.": "Escolha uma credencial salva compatível com este sistema convidado.",
+  "VBR could not verify the guest restore destination.": "O VBR não conseguiu verificar o destino da restauração no sistema convidado.",
+  "The target path requirement changed. Review the restore destination again.": "Os requisitos do caminho de destino mudaram. Verifique novamente o destino da restauração.",
+  "VBR could not validate the target guest credentials.": "O VBR não conseguiu validar as credenciais do sistema convidado de destino."
 }

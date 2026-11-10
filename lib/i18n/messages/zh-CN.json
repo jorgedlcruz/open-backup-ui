@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "此恢复表单已过期。请先刷新恢复中心，然后再开始。",
   "Computers": "计算机",
   "The workload list expired. Refresh it to continue.": "工作负载列表已过期。请刷新列表以继续。",
-  "Default": "默认"
+  "Default": "默认",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "如果已存在同名项目，VBR 会在还原副本的名称末尾添加 {suffix}。",
+  "Replace matching files and folders with the versions from the backup.": "使用备份中的版本替换同名文件和文件夹。",
+  "Choose a saved account that can write to the original guest.": "请选择对原始客户机系统具有写入权限的已保存帐户。",
+  "VBR needs a folder on the original guest for these items.": "VBR 需要原始客户机系统上的一个文件夹来存放这些项目。",
+  "Choose a saved credential compatible with this guest.": "请选择与此客户机系统兼容的已保存凭据。",
+  "VBR could not verify the guest restore destination.": "VBR 无法验证客户机系统上的还原目标。",
+  "The target path requirement changed. Review the restore destination again.": "目标路径要求已更改。请重新检查还原目标。",
+  "VBR could not validate the target guest credentials.": "VBR 无法验证目标客户机系统的凭据。"
 }

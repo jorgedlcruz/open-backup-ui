@@ -198,6 +198,7 @@ test('guest file browse and restore use the selected mount and original-guest pa
     calls.push({ path, ...options })
     if (path.endsWith('/browse')) return { path: '/', items: [] }
     if (path.endsWith('/validateCredentials')) return { isSuccessful: true }
+    if (path.endsWith('/validateRestoreItemTargetPath')) return { isTargetPathNeeded: false, targetPath: '' }
     if (path.endsWith('/restore')) return { id: pointId, type: 'FlrRestore', state: 'Starting', name: 'Restore files', progressPercent: 0, result: 'None' }
     return { sessionId, type: 'Linux', properties: { pathSeparator: '/' } }
   }

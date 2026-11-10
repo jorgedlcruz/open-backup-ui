@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "This recovery form is out of date. Refresh Recovery Center before starting.",
   "Computers": "Computers",
   "The workload list expired. Refresh it to continue.": "The workload list expired. Refresh it to continue.",
-  "Default": "Default"
+  "Default": "Default",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "If a name already exists, VBR adds {suffix} to the restored copy.",
+  "Replace matching files and folders with the versions from the backup.": "Replace matching files and folders with the versions from the backup.",
+  "Choose a saved account that can write to the original guest.": "Choose a saved account that can write to the original guest.",
+  "VBR needs a folder on the original guest for these items.": "VBR needs a folder on the original guest for these items.",
+  "Choose a saved credential compatible with this guest.": "Choose a saved credential compatible with this guest.",
+  "VBR could not verify the guest restore destination.": "VBR could not verify the guest restore destination.",
+  "The target path requirement changed. Review the restore destination again.": "The target path requirement changed. Review the restore destination again.",
+  "VBR could not validate the target guest credentials.": "VBR could not validate the target guest credentials."
 }

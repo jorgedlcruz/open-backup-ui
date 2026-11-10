@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "이 복구 양식은 오래되었습니다. 시작하기 전에 복구 센터를 새로 고치세요.",
   "Computers": "컴퓨터",
   "The workload list expired. Refresh it to continue.": "워크로드 목록이 만료되었습니다. 목록을 새로 고친 후 계속하세요.",
-  "Default": "기본값"
+  "Default": "기본값",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "같은 이름이 이미 있으면 VBR이 복원된 사본 이름 끝에 {suffix}을(를) 추가합니다.",
+  "Replace matching files and folders with the versions from the backup.": "이름이 같은 파일과 폴더를 백업에 있는 버전으로 바꿉니다.",
+  "Choose a saved account that can write to the original guest.": "원래 게스트 시스템에 쓸 수 있는 저장된 계정을 선택하세요.",
+  "VBR needs a folder on the original guest for these items.": "이 항목을 복원하려면 원래 게스트 시스템의 폴더를 지정하세요.",
+  "Choose a saved credential compatible with this guest.": "이 게스트 시스템과 호환되는 저장된 자격 증명을 선택하세요.",
+  "VBR could not verify the guest restore destination.": "VBR에서 게스트 시스템의 복원 대상을 확인할 수 없습니다.",
+  "The target path requirement changed. Review the restore destination again.": "대상 경로 요구 사항이 변경되었습니다. 복원 대상을 다시 검토하세요.",
+  "VBR could not validate the target guest credentials.": "VBR에서 대상 게스트 시스템의 자격 증명을 확인할 수 없습니다."
 }

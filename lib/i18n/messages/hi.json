@@ -4768,5 +4768,13 @@
   "This recovery form is out of date. Refresh Recovery Center before starting.": "यह पुनर्प्राप्ति फ़ॉर्म पुराना हो गया है। शुरू करने से पहले पुनर्प्राप्ति केंद्र रीफ़्रेश करें।",
   "Computers": "कंप्यूटर",
   "The workload list expired. Refresh it to continue.": "वर्कलोड की सूची की अवधि समाप्त हो गई है। जारी रखने के लिए इसे रीफ़्रेश करें।",
-  "Default": "डिफ़ॉल्ट"
+  "Default": "डिफ़ॉल्ट",
+  "If a name already exists, VBR adds {suffix} to the restored copy.": "यदि इस नाम की फ़ाइल या फ़ोल्डर पहले से मौजूद है, तो VBR पुनर्स्थापित प्रति के नाम के अंत में {suffix} जोड़ता है।",
+  "Replace matching files and folders with the versions from the backup.": "समान नाम वाली फ़ाइलों और फ़ोल्डरों को बैकअप वाले संस्करणों से बदलें।",
+  "Choose a saved account that can write to the original guest.": "ऐसा सहेजा गया खाता चुनें जिसे मूल गेस्ट सिस्टम पर लिखने की अनुमति हो।",
+  "VBR needs a folder on the original guest for these items.": "इन आइटमों के लिए VBR को मूल गेस्ट सिस्टम पर एक फ़ोल्डर चाहिए।",
+  "Choose a saved credential compatible with this guest.": "इस गेस्ट सिस्टम के अनुकूल सहेजे गए क्रेडेंशियल चुनें।",
+  "VBR could not verify the guest restore destination.": "VBR गेस्ट सिस्टम पर पुनर्स्थापना के गंतव्य की पुष्टि नहीं कर सका।",
+  "The target path requirement changed. Review the restore destination again.": "गंतव्य पथ की आवश्यकता बदल गई है। पुनर्स्थापना का गंतव्य फिर से जाँचें।",
+  "VBR could not validate the target guest credentials.": "VBR लक्ष्य गेस्ट सिस्टम के क्रेडेंशियल सत्यापित नहीं कर सका।"
 }

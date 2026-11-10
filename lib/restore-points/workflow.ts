@@ -90,7 +90,10 @@ export type GuestRestoreRequest = {
   sourcePaths?: string[]; restoreType?: 'Keep' | 'Overwrite' | 'PermissionOnly'
   targetPath?: string; targetHost?: RestoreInventoryItem; credentialsId?: string
 }
-export type GuestTask = { id?: string; state?: string; result?: string; progressPercent?: number }
+export type GuestRestorePlan = Omit<GuestRestoreRequest, 'action'>
+export type GuestRestoreChallenge = { status: 'credentialsRequired'; message?: string } | { status: 'targetPathRequired'; targetPath: string }
+export type GuestRestoreCheck = GuestRestoreChallenge | { status: 'ready' }
+export type GuestTask = { id?: string; state?: string; result?: string; progressPercent?: number; message?: string; restoreKey?: string }
 export type GuestSearch = GuestTask & { id: string; searchKey: string }
 export type GuestDownload = GuestTask & { id: string; downloadKey: string; count?: number; bearerOnly?: boolean }
 
@@ -98,8 +101,11 @@ export const uncertainRestore = (error: unknown) => error instanceof TypeError |
   (error instanceof Error && 'uncertain' in error && error.uncertain === true)
 
 export function guestItemPath(item: GuestFile, directory: GuestDirectory) {
-  const parent = item.location || directory.path
   const separator = directory.pathSeparator
+  const location = item.location || directory.path
+  // VBR's Windows FLR listing can omit the two leading slashes from a
+  // Win32 volume namespace. The native browser restores the full guest path.
+  const parent = separator === '\\' && location.startsWith('?\\') ? '\\\\' + location : location
   if (item.type === 'Drive' || !parent) {
     return item.type === 'Drive' && /^[a-z]:$/i.test(item.name) ? item.name + separator : item.name
   }
