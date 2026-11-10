@@ -1,8 +1,8 @@
 'use client'
 // Open Backup UI v1.2.0
 
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { ChevronRight, FileText, Folder, FolderTree, GitCompareArrows, ListPlus, Network, Search, ShoppingCart, X } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react'
+import { ChevronRight, FileOutput, FileText, Folder, FolderTree, GitCompareArrows, Info, ListPlus, Network, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { adParent, adRequest, type AdEntry, type AdPage, type AdScope, type AdWorkflow } from '@/lib/restore-points/ad-client'
@@ -12,13 +12,16 @@ import { RecoverySignal } from './recovery-signal'
 import { DirectoryWorkflow } from './active-directory-workflow'
 import {DirectoryCart} from './active-directory-cart'
 import {DirectoryComparison} from './active-directory-compare'
+import { DirectoryNavigation, directoryPathKey } from './active-directory-navigation'
+import browse from './sql-browse-workspace.module.css'
 import styles from './active-directory.module.css'
 
 const limit = 40
 
-function DirectoryPage({scope, view, parent, search, recursive, ldap, revision, selected, onSelect, onPageSelect, open}: {
+function DirectoryPage({scope, view, parent, search, recursive, ldap, revision, selected, onSelect, onPageSelect, open, branchKey, onBranchPage}: {
   scope:AdScope; view:'domains'|'containers'|'items'|'attributes'; parent?:AdEntry; search?:string; recursive?:boolean; ldap?:boolean
   revision:number; selected?:AdEntry[]; onSelect?:(row:AdEntry)=>void; onPageSelect?:(rows:AdEntry[],add:boolean)=>void; open?:(row:AdEntry)=>void
+  branchKey?:string; onBranchPage?:(key:string,rows:AdEntry[])=>void
 }) {
   const {t,formatNumber,diagnostic}=useRecoveryPresentation()
   const [skip,setSkip]=useState(0),[page,setPage]=useState<AdPage>(),[error,setError]=useState('')
@@ -27,9 +30,13 @@ function DirectoryPage({scope, view, parent, search, recursive, ldap, revision, 
     const controller=new AbortController()
     setPage(undefined);setError('')
     adRequest<AdPage>({action:'browse',sourceKey,sessionId,view,parent:adParent(parent),query:search||undefined,ldap,recurse:recursive,skip,limit},controller.signal)
-      .then(next=>{if(!controller.signal.aborted)setPage(next)}).catch(err=>{if(!controller.signal.aborted)setError(err.message)})
+      .then(next=>{
+        if(controller.signal.aborted)return
+        setPage(next)
+        if(branchKey)onBranchPage?.(branchKey,next.items)
+      }).catch(err=>{if(!controller.signal.aborted)setError(err.message)})
     return ()=>controller.abort()
-  },[sourceKey,sessionId,view,parent,search,ldap,recursive,skip,revision])
+  },[sourceKey,sessionId,view,parent,search,ldap,recursive,skip,revision,branchKey,onBranchPage])
   if(error)return <p role="alert" className={styles.error}>{diagnostic(error)}</p>
   if(!page)return <RecoverySignal stage="data" compact status={t('Loading…')}/>
   if(!page.items.length)return <p className={styles.empty}>{t('No results')}</p>
@@ -64,6 +71,9 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
   const {t,diagnostic,formatNumber}=useRecoveryPresentation()
   const scope={sourceKey,sessionId}
   const [path,setPath]=useState<AdEntry[]>([]),[selected,setSelected]=useState<AdEntry[]>([]),[inspect,setInspect]=useState<AdEntry>()
+  const branchKey=directoryPathKey(path)
+  const [branches,setBranches]=useState(() => new Map<string,AdEntry[]>())
+  const selectionId=useId()
   const [cart,setCart]=useState<AdEntry[]>([]),[cartOpen,setCartOpen]=useState(false),[compare,setCompare]=useState<AdEntry>()
   const [cartReady,setCartReady]=useState(false)
   const [input,setInput]=useState(''),[query,setQuery]=useState({text:'',ldap:false,recursive:false}),[advanced,setAdvanced]=useState(false),[subtree,setSubtree]=useState(true)
@@ -87,7 +97,18 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
     document.addEventListener('visibilitychange',pulse)
     return ()=>{controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',pulse)}
   },[closed,sessionId,sourceKey])
-  function navigate(next:AdEntry[]) {setPath(next);setInput('');setQuery({text:'',ldap:false,recursive:false});setSelected([]);setMessage('')}
+  const rememberPage=useCallback((key:string,rows:AdEntry[])=>{
+    setBranches(previous=>new Map(previous).set(key,rows))
+  },[])
+  function navigate(next:AdEntry[]) {
+    const ancestors = new Set([directoryPathKey([]), ...next.map((_, index) => directoryPathKey(next.slice(0,index+1)))])
+    setBranches(previous => new Map([...previous].filter(([key]) => ancestors.has(key))))
+    setPath(next)
+    setInput('')
+    setQuery({text:'',ldap:false,recursive:false})
+    setSelected([])
+    setMessage('')
+  }
   function select(row:AdEntry) {setSelected(prior=>prior.some(item=>item.dnt===row.dnt)?prior.filter(item=>item.dnt!==row.dnt):[...prior,row])}
   function pageSelect(rows:AdEntry[],add:boolean){setSelected(prior=>add?mergeDirectoryItems(prior,rows):prior.filter(p=>!rows.some(r=>r.dnt===p.dnt)))}
   async function launch(intent:'restore'|'export'|'finish',fromCart=false){
@@ -105,47 +126,75 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
     finally{latch.current=false;setBusy(false)}
   }
   if(closed)return <p role="status" className={styles.feedback}>{t('The directory browsing session has ended.')}</p>
-  const location=path.map(node=>node.id).join('/')+JSON.stringify(query)
+  const location=branchKey+JSON.stringify(query)
   const selectionCount=selected.length,locked=busy||unconfirmed||!selectionCount||selectionCount>adCartLimit
   const union=mergeDirectoryItems(cart,selected)
   const one=selected.length===1?selected[0]:undefined
   return <section className={styles.explorer} aria-label={t('Microsoft Active Directory')}>
-    <div className={styles.header}><h3><FolderTree size={19}/>{t('Microsoft Active Directory')}</h3>
-      <div className={styles.toolbar}><Button size="sm" variant="outline" disabled={!cartReady} onClick={()=>setCartOpen(true)}><ShoppingCart size={15}/>{t('Recovery cart')} <span>{formatNumber(cart.length)}</span></Button>
-        <Button size="sm" variant="outline" onClick={()=>setRevision(n=>n+1)}>{t('Refresh')}</Button>
-        {showFinish&&<Button size="sm" variant="outline" disabled={busy||unconfirmed} onClick={()=>setFinish(true)}><X size={15}/>{t('End browsing')}</Button>}</div></div>
+    <header className={styles.commandBar}>
+      <div className={styles.commandHeading}>
+        <h3><FolderTree size={18} aria-hidden/>{t('Microsoft Active Directory')}</h3>
+        <Button size="icon-sm" variant="ghost" type="button" aria-label={t('Refresh')} title={t('Refresh')} onClick={()=>setRevision(n=>n+1)}><RefreshCw size={15}/></Button>
+        {showFinish&&<Button size="sm" variant="outline" disabled={busy||unconfirmed} onClick={()=>setFinish(true)}><X size={15}/>{t('End browsing')}</Button>}
+      </div>
+      <div className={styles.commandButtons} role="group" aria-label={t('Directory object actions')}>
+        <Button size="sm" variant="outline" disabled={locked} aria-describedby={selectionId} onClick={()=>void launch('restore')}><RotateCcw/>{t('Restore')}</Button>
+        <Button size="sm" variant="outline" disabled={locked} aria-describedby={selectionId} onClick={()=>void launch('export')}><FileOutput/>{t('Export')}</Button>
+        <Button size="sm" variant="outline" disabled={busy||!one||one.type!=='item'} aria-describedby={selectionId} onClick={()=>setCompare(one)}><GitCompareArrows/>{t('Compare with production')}</Button>
+        <DirectoryCart items={cart} ready={cartReady} open={cartOpen} onOpenChange={setCartOpen} setItems={setCart}
+          busy={busy||unconfirmed} error={error && diagnostic(error)} launch={intent=>void launch(intent,true)}/>
+      </div>
+    </header>
     {error&&<p role="alert" className={styles.error}>{diagnostic(error)}</p>}
     {unconfirmed&&<p role="status">{t('Check Sessions before submitting another request.')}</p>}
     {message&&<p role="status" className={styles.feedback}>{message}</p>}
-    <div className={styles.selection} role="group" aria-label={t('Directory object actions')}>
-      <Button size="sm" disabled={locked} onClick={()=>void launch('restore')}>{t('Restore')}</Button>
-      <Button size="sm" variant="outline" disabled={locked} onClick={()=>void launch('export')}>{t('Export')}</Button>
-      <Button size="sm" variant="outline" disabled={busy||!one||one.type!=='item'} onClick={()=>setCompare(one)}><GitCompareArrows size={15}/>{t('Compare with production')}</Button>
-      <Button size="sm" variant="outline" disabled={busy||!one} onClick={()=>setInspect(one)}>{t('Properties')}</Button>
-      <Button size="sm" variant="outline" disabled={!cartReady||locked||union.length>adCartLimit||union.length===cart.length} onClick={()=>{setCart(union);setSelected([])}}><ListPlus size={15}/>{t('Add to cart')}</Button>
-      <span aria-live="polite">{t('{count} selected',{count:formatNumber(selectionCount)})}</span>
-      {!!selectionCount&&<Button size="sm" variant="ghost" disabled={busy} onClick={()=>setSelected([])}>{t('Clear selection')}</Button>}
-    </div>
     {(selectionCount>adCartLimit||union.length>adCartLimit)&&<p className={styles.quiet}>{t('Select up to {count} directory objects.',{count:formatNumber(adCartLimit)})}</p>}
-    <nav className={styles.crumbs} aria-label={t('Directory location')}><button onClick={()=>navigate([])} aria-current={!parent?'location':undefined}>{t('Domains')}</button>
-      {path.map((node,i)=><Fragment key={node.id}><ChevronRight aria-hidden size={12}/><button aria-current={i===path.length-1?'location':undefined} onClick={()=>navigate(path.slice(0,i+1))}>{node.name}</button></Fragment>)}</nav>
-    {!parent?<DirectoryPage scope={scope} revision={revision} view="domains" open={row=>navigate([row])}/>:
-      <>{parent.type==='container'&&<form className={styles.toolbar} onSubmit={event=>{event.preventDefault();setQuery({text:input.trim(),ldap:advanced,recursive:subtree});setSelected([])}}>
-        <div className={styles.search}><input aria-label={t('Search directory objects')} placeholder={t('Search directory objects')} value={input} onChange={event=>setInput(event.target.value)}/>
-          <Button size="sm" variant="outline" type="submit"><Search size={15}/>{t('Search')}</Button></div>
-        <label><input type="checkbox" checked={subtree} onChange={event=>setSubtree(event.target.checked)}/> {t('Include subcontainers')}</label>
-        <label><input type="checkbox" checked={advanced} onChange={event=>setAdvanced(event.target.checked)}/> {t('LDAP filter')}</label>
-      </form>}
-      {!query.text&&<div className={styles.area}><h4>{t('Containers')}</h4><DirectoryPage key={location+'containers'} scope={scope} revision={revision} view="containers" parent={parent}
-        selected={selected} onSelect={select} onPageSelect={pageSelect} open={row=>navigate([...path,row])}/></div>}
-      {parent.type==='container'&&<div className={styles.area}><h4>{t('Directory objects')}</h4><DirectoryPage key={location+'items'} scope={scope} revision={revision} view="items" parent={parent}
-        search={query.text} ldap={query.ldap} recursive={!!query.text&&query.recursive} selected={selected} onSelect={select} onPageSelect={pageSelect} open={setInspect}/></div>}
-      </>}
+    <div className={browse.workspace}>
+      <DirectoryNavigation path={path} branches={branches} navigate={navigate}/>
+      <div className={styles.directoryGrid}>
+        <div className={styles.gridBar}>
+          <nav className={styles.crumbs} aria-label={t('Directory location')}><button onClick={()=>navigate([])} aria-current={!parent?'location':undefined}>{t('Domains')}</button>
+            {path.map((node,i)=><Fragment key={node.id}><ChevronRight aria-hidden size={12}/><button aria-current={i===path.length-1?'location':undefined} onClick={()=>navigate(path.slice(0,i+1))}>{node.name}</button></Fragment>)}</nav>
+          <span className={styles.count} id={selectionId} aria-live="polite">{t('{count} selected',{count:formatNumber(selectionCount)})}</span>
+        </div>
+        {!!selectionCount && <div className={styles.selection} role="group" aria-label={t('Selected objects')}>
+          <Button size="sm" variant="outline" disabled={!cartReady||locked||union.length>adCartLimit||union.length===cart.length} onClick={()=>{setCart(union);setSelected([])}}><ListPlus size={15}/>{t('Add to cart')}</Button>
+          <Button size="sm" variant="ghost" disabled={busy||!one} onClick={()=>setInspect(one)}><Info size={15}/>{t('Properties')}</Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={()=>setSelected([])}>{t('Clear selection')}</Button>
+        </div>}
+        {!parent ? <DirectoryPage scope={scope} revision={revision} view="domains" branchKey={branchKey}
+          onBranchPage={rememberPage} open={row=>navigate([row])}/> : <>
+          {parent.type==='container' && <form className={styles.toolbar} onSubmit={event=>{
+            event.preventDefault()
+            setQuery({text:input.trim(),ldap:advanced,recursive:subtree})
+            setSelected([])
+          }}>
+            <div className={styles.search}>
+              <input aria-label={t('Search directory objects')} placeholder={t('Search directory objects')} value={input} onChange={event=>setInput(event.target.value)}/>
+              <Button size="sm" variant="outline" type="submit"><Search size={15}/>{t('Search')}</Button>
+            </div>
+            <label><input type="checkbox" checked={subtree} onChange={event=>setSubtree(event.target.checked)}/> {t('Include subcontainers')}</label>
+            <label><input type="checkbox" checked={advanced} onChange={event=>setAdvanced(event.target.checked)}/> {t('LDAP filter')}</label>
+          </form>}
+          {!query.text && <div className={styles.area}>
+            <h4>{t('Containers')}</h4>
+            <DirectoryPage key={location+'containers'} scope={scope} revision={revision} view="containers" parent={parent}
+              branchKey={branchKey} onBranchPage={rememberPage} selected={selected} onSelect={select}
+              onPageSelect={pageSelect} open={row=>navigate([...path,row])}/>
+          </div>}
+          {parent.type==='container' && <div className={styles.area}>
+            <h4>{t('Directory objects')}</h4>
+            <DirectoryPage key={location+'items'} scope={scope} revision={revision} view="items" parent={parent}
+              search={query.text} ldap={query.ldap} recursive={!!query.text&&query.recursive} selected={selected}
+              onSelect={select} onPageSelect={pageSelect} open={setInspect}/>
+          </div>}
+        </>}
+      </div>
+    </div>
     {busy&&<RecoverySignal stage="data" compact status={t('Loading…')}/>}
     {inspect&&<Dialog open onOpenChange={open=>{if(!open)setInspect(undefined)}}><DialogContent className={styles.dialog}><DialogHeader><DialogTitle>{inspect.name}</DialogTitle>
       <DialogDescription>{inspect.description||inspect.itemType||t('Properties')}</DialogDescription></DialogHeader>
       <DirectoryPage scope={scope} revision={revision} view="attributes" parent={inspect}/></DialogContent></Dialog>}
-    {cartOpen&&<DirectoryCart items={cart} close={()=>setCartOpen(false)} remove={item=>setCart(rows=>rows.filter(row=>row.dnt!==item.dnt))} busy={busy||unconfirmed} launch={intent=>void launch(intent,true)}/>}
     {compare&&<DirectoryComparison scope={scope} object={compare} close={()=>setCompare(undefined)}/>}
     {plan&&<DirectoryWorkflow key={plan.workflow.id} scope={scope} workflow={plan.workflow} selected={plan.objects} onClose={()=>setPlan(undefined)}
       onAccepted={result=>{if(plan.fromCart)setCart(rows=>rows.filter(row=>!plan.objects.some(o=>o.dnt===row.dnt)));setSelected([]);setPlan(undefined);setMessage(result);onOperation?.()}}/>}

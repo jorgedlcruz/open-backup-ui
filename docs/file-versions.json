@@ -430,6 +430,7 @@
     "components/restore-points/active-directory-compare.tsx": "1.2.0",
     "components/restore-points/active-directory-explorer.tsx": "1.2.0",
     "components/restore-points/active-directory-launch.tsx": "1.2.0",
+    "components/restore-points/active-directory-navigation.tsx": "1.2.0",
     "components/restore-points/active-directory-workflow.tsx": "1.2.0",
     "components/restore-points/active-directory.module.css": "1.2.0",
     "components/restore-points/agent-volume-recovery-launch.tsx": "1.2.0",
