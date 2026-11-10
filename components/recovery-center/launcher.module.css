@@ -1,0 +1,25 @@
+/* Open Backup UI v1.0.2 */
+.dialog{width:min(94vw,57rem)!important;max-width:57rem!important;max-height:90dvh;overflow-y:auto;align-content:start}
+.body{display:grid;gap:.85rem;min-width:0}
+.kindGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem}
+.kindGrid button,.vmList button{display:flex;align-items:center;gap:.65rem;border:1px solid var(--border);background:color-mix(in srgb,var(--card) 80%,transparent);color:var(--foreground);text-align:start;border-radius:.5rem;padding:.75rem;cursor:pointer;min-width:0}
+.kindGrid button:hover,.vmList button:hover,.vmList button[aria-pressed=true]{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,var(--card))}
+.kindGrid strong,.vmList button span{flex:1;min-width:0;overflow-wrap:anywhere}.kindGrid svg,.vmList svg,.rowHead strong svg{flex:none;color:var(--primary)}
+.picker{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:.9rem;align-items:start}
+.listPane,.selected,.batchFields{min-width:0;display:grid;gap:.65rem;align-content:start}
+.body h3{margin:0;font-size:.95rem;font-weight:650}
+.search,.field input,.field select{border:1px solid var(--border);border-radius:.4rem;background:var(--field-background,var(--card));color:var(--foreground);min-width:0;max-width:100%;padding:.46rem .6rem}
+.search{display:flex;align-items:center;gap:.45rem}.search input{min-width:0;width:100%;background:transparent;color:inherit}
+.vmList{display:grid;gap:.28rem;max-height:42vh;overflow:auto}.vmList button{padding:.5rem .55rem}.vmList strong,.vmList small{display:block}.vmList small,.notice,.chosen p,.chosen small{font-size:.76rem;color:var(--muted-foreground);overflow-wrap:anywhere}
+.chosen{min-width:0;border:1px solid var(--border);border-radius:.55rem;padding:.65rem .75rem;display:grid;gap:.43rem}
+.rowHead,.rowHead strong,.actions,.pager,.flags label{display:flex;align-items:center;gap:.5rem}
+.rowHead{justify-content:space-between}.rowHead strong{overflow-wrap:anywhere;font-size:.85rem}.rowHead button{cursor:pointer}
+.field{display:grid;gap:.32rem;font-size:.8rem;min-width:0}.field select,.field input{width:100%}
+.link{width:fit-content;color:var(--primary);font-size:.78rem;text-decoration:underline;cursor:pointer}
+.grid,.batchItems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.batchFields{border:0;margin:0;padding:0}.flags{display:grid;gap:.4rem;font-size:.8rem}.flags input{accent-color:var(--primary)}
+.warning{font-size:.8rem;color:var(--ops-warning,var(--foreground));overflow-wrap:anywhere}
+.actions,.pager{justify-content:flex-end;flex-wrap:wrap}.actions{padding-top:.6rem;border-top:1px solid var(--border)}.actions>button:first-child,.pager>span{margin-inline-end:auto}
+.older{display:grid;gap:.35rem}
+.reviewFacts{display:grid;gap:.25rem;font-size:.78rem;margin:.3rem 0}.reviewFacts div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:.45rem;align-items:start}.reviewFacts dt{color:var(--muted-foreground)}.reviewFacts dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:680px){.picker,.grid,.batchItems{grid-template-columns:minmax(0,1fr)}.vmList{max-height:11rem}.kindGrid{grid-template-columns:minmax(0,1fr)}.dialog{padding:1rem!important}.selected{border-top:1px solid var(--border);padding-top:.65rem}}

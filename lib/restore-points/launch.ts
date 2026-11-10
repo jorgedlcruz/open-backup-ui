@@ -7,6 +7,7 @@ export const sqlOperation = 'BrowseSql'
 
 export type RestoreLaunch = {
   requestId: string
+  createdAt?: string
   sourceKey: string
   operation: RestoreOperation | typeof activeDirectoryOperation | typeof sqlOperation
   workload: string
@@ -41,11 +42,13 @@ function remember(receipt: RestoreLaunch) {
   if (recent.size > 24) recent.delete(recent.keys().next().value!)
   const entries = storedLaunches().filter(item => item.requestId !== receipt.requestId)
   try { sessionStorage.setItem(storageKey, JSON.stringify([receipt, ...entries].slice(0, 24))) } catch { /* Tab storage can be disabled. */ }
+  // Publish after beginRestoreLaunch has registered the in-flight request.
+  if(typeof window!=='undefined')queueMicrotask(()=>window.dispatchEvent(new Event('restore-launch-change')))
   return receipt
 }
 
 export function beginRestoreLaunch<Draft extends Pick<RestoreLaunch, 'sourceKey' | 'operation'>>(draft: Draft, workload: string, pointTime: string | undefined, start: (draft: Draft) => Promise<RestoreResult>) {
-  const receipt = remember({ requestId: uuid(), sourceKey: draft.sourceKey, operation: draft.operation, workload, pointTime, phase: 'starting' })
+  const receipt = remember({ requestId: uuid(), createdAt:new Date().toISOString(), sourceKey: draft.sourceKey, operation: draft.operation, workload, pointTime, phase: 'starting' })
   // The mutation belongs to the user's submit event. A page mount or refresh only observes its receipt.
   const result = Promise.resolve().then(() => start(draft)).then(response => {
     if (!response.id || !uuidPattern.test(response.id) || response.sourceKey !== draft.sourceKey) {
@@ -64,6 +67,16 @@ export function readRestoreLaunch(requestId: string) {
   // After a hard reload the request may already have reached VBR. Never replay it.
   if (receipt?.phase === 'starting' && !inFlight.has(requestId)) return { ...receipt, phase: 'unknown' as const }
   return receipt
+}
+
+export function recentRestoreLaunches(sourceKey:string,now=Date.now()):RestoreLaunch[] {
+  const ids=new Set([...recent.keys(),...storedLaunches().map(r=>r.requestId)])
+  return [...ids].flatMap(id=>{
+    const row=readRestoreLaunch(id)
+    if(!row||row.sourceKey!==sourceKey||row.phase==='rejected')return []
+    if(row.createdAt&&(!Number.isFinite(Date.parse(row.createdAt))||now-Date.parse(row.createdAt)>86400000))return []
+    return [row]
+  })
 }
 
 export function observeRestoreLaunch(requestId: string) {

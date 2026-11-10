@@ -25,3 +25,12 @@ test('Activity uses the current connection and can open a restore session with a
   await assert.rejects(new VeeamApiClient().requestActivity(path,{method:'POST'}))
   assert.deepEqual(calls,[[path,null]]) // A command is never retried after failure.
 })
+test('Recovery Center reads the standalone source-scoped feed through the authenticated client',async t=>{
+  const paths=[]
+  t.mock.method(global,'fetch',async path=>{paths.push(path);return Response.json({history:[],mounts:[],batches:[]})})
+  const client=new VeeamApiClient(),path='/api/vbr/recovery-center?sourceKey='+'a'.repeat(64)
+  assert.deepEqual((await client.requestActivity(path)).history,[])
+  await assert.rejects(client.requestActivity(path,{method:'POST'}),/Invalid Activity path/)
+  await assert.rejects(client.requestActivity('/api/vbr/recovery-center/other'),/Invalid Activity path/)
+  assert.deepEqual(paths,[path])
+})

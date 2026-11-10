@@ -18,8 +18,9 @@ function Check({ label, value, onChange }: { label: string; value: boolean; onCh
   return <label className={styles.check}><input type="checkbox" checked={value} onChange={event => onChange(event.target.checked)} />{label}</label>
 }
 
-export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, onLaunch }: {
+export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, onLaunch,onDraft,initialDraft,initialServer }: {
   point: RestorePoint; flagged: boolean; sourceKey?: string; operation: RestoreOperation; onBack: () => void; onLaunch: (receipt: RestoreLaunch) => void
+  onDraft?:(draft:RestoreDraft,server?:RestoreInventoryItem)=>void;initialDraft?:RestoreDraft;initialServer?:RestoreInventoryItem
 }) {
   const { t, diagnostic, label } = useRecoveryPresentation()
   const [options, setOptions] = useState<RestoreOptions>()
@@ -41,7 +42,7 @@ export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, 
   if (options) return <>
     {!flagged && isFlagged(options.point.malwareStatus) && <p className={styles.warning} role="alert"><ShieldAlert size={17} />{t('Point malware status')} · {label(options.point.malwareStatus!)}</p>}
     {!!options.warnings?.length && <div role="status">{options.warnings.map(warning => <p key={warning} className={styles.warning}>{diagnostic(warning)}</p>)}</div>}
-    <RestoreForm point={point} flagged={flagged || isFlagged(options.point.malwareStatus)} options={options} operation={operation} onBack={onBack} onLaunch={onLaunch} />
+    <RestoreForm point={point} flagged={flagged || isFlagged(options.point.malwareStatus)} options={options} operation={operation} onBack={onBack} onLaunch={onLaunch} onDraft={onDraft} initialDraft={initialDraft} initialServer={initialServer}/>
   </>
   return <div className={styles.flow}>
     {error ? <p role="alert" className={styles.error}>{diagnostic(error)}</p> : <RecoverySignal stage="options" />}
@@ -50,8 +51,9 @@ export function RestoreWorkflow({ point, flagged, sourceKey, operation, onBack, 
   </div>
 }
 
-function RestoreForm({ point, flagged, options, operation, onBack, onLaunch }: {
+function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDraft,initialDraft,initialServer }: {
   point: RestorePoint; flagged: boolean; options: RestoreOptions; operation: RestoreOperation; onBack: () => void; onLaunch: (receipt: RestoreLaunch) => void
+  onDraft?:(draft:RestoreDraft,server?:RestoreInventoryItem)=>void;initialDraft?:RestoreDraft;initialServer?:RestoreInventoryItem
 }) {
   const { t, label } = useRecoveryPresentation()
   const flr = operation === 'StartFlrRestore'
@@ -65,27 +67,27 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch }: {
   const cloud = operation === 'StartEntireVmRestoreCloudDirector'
   const sourcePlatform = (options.point.platformName || '').toLowerCase()
   const crossPlatform = (instantVi && !['vmware', 'vsphere'].includes(sourcePlatform)) || (operation === 'StartHvVMInstantRecovery' && !['hyperv', 'hyper-v'].includes(sourcePlatform))
-  const [custom, setCustom] = useState(crossPlatform)
-  const [server, setServer] = useState<RestoreInventoryItem>()
-  const [target, setTarget] = useState<RestoreTarget>({vmName: (point.name || 'VM') + '-recovered'})
+  const [custom, setCustom] = useState(crossPlatform||initialDraft?.mode==='Customized')
+  const [server, setServer] = useState<RestoreInventoryItem|undefined>(initialServer)
+  const [target, setTarget] = useState<RestoreTarget>(initialDraft?.target||{vmName: (point.name || 'VM') + '-recovered'})
   const [disks, setDisks] = useState<NonNullable<RestoreDraft['disks']>>([])
   const [allDisks, setAllDisks] = useState(true)
   const [guestOs, setGuestOs] = useState<'Windows' | 'Linux'>(/linux|unix/i.test(options.point.guestOsFamily || '') ? 'Linux' : 'Windows')
   const [mountServer, setMountServer] = useState('')
   const [ips, setIps] = useState('')
-  const [reason, setReason] = useState('')
-  const [powerUp, setPowerUp] = useState(false)
-  const [network, setNetwork] = useState(false)
+  const [reason, setReason] = useState(initialDraft?.reason||'')
+  const [powerUp, setPowerUp] = useState(initialDraft?.powerUp??false)
+  const [network, setNetwork] = useState(initialDraft?.nicsEnabled??false)
   const [credentialsId, setCredentialsId] = useState('')
-  const [tags, setTags] = useState(true)
-  const [overwrite, setOverwrite] = useState(false)
-  const [scan, setScan] = useState(flagged)
-  const [networkMode, setNetworkMode] = useState<NonNullable<RestoreDraft['networkMode']>>('Original')
-  const [mapping, setMapping] = useState<Record<string, RestoreInventoryItem | undefined>>({})
+  const [tags, setTags] = useState(initialDraft?.restoreTags??true)
+  const [overwrite, setOverwrite] = useState(initialDraft?.overwrite??false)
+  const [scan, setScan] = useState(initialDraft?.antivirusScan??flagged)
+  const [networkMode, setNetworkMode] = useState<NonNullable<RestoreDraft['networkMode']>>(initialDraft?.networkMode||'Original')
+  const [mapping, setMapping] = useState<Record<string, RestoreInventoryItem | undefined>>(()=>Object.fromEntries((initialDraft?.networkMappings||[]).map(m=>[m.sourceId,m.target])))
   const canMap = custom && (fullVi || hyperV || (instantVi && crossPlatform))
   const networks = options.networks || []
   const validNetworks = !canMap || networkMode !== 'Mapped' || (networks.length > 0 && networks.every(nic => !!mapping[nic.id] || hyperV))
-  const [rollback, setRollback] = useState(false)
+  const [rollback, setRollback] = useState(initialDraft?.quickRollback??false)
   const canOverwrite = instantVi || fullVi || (hyperV && custom)
   const canRestoreTags = (instantVi && !crossPlatform) || (fullVi && custom)
   const [review, setReview] = useState(false)
@@ -124,6 +126,7 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch }: {
       ...(flr && { guestOs, mountServerId: mountServer || undefined, credentialsId: credentialsId || undefined }),
       ...(publish && { allowedIps: ipList, disks: allDisks ? undefined : disks }),
     }
+    if(onDraft){onDraft(draft,server);return}
     onLaunch(beginRestoreLaunch(draft, options.point.name || point.name || point.id, point.creationTime || undefined, value => veeamApi.startRestore(value)))
   }
 
@@ -216,7 +219,7 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch }: {
     </>}
     <div className={styles.actions}>
       <Button variant="outline" type="button" onClick={() => { if (review) setReview(false); else onBack() }}><ArrowLeft size={14} />{t('Back')}</Button>
-      <Button type="submit" disabled={!valid}>{review ? label(operation) : t('Review')}<ArrowRight size={14} /></Button>
+      <Button type="submit" disabled={!valid}>{review ? onDraft?t('Save VM settings'):label(operation) : t('Review')}<ArrowRight size={14} /></Button>
     </div>
   </form>
 }

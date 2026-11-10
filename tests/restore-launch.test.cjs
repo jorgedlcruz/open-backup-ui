@@ -67,3 +67,19 @@ test('lost responses and mismatched sources remain unconfirmed, while explicit r
     if (phase === 'rejected') assert.equal(result.message, 'The selected target changed.')
   }
 })
+
+test('Recovery Center observes in-flight receipts only for this source and ages out old launches',async t=>{
+  const launch=newTab(),windowBefore=global.window
+  global.window=new EventTarget()
+  t.after(()=>{if(windowBefore===undefined)delete global.window;else global.window=windowBefore})
+  const phases=[]
+  global.window.addEventListener('restore-launch-change',()=>phases.push(launch.recentRestoreLaunches(sourceKey)[0]?.phase))
+  let finish
+  const started=launch.beginRestoreLaunch({sourceKey,operation:'StartFlrRestore'},'test VM',undefined,()=>new Promise(resolve=>{finish=resolve}))
+  await Promise.resolve()
+  assert.deepEqual(phases,['starting'])
+  assert.deepEqual(launch.recentRestoreLaunches('c'.repeat(64)),[])
+  assert.deepEqual(launch.recentRestoreLaunches(sourceKey,Date.parse(started.createdAt)+86400001),[])
+  finish({sourceKey,id});await launch.observeRestoreLaunch(started.requestId)
+  assert.deepEqual(phases,['starting','accepted'])
+})

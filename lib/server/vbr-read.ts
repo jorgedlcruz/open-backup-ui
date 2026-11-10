@@ -10,7 +10,7 @@ import { explorerConnection, explorerPrincipal } from './vbr-explorer'
 import { createHash } from 'node:crypto'
 
 export type VbrRevision = '1.3-rev1' | '1.3-rev2'
-export type VbrReader = (path: string, revision?: VbrRevision) => Promise<unknown>
+export type VbrReader = (path: string, revision?: VbrRevision, signal?:AbortSignal) => Promise<unknown>
 // VBR's inventory browse operation is a read-only POST with pagination in its body.
 // This capability cannot call rescan or other inventory mutations.
 export type VbrInventoryReader = (host: string | null, skip: number, limit: number, revision?: VbrRevision, hierarchy?: 'HostsAndClusters'|'HostsAndVms') => Promise<unknown>
@@ -40,11 +40,11 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
     if (!token) throw new TopologyRequestError('Your VBR session has expired. Reconnect your data source.', 401)
     const destination = new URL(baseUrl)
     if (!['http:', 'https:'].includes(destination.protocol)) throw new TopologyRequestError('Invalid VBR source protocol.', 400)
-    const requestJson = async (path: string, revision: VbrRevision = '1.3-rev1', browseBody?: string, listPublished = false): Promise<unknown> => {
+    const requestJson = async (path: string, revision: VbrRevision = '1.3-rev1', browseBody?: string, listPublished = false,signal?:AbortSignal): Promise<unknown> => {
       const send = () => fetch(new URL(path, destination), {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision, ...(browseBody ? { 'Content-Type': 'application/json' } : {}) },
         ...(browseBody || listPublished ? { method: 'POST', body: browseBody } : {}),
-        cache: 'no-store', redirect: 'error', signal: controller.signal,
+        cache: 'no-store', redirect: 'error', signal: signal ? AbortSignal.any([controller.signal,signal]) : controller.signal,
       })
       let response = await send()
       if (response.status === 401 && sourceId) {
@@ -62,12 +62,17 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       `/api/v1/inventory${host ? `/${encodeURIComponent(host)}` : ''}`, revision,
       JSON.stringify({ pagination: { skip, limit }, permissionScope: 'Any', ...(hierarchyType ? {hierarchyType}:{}) }),
     )
-    const publishedRecoveries: PublishedRecoveryReader = (skip, limit) => {
+    const publishedRecoveries: PublishedRecoveryReader = async (skip, limit) => {
       const query = new URLSearchParams({skip: String(skip), limit: String(limit), orderColumn: 'VmName', orderAsc: 'true'})
       for (const platform of ['VMware', 'HyperV', 'UnstructuredData', 'Nutanix', 'Proxmox', 'CustomPlatform', 'WindowsPhysical', 'LinuxPhysical', 'LinuxPhysicalPpc', 'AWSEC2', 'AzureCompute', 'GCE']) {
         query.append('targetPlatform', platform)
       }
-      return requestJson(`/private-api/v1/restore/instantRecovery/sessions?${query}`, '1.3-rev2', undefined, true)
+      const path=`/private-api/v1/restore/instantRecovery/sessions?${query}`
+      try{return await requestJson(path, '1.3-rev2', undefined, true)}
+      catch(error){
+        if(!configuredPrincipal||!source?.password||controller.signal.aborted)throw error
+        return explorerConnection(source,controller.signal).send(path,{method:'POST'})
+      }
     }
     const cacheKey = readCacheScope(destination.href, token, configuredPrincipal ? source : undefined)
     const vmPower: VmPowerReader = (manager, platform, vmName) => {
@@ -79,7 +84,8 @@ export async function withVbrRead(request: NextRequest, load: (read: VbrReader, 
       }))
     }
     const sourceKey = createHash('sha256').update(JSON.stringify([destination.href, source?.id || 'environment'])).digest('hex')
-    return NextResponse.json(await load(requestJson, source?.host || destination.hostname, browse, { cacheKey, sourceKey, explorerPrincipalKey:configuredPrincipal && source?.password ? explorerPrincipal(source):undefined, getExplorer:()=>explorerConnection(configuredPrincipal ? source:undefined,controller.signal), publishedRecoveries, vmPower, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
+    const read:VbrReader=(path,revision,signal)=>requestJson(path,revision,undefined,false,signal)
+    return NextResponse.json(await load(read, source?.host || destination.hostname, browse, { cacheKey, sourceKey, explorerPrincipalKey:configuredPrincipal && source?.password ? explorerPrincipal(source):undefined, getExplorer:()=>explorerConnection(configuredPrincipal ? source:undefined,controller.signal), publishedRecoveries, vmPower, serverCredentials: configuredPrincipal && !!source?.password, sourceId: configuredPrincipal ? source?.id : undefined, signal: controller.signal }), { headers })
   } catch (error) {
     return NextResponse.json({ error: error instanceof TopologyRequestError ? error.message
       : controller.signal.aborted ? 'Loading took too long. Retry or narrow the source environment.'

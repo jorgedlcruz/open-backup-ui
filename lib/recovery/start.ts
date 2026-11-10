@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
 import type { saveEntireRestore } from '../server/entire-restore-records'
 import { VbrRecoveryError, checkSource } from './error'
+import {validId} from '../investigation/model'
 import { inventorySchema, resolveInventory, type InventoryRef } from './inventory'
 import { findPoint, pointDisks, type SourcePoint } from './options'
 import { compileNetworks, networkMode, networkMapping } from './networks'
@@ -128,24 +129,35 @@ async function diskPayload(send: RecoverySend, point: SourcePoint, draft: Draft)
     ...(cacheDatastore ? { writeCache: { redirectIsEnabled: true, cacheDatastore } } : {}) }
 }
 
-export async function startRestore(send: RecoverySend, sourceKey: string, draft: Draft, saveReceipt?: typeof saveEntireRestore) {
-  checkSource(draft.sourceKey, sourceKey)
-  const point = await findPoint(send, draft.restorePointId, draft.backupId)
+export function checkPointOperation(point: SourcePoint,draft: Draft) {
   if ((point.malwareStatus === 'Infected' || point.malwareStatus === 'Suspicious') && point.malwareStatus !== draft.reviewedMalwareStatus) {
     throw new VbrRecoveryError('VBR flagged this restore point for malware. Reopen the workflow and review its current status.', 409)
   }
   if (!point.allowedOperations.includes(draft.operation)) throw new VbrRecoveryError('VBR no longer allows this operation for the selected point.', 409)
+}
+export async function prepareRestore(send: RecoverySend, sourceKey: string, draft: Draft) {
+  checkSource(draft.sourceKey, sourceKey)
+  const point = await findPoint(send, draft.restorePointId, draft.backupId)
+  checkPointOperation(point,draft)
   const isFiles = draft.operation === 'StartFlrRestore'
   const payload = isFiles ? await flrPayload(send, point, draft)
     : draft.operation === 'StartFCDInstantRecovery' || draft.operation === 'StartDiskPublish' ? await diskPayload(send, point, draft)
     : await vmPayload(send, point, draft)
-  const result = await send(endpoints[draft.operation], { method: 'POST', body: payload, mutation: true })
+  return {operation:draft.operation,point,payload}
+}
+export async function submitPreparedRestore(send: RecoverySend, sourceKey: string, prepared:Awaited<ReturnType<typeof prepareRestore>>, saveReceipt?: typeof saveEntireRestore) {
+  const {operation,point,payload}=prepared
+  const isFiles=operation==='StartFlrRestore'
+  const result = await send(endpoints[operation], { method: 'POST', body: payload, mutation: true })
   const session = z.object({ id: z.string().uuid().optional(), sessionId: z.string().uuid().optional(),
     state: z.string().optional(), sessionType: z.string().optional(), mountErrors: z.array(z.object({ type: z.string(), message: z.string() })).optional() }).safeParse(result)
   const id = session.success ? (isFiles ? session.data.sessionId : session.data.id) : null
-  if (!session.success || !id) throw new VbrRecoveryError('VBR accepted the operation but returned no session ID. Check Sessions before trying again.', 502, true)
-  if (saveReceipt && ['StartEntireVmRestore','StartEntireVmRestoreHyperV','StartEntireVmRestoreCloudDirector'].includes(draft.operation)) {
+  if (!session.success || !id || !validId(id)) throw new VbrRecoveryError('VBR accepted the operation but returned no session ID. Check Sessions before trying again.', 502, true)
+  if (saveReceipt && ['StartEntireVmRestore','StartEntireVmRestoreHyperV','StartEntireVmRestoreCloudDirector'].includes(operation)) {
     await saveReceipt(sourceKey, id, point, payload).catch(() => {})
   }
   return { id, sourceKey, sessionType: session.data.sessionType, state: session.data.state, mountErrors: session.data.mountErrors }
+}
+export async function startRestore(send:RecoverySend,sourceKey:string,draft:Draft,saveReceipt?:typeof saveEntireRestore) {
+  return submitPreparedRestore(send,sourceKey,await prepareRestore(send,sourceKey,draft),saveReceipt)
 }

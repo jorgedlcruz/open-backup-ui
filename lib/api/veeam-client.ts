@@ -58,6 +58,7 @@ import {
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
+import type {BatchInput,BatchReceipt} from '../restore-points/batch';
 import type { GuestDirectory, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
 
 interface TokenResponse {
@@ -94,7 +95,8 @@ export class VeeamApiClient {
   // Saved sources and sign-in cookies authenticate on the server. Environment
   // sessions may instead use the browser's existing VBR bearer after a restore.
   public async requestActivity<T>(path: string, init: RequestInit = {}): Promise<T> {
-    if (!/^\/api\/vbr\/activity(?:$|[/?])/.test(path)) throw new Error('Invalid Activity path.');
+    const recoveryFeed = /^\/api\/vbr\/recovery-center(?:$|\?)/.test(path) && (init.method || 'GET') === 'GET';
+    if (!recoveryFeed && !/^\/api\/vbr\/activity(?:$|[/?])/.test(path)) throw new Error('Invalid Activity path.');
     const send = (token?: string) => {
       const headers = new Headers(init.headers);
       if (token) headers.set('Authorization', 'Bearer ' + token);
@@ -885,6 +887,10 @@ export class VeeamApiClient {
     return this.request(`/restore-points?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
+  getRecoveryPickerPage<T>(query:URLSearchParams,signal?:AbortSignal):Promise<import('../restore-points/recovery-picker').PickerPage<T>> {
+    return this.request('/restore/catalog?'+query,{apiPrefix:'/api/vbr',signal,cache:'no-store'})
+  }
+
   getRestoreOptions(restorePointId: string, backupId: string, operation: RestoreOperation, signal?: AbortSignal): Promise<RestoreOptions> {
     const query = new URLSearchParams({ restorePointId, backupId, operation });
     return this.request(`/restore/options?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
@@ -898,6 +904,15 @@ export class VeeamApiClient {
 
   startRestore(draft: RestoreDraft): Promise<RestoreResult> {
     return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(draft) });
+  }
+  startRestoreBatch(input:BatchInput):Promise<BatchReceipt> {
+    return this.request('/restore/batches',{apiPrefix:'/api/vbr',method:'POST',body:JSON.stringify(input)});
+  }
+  getRestoreBatch(sourceKey:string,id:string):Promise<BatchReceipt> {
+    return this.request('/restore/batches/'+encodeURIComponent(id)+'?'+new URLSearchParams({sourceKey}),{apiPrefix:'/api/vbr'});
+  }
+  resumeRestoreBatch(sourceKey:string,id:string):Promise<BatchReceipt> {
+    return this.request('/restore/batches/'+encodeURIComponent(id)+'/resume',{apiPrefix:'/api/vbr',method:'POST',body:JSON.stringify({sourceKey})});
   }
 
   applicationExplorerRequest<T>(provider:'ad'|'sql-explorer', body: {action: string; sourceKey: string; [key: string]: unknown}, signal?: AbortSignal): Promise<T> {

@@ -1,0 +1,39 @@
+/* Open Backup UI v1.0.2 */
+.header { align-items:center; margin-block:4px 22px; }
+.headerActions,.source,.metricLabel,.identity,.table th button,.badge,.progress,.panelHead {display:flex;align-items:center;gap:8px}
+.headerActions {flex-wrap:wrap;justify-content:flex-end}
+.source {font-size:var(--ops-small,12px);color:var(--muted-foreground)}
+.metrics {display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--border);border-radius:var(--ops-panel-radius,12px);background:var(--ops-panel-bg,var(--card));margin-bottom:22px;overflow:hidden}
+.metric {position:relative;padding:15px 16px 18px;text-align:start;display:flex;flex-direction:column;gap:9px;min-width:0;transition:background .15s ease}
+.metric+.metric {border-inline-start:1px solid var(--border)}
+.metricLabel {font-size:var(--ops-small,12px);font-weight:550;color:var(--muted-foreground);line-height:1.35}
+.metric svg {color:var(--tone,var(--ops-accent,var(--primary)));flex:none}
+.metric strong {font-size:clamp(23px,2.1vw,31px);font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.035em;font-weight:620}
+.metric:hover,.metric[aria-pressed=true] {background:color-mix(in srgb,var(--tone,var(--ops-accent,var(--primary))) 8%,transparent)}
+.metric[aria-pressed=true]::after {content:'';position:absolute;inset:auto 0 0;height:3px;background:var(--tone,var(--ops-accent,var(--primary)))}
+.metric:focus-visible {outline-offset:-4px}
+[data-tone=active].metric,[data-tone=active].badge {--tone:var(--ops-chart-active,var(--primary))}
+[data-tone=pending].metric,[data-tone=pending].badge {--tone:var(--ops-chart-warning,#bf852b)}
+[data-tone=ready].metric,[data-tone=ready].badge {--tone:var(--ops-accent,var(--primary))}
+[data-tone=attention].metric,[data-tone=attention].badge {--tone:var(--ops-chart-danger,#ce585a)}
+[data-tone=completed].metric,[data-tone=completed].badge {--tone:var(--ops-chart-success,#399366)}
+.panelHead {padding:17px 20px 4px;justify-content:space-between}
+.panelHead h2 {font-size:var(--ops-text,14px);font-weight:650;letter-spacing:-.01em}
+.panelHead span,.identity small,.metaLink {font-size:var(--ops-caption,11px);color:var(--muted-foreground)}
+.groupHeading {padding-block:16px}
+.table th button {font:inherit;white-space:nowrap;gap:4px}
+.table th button svg {opacity:.5}.table th[aria-sort] svg {opacity:1;color:var(--ops-accent,var(--primary))}
+.table td {padding-block:12px}
+.identity {gap:10px;min-width:180px}
+.identity>div {min-width:0}.identity small,.metaLink {display:block;overflow-wrap:anywhere;margin-top:2px}.metaLink:hover {text-decoration:underline}
+.workload {display:grid;place-items:center;flex:none;width:31px;height:31px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--ops-accent,var(--primary)) 7%,transparent);color:var(--ops-accent,var(--primary))}
+.badge {display:inline-flex;gap:6px;font-weight:550;font-size:var(--ops-small,11px);border:1px solid color-mix(in srgb,var(--tone,var(--muted-foreground)) 24%,transparent);background:color-mix(in srgb,var(--tone,var(--muted-foreground)) 9%,transparent);padding:2px 7px;border-radius:5px;white-space:nowrap}
+.badge i {width:6px;height:6px;flex:none;background:var(--tone,var(--muted-foreground));border-radius:100%}
+.progress {white-space:nowrap;font-variant-numeric:tabular-nums}.progress progress {width:42px;height:5px;accent-color:var(--ops-accent,var(--primary))}
+.progress progress {appearance:none;overflow:hidden;border:0;border-radius:3px;background:var(--border)}
+.progress progress::-webkit-progress-bar {background:var(--border)}
+.progress progress::-webkit-progress-value {border-radius:3px;background:var(--ops-accent,var(--primary))}
+.progress progress::-moz-progress-bar {border-radius:3px;background:var(--ops-accent,var(--primary))}
+@media(max-width:1100px){.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metric:nth-child(4){border-inline-start:0}.metric:nth-child(n+4){border-block-start:1px solid var(--border)}}
+@media(max-width:620px){.header{align-items:flex-start;flex-direction:column;gap:12px}.headerActions{justify-content:flex-start}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:16px}.metric{padding:12px;gap:7px}.metric:nth-child(odd){border-inline-start:0}.metric:nth-child(even){border-inline-start:1px solid var(--border)}.metric:nth-child(n+3){border-block-start:1px solid var(--border)}.panelHead{padding-inline:12px}}
+@media(prefers-reduced-motion:reduce){.metric{transition:none}}

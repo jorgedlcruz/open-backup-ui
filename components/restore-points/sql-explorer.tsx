@@ -3,6 +3,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { sessionHomeFor, sessionHref } from '@/lib/navigation/recovery'
 import { Database, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -27,6 +29,7 @@ export const sqlCaptions:Record<SqlIntent,string>={restore:'Restore databases',i
 
 export function SqlExplorer(props:ExplorerProps){return <SqlSession key={props.sourceKey+props.sessionId} {...props}/>}
 function SqlSession({sourceKey,sessionId,operationsOnly=false,showFinish=true,onClose,onOperation}:ExplorerProps){
+  const home = sessionHomeFor(usePathname())
   const {t,label,diagnostic}=useRecoveryPresentation()
   const scope={sourceKey,sessionId}
   const [tab,setSection]=useState<'browse'|'operations'>('browse')
@@ -87,7 +90,7 @@ function SqlSession({sourceKey,sessionId,operationsOnly=false,showFinish=true,on
     {section==='operations'&&<>{!jobs?<RecoverySignal stage="data" compact/>:!jobs.length?<p className={styles.empty}>{t('No SQL operations have been reported for this session.')}</p>:
       jobs.map(job=><article key={job.jobId} className={styles.selection}><div><strong>{jobName(job)}</strong>
         <p>{t(sqlCaptions[job.intent])} · {label(job.operationStatus||job.state||'Not reported')}{job.targetHost&&' · '+job.targetHost}{job.targetName&&' · '+job.targetName}</p></div>
-        {job.permanentSessionId&&<Button size="sm" variant="outline" asChild><Link href={'/vbr/activity/'+encodeURIComponent(job.permanentSessionId)+'?sourceKey='+encodeURIComponent(sourceKey)+'#session-log'}>{t('Session log')}</Link></Button>}
+        {job.permanentSessionId&&<Button size="sm" variant="outline" asChild><Link href={sessionHref(home,job.permanentSessionId,sourceKey)+'#session-log'}>{t('Session log')}</Link></Button>}
         {(job.allowedOperations||[]).filter(action=>['stop','edit','switchover','exportPublished'].includes(action)).map(action=><Button size="sm" variant="outline" key={action} disabled={busy||uncertain}
           onClick={()=>{if(action==='exportPublished')prepare('exportPublished',[{key:job.key,type:'SQLDatabase',name:jobName(job)}],undefined,job);else{setSchedule('Manual');setScheduledAt('');setCommand({job,action})}}}>{mountedLabel(action)}</Button>)}</article>)}</>}
     {busy&&<RecoverySignal stage="data" compact/>}

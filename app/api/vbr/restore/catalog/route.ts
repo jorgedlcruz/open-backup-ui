@@ -1,0 +1,23 @@
+// Open Backup UI v1.0.2
+import {NextRequest,NextResponse} from 'next/server'
+import {z} from 'zod'
+import {withVbrRead} from '@/lib/server/vbr-read'
+import {TopologyRequestError} from '@/lib/topology/load'
+import {recoveryKinds} from '@/lib/restore-points/recovery-picker'
+import {pickerPage} from '@/lib/recovery/picker-catalog'
+import {VbrRecoveryError} from '@/lib/recovery/error'
+
+export const dynamic='force-dynamic'
+const params=z.object({sourceKey:z.string().regex(/^[a-f0-9]{64}$/),kind:z.enum(recoveryKinds),view:z.enum(['objects','points']),
+  objectId:z.string().uuid().optional(),backupId:z.string().uuid().optional(),restorePointId:z.string().uuid().optional(),query:z.string().max(256).optional(),
+  offset:z.coerce.number().int().min(0).default(0),limit:z.coerce.number().int().min(1).max(200).default(50),refresh:z.literal('true').optional()})
+export async function GET(request:NextRequest){
+  const input=params.safeParse(Object.fromEntries(request.nextUrl.searchParams))
+  if(!input.success||(input.data.view==='points'&&!input.data.objectId))return NextResponse.json({error:'Select a valid recovery option.'},{status:400,headers:{'Cache-Control':'private, no-store'}})
+  return withVbrRead(request,async(read,_name,_inventory,context)=>{
+    if(context.sourceKey!==input.data.sourceKey)throw new TopologyRequestError('The connected VBR source changed. Reopen this workflow.',409)
+    const privateClient=context.serverCredentials?context.getExplorer():undefined
+    try{return {...await pickerPage(read,privateClient?.send,context.cacheKey+'/'+(privateClient?.principalKey||'public'),{...input.data,refresh:input.data.refresh==='true'}),sourceKey:context.sourceKey}}
+    catch(e){if(e instanceof TopologyRequestError)throw e;if(e instanceof VbrRecoveryError)throw new TopologyRequestError(e.message,e.status);throw new TopologyRequestError('VBR could not check the recovery options for this source.',502)}
+  })
+}

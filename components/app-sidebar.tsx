@@ -27,7 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, RotateCcw } from "lucide-react"
 import { defaultSectionNames, useSectionNames } from "@/lib/context/section-names-context"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { lenses, lensForPath } from "@/lib/lens/navigation"
@@ -97,6 +97,7 @@ const vbrItems = [
       },
     ]
   },
+  { title: navigationLabels["/vbr/recovery-center"], href: "/vbr/recovery-center", icon: RotateCcw },
   { title: navigationLabels["/vbr/activity"], href: "/vbr/activity", icon: Activity },
 ]
 
@@ -422,7 +423,7 @@ export function AppSidebar({
 
                   // Standard Item
                   const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
-                    : item.href === '/vbr/activity' ? pathname === item.href || pathname.startsWith('/vbr/activity/')
+                    : item.href === '/vbr/activity' || item.href === '/vbr/recovery-center' ? pathname === item.href || pathname.startsWith(item.href + '/')
                     : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
                   return (
                     <SidebarMenuItem key={item.title}>

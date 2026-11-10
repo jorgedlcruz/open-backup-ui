@@ -3,7 +3,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { recoveryCenterPath, sessionHomeFor, sessionHref } from '@/lib/navigation/recovery'
 import { Activity, ArrowLeft, ArrowUpRight, Database, FileText, Files, FolderOpen, FolderTree, Layers, Map as MapIcon, RefreshCw, Server, Square } from 'lucide-react'
 import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
 import { veeamApi } from '@/lib/api/veeam-client'
@@ -216,6 +217,7 @@ function LinkedMigrationMap({id, sourceKey}: {id: string; sourceKey: string}) {
 }
 
 export function ActivitySession({id, query}: {id: string; query: string}) {
+  const home = sessionHomeFor(usePathname())
   const {t, date, label, duration, bytes, rate, formatNumber, notice} = useInvestigationPresentation()
   const router = useRouter()
   const {data, error, loading, refresh, revision} = useSession(id, query)
@@ -292,7 +294,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const hasMap = mapMounts.length > 0 || !!data?.entireRestore || directMigration || linkedMigrations.length > 0
   const hasRecovery = hasMap || mounts.some(m => m.kind !== 'flr')
   const isRecovery = isFile || hasRecovery || !!child || /Restore|Recovery|Publish|Migration/.test(type || '')
-  const link = (next: string) => '/vbr/activity/' + next + (sourceKey ? '?sourceKey=' + sourceKey : '')
+  const link = (next: string) => sessionHref(home, next, sourceKey || data?.sourceKey)
   function onAccepted(next?: string) {
     if (validId(next) && next !== id) router.push(link(next))
     else { setAccepted(true); selectTab('logs'); refresh() }
@@ -329,7 +331,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const related = [...new Set([session?.parentSessionId, session?.relatedSessionId, session?.originalSessionId].filter((v): v is string => validId(v) && v !== id))]
   const typeLabel = type === 'RestoreVm' ? t('Entire VM restore') : isFile ? t('Guest file restore') : type === 'InstantRecovery' ? t('Instant VM Recovery') : type ? label(type).replace(/([a-z])([A-Z])/g, '$1 $2') : t('Session Investigation')
   return <main className={ops.console}>
-    <header className={ops.header}><div><Link href="/vbr/activity" className={styles.back}><ArrowLeft size={14}/>{t('Sessions')}</Link>
+    <header className={ops.header}><div><Link href={home} className={styles.back}><ArrowLeft size={14}/>{home === recoveryCenterPath ? t('Recovery Center') : t('Sessions')}</Link>
       <h1>{mounts[0]?.name || session?.name || receipt?.workload || t('Session Investigation')}</h1><p>{typeLabel}{data?.sourceName && ' · ' + data.sourceName}</p></div>
       <div className={styles.commands}>{childState && data?.instantMigration ? <Status value={recordStatus(data.instantMigration)}/> : status && <Status value={status}/>}
         {data?.canStop && !error && <StopRestore key={data.sourceKey + id} data={data} refresh={refresh}/>}

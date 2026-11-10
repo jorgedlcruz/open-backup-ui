@@ -1,7 +1,7 @@
 // Open Backup UI v1.0.2
 import { NextRequest, NextResponse } from 'next/server'
 import { withVbrRead } from '@/lib/server/vbr-read'
-import { loadRestorePoints } from '@/lib/restore-points/load'
+import { completeVmMembership, loadRestorePoints, partialMembership } from '@/lib/restore-points/load'
 import { attachApplications } from '@/lib/recovery/application-eligibility'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +14,14 @@ export async function GET(request: NextRequest) {
   }
   return withVbrRead(request, async (read, sourceName, _inventory, context) => {
     const snapshot = await loadRestorePoints(read, sourceName, {objectId,backupId})
+    const deadline=AbortSignal.timeout(12_000)
+    const eligible=await completeVmMembership(path=>read(path,'1.3-rev2',deadline),snapshot,deadline)
     if(snapshot.data.length && context.serverCredentials && context.sourceId) {
       try {
-        await attachApplications(context.getExplorer().send,snapshot.data,objectId)
+        await attachApplications(context.getExplorer().send,snapshot.data,objectId,path=>read(path,'1.3-rev2'))
       } catch { snapshot.warnings.push('Application recovery options could not be checked with the VBR web console.') }
     }
+    if(eligible?.some(point=>!point.verifiedObjectId))snapshot.warnings.push(partialMembership)
     return {...snapshot,sourceKey:context.sourceKey}
   });
 }

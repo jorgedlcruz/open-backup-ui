@@ -2,6 +2,8 @@
 // Open Backup UI v1.0.2
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { sessionHomeFor, sessionHref } from '@/lib/navigation/recovery'
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { v4 as uuid } from 'uuid'
@@ -117,6 +119,7 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
   const linked = migrationSession && migrationSession.id !== receipt?.previousChildId &&
     (association || !receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
   const childId = linked?.id || receipt?.childId
+  const sessionHome = sessionHomeFor(usePathname())
   const child = useMigrationSession(sourceKey,mount.sessionId,childId)
   const detail=child?.detail
   const terminalChild=detail?.session?.endTime || detail?.session?.state==='Stopped'
@@ -178,6 +181,6 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
     {error && <p role="alert" className="text-sm text-destructive">{vbrError(t,error)}</p>}
     {receipt?.status === 'unknown' && evidence.phase === 'idle' && <p role="status" className="text-sm text-muted-foreground">{t('Check Sessions before submitting another request.')}</p>}
     {validId(childId) && childId !== mount.sessionId && <Link className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-      href={`/vbr/activity/${childId}?sourceKey=${sourceKey}`}>{t('Migration session')}<ArrowUpRight size={14}/></Link>}
+      href={sessionHref(sessionHome, childId, sourceKey)}>{t('Migration session')}<ArrowUpRight size={14}/></Link>}
   </>
 }

@@ -4,6 +4,17 @@ require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(
 const {breadcrumbsForPath,navigationLabels}=require('../lib/navigation/breadcrumbs.ts');
 const {protectionColors,protectionTextColors,protectionStatusLabel}=require('../lib/protected-data/colors.ts');
 const labels=path=>breadcrumbsForPath(path).map(item=>item.label);
+const {sessionHomeFor,sessionHref}=require('../lib/navigation/recovery.ts');
+
+test('session links and breadcrumbs preserve the entry section and source across related runs',()=>{
+ for(const [root,tab] of [['/vbr/activity','Sessions'],['/vbr/recovery-center','Recovery Center']]){
+  const href=sessionHref(sessionHomeFor(root+'/a'), 'b','source');
+  assert.equal(href,root+'/b?sourceKey=source');
+  for(const path of [root+'/a',root+'/preparing'])assert.deepEqual(breadcrumbsForPath(path).at(-2),{href:root,label:tab});
+ }
+ assert.equal(breadcrumbsForPath('/vbr/recovery-center/batches/b').at(-1).label,'VM recovery group');
+ assert.equal(sessionHomeFor('/vbr/recovery-centerish/a'),'/vbr/activity');
+});
 
 test('primary VBR trails use the same platform and actual menu names',()=>{
  assert.deepEqual(labels('/vbr/jobs'),['Veeam Backup & Replication','Jobs & Policies']);

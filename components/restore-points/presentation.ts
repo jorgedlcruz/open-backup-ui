@@ -92,6 +92,31 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'Choose one recovery method for the batch.':
+    case 'Choose one restore point per virtual machine.':
+    case 'Confirm the original VM location before starting this recovery.':
+    case 'VBR returned a different restore-point page.':
+    case 'The restore point no longer belongs to this virtual machine and backup.':
+    case 'Select a current virtual machine on the same VBR platform.':
+    case 'The selected recovery is unavailable for this VM platform.':
+    case 'Two selected VMs would use the same destination name. Rename one of them or change its destination.':
+    case 'Another VM failed validation. This VM was not submitted.':
+    case 'VBR could not verify this recovery request.':
+    case 'VBR submission could not be confirmed. Check Sessions before starting another recovery.':
+    case 'The server stopped before this VM was submitted.':
+    case 'This batch is being updated. Refresh its status.':
+    case 'Recovery batch not found.':
+    case 'This batch ID already belongs to a different recovery request.':
+    case 'This recovery worker is no longer active.':
+    case 'Invalid recovery batch.':
+    case 'Review the selected VMs and restore settings.':
+    case 'Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.':
+    case 'Application recovery requires a configured VBR web console connection.':
+    case 'Some backups could not be checked. Only verified recovery options are shown.':
+    case 'The restore-point list is partial.':
+    case 'Some requested VMs or restore points are unavailable. Review the selection.':
+    case 'VBR could not check the recovery options for this source.':
+    case 'This VM is unavailable for the selected recovery.':
     case 'Compression applies only to a SQL backup file.':
     case 'This SQL browse page expired. Refresh the page.':
     case 'Reopen the SQL browse page.':
