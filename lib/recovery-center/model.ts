@@ -79,8 +79,12 @@ export function recoveryRows(sourceKey:string,sessions:Session[],mounts:Mount[],
   for(const receipt of receipts) {
     if(receipt.sourceKey!==sourceKey||receipt.phase==='rejected'||receipt.sessionId&&known.has(receipt.sessionId))continue
     const pending=receipt.phase==='starting',unknown=receipt.phase==='unknown'
-    rows.push({key:'launch/'+receipt.requestId,name:receipt.workload,type:sourceTypes[receipt.operation]||receipt.operation,platform:operationPlatform(receipt.operation),
-      category:unknown?'attention':pending?'pending':'other',state:unknown?'Outcome unknown':pending?'Submitting':'Accepted',started:receipt.createdAt,
+    const explorer=receipt.operation==='BrowseActiveDirectory'||receipt.operation==='BrowseSql'
+    let state=unknown?'Outcome unknown':pending?'Submitting':'Accepted'
+    if(explorer&&unknown)state='Browse session unconfirmed'
+    if(explorer&&pending)state=receipt.explorerStage==='checking'?'Checking with VBR':'Waiting for Explorer'
+    rows.push({key:'launch/'+receipt.requestId,name:receipt.workload,type:explorer?receipt.operation:sourceTypes[receipt.operation]||receipt.operation,platform:operationPlatform(receipt.operation),
+      category:unknown?'attention':pending?'pending':'other',state,started:receipt.createdAt,
       sessionId:receipt.sessionId,href:receipt.sessionId?sessionLink(sourceKey,receipt.sessionId):prefix+'/preparing?'+new URLSearchParams({request:receipt.requestId,sourceKey})})
   }
   return rows

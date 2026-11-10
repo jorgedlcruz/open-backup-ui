@@ -14,7 +14,7 @@
 .launchStatus > svg,.returnLink { color:var(--primary); }
 .launchStatus h2 { font-size:1rem; font-weight:600; margin-bottom:.4rem; }
 .launchStatus p { color:var(--muted-foreground); margin-top:.3rem; overflow-wrap:anywhere; }
-.launchStatus a { margin-top:1rem; }
+.handoffActions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1rem; }
 .returnLink { display:inline-flex; align-items:center; gap:.4rem; margin-bottom:1rem; }
 .flow,.browser { min-width:0; display:grid; gap:1rem; font-size:.84rem; }
 .flow h3,.browser h3 { font-size:.94rem; font-weight:600; }

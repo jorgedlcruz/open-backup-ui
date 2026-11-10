@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { activeDirectoryOperation, sqlOperation, observeRestoreLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
-import { recoveryCenterPath, sessionHomeFor, sessionHref, type SessionHome } from '@/lib/navigation/recovery'
+import { activeDirectoryOperation, sqlOperation, canCheckExplorerLaunch, observeRestoreLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { recoveryCenterPath, sessionsPath, sessionHomeFor, sessionHref, type SessionHome } from '@/lib/navigation/recovery'
 import { useRecoveryPresentation } from './use-presentation'
 import { RecoverySignal } from './recovery-signal'
 import ops from '@/components/operations/operations.module.css'
@@ -18,26 +18,36 @@ export function PreparingRecovery({ requestId }: { requestId: string }) {
   const home = sessionHomeFor(usePathname())
   const [receipt, setReceipt] = useState<RestoreLaunch>()
   const [loaded, setLoaded] = useState(false)
+  const [revision, setRevision] = useState(0)
   useEffect(() => {
     let active = true
-    setReceipt(readRestoreLaunch(requestId))
+    const read = () => setReceipt(readRestoreLaunch(requestId))
+    read()
     setLoaded(true)
+    window.addEventListener('restore-launch-change', read)
     void observeRestoreLaunch(requestId).then(value => {
       if (!active) return
       setReceipt(value)
       if (value?.phase === 'accepted' && value.sessionId) router.replace(sessionHref(home, value.sessionId, value.sourceKey) +
         (value.operation === activeDirectoryOperation || value.operation === sqlOperation ? '#application-items' : '#session-log'))
     })
-    return () => { active = false }
-  }, [requestId, router, home])
+    return () => { active = false; window.removeEventListener('restore-launch-change', read) }
+  }, [requestId, router, home, revision])
 
-  return <RecoveryHandoff receipt={receipt} loading={!loaded} home={home}/>
+  return <RecoveryHandoff receipt={receipt} loading={!loaded} home={home} onCheck={() => setRevision(value => value + 1)}/>
 }
 
-export function RecoveryHandoff({receipt, loading = false, home = recoveryCenterPath}: {receipt?: RestoreLaunch; loading?: boolean; home?: SessionHome}) {
+export function RecoveryHandoff({receipt, loading = false, home = recoveryCenterPath, onCheck}: {
+  receipt?: RestoreLaunch; loading?: boolean; home?: SessionHome; onCheck?: () => void
+}) {
   const { t, date, label, diagnostic } = useRecoveryPresentation()
   const accepted = receipt?.phase === 'accepted'
   const pending = loading || receipt?.phase === 'starting' || accepted
+  const explorer = receipt?.operation === activeDirectoryOperation || receipt?.operation === sqlOperation
+  const browseUnconfirmed = explorer && receipt.phase === 'unknown'
+  const message = receipt?.message?.trim()
+  const showDiagnostic = message && !/^(?:typeerror:\s*)?(?:failed to fetch|fetch failed|load failed|networkerror when attempting to fetch resource)\.?$/i.test(message)
+  const sessions = browseUnconfirmed ? sessionsPath + '?' + new URLSearchParams({name:receipt.workload}) : home
   return <div className={ops.console}>
     <Link href={home} className={styles.returnLink}><ArrowLeft size={15} />{home === recoveryCenterPath ? t('Recovery Center') : t('Sessions')}</Link>
     <header className={ops.header}><div><h1>{receipt ? label(receipt.operation) : t('Recovery request')}</h1>
@@ -46,11 +56,17 @@ export function RecoveryHandoff({receipt, loading = false, home = recoveryCenter
     <section className={ops.panel}>
       <div className={styles.launchStatus} role={pending ? undefined : 'alert'}>
         {!pending && <TriangleAlert aria-hidden size={23} />}
-        <div><h2>{pending ? t('Preparing recovery') : receipt?.phase === 'rejected' ? t('Recovery request failed.') : t('Recovery status unconfirmed')}</h2>
-          {pending && <RecoverySignal stage={accepted ? 'accepted' : receipt ? 'request' : 'data'} />}
-          {!pending && <p>{receipt?.phase === 'rejected' ? diagnostic(receipt.message || t('Recovery request failed.')) : home === recoveryCenterPath ? t('Check Recovery Center before submitting another request.') : t('Check Sessions before submitting another request.')}</p>}
-          {!pending && receipt?.phase === 'unknown' && receipt.message && <p>{diagnostic(receipt.message)}</p>}
-          {!pending && <Button asChild variant="outline" size="sm"><Link href={home}>{home === recoveryCenterPath ? t('Recovery Center') : t('View sessions')}</Link></Button>}
+        <div><h2>{pending ? t('Preparing recovery') : receipt?.phase === 'rejected' ? t('Recovery request failed.') : browseUnconfirmed ? t('Browse session unconfirmed') : t('Recovery status unconfirmed')}</h2>
+          {pending && <RecoverySignal stage={accepted ? 'accepted' : receipt ? 'request' : 'data'}
+            status={explorer && !accepted ? t(receipt.explorerStage === 'checking' ? 'Checking with VBR' : 'Waiting for Explorer') : undefined}/>}
+          {!pending && <p>{receipt?.phase === 'rejected' ? diagnostic(receipt.message || t('Recovery request failed.')) : browseUnconfirmed
+            ? t('VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.')
+            : home === recoveryCenterPath ? t('Check Recovery Center before submitting another request.') : t('Check Sessions before submitting another request.')}</p>}
+          {!pending && receipt?.phase === 'unknown' && showDiagnostic && <p>{diagnostic(message)}</p>}
+          {!pending && <div className={styles.handoffActions}>
+            {onCheck && canCheckExplorerLaunch(receipt) && <Button type="button" size="sm" onClick={onCheck}>{t('Check status')}</Button>}
+            <Button asChild variant="outline" size="sm"><Link href={sessions}>{browseUnconfirmed || home === sessionsPath ? t('View sessions') : t('Recovery Center')}</Link></Button>
+          </div>}
         </div>
       </div>
     </section>

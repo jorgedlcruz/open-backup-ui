@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR は元の Linux ホストを確認できませんでした。",
   "Choose saved Linux SSH credentials for the original host and try again.": "元のホスト用の保存済み Linux SSH 認証情報を選択して、もう一度お試しください。",
   "Select a Linux mount host.": "Linux マウントホストを選択してください。",
-  "Review the selected Linux mount host and credentials.": "選択した Linux マウントホストと認証情報を確認してください。"
+  "Review the selected Linux mount host and credentials.": "選択した Linux マウントホストと認証情報を確認してください。",
+  "Waiting for Explorer": "Explorer の応答を待機中",
+  "Checking with VBR": "VBR に確認中",
+  "Browse session unconfirmed": "参照セッションは未確認です",
+  "Check status": "状態を確認",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR では、この要求に対する参照セッションを確認できていません。新しいセッションを開く前に、このワークロードのセッションを確認してください。"
 }

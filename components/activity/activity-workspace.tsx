@@ -50,10 +50,10 @@ function detailLink(row: ActivityRow, sourceKey: string) {
   return `/vbr/activity/${encodeURIComponent(row.sessionId)}?${params}`
 }
 
-export function ActivityWorkspace() {
+export function ActivityWorkspace({initialSearch = ''}: {initialSearch?: string}) {
   const {t, formatDate, formatNumber} = useI18n()
-  const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState(defaultFilters)
+  const [search, setSearch] = useState(initialSearch)
+  const [filters, setFilters] = useState({...defaultFilters, name:initialSearch})
   const [offsets, setOffsets] = useState<{skip: number; before?: string}[]>([{skip:0}])
   const [snapshot, setSnapshot] = useState<{key: string; feed: ActivityFeed}>()
   const [revision, setRevision] = useState(0)

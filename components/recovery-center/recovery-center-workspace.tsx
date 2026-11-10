@@ -21,6 +21,8 @@ import css from './recovery-center.module.css'
 
 const icons={all:Layers3,active:Activity,pending:Clock3,ready:FolderOpen,attention:TriangleAlert,completed:CheckCheck}
 const labels:Record<string,string>={InstantRecovery:'Instant VM Recovery',RestoreVm:'Entire VM restore',FileLevelRestore:'Guest file restore',
+  BrowseActiveDirectory:'Microsoft Active Directory',BrowseSql:'Microsoft SQL Server','Waiting for Explorer':'Waiting for Explorer',
+  'Checking with VBR':'Checking with VBR','Browse session unconfirmed':'Browse session unconfirmed',
   LinuxFileLevelRestore:'Guest file restore · Linux',ApplicationLevelRestore:'Application item restore',PublishBackupContentViaMount:'Published disks',
   FirstClassDiskInstantRestore:'First Class Disk Recovery',CloudDirectorVmRestore:'Cloud Director VM restore',QuickMigration:'Quick Migration',
   Queued:'Queued',Submitting:'Submitting',Accepted:'Accepted','Not started':'Not started','Outcome unknown':'Outcome unknown',Mounted:'Mounted'}
@@ -30,7 +32,7 @@ const mountLabels:Record<string,string>={vSphere:'VMware vSphere',hyperV:'Micros
 const limit=25
 function typeIcon(type:string) {
   if(/FileLevel|NasRestore|Unstructured/.test(type))return Files
-  if(/Application|EntraId|AdForest/.test(type))return Database
+  if(/Application|EntraId|AdForest|^Browse/.test(type))return Database
   if(/InstantRecovery/.test(type))return MonitorPlay
   if(/Disk|Publish/.test(type))return HardDrive
   return Server

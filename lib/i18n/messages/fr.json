@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR n’a pas pu vérifier l’hôte Linux d’origine.",
   "Choose saved Linux SSH credentials for the original host and try again.": "Choisissez des identifiants SSH Linux enregistrés pour l’hôte d’origine, puis réessayez.",
   "Select a Linux mount host.": "Sélectionnez un hôte de montage Linux.",
-  "Review the selected Linux mount host and credentials.": "Vérifiez l’hôte de montage Linux sélectionné et ses identifiants."
+  "Review the selected Linux mount host and credentials.": "Vérifiez l’hôte de montage Linux sélectionné et ses identifiants.",
+  "Waiting for Explorer": "En attente de l’Explorateur",
+  "Checking with VBR": "Vérification auprès de VBR",
+  "Browse session unconfirmed": "Session d’exploration non confirmée",
+  "Check status": "Vérifier l’état",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR n’a pas confirmé de session d’exploration pour cette demande. Consultez les sessions de cette charge de travail avant d’en ouvrir une autre."
 }

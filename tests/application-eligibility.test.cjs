@@ -6,6 +6,90 @@ const {authorizeExplorerResume}=require('../lib/recovery/explorer-resume.ts')
 const id=n=>'11111111-1111-4111-8111-'+String(n).padStart(12,'0')
 const backupId=id(1),objectId=id(2),restorePointId=id(3),other=id(4),sessionId=id(5)
 const permissions=['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsAd','StartExplorerForMsSql']
+const {ExplorerLaunches}=require('../lib/server/explorer-launches.ts')
+const {VbrRecoveryError}=require('../lib/recovery/error.ts')
+const launchScope={sourceKey:'a'.repeat(64),principalKey:'b'.repeat(64),kind:'activeDirectory'}
+const launchPoint={backupId,objectId,restorePointId}
+function durableFixture(t){
+  const path=require('node:path')
+  const dir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'explorer-request-'))
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}))
+  const state={now:1_000_000,created:0,remembered:[],done:false}
+  const reopen=()=>new ExplorerLaunches(dir,()=>state.now,async(...data)=>{state.remembered.push(data)})
+  const send=async(path,options)=>{
+    const base='/private-api/v1/backupBrowser/applicationItems/vead'
+    if(path===base){
+      assert.deepEqual(options,{method:'POST',mutation:true,body:{restorePointId}})
+      state.created++
+      return {id:other}
+    }
+    if(path==='/private-api/v1/tasks/'+other)return {id:other,type:'Common',state:state.done?'Stopped':'Working',result:state.done?'Success':'None'}
+    assert.equal(path,base+'/'+other+'/result')
+    return {id:sessionId}
+  }
+  return {state,send,reopen,store:reopen(),key:launchScope,req:id(50)}
+}
+test('Explorer launch reserves one immutable scoped UUID and reconciles the exact native task after restart',async t=>{
+  const {store,reopen,state,send,key,req}=durableFixture(t)
+  const owners=await Promise.all([store.reserve(key,req,launchPoint),store.reserve(key,req,launchPoint)])
+  assert.deepEqual(owners.sort(),[false,true])
+  await assert.rejects(store.reserve(key,req,{...launchPoint,objectId:other}),/another session/)
+  const initial=await store.response(key,req,'test-key')
+  assert.equal(initial.requestStatus,'starting')
+  for(const otherKey of [{...key,principalKey:'c'.repeat(64)},{...key,sourceKey:'c'.repeat(64)}]){
+    assert.equal((await store.response(otherKey,req,'test-key')).requestStatus,'missing')
+    await assert.rejects(store.response(otherKey,req,'test-key',send,initial.pending),/another session/)
+  }
+  await Promise.all([store.submit(key,req,launchPoint,async()=>{},send),store.submit(key,req,launchPoint,async()=>{},send)])
+  assert.equal(state.created,1)
+  const next=reopen(), active=await next.response(key,req,'test-key',send,initial.pending)
+  assert.equal(active.requestStatus,'pending')
+  state.done=true
+  const results=await Promise.all([next.response(key,req,'test-key',send),store.response(key,req,'test-key',send)])
+  for(const r of results)assert.deepEqual(r,{sourceKey:key.sourceKey,requestId:req,requestStatus:'ready',sessionId,restorePointId,backupId,backupObjectId:objectId,application:'ActiveDirectory'})
+  assert.equal(state.remembered.length,1)
+  assert.equal(state.remembered[0][0].sessionId,sessionId)
+  assert.equal(state.remembered[0][3],restorePointId)
+})
+test('a timed-out eligibility worker cannot submit after reporting that nothing was sent',async t=>{
+  const {key,req,store,state,send}=durableFixture(t)
+  await store.reserve(key,req,launchPoint)
+  let release
+  const verifying=new Promise(resolve=>{release=resolve})
+  const worker=store.submit(key,req,launchPoint,()=>verifying,send)
+  state.now+=6*60_000
+  assert.equal((await store.response(key,req,'test-key')).requestStatus,'failed')
+  release()
+  await worker
+  assert.equal(state.created,0)
+  assert.equal(await store.reserve(key,req,launchPoint),false)
+})
+test('lost native acknowledgements remain unknown and definitive rejections are preserved without another write',async t=>{
+  const {key,store}=durableFixture(t)
+  for(const [index,error,status] of [[1,new VbrRecoveryError('Gateway lost',502,true),'unknown'],[2,new VbrRecoveryError('Forbidden',403),'failed']]){
+    const req=id(60+index)
+    await store.reserve(key,req,launchPoint)
+    let calls=0
+    const reject=async()=>{calls++;throw error}
+    await store.submit(key,req,launchPoint,async()=>{},reject)
+    await store.submit(key,req,launchPoint,async()=>{},reject)
+    assert.equal(calls,1)
+    assert.equal((await store.response(key,req,'test-key',reject)).requestStatus,status)
+  }
+})
+test('unavailable native task reads retain a safe, recoverable reference without claiming a failed launch',async t=>{
+  const {key,req,store,state,send}=durableFixture(t)
+  await store.reserve(key,req,launchPoint)
+  await store.submit(key,req,launchPoint,async()=>{},send)
+  const unavailable=async()=>{throw new VbrRecoveryError('Temporarily unavailable',503)}
+  assert.equal((await store.response(key,req,'test-key',unavailable)).requestStatus,'pending')
+  state.now+=11*60_000
+  assert.equal((await store.response(key,req,'test-key',unavailable)).requestStatus,'unknown')
+  await assert.rejects(store.response(key,req,'test-key',async()=>{throw new VbrRecoveryError('Forbidden',403)}),/Forbidden/)
+  state.done=true
+  assert.equal((await store.response(key,req,'test-key',send)).sessionId,sessionId)
+  assert.equal(state.created,1)
+})
 function fixture({malwareStatus='Clean',member=restorePointId,archive=false,rights=permissions}={}) {
   const point={id:restorePointId,backupId,name:'VM1',platformName:'VMware',creationTime:'2026-01-01T00:00:00Z',allowedOperations:['StartFlrRestore'],malwareStatus}
   const rows=[{backupId,objectId,platformName:'VMware',repositoryType:archive?'ArchiveTier':'Disk',operations:[{operation:'ExploreForMsAd',enabled:false},{operation:'ExploreForMsSql',enabled:true}]}]

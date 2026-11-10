@@ -4,9 +4,8 @@
 import { useRef, useState } from 'react'
 import { ArrowLeft, Database, FolderTree } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { adRequest, sqlRequest } from '@/lib/restore-points/ad-client'
 import { isFlagged, type RestorePoint } from '@/lib/restore-points/model'
-import { activeDirectoryOperation, sqlOperation, beginRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { activeDirectoryOperation, sqlOperation, beginExplorerLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import { useRecoveryPresentation } from './use-presentation'
 import styles from './workflow.module.css'
 
@@ -22,14 +21,9 @@ export function ApplicationExplorerLaunch({point, sourceKey, backupObjectId, onB
   function start() {
     if (submitting.current || needsReview) return
     submitting.current = true
-    const draft = {sourceKey, operation:sql?sqlOperation:activeDirectoryOperation, restorePointId:point.id, backupId:point.backupId, backupObjectId} as const
-    onLaunch(beginRestoreLaunch(draft, point.name || (sql?t('Microsoft SQL Server'):t('Microsoft Active Directory')), point.creationTime || undefined, async input => {
-      const request=sql?sqlRequest:adRequest
-      const response = await request<{sessionId:string;sourceKey:string}>({action:'start', sourceKey:input.sourceKey,
-        restorePointId:input.restorePointId, backupId:input.backupId, ...(sql?{objectId:input.backupObjectId}:{backupObjectId:input.backupObjectId}),
-        reviewedMalwareStatus:point.malwareStatus || undefined})
-      return {id:response.sessionId, sourceKey:response.sourceKey}
-    }))
+    const operation=sql?sqlOperation:activeDirectoryOperation
+    onLaunch(beginExplorerLaunch({sourceKey,operation,restorePointId:point.id,backupId:point.backupId,backupObjectId,
+      reviewedMalwareStatus:point.malwareStatus||undefined},point.name||t(sql?'Microsoft SQL Server':'Microsoft Active Directory'),point.creationTime||undefined))
   }
   return <section className={styles.flow}>
     <p>{sql?t('Browse SQL instances and databases at this restore point.'):t('Open this restore point to browse its directory objects. Choose what to recover in the session.')}</p>

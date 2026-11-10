@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR could not verify the original Linux host.",
   "Choose saved Linux SSH credentials for the original host and try again.": "Choose saved Linux SSH credentials for the original host and try again.",
   "Select a Linux mount host.": "Select a Linux mount host.",
-  "Review the selected Linux mount host and credentials.": "Review the selected Linux mount host and credentials."
+  "Review the selected Linux mount host and credentials.": "Review the selected Linux mount host and credentials.",
+  "Waiting for Explorer": "Waiting for Explorer",
+  "Checking with VBR": "Checking with VBR",
+  "Browse session unconfirmed": "Browse session unconfirmed",
+  "Check status": "Check status",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another."
 }

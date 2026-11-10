@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR не удалось проверить исходный хост Linux.",
   "Choose saved Linux SSH credentials for the original host and try again.": "Выберите сохранённые учётные данные SSH для исходного хоста Linux и повторите попытку.",
   "Select a Linux mount host.": "Выберите хост Linux для монтирования.",
-  "Review the selected Linux mount host and credentials.": "Проверьте выбранный хост монтирования Linux и учётные данные."
+  "Review the selected Linux mount host and credentials.": "Проверьте выбранный хост монтирования Linux и учётные данные.",
+  "Waiting for Explorer": "Ожидание Explorer",
+  "Checking with VBR": "Проверка статуса в VBR",
+  "Browse session unconfirmed": "Сеанс просмотра не подтверждён",
+  "Check status": "Проверить статус",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR не подтвердил сеанс просмотра для этого запроса. Прежде чем открыть новый сеанс, проверьте сеансы для этой рабочей нагрузки."
 }

@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR मूल Linux होस्ट को सत्यापित नहीं कर सका।",
   "Choose saved Linux SSH credentials for the original host and try again.": "मूल होस्ट के लिए सहेजे गए Linux SSH क्रेडेंशियल चुनें और फिर से प्रयास करें।",
   "Select a Linux mount host.": "Linux माउंट होस्ट चुनें।",
-  "Review the selected Linux mount host and credentials.": "चुने गए Linux माउंट होस्ट और क्रेडेंशियल की जाँच करें।"
+  "Review the selected Linux mount host and credentials.": "चुने गए Linux माउंट होस्ट और क्रेडेंशियल की जाँच करें।",
+  "Waiting for Explorer": "Explorer की प्रतीक्षा है",
+  "Checking with VBR": "VBR से स्थिति की जाँच जारी है",
+  "Browse session unconfirmed": "ब्राउज़िंग सत्र की पुष्टि नहीं हुई",
+  "Check status": "स्थिति जाँचें",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR ने इस अनुरोध के लिए ब्राउज़िंग सत्र की पुष्टि नहीं की है। नया सत्र खोलने से पहले इस वर्कलोड के सत्र जाँचें।"
 }

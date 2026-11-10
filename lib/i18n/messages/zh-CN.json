@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR 无法验证原始 Linux 主机。",
   "Choose saved Linux SSH credentials for the original host and try again.": "请选择用于原始主机的已保存 Linux SSH 凭据，然后重试。",
   "Select a Linux mount host.": "请选择 Linux 挂载主机。",
-  "Review the selected Linux mount host and credentials.": "请检查所选 Linux 挂载主机和凭据。"
+  "Review the selected Linux mount host and credentials.": "请检查所选 Linux 挂载主机和凭据。",
+  "Waiting for Explorer": "正在等待 Explorer",
+  "Checking with VBR": "正在向 VBR 查询",
+  "Browse session unconfirmed": "浏览会话尚未确认",
+  "Check status": "检查状态",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR 尚未确认此请求的浏览会话。请先检查此工作负载的会话，再打开新会话。"
 }

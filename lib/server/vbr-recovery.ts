@@ -51,7 +51,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
   cacheKey: string
   bearerOnly: boolean
   getExplorer: () => ReturnType<typeof explorerConnection>
-}) => Promise<unknown>, options: {backgroundMigration?: boolean; backgroundRestore?:boolean} = {}) {
+}) => Promise<unknown>, options: {backgroundMigration?: boolean; backgroundRestore?:boolean; backgroundExplorerStart?:boolean} = {}) {
   const headers = { 'Cache-Control': 'private, no-store' }
   try {
     if (request.method !== 'GET' && !isSameApplicationOrigin(request)) {
@@ -88,7 +88,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       const batchStart = options.backgroundRestore && method==='POST' && mutation &&
         /^\/api\/v1\/restore\/(?:instantRecovery\/(?:vSphere|hyperV)\/vm|vmRestore\/(?:vSphere|hyperV|cloudDirector))$/.test(path)
       const transferSignal = vmMigration || batchStart ? AbortSignal.timeout(20 * 60_000) : archive ? AbortSignal.any([request.signal, connectTimeout.signal])
-        : options.backgroundRestore ? AbortSignal.timeout(mutation?120_000:60_000) : signal
+        : options.backgroundRestore||options.backgroundExplorerStart ? AbortSignal.timeout(mutation?120_000:60_000) : signal
       const timer = archive ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
       const fetchOnce = () => {
         const headers = {Authorization:`Bearer ${token}`, Accept: archive ? 'application/octet-stream' : 'application/json',
@@ -99,7 +99,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       }
       try {
         let response = await fetchOnce()
-        if (response.status === 401 && sourceId && !vmMigration && !options.backgroundMigration && (!options.backgroundRestore||(configured&&!mutation))) {
+        if (response.status === 401 && sourceId && !vmMigration && !options.backgroundMigration && (!(options.backgroundRestore||options.backgroundExplorerStart)||(configured&&!mutation))) {
           await response.body?.cancel()
           token = await tokenManager.refreshToken(sourceId)
           if (token) response = await fetchOnce()
@@ -128,7 +128,8 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           transferSignal.aborted ? 504 : 502, mutation)
       } finally { if (timer) clearTimeout(timer) }
     }
-    const result = await run({ send, sourceKey, cacheKey, bearerOnly, getExplorer:()=>explorerConnection(configured ? source : undefined,request.signal) })
+    const result = await run({ send, sourceKey, cacheKey, bearerOnly, getExplorer:()=>explorerConnection(configured ? source : undefined,
+      options.backgroundExplorerStart?AbortSignal.timeout(5*60_000):request.signal) })
     return result instanceof Response ? result : NextResponse.json(result, { headers })
   } catch (error) {
     const failure = error instanceof VbrRecoveryError ? error : new VbrRecoveryError('The VBR response could not be processed.', 502)

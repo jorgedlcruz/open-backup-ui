@@ -10,6 +10,23 @@ const source='a'.repeat(64),date='2026-11-09T12:00:00.000Z',session=(n,type,stat
   sessionType:type,creationTime:date,state,platformName:'VMware'})
 const page=(data,skip=0,total=data.length)=>({data,pagination:{skip,total}})
 
+test('an interrupted Explorer handoff stays distinct from a native restore session for the same VM',()=>{
+  const workload='AD-DNS-001'
+  const older={...session(9,'ApplicationLevelRestore','Stopped'),name:workload,result:{result:'Success'}}
+  const receipt={requestId:id(51),sourceKey:source,operation:'BrowseActiveDirectory',workload,phase:'unknown'}
+  const [native,interrupted]=recoveryRows(source,[older],[],[],[receipt])
+  assert.equal(native.sessionId,id(9))
+  assert.equal(interrupted.type,'BrowseActiveDirectory')
+  assert.equal(interrupted.state,'Browse session unconfirmed')
+  assert.equal(interrupted.category,'attention')
+  assert.equal(interrupted.sessionId,undefined)
+  const [checking]=recoveryRows(source,[],[],[],[{...receipt,phase:'starting',explorerStage:'checking'}])
+  assert.equal(checking.state,'Checking with VBR')
+  assert.equal(checking.category,'pending')
+  const accepted=recoveryRows(source,[older],[],[],[{...receipt,phase:'accepted',sessionId:id(9)}])
+  assert.equal(accepted.length,1)
+})
+
 test('uses native recovery-only history filters and carries snapshot offsets across every upstream page',async()=>{
   const entries=Array.from({length:503},(_,i)=>session(i+1,i%2?'RestoreVm':'ApplicationLevelRestore'))
   const calls=[]

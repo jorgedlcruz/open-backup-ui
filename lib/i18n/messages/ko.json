@@ -4621,5 +4621,10 @@
   "VBR could not verify the original Linux host.": "VBR에서 원본 Linux 호스트를 확인하지 못했습니다.",
   "Choose saved Linux SSH credentials for the original host and try again.": "원본 호스트에 사용할 저장된 Linux SSH 자격 증명을 선택한 후 다시 시도하세요.",
   "Select a Linux mount host.": "Linux 마운트 호스트를 선택하세요.",
-  "Review the selected Linux mount host and credentials.": "선택한 Linux 마운트 호스트와 자격 증명을 확인하세요."
+  "Review the selected Linux mount host and credentials.": "선택한 Linux 마운트 호스트와 자격 증명을 확인하세요.",
+  "Waiting for Explorer": "Explorer 응답 대기 중",
+  "Checking with VBR": "VBR에 상태 확인 중",
+  "Browse session unconfirmed": "찾아보기 세션 미확인",
+  "Check status": "상태 확인",
+  "VBR has not confirmed a browse session for this request. Check the sessions for this workload before opening another.": "VBR에서 이 요청의 찾아보기 세션을 확인하지 못했습니다. 새 세션을 열기 전에 이 워크로드의 세션을 확인하세요."
 }

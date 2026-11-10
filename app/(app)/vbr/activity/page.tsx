@@ -9,8 +9,9 @@ export async function generateMetadata() {
   return {title: `${t('Sessions')} | Open Backup UI`}
 }
 
-export default async function ActivityPage({searchParams}: {searchParams: Promise<{session?: string}>}) {
-  const {session} = await searchParams
+export default async function ActivityPage({searchParams}: {searchParams: Promise<{session?: string; name?: string}>}) {
+  const {session,name} = await searchParams
   if (typeof session === 'string' && validId(session)) redirect(`/vbr/activity/${session.toLowerCase()}`)
-  return <ActivityWorkspace/>
+  const initialSearch = typeof name === 'string' ? name.trim().slice(0, 200) : ''
+  return <ActivityWorkspace key={initialSearch} initialSearch={initialSearch}/>
 }
