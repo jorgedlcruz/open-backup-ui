@@ -31,6 +31,82 @@ test('picker filters exact native object and backup capability, point operation 
 test('batch selection only applies to virtual machine and instant VM recovery',()=>{
   assert.deepEqual(recoveryKinds.filter(bulkKind),['instant-vm','entire-vm'])
 })
+
+test('volume tools require actual native rights and a proven point for this machine in a shared backup',async()=>{
+  const host=id(401),sibling=id(402),point=id(403),other=id(404),shared=id(405)
+  const rows=[host,sibling].map((objectId,i)=>({objectId,id:i?other:point,backupId:shared,platformName:'WindowsPhysical',name:'PC-'+i,itemIconType:'WindowsAgentMachine',operations:[]}))
+  const publicRead=async path=>{
+    const data=path.includes('/restorePoints')?[point,other].map(id=>({id,backupId:shared,platformName:'WindowsPhysical'})):rows.map(o=>({id:o.objectId,platformName:o.platformName,name:o.name}))
+    return {data,pagination:{total:data.length,skip:0}}
+  }
+  const grants=['ViewBackupObjects','ViewRestorePoints','PerformVolumeRestore','ViewAgentsRecoveryAppliances']
+  const privateSend=async path=>{
+    if(path.includes('permissions'))return {permissions:grants}
+    const data=path.includes('/objects')?rows:[{id:shared,name:'Computer backup',platformName:'WindowsPhysical',objectsCount:2}]
+    return {data,pagination:{total:data.length,skip:0}}
+  }
+  const get=(view,extra={})=>pickerPage(publicRead,privateSend,'physical-volume-rights',{view,kind:'agent-volumes',offset:0,limit:10,refresh:true,...extra})
+  assert.equal((await get('objects')).total,0)
+  grants.push('DiskManagement')
+  assert.equal((await get('objects')).total,2)
+  assert.deepEqual((await get('points',{objectId:host})).data.map(p=>p.id),[point])
+  assert.equal((await get('points',{objectId:host,restorePointId:other})).total,0)
+  grants.splice(grants.indexOf('DiskManagement'),1)
+  rows[0].operations=[{operation:'CreateRecoveryToken',enabled:true}]
+  grants.push('CreateComputerRecoveryToken','ViewBackups')
+  assert.equal((await get('objects')).total,0,'token cannot grant access to the sibling chain')
+  rows[0].childBackupId=id(406)
+  assert.equal((await get('objects')).total,1)
+})
+
+test('goals expose only supported methods and retain VM results when storage inventory is unavailable',async()=>{
+  const {read,privateSend}=api()
+  const page=await pickerPage(read,privateSend,'goal-summary',{kind:'machines',view:'goals',limit:50,offset:0})
+  assert.deepEqual(page.data.map(g=>[g.goal,g.kinds,g.count]),[['machines',['entire-vm'],2],['apps',['sql','active-directory'],2]])
+  assert.deepEqual(page.data[0].workloadTypes,['vm'])
+  assert.equal(page.complete,false)
+})
+
+test('a shared goal uses the union for its calendar and the exact copy and point for its next method',async()=>{
+  const {eligibleMethods}=require('../lib/restore-points/recovery-picker.ts')
+  const {privateSend}=api()
+  const native=async(path,options)=>{
+    const page=await privateSend(path,options)
+    if(path.includes('/objects?'))page.data=page.data.map(r=>({...r,operations:r.backupId===copy?[{operation:'InstantRecoveryToVi',enabled:true}]:r.operations}))
+    return page
+  }
+  const items=[
+    {id:id(70),backupId:backup,allowedOperations:['StartEntireVmRestore','StartViVMInstantRecovery']},
+    {id:id(71),backupId:copy,allowedOperations:['StartEntireVmRestore','StartViVMInstantRecovery']},
+    {id:id(72),backupId:copy,allowedOperations:['StartEntireVmRestore']},
+  ]
+  const read=async url=>{
+    if(!url.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints'))throw Error('inventory unavailable')
+    return {data:items,pagination:{skip:0,total:items.length}}
+  }
+  const get=view=>pickerPage(read,native,'shared-vm-goal',{kind:'machines',view,objectId:vm,limit:50,offset:0})
+  const object=(await get('objects')).data[0],points=(await get('points')).data
+  assert.deepEqual(points.map(p=>p.id),[id(70),id(71)])
+  assert.deepEqual(points.map(p=>eligibleMethods(object,p,'machines')),[['entire-vm'],['instant-vm']])
+  assert.equal(eligibleMethods(object,{...points[0],backupId:id(999)},'machines').length,0)
+})
+test('public-only Agent recovery uses exact backup and point operations; operating system follows verified agent platform',async()=>{
+  const {findPoint}=require('../lib/recovery/options.ts')
+  const data={id:id(71),name:'Agent',backupId:backup,platformName:'LinuxPhysical',type:'Full',creationTime:'2026-11-09T23:00:00Z',
+    guestOsFamily:null,allowedOperations:['StartFlrRestore','StartViVMInstantRecovery','StartDiskPublish']}
+  const read=async url=>{
+    if(url.startsWith('/api/v1/backupObjects?'))return {data:[{id:vm,name:'Agent',type:'Computer',platformName:'LinuxPhysical',backupId:backup}],pagination:{total:1,skip:0}}
+    if(url.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints?'))return {data:[data],pagination:{total:1,skip:0}}
+    if(url==='/api/v1/restorePoints/'+data.id)return data
+    throw Error('unexpected '+url)
+  }
+  const page=await pickerPage(read,undefined,'physical-with-public-auth',{kind:'guest-files',view:'objects',offset:0,limit:10})
+  assert.equal(page.data[0].workloadType,'physical')
+  assert.deepEqual(page.data[0].copies[0].kinds.sort(),['guest-files','instant-vm','publish-disks'])
+  assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,'Linux')
+  data.platformName='WindowsPhysical';assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,'Windows')
+  data.platformName='VMware';assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,null)
+})
 test('calendar and paging share native eligibility, copy identity, local midnight and DST folds',async()=>{
   const {privateSend}=api()
   const restore=(n,time,b=backup,ops=['StartEntireVmRestore'])=>({id:id(n),backupId:b,creationTime:time,allowedOperations:ops})

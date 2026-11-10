@@ -1,4 +1,5 @@
 // Open Backup UI v1.0.2
+import type {RecoveryKind} from './recovery-picker'
 import { validId } from '../investigation/model'
 import { recoveryCenterPath } from '../navigation/recovery'
 import type { PointEvidence } from './model'
@@ -14,6 +15,7 @@ export function multiVmKind(operation: string): MultiVmKind | undefined {
 
 export function pointSelection(row: PointEvidence, scopedObjectId?: string): PointSelection | undefined {
   const {point} = row
+  if (/Physical|UnstructuredData/i.test(point.platformName||''))return
   if (!validId(point.id) || !validId(point.backupId) || !point.allowedOperations?.some(multiVmKind)) return
   const candidates = new Set<string>()
   if (point.verifiedObjectId === null) return
@@ -28,7 +30,7 @@ export function pointSelection(row: PointEvidence, scopedObjectId?: string): Poi
   if (validId(objectId)) return {objectId, backupId:point.backupId, restorePointId:point.id}
 }
 
-export function recoveryPickerHref(kind: MultiVmKind, sourceKey: string, items: PointSelection[]) {
+export function recoveryPickerHref(kind: RecoveryKind, sourceKey: string, items: PointSelection[]) {
   const query = new URLSearchParams({recover:kind, sourceKey})
   if (items.length === 1) {
     for (const [name,value] of Object.entries(items[0])) query.set(name,value)

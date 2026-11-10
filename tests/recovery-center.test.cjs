@@ -14,12 +14,12 @@ test('an interrupted Explorer handoff stays distinct from a native restore sessi
   const workload='AD-DNS-001'
   const older={...session(9,'ApplicationLevelRestore','Stopped'),name:workload,result:{result:'Success'}}
   const receipt={requestId:id(51),sourceKey:source,operation:'BrowseActiveDirectory',workload,phase:'unknown'}
-  const [native,interrupted]=recoveryRows(source,[older],[],[],[receipt])
-  assert.equal(native.sessionId,id(9))
-  assert.equal(interrupted.type,'BrowseActiveDirectory')
-  assert.equal(interrupted.state,'Browse session unconfirmed')
-  assert.equal(interrupted.category,'attention')
-  assert.equal(interrupted.sessionId,undefined)
+  const [native,...rest]=recoveryRows(source,[older],[],[],[receipt])
+  assert.equal(native.sessionId,id(9));assert.deepEqual(rest,[])
+  const request={...receipt,kind:'activeDirectory',requestStatus:'pending',createdAt:date}
+  const [server]=recoveryRows(source,[],[],[],[],[request])
+  assert.equal(server.category,'pending');assert.match(server.href,/provider=ad/)
+  assert.equal(recoveryRows(source,[older],[],[],[receipt],[{...request,requestStatus:'ready',sessionId:id(9)}]).length,1)
   const [checking]=recoveryRows(source,[],[],[],[{...receipt,phase:'starting',explorerStage:'checking'}])
   assert.equal(checking.state,'Checking with VBR')
   assert.equal(checking.category,'pending')

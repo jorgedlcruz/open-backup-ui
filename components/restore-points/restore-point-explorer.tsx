@@ -3,11 +3,11 @@
 import { useRecoveryPresentation } from './use-presentation'
 import { RestoreWorkflow } from './restore-workflow'
 import { ApplicationExplorerLaunch } from './active-directory-launch'
+import {ProtectedWorkloadActions} from './protected-workload-actions'
 import { RecoveryHandoff } from './preparing-recovery'
-import { recoveryCenterPath } from '@/lib/navigation/recovery'
 import { multiVmKind, pointSelection, recoveryPickerHref, type PointSelection } from '@/lib/restore-points/recovery-selection'
 import { isRestoreOperation, type RestoreOperation } from '@/lib/restore-points/workflow'
-import { activeDirectoryOperation, sqlOperation, observeRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { recoveryPreparingHref, activeDirectoryOperation, sqlOperation, observeRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import workflow from './workflow.module.css'
 
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -65,7 +65,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const [repository, setRepository] = useState('all');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [operation, setOperation] = useState<RestoreLaunch['operation'] | null>(null);
+  const [operation, setOperation] = useState<Exclude<RestoreLaunch['operation'],import('@/lib/restore-points/launch').AdditionalOperation> | null>(null);
   const router = useRouter()
   const [navigating, startTransition] = useTransition()
   const [handoff, setHandoff] = useState<RestoreLaunch>()
@@ -77,7 +77,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
     })
     setSelectedId(null)
     setOperation(null)
-    startTransition(() => router.push(recoveryCenterPath + '/preparing?' + new URLSearchParams({request: receipt.requestId})))
+    startTransition(() => router.push(recoveryPreparingHref(receipt)))
   }
   function inspectPoint(id: string) {
     setOperation(null);
@@ -106,6 +106,8 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
   const selections = chosen.map(row => pointSelection(row)).filter((item):item is PointSelection => !!item)
   const pickable = !objectId && !!data?.sourceKey && rows.some(row => pointSelection(row))
   const selectedKind = operation && multiVmKind(operation)
+  const externalPlatform=!!selected&&/Physical|UnstructuredData/i.test(selected.point.platformName||'')
+  const externalObject=selected&&selected.point.verifiedObjectId!==null?(objectId||selected.point.verifiedObjectId||selected.point.applications?.[0]?.objectId||(selected.mapping==='confirmed'&&selected.file?.objectIds?.length===1?selected.file.objectIds[0]:undefined)):undefined
   const seed = selected && pointSelection(selected,objectId)
   const groupKinds = (['instant-vm','entire-vm'] as const).filter(kind =>
     chosen.every(row => row.point.allowedOperations?.some(op => multiVmKind(op) === kind)))
@@ -222,13 +224,13 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
           <div><dt>{t("Whole-file stored size")}</dt><dd>{size(selected.file?.backupSize)}</dd></div>
         </dl>
         <section className={styles.detailSection}><h3>{t("Available recovery operations")}</h3>
-          {selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={workflow.operations}>{[...new Set(selected.point.allowedOperations)].map(item => {
+          {externalPlatform ? (data?.sourceKey&&externalObject?<ProtectedWorkloadActions key={selected.point.id} sourceKey={data.sourceKey} point={selected.point} objectId={externalObject}/>:<span>{t('Select a protected workload.')}</span>) : selected.point.allowedOperations == null ? <span className={styles.muted}>{t("Unknown — operations were not reported.")}</span> : selected.point.allowedOperations.length ? <ul className={workflow.operations}>{[...new Set(selected.point.allowedOperations)].map(item => {
             if (!isRestoreOperation(item)) return <li key={item}><span>{label(item)} · {t('Available in VBR')}</span></li>
             const Icon = recoveryIcons[item]
             return <li key={item}><button type="button" onClick={() => setOperation(item)}><Icon size={16} aria-hidden="true" />{label(item)}</button></li>
           })}</ul> : <span className={styles.muted}>{t("VBR reported no available operations.")}</span>}
         </section>
-        {(directory || sql) && data?.sourceKey && <section className={styles.detailSection}><h3>{t('Application items')}</h3>
+        {!externalPlatform && (directory || sql) && data?.sourceKey && <section className={styles.detailSection}><h3>{t('Application items')}</h3>
           <ul className={workflow.operations}>{directory && <li><button type="button" onClick={() => setOperation(activeDirectoryOperation)}>
             <FolderTree size={16} aria-hidden/>{t('Microsoft Active Directory')}</button></li>}
             {sql && <li><button type="button" onClick={()=>setOperation(sqlOperation)}><Database size={16} aria-hidden/>{t('Microsoft SQL Server')}</button></li>}</ul>

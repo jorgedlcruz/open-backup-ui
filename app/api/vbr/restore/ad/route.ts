@@ -7,6 +7,8 @@ import { withVbrRecovery } from '@/lib/server/vbr-recovery'
 import { ENCRYPTION_KEY,LEGACY_DEFAULT_KEY } from '@/lib/server/encryption'
 import { explorerSession, rememberExplorerSession } from '@/lib/server/explorer-session-records'
 import { explorerLaunchRequest,isExplorerLaunchRequest } from '@/lib/recovery/explorer-launch-request'
+import { applicationOrigin } from '@/lib/server/request-origin'
+import { canSendDirectoryCredentials,directoryTransportMessage } from '@/lib/restore-points/ad-cart'
 
 export const dynamic='force-dynamic'
 export async function POST(request:NextRequest) {
@@ -18,6 +20,8 @@ export async function POST(request:NextRequest) {
     const parsed=adExplorerSchema.safeParse(raw)
     if(!parsed.success) throw new VbrRecoveryError('Check the Active Directory Explorer options.')
     const input=parsed.data
+    if(input.action==='compareProduction'&&(!canSendDirectoryCredentials(applicationOrigin(request))||
+      !canSendDirectoryCredentials(request.headers.get('origin')||applicationOrigin(request))))throw new VbrRecoveryError(directoryTransportMessage,403)
     checkSource(input.sourceKey,sourceKey)
     if(input.action==='start') {
       await verifyExplorerPoint(explorer.send,send,{...input,objectId:input.backupObjectId},'activeDirectory')

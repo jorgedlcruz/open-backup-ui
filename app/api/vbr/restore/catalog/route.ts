@@ -3,12 +3,12 @@ import {NextRequest,NextResponse} from 'next/server'
 import {z} from 'zod'
 import {withVbrRead} from '@/lib/server/vbr-read'
 import {TopologyRequestError} from '@/lib/topology/load'
-import {recoveryKinds} from '@/lib/restore-points/recovery-picker'
+import {pickerScopes} from '@/lib/restore-points/recovery-picker'
 import {pickerPage} from '@/lib/recovery/picker-catalog'
 import {VbrRecoveryError} from '@/lib/recovery/error'
 
 export const dynamic='force-dynamic'
-const params=z.object({sourceKey:z.string().regex(/^[a-f0-9]{64}$/),kind:z.enum(recoveryKinds),view:z.enum(['objects','points']),
+const params=z.object({sourceKey:z.string().regex(/^[a-f0-9]{64}$/),kind:z.enum(pickerScopes),view:z.enum(['goals','objects','points']),
   objectId:z.string().uuid().optional(),backupId:z.string().uuid().optional(),restorePointId:z.string().uuid().optional(),query:z.string().max(256).optional(),
   offset:z.coerce.number().int().min(0).default(0),limit:z.coerce.number().int().min(1).max(200).default(50),refresh:z.literal('true').optional(),
   calendarZone:z.string().min(1).max(100).refine(zone=>{try{new Intl.DateTimeFormat('en',{timeZone:zone});return true}catch{return false}}).optional(),

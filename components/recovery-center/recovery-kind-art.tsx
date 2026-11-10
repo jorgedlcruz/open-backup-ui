@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { RecoveryKind } from '@/lib/restore-points/recovery-picker'
 import styles from './recovery-kind-art.module.css'
 
-const drawings: Record<RecoveryKind, ReactNode> = {
+const drawings = {
   'instant-vm': (
     <>
       <rect x="5" y="7" width="38" height="27" rx="4" />
@@ -59,9 +59,10 @@ const drawings: Record<RecoveryKind, ReactNode> = {
 }
 
 export function RecoveryKindArt({ kind }: { kind: RecoveryKind }) {
+  const icon=kind==='agent-volumes'?'instant-disk':kind.endsWith('-files')?'guest-files':kind.startsWith('nas-')||kind.startsWith('object-')?'entire-vm':kind
   return (
     <svg className={styles.art} width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      {drawings[kind]}
+      {drawings[icon as keyof typeof drawings] satisfies ReactNode}
     </svg>
   )
 }

@@ -64,6 +64,24 @@ test('a timed-out eligibility worker cannot submit after reporting that nothing 
   assert.equal(state.created,0)
   assert.equal(await store.reserve(key,req,launchPoint),false)
 })
+test('Recovery Center lists only the authenticated owner’s summaries and old pages cannot start an untracked Explorer',async t=>{
+  const {isExplorerLaunchRequest,explorerLaunchRequest}=require('../lib/recovery/explorer-launch-request.ts')
+  const {key,req,store,state,send}=durableFixture(t)
+  const old={action:'start',sourceKey:key.sourceKey,backupObjectId:objectId,backupId,restorePointId}
+  assert.equal(isExplorerLaunchRequest(old),true)
+  await assert.rejects(explorerLaunchRequest(old,'activeDirectory',{...key,secret:'fixture'},send,send,()=>assert.fail('scheduled')),e=>e.status===409&&e.message==='This recovery form is out of date. Refresh Recovery Center before starting.')
+  await store.reserve(key,req,launchPoint)
+  await store.submit(key,req,launchPoint,async()=>{},send)
+  state.done=true
+  await store.response(key,req,'fixture',send)
+  const [summary]=await store.list(key)
+  assert.equal(summary.sessionId,sessionId)
+  assert.equal(summary.requestStatus,'ready')
+  assert.equal(summary.requestId,req)
+  assert.ok(!('taskId' in summary)&&!('principalKey' in summary))
+  assert.deepEqual(await store.list({...key,principalKey:'c'.repeat(64)}),[])
+  assert.deepEqual(await store.list({...key,sourceKey:'c'.repeat(64)}),[])
+})
 test('lost native acknowledgements remain unknown and definitive rejections are preserved without another write',async t=>{
   const {key,store}=durableFixture(t)
   for(const [index,error,status] of [[1,new VbrRecoveryError('Gateway lost',502,true),'unknown'],[2,new VbrRecoveryError('Forbidden',403),'failed']]){

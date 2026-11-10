@@ -18,6 +18,7 @@ export type RecoverySend = (path: string, options?: {
   method?: 'GET' | 'POST'
   body?: unknown
   mutation?: boolean
+  iso?: boolean
   archive?: boolean
 }) => Promise<unknown>
 
@@ -75,9 +76,10 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
     const cacheKey=readCacheScope(destination.href,token,configured?source:undefined)
     const readDeadline = AbortSignal.timeout(60000)
     const signal = options.backgroundMigration ? readDeadline : AbortSignal.any([request.signal, readDeadline])
-    const send: RecoverySend = async (path, { method = 'GET', body, mutation = false, archive = false } = {}) => {
+    const send: RecoverySend = async (path, { method = 'GET', body, mutation = false, archive = false, iso = false } = {}) => {
       const url = new URL(path, destination)
       if (url.origin !== destination.origin || !url.pathname.startsWith('/api/v1/')) throw new VbrRecoveryError('Invalid VBR operation.')
+      if (iso && (method!=='GET'||!/^\/api\/v1\/recoveryMedia\/[a-f\d-]{36}\/download$/i.test(path)))throw new VbrRecoveryError('Invalid recovery media request.')
       if (archive && (method !== 'POST' || !/^\/api\/v1\/backupBrowser\/flr\/[a-f\d-]{36}\/prepareDownload\/[a-f\d-]{36}\/download$/i.test(path))) {
         throw new VbrRecoveryError('Invalid archive request.')
       }
@@ -87,11 +89,11 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       const vmMigration = method === 'POST' && mutation && /^\/api\/v1\/restore\/instantRecovery\/(vSphere|hyperV)\/vm\/[a-f\d-]{36}\/migrate$/i.test(path)
       const batchStart = options.backgroundRestore && method==='POST' && mutation &&
         /^\/api\/v1\/restore\/(?:instantRecovery\/(?:vSphere|hyperV)\/vm|vmRestore\/(?:vSphere|hyperV|cloudDirector))$/.test(path)
-      const transferSignal = vmMigration || batchStart ? AbortSignal.timeout(20 * 60_000) : archive ? AbortSignal.any([request.signal, connectTimeout.signal])
+      const transferSignal = vmMigration || batchStart ? AbortSignal.timeout(20 * 60_000) : (iso || archive) ? AbortSignal.any([request.signal, connectTimeout.signal])
         : options.backgroundRestore||options.backgroundExplorerStart ? AbortSignal.timeout(mutation?120_000:60_000) : signal
-      const timer = archive ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
+      const timer = (archive||iso) ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
       const fetchOnce = () => {
-        const headers = {Authorization:`Bearer ${token}`, Accept: archive ? 'application/octet-stream' : 'application/json',
+        const headers = {Authorization:`Bearer ${token}`, Accept: iso?'application/vnd.efi.iso, application/octet-stream':archive?'application/octet-stream':'application/json',
           'x-api-version':'1.3-rev2', ...(body !== undefined ? {'Content-Type':'application/json'} : {})}
         const payload = body === undefined ? undefined : JSON.stringify(body)
         return vmMigration || batchStart ? sendLongRestore(url,headers,payload,transferSignal)
@@ -110,6 +112,12 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
           const message = typeof error?.message === 'string' ? error.message.slice(0, 1000) : `VBR returned HTTP ${response.status}.`
           throw new VbrRecoveryError(uncertain ? 'VBR could not confirm the operation. Check Sessions before trying again.' : message,
             response.status >= 500 ? 502 : response.status, uncertain)
+        }
+        if (iso) {
+          if(!response.body||!/^application\/(?:vnd\.efi\.iso|octet-stream|x-iso9660-image|x-cd-image)(?:;|$)/i.test(response.headers.get('content-type')||'')){
+            await response.body?.cancel();throw new VbrRecoveryError('VBR did not return recovery media.',502)
+          }
+          return new Response(response.body,{headers:{...headers,'Content-Type':'application/vnd.efi.iso','Content-Disposition':'attachment; filename="Veeam-Recovery-Media.iso"','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}})
         }
         if (archive) {
           if (!response.body || !/^(application\/(octet-stream|zip|x-zip-compressed))(;|$)/i.test(response.headers.get('content-type') || '')) {

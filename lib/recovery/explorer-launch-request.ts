@@ -13,7 +13,9 @@ export function isExplorerLaunchRequest(value:unknown){
   const result=raw.safeParse(value)
   if(!result.success)return false
   const {action,requestId,pending}=result.data
-  return action==='status'||action==='start'&&requestId!==undefined||action==='poll'&&(requestId!==undefined||pending?.startsWith('launch1.'))
+  // Older pages omit the request UUID. Validate them here, before they can
+  // enter the legacy native start path and create a session with no receipt.
+  return action==='status'||action==='start'||action==='poll'&&(requestId!==undefined||pending?.startsWith('launch1.'))
 }
 const request=z.object({sourceKey:z.string().regex(/^[a-f0-9]{64}$/),requestId:guid.optional()})
 const commands=z.discriminatedUnion('action',[
@@ -25,6 +27,8 @@ const commands=z.discriminatedUnion('action',[
 type Context={sourceKey:string;principalKey:string;secret:string}
 export async function explorerLaunchRequest(value:unknown,kind:ExplorerKind,ctx:Context,publicSend:RecoverySend,
     privateSend:RecoverySend,schedule:(callback:()=>Promise<void>)=>void){
+  const action=raw.safeParse(value)
+  if(action.success&&action.data.action==='start'&&action.data.requestId===undefined)throw new VbrRecoveryError('This recovery form is out of date. Refresh Recovery Center before starting.',409)
   const parsed=commands.safeParse(value)
   if(!parsed.success)throw new VbrRecoveryError('Invalid Explorer request.')
   const input=parsed.data

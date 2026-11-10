@@ -1,5 +1,6 @@
 // Open Backup UI v1.0.2
 export interface RestorePoint {
+  recoveryKinds?: import('./recovery-picker').RecoveryKind[];
   // Membership established by VBR's object-scoped restore-point collection.
   verifiedObjectId?: string | null;
   applications?: {kind:'activeDirectory'|'sql'; objectId:string}[];

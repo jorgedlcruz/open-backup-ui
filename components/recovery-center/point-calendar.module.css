@@ -28,7 +28,7 @@
 .slots button>svg {flex:none;color:var(--primary);}
 .pager,.notice {display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-top:.5rem;}
 .pager span {margin-inline-end:auto;}
-@media (max-width:600px) {
+@container (max-width:35rem) {
   .panel {grid-template-columns:minmax(0,1fr);}
   .calendar,.times {padding:.65rem;}
   .times {border-inline-start:0;border-top:1px solid var(--border);}

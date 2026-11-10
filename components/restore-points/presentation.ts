@@ -31,6 +31,14 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
   const days = value.match(/^(\d+) days$/)
   if (days) return t('{count} days', { count: new Intl.NumberFormat(locale).format(Number(days[1])) })
   switch (value) {
+    case 'agent-volumes': return t('Restore volumes')
+    case 'nas-files': return t('Restore files and folders')
+    case 'object-files': return t('Restore objects')
+    case 'nas-entire': return t('Restore entire file share')
+    case 'object-entire': return t('Restore entire object storage')
+    case 'nas-rollback': return t('Roll back file share')
+    case 'object-rollback': return t('Roll back object storage')
+    case 'nas-instant': return t('Instant file share recovery')
     case 'StartViVMInstantRecovery': return t('VMware Instant Recovery')
     case 'StartHvVMInstantRecovery': return t('Hyper-V Instant Recovery')
     case 'StartEntireVmRestore': return t('Entire VM restore')
@@ -92,6 +100,41 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'VBR returned a different task.': return t('VBR could not verify this recovery request.')
+    case 'VBR returned a different target.': return t('VBR could not verify this recovery request.')
+    case 'VBR returned a different disk layout.': return t('VBR could not verify this recovery request.')
+    case 'Invalid computer recovery request.': return t('Check the recovery settings.')
+    case 'Invalid recovery media request.': return t('Check the recovery settings.')
+    case 'Invalid recovery request.': return t('Check the recovery settings.')
+    case 'Select a restore point.': return t('Select a restore point')
+    case 'This recovery form is out of date. Refresh Recovery Center before starting.':
+    case 'Too many recovery preparations are open.':
+    case 'This recovery point is unavailable for this computer.':
+    case 'VBR flagged this restore point for malware. Reopen the workflow and review its current status.':
+    case 'Confirm recovery access for the selected backup.':
+    case 'Recovery media is unavailable for this computer.':
+    case 'This preparation expired. Open the selected restore point again.':
+    case 'Recovery media is not ready.':
+    case 'Volume recovery is unavailable.':
+    case 'Choose a connected, verified recovery appliance.':
+    case 'This disk layout is no longer available.':
+    case 'Confirm the target computer and disk mapping.':
+    case 'The disk layout changed. Review the mapping again.':
+    case 'This layout has already been submitted.':
+    case 'Choose a source and destination disk from this layout.':
+    case 'VBR no longer allows this restore operation.':
+    case 'Select a destination from the connected VBR source.':
+    case 'Review the file share access permissions.':
+    case 'Rollback uses the original location.':
+    case 'Confirm the overwrite before continuing.':
+    case 'Select files or folders to restore.':
+    case 'This request already belongs to a different recovery.':
+    case 'VBR did not return recovery media.':
+    case 'Check the recovery settings.':
+    case 'VBR could not confirm the operation. Check Sessions before trying again.':
+    case 'This mounted recovery is no longer available.':
+    case 'Select a single item version.':
+    case 'Application recovery requires a private server encryption key.':
     case 'VBR could not list mount hosts for this restore point.':
     case 'The selected Linux mount host is no longer available for this restore point.':
     case 'VBR could not verify the original Linux host.':

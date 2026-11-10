@@ -6,11 +6,13 @@ import {explorerHandoffIO,resolveExplorerHandoff,type ExplorerHandoffIO,type Exp
 export const activeDirectoryOperation = 'BrowseActiveDirectory'
 export const sqlOperation = 'BrowseSql'
 
+export const additionalOperations=['nas-files','nas-entire','nas-rollback','nas-instant','object-files','object-entire','object-rollback','agent-volumes'] as const
+export type AdditionalOperation=typeof additionalOperations[number]
 export type RestoreLaunch = {
   requestId: string
   createdAt?: string
   sourceKey: string
-  operation: RestoreOperation | typeof activeDirectoryOperation | typeof sqlOperation
+  operation: RestoreOperation | AdditionalOperation | typeof activeDirectoryOperation | typeof sqlOperation
   workload: string
   pointTime?: string
   phase: 'starting' | 'accepted' | 'rejected' | 'unknown'
@@ -32,11 +34,11 @@ function storedLaunches(): RestoreLaunch[] {
     const items: unknown = JSON.parse(sessionStorage.getItem(storageKey) || '[]')
     if (!Array.isArray(items)) return []
     return items.filter(value => value && uuidPattern.test(value.requestId) && /^[a-f0-9]{64}$/.test(value.sourceKey)
-      && (isRestoreOperation(value.operation) || value.operation === activeDirectoryOperation || value.operation === sqlOperation) && typeof value.workload === 'string'
+      && (isRestoreOperation(value.operation) || additionalOperations.some(op=>op===value.operation) || value.operation === activeDirectoryOperation || value.operation === sqlOperation) && typeof value.workload === 'string'
       && ['starting', 'accepted', 'rejected', 'unknown'].includes(value.phase)
       && (value.explorerTracked===undefined||value.explorerTracked===true&&(value.operation===activeDirectoryOperation||value.operation===sqlOperation)
         && ['opening','polling','checking'].includes(value.explorerStage)
-        && ['restorePointId','backupId','backupObjectId'].every(key=>uuidPattern.test(value.explorerPoint?.[key])))
+        && (value.explorerPoint==null || ['restorePointId','backupId','backupObjectId'].every(key=>uuidPattern.test(value.explorerPoint?.[key]))))
       && (value.message == null || typeof value.message === 'string')
       && (value.mountErrors == null || Array.isArray(value.mountErrors) && value.mountErrors.every((issue: {type?: unknown; message?: unknown} | null) =>
         issue && typeof issue.type === 'string' && typeof issue.message === 'string'))
@@ -62,10 +64,10 @@ function remember(receipt: RestoreLaunch) {
   return receipt
 }
 
-export function beginRestoreLaunch<Draft extends Pick<RestoreLaunch, 'sourceKey' | 'operation'>>(draft: Draft, workload: string, pointTime: string | undefined, start: (draft: Draft) => Promise<RestoreResult>) {
+export function beginRestoreLaunch<Draft extends Pick<RestoreLaunch, 'sourceKey' | 'operation'>>(draft: Draft, workload: string, pointTime: string | undefined, start: (draft: Draft, requestId:string) => Promise<RestoreResult>) {
   const receipt = remember({ requestId: uuid(), createdAt:new Date().toISOString(), sourceKey: draft.sourceKey, operation: draft.operation, workload, pointTime, phase: 'starting' })
   // The mutation belongs to the user's submit event. A page mount or refresh only observes its receipt.
-  const result = Promise.resolve().then(() => start(draft)).then(response => {
+  const result = Promise.resolve().then(() => start(draft,receipt.requestId)).then(response => {
     if (!response.id || !uuidPattern.test(response.id) || response.sourceKey !== draft.sourceKey) {
       return remember({ ...receipt, phase: 'unknown' })
     }
@@ -139,6 +141,40 @@ export function observeRestoreLaunch(requestId:string,io=explorerHandoffIO){
   return canCheckExplorerLaunch(receipt)?trackExplorer(receipt,undefined,io):Promise.resolve(receipt)
 }
 
+export function recoveryPreparingHref(receipt:Pick<RestoreLaunch,'requestId'|'sourceKey'|'operation'>){
+  const query=new URLSearchParams({request:receipt.requestId,sourceKey:receipt.sourceKey})
+  if(receipt.operation===activeDirectoryOperation||receipt.operation===sqlOperation)query.set('provider',receipt.operation===sqlOperation?'sql-explorer':'ad')
+  if(isStorageOperation(receipt.operation))query.set('provider',receipt.operation)
+  return '/vbr/recovery-center/preparing?'+query
+}
+export const isStorageOperation=(kind:unknown):kind is Exclude<AdditionalOperation,'agent-volumes'>=>additionalOperations.some(k=>k!=='agent-volumes'&&k===kind)
+export function observeAddressedLaunch(requestId:string,sourceKey?:string,provider?:string,io=explorerHandoffIO):Promise<RestoreLaunch|undefined> {
+  const receipt=readRestoreLaunch(requestId)
+  if(isStorageOperation(provider)){
+    if(!sourceKey||!uuidPattern.test(requestId)||!/^[a-f0-9]{64}$/.test(sourceKey)||receipt&&(receipt.sourceKey!==sourceKey||receipt.operation!==provider))return Promise.resolve(undefined)
+    return (async()=>{
+      const local=await observeRestoreLaunch(requestId,io)
+      if(local&&(local.phase==='accepted'||local.phase==='rejected'))return local
+      const draft=local??{sourceKey,requestId,operation:provider,workload:'',phase:'unknown' as const}
+      const {applicationRequest}=await import('../api/application-request')
+      for(const pause of [0,700,1800,4000]){
+        if(pause)await new Promise(resolve=>setTimeout(resolve,pause))
+        try{
+          const status:{sourceKey:string;requestId:string;kind:string;phase:string;sessionId?:string}=await applicationRequest('/api/vbr/restore/unstructured?'+new URLSearchParams({sourceKey,requestId,kind:provider}))
+          if(status.sourceKey!==sourceKey||status.requestId!==requestId||status.kind!==provider)break
+          if(status.phase==='accepted'&&status.sessionId&&uuidPattern.test(status.sessionId))return remember({...draft,phase:'accepted',sessionId:status.sessionId})
+        }catch{break}
+      }
+      return remember({...draft,phase:'unknown'})
+    })()
+  }
+  if(!uuidPattern.test(requestId))return Promise.resolve(undefined)
+  if(receipt && ((sourceKey && sourceKey!==receipt.sourceKey)||(provider && provider!==(receipt.operation===sqlOperation?'sql-explorer':receipt.operation===activeDirectoryOperation?'ad':''))))return Promise.resolve(undefined)
+  if(!receipt && uuidPattern.test(requestId) && sourceKey && /^[a-f0-9]{64}$/.test(sourceKey) && (provider==='ad'||provider==='sql-explorer')){
+    remember({requestId,sourceKey,operation:provider==='ad'?activeDirectoryOperation:sqlOperation,workload:'',phase:'starting',explorerTracked:true,explorerStage:'checking'})
+  }
+  return observeRestoreLaunch(requestId,io)
+}
 export function findSessionLaunch(sourceKey: string, sessionId: string) {
   return [...recent.values(), ...storedLaunches()].find(receipt =>
     receipt.phase === 'accepted' && receipt.sourceKey === sourceKey && receipt.sessionId === sessionId)

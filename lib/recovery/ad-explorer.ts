@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { validId } from '../investigation/model'
 import type { RecoverySend } from '../server/vbr-recovery'
 import {adSubmissions,type AdSubmissions} from '../server/ad-submissions'
+import {snapshotDirectoryObject,readProductionDirectory,compareDirectoryValues} from '../server/ad-production'
 import { checkSource, VbrRecoveryError } from './error'
 
 const guid = z.string().refine(validId).transform(value=>value.toLowerCase())
@@ -29,6 +30,8 @@ export const adExplorerSchema=z.discriminatedUnion('action',[
     skip:z.number().int().nonnegative().default(0),limit:z.number().int().min(1).max(200).default(100)}),
   z.object({...session,action:z.literal('keepAlive')}),z.object({...session,action:z.literal('finish')}),
   z.object({...session,action:z.literal('prepare'),intent:z.enum(['restore','export']),dntIds:z.array(dnt).min(1).max(256)}),
+  z.object({...session,action:z.literal('comparisonSource'),dnt}).strict(),
+  z.object({...session,action:z.literal('compareProduction'),dnt,reference:ticket,username:text,password}).strict(),
   z.object({...work,action:z.literal('cancelWorkflow')}),
   z.object({...work,action:z.literal('check'),step:stepSchema,server:server.optional(),gcServer:server.optional(),useSsl:z.boolean().optional(),
     username:text.optional(),password:password.optional(),rootDn:text.optional(),path:text.optional(),filename:text.optional(),overwrite:z.boolean().optional()}),
@@ -42,8 +45,8 @@ export const adExplorerSchema=z.discriminatedUnion('action',[
 export type AdExplorerInput=z.infer<typeof adExplorerSchema>
 type Check=Extract<AdExplorerInput,{action:'check'}>
 type Context={sourceKey:string;principalKey:string;secret:string}
-type Claims={purpose:'pending'|'workflow'|'proof'|'certificate';sessionId?:string;workflowId?:string;intent?:'restore'|'export';
-  operation?:'start'|'browse'|'trust'|Check['step'];taskId?:string;view?:string;thumbprint?:string;serviceUri?:string;submittedAt?:number;
+type Claims={purpose:'pending'|'workflow'|'proof'|'certificate'|'comparison';sessionId?:string;workflowId?:string;intent?:'restore'|'export';
+  operation?:'start'|'browse'|'trust'|'comparisonSource'|Check['step'];taskId?:string;view?:string;dnt?:number;thumbprint?:string;serviceUri?:string;submittedAt?:number;
   restorePointId?:string;backupId?:string;backupObjectId?:string;hasAccountObjects?:boolean;canRestoreDeletedObjects?:boolean;mergeModeAllowed?:boolean}
 const base='/private-api/v1'
 const browseBase=base+'/backupBrowser/applicationItems/vead'
@@ -158,7 +161,7 @@ function checkProofs(input:Extract<AdExplorerInput,{proofs:unknown}>,ctx:Context
 }
 async function poll(send:RecoverySend,ctx:Context,handle:string) {
   const claims=open(handle,ctx,'pending'),{operation,taskId,sessionId,workflowId}=claims
-  const checking=operation!=='start' && operation!=='browse'
+  const checking=operation!=='start' && operation!=='browse' && operation!=='comparisonSource'
   const raw=await send((checking?base+'/validations/applicationItems/tasks/':base+'/tasks/')+taskId)
   const task=z.object({id:guid,state:z.string(),type:z.literal('Common'),result:z.string().nullish(),
     additionalInfo:z.object({message:z.string().nullish()}).nullish()}).parse(raw)
@@ -170,12 +173,22 @@ async function poll(send:RecoverySend,ctx:Context,handle:string) {
   if(operation==='start')return {sourceKey:ctx.sourceKey,sessionId:resultId(await send(browseBase+'/'+taskId+'/result')),application:'ActiveDirectory',
     restorePointId:claims.restorePointId,backupId:claims.backupId,backupObjectId:claims.backupObjectId}
   if(operation==='browse')return browsePage(await send(browseBase+'/'+sessionId+'/'+taskId+'/result'),claims.view)
+  if(operation==='comparisonSource'){
+    const snapshot=await comparisonSnapshot(send,claims)
+    return snapshot?{available:true,domain:snapshot.domain,dn:snapshot.dn,reference:seal({...claims,purpose:'comparison'},ctx)}:{available:false}
+  }
   if(!operation||!workflowId||!sessionId)throw failure('Invalid Explorer validation handle.')
   const path=operation==='catalogCertificate'?'certificate':endpoints[operation]
   return checkResult(await send(validBase+'/'+workflowId+'/'+path+'/'+taskId+'/result'),claims,ctx,taskError)
 }
 
-export async function runAdExplorer(send:RecoverySend,input:AdExplorerInput,ctx:Context,submissions:AdSubmissions=adSubmissions) {
+async function comparisonSnapshot(send:RecoverySend,claims:Claims){
+  const page=browsePage(await send(browseBase+'/'+claims.sessionId+'/'+claims.taskId+'/result'),'attributes')
+  return page.total===page.items.length?snapshotDirectoryObject(page.items):undefined
+}
+
+export async function runAdExplorer(send:RecoverySend,input:AdExplorerInput,ctx:Context,submissions:AdSubmissions=adSubmissions,
+  production=readProductionDirectory) {
   checkSource(input.sourceKey,ctx.sourceKey)
   if(!ctx.principalKey || !ctx.secret)throw failure('Reconnect the VBR source before opening Explorer.',401)
   if(input.action==='start')return pending(ctx,await mutation(send,browseBase,{restorePointId:input.restorePointId}),{
@@ -190,6 +203,18 @@ export async function runAdExplorer(send:RecoverySend,input:AdExplorerInput,ctx:
   }
   if(input.action==='browse')return pending(ctx,await mutation(send,browseBase+'/'+sessionId+'?skip='+input.skip+'&limit='+input.limit,browsePayload(input)),
     {operation:'browse',sessionId,view:input.view})
+  if(input.action==='comparisonSource'){
+    if(process.platform!=='win32'&&production===readProductionDirectory)return {available:false}
+    const task=await mutation(send,browseBase+'/'+sessionId+'?skip=0&limit=200',{searchObjectType:'ADItemAttribute',itemAttributesFilter:{itemId:input.dnt}})
+    return pending(ctx,task,{operation:'comparisonSource',sessionId,dnt:input.dnt})
+  }
+  if(input.action==='compareProduction'){
+    const reference=open(input.reference,ctx,'comparison')
+    if(reference.sessionId!==sessionId||reference.dnt!==input.dnt||reference.operation!=='comparisonSource')throw failure('Select the original directory object again.',409)
+    const snapshot=await comparisonSnapshot(send,reference)
+    if(!snapshot)throw failure('VBR could not verify the directory object identity.',409)
+    return compareDirectoryValues(snapshot,await production(snapshot,input.username,input.password))
+  }
   if(input.action==='prepare') {
     if(new Set(input.dntIds).size!==input.dntIds.length)throw failure('Select each Active Directory object once.')
     const path=input.intent==='restore'?restoreBase:exportBase

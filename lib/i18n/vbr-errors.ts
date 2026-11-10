@@ -17,6 +17,16 @@ export function vbrError(t: Translator, value: string): string {
     case 'The result is unknown. Check Sessions before trying again.':
     case 'VBR accepted the operation but returned no session ID. Check Sessions before trying again.':
     case 'VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.':
+    case 'Use HTTPS or open Open Backup UI on localhost to compare with production.':
+    case 'The selected data source has changed.':
+    case 'This mounted recovery is no longer available.':
+    case 'Select up to 200 files or folders.':
+    case 'Select a single item version.':
+    case 'Select the original directory object again.':
+    case 'VBR could not verify the directory object identity.':
+    case 'The backup domain must match the Windows application host’s joined domain.':
+    case 'Unable to read the production directory. Check the LDAPS certificate, domain connectivity and read account.':
+    case 'Open this restore point in Veeam Explorer for Microsoft Active Directory to compare with production.':
       return t(value)
     case 'Unauthorized': return t('Authorization required')
     case 'VEEAM_API_URL not configured': return t('VBR API URL is not configured.')

@@ -5,7 +5,7 @@ import {addDays,eachDayOfInterval,endOfMonth,endOfWeek,format,isSameMonth,isToda
 import {CalendarDays,Check,ChevronLeft,ChevronRight,Clock3} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {pointTime,type RestorePoint} from '@/lib/restore-points/model'
-import type {CalendarDay,PickerPage,RecoveryKind,RecoveryObject} from '@/lib/restore-points/recovery-picker'
+import type {CalendarDay,PickerPage,PickerScope,RecoveryObject} from '@/lib/restore-points/recovery-picker'
 import {RecoverySignal} from '../restore-points/recovery-signal'
 import {useRecoveryPresentation} from '../restore-points/use-presentation'
 import styles from './point-calendar.module.css'
@@ -17,10 +17,10 @@ function dayOf(point:RestorePoint){
   return time===null?undated:format(time,'yyyy-MM-dd')
 }
 const samePoint=(a:RestorePoint|undefined,b:RestorePoint)=>a?.id===b.id&&a.backupId===b.backupId
-type Reader=(sourceKey:string,kind:RecoveryKind,view:'points',args:Record<string,string>,signal:AbortSignal)=>Promise<PickerPage<RestorePoint>>
+type Reader=(sourceKey:string,kind:PickerScope,view:'points',args:Record<string,string>,signal:AbortSignal)=>Promise<PickerPage<RestorePoint>>
 
 export function PointCalendar({object,selected,sourceKey,kind,read,choose}:{
-  object:RecoveryObject;selected?:RestorePoint;sourceKey:string;kind:RecoveryKind;read:Reader;choose:(point:RestorePoint)=>void
+  object:RecoveryObject;selected?:RestorePoint;sourceKey:string;kind:PickerScope;read:Reader;choose:(point:RestorePoint)=>void
 }){
   const {t,formatDate,formatNumber,label,diagnostic}=useRecoveryPresentation()
   const [query,setQuery]=useState(()=>({day:selected?dayOf(selected):undefined as string|undefined,offset:0,revision:0}))
@@ -48,7 +48,7 @@ export function PointCalendar({object,selected,sourceKey,kind,read,choose}:{
     <Button type="button" size="sm" variant="outline" onClick={retry}>{t('Retry')}</Button></div>:null
   if(!days&&!error)return <RecoverySignal stage="data" compact/>
   if(!days?.length)return error?<div role="alert">{diagnostic(error)} <Button type="button" onClick={retry}>{t('Retry')}</Button></div>
-    :<div>{page?.complete&&<p role="status">{t('No eligible restore points for this VM.')}</p>}{notices}</div>
+    :<div>{page?.complete&&<p role="status">{t('No eligible restore points for this workload.')}</p>}{notices}</div>
 
   const counts=new Map(days.map(d=>[d.day,d.count]))
   const dated=days.map(d=>d.day).filter(day=>day!==undated).sort().reverse()

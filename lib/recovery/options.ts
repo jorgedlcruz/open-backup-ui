@@ -18,7 +18,12 @@ export async function findPoint(send: RecoverySend, id: string, backupId: string
   if (!point.success || point.data.id !== id || point.data.backupId !== backupId) {
     throw new VbrRecoveryError('The selected restore point no longer belongs to this backup. Reopen the calendar.', 409)
   }
-  return point.data
+  const result=point.data
+  if(result.guestOsFamily!=='Windows'&&result.guestOsFamily!=='Linux'){
+    if(result.platformName==='WindowsPhysical')result.guestOsFamily='Windows'
+    if(result.platformName==='LinuxPhysical'||result.platformName==='LinuxPhysicalPpc')result.guestOsFamily='Linux'
+  }
+  return result
 }
 
 export async function collect<T>(send: RecoverySend, path: string, schema: z.ZodType<T>, bodyPagination = false) {

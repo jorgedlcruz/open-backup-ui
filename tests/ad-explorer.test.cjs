@@ -11,12 +11,54 @@ const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0')
 const ctx={sourceKey:'a'.repeat(64),principalKey:'operator A',secret:'fixture-only-secret'}
 const point={restorePointId:id(1),backupId:id(2),backupObjectId:id(3)},sessionId=id(5)
 const base='/private-api/v1',b=base+'/backupBrowser/applicationItems/vead',r=base+'/restore/applicationItems/vead',e=base+'/export/applicationItems/vead',v=base+'/validations/applicationItems/vead'
-function setup() {
+function setup(production) {
   const calls=[],data=new Map()
   const send=async (path,options)=>{calls.push([path,options]);if(!data.has(path))throw Error('unexpected endpoint: '+path);return data.get(path)}
   const submissions=new AdSubmissions(fs.mkdtempSync(path.join(scratch,'test-')))
-  return {calls,data,run:async(action,other=ctx)=>runAdExplorer(send,adExplorerSchema.parse({sourceKey:ctx.sourceKey,...action}),other,submissions)}
+  return {calls,data,run:async(action,other=ctx)=>runAdExplorer(send,adExplorerSchema.parse({sourceKey:ctx.sourceKey,...action}),other,submissions,production)}
 }
+
+test('directory comparison binds the exact backup object, source, session and account; LDAP values are read only',async()=>{
+  let reads=0
+  const h=setup(async(snapshot,username,password)=>{
+    reads++
+    assert.equal(snapshot.guid,id(189));assert.equal(snapshot.domain,'corp.example')
+    assert.ok(!('unicodepwd' in snapshot.attributes));assert.equal(username,'reader');assert.equal(password,'secret')
+    return {controller:'dc01.corp.example',found:true,values:{department:['Technology'],memberof:['b','a']}}
+  })
+  const name='CN=Pat\\, Example,OU=People,DC=corp,DC=example',task=id(141),sample=[['objectGUID',[id(189)]],['distinguishedName',[name]],
+    ['department',['Operations']],['memberOf',['a','b']],['unicodePwd',['unavailable']]]
+  const url=b+'/'+sessionId+'/'+task+'/result'
+  const page=()=>({data:sample.map(([name,values])=>({id:name,name,type:'ADItemAttribute',values})),pagination:{total:sample.length}})
+  h.data.set(b+'/'+sessionId+'?skip=0&limit=200',{id:task});h.data.set(base+'/tasks/'+task,{id:task,type:'Common',state:'Stopped',result:'Success'});h.data.set(url,page())
+  const init=await h.run({action:'comparisonSource',sessionId,dnt:29})
+  assert.deepEqual(h.calls[0][1].body,{searchObjectType:'ADItemAttribute',itemAttributesFilter:{itemId:29}})
+  const source=await h.run({action:'poll',...init});assert.equal(source.available,true);assert.equal(source.dn,name);assert.equal(reads,0)
+  const input={action:'compareProduction',sessionId,dnt:29,reference:source.reference,username:'reader',password:'secret'}
+  await assert.rejects(h.run({...input,dnt:30}));await assert.rejects(h.run({...input,sessionId:id(313)}));await assert.rejects(h.run(input,{...ctx,principalKey:'another'}))
+  assert.equal(adExplorerSchema.safeParse({...input,sourceKey:ctx.sourceKey,server:'bad.example'}).success,false)
+  assert.equal(reads,0)
+  const result=await h.run(input);assert.equal(reads,1)
+  assert.deepEqual(result.attributes.map(a=>[a.name,a.state]),[['department','changed'],['distinguishedname','unreported'],['memberof','same']])
+  h.data.set(url,{...page(),pagination:{total:999}});await assert.rejects(h.run(input));assert.equal(reads,1)
+  sample[0][1]=['bad'];h.data.set(url,page());assert.equal((await h.run({action:'poll',...init})).available,false)
+})
+
+test('directory comparison permits credentials only via TLS or loopback HTTP',()=>{
+  const {canSendDirectoryCredentials}=require('../lib/restore-points/ad-cart.ts')
+  for(const origin of ['https://backup.example','http://127.0.0.2:3103','http://[::1]','http://localhost:3000'])assert.equal(canSendDirectoryCredentials(origin),true)
+  for(const origin of ['http://backup.example','http://192.168.1.10','http://127.0.0.1.attacker.example','file:///C:/','invalid'])assert.equal(canSendDirectoryCredentials(origin),false)
+})
+test('directory cart deduplicates DNTs across pages, rejects invalid objects and isolates session storage',()=>{
+  const {mergeDirectoryItems,saveDirectoryCart,readDirectoryCart,clearDirectoryCart}=require('../lib/restore-points/ad-cart.ts')
+  const data=new Map();global.sessionStorage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)}
+  const first={id:'a',dnt:9,type:'item',name:'Alpha'},second={id:'b',dnt:10,type:'container',name:'Beta'}
+  const cart=mergeDirectoryItems([first],[{...first,name:'duplicate'},second,{...first,dnt:-1},{...first,type:'domain'}])
+  assert.deepEqual(cart,[first,second]);saveDirectoryCart(ctx.sourceKey,sessionId,cart)
+  assert.deepEqual(readDirectoryCart(ctx.sourceKey,sessionId),cart);assert.deepEqual(readDirectoryCart('other',sessionId),[])
+  assert.deepEqual(readDirectoryCart(ctx.sourceKey,id(100)),[]);clearDirectoryCart(ctx.sourceKey,sessionId);assert.deepEqual(readDirectoryCart(ctx.sourceKey,sessionId),[])
+  delete global.sessionStorage
+})
 async function prepare(h,intent='restore') {
   const path=(intent==='restore'?r:e)+'/'+sessionId+'/init'
   h.data.set(path,{id:id(20)})

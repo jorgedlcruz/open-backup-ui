@@ -18,6 +18,10 @@ type Point=z.infer<typeof point>
 const status=z.enum(['starting','pending','ready','failed','unknown'])
 const record=scope.merge(point).extend({requestId:guid,status,createdAt:z.number(),attempted:z.boolean(),taskId:guid.optional(),sessionId:guid.optional(),error:z.string().max(1100).optional()})
 type Record=z.infer<typeof record>
+export type ExplorerRequestSummary={
+  requestId:string;kind:ExplorerKind;restorePointId:string;backupId:string;backupObjectId:string;createdAt:string
+  requestStatus:Record['status'];sessionId?:string;error?:string
+}
 const uncertain='VBR could not confirm the operation. Check Sessions before trying again.'
 const unavailable='VBR could not verify this recovery request.'
 const equal=(a:string,b:string)=>{const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y)}
@@ -29,6 +33,24 @@ const nativeBase=(kind:ExplorerKind)=>'/private-api/v1/backupBrowser/application
 export class ExplorerLaunches {
   constructor(private readonly base=path.join(process.cwd(),'data','explorer-launches'),private readonly now=Date.now,
     private readonly remember:typeof rememberExplorerSession=rememberExplorerSession){}
+  async list(key:Pick<Scope,'sourceKey'|'principalKey'>):Promise<ExplorerRequestSummary[]> {
+    const directory=path.join(this.base,hash.parse(key.sourceKey),hash.parse(key.principalKey))
+    let names:string[]
+    try{names=await fs.readdir(directory)}catch(error){if(noFile(error))return [];throw error}
+    const rows:ExplorerRequestSummary[]=[]
+    for(const name of names){
+      if(!name.endsWith('.json')||!validId(name.slice(0,-5)))continue
+      const row=record.parse(JSON.parse(await fs.readFile(path.join(directory,name),'utf8')))
+      if(row.requestId+'.json'!==name||row.principalKey!==key.principalKey||row.sourceKey!==key.sourceKey)
+        throw new VbrRecoveryError('This Explorer request belongs to another session or source.',409)
+      const expired=row.status==='starting'&&this.now()-row.createdAt>5*60_000
+      const requestStatus=expired?(row.attempted?'unknown':'failed'):row.status
+      rows.push({requestId:row.requestId,kind:row.kind,restorePointId:row.restorePointId,backupId:row.backupId,backupObjectId:row.objectId,
+        createdAt:new Date(row.createdAt).toISOString(),requestStatus,...(row.sessionId?{sessionId:row.sessionId}:{}),
+        ...(row.error||expired?{error:row.error||(row.attempted?uncertain:unavailable)}:{})})
+    }
+    return rows.sort((a,b)=>b.createdAt.localeCompare(a.createdAt))
+  }
   private file(key:Scope,id:string) {
     scope.parse(key)
     return path.join(this.base,key.sourceKey,key.principalKey,guid.parse(id)+'.json')

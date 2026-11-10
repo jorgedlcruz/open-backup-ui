@@ -36,4 +36,17 @@
 .attributes dd {white-space:pre-wrap; overflow-wrap:anywhere}
 .area {display:grid; gap:.4rem; min-width:0}
 .area h4 {font-size:.85rem; font-weight:650}
+.selection span {flex:none;margin-inline-start:auto;font-size:.76rem;color:var(--muted-foreground)}
+.cartTitle {display:flex;align-items:center;gap:.5rem}
+.cartSearch {min-width:0;width:100%;padding:.48rem .65rem;color:var(--foreground);background:var(--field-background,var(--card));border:1px solid var(--border);border-radius:.4rem}
+.cartList {min-height:0;max-height:45vh;overflow:auto;list-style:none;padding:0;margin:0}
+.cartList li {display:flex;align-items:center;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border)}
+.cartList li>span {flex:1;min-width:0;overflow-wrap:anywhere}
+.cartList li>svg {color:var(--primary);flex:none}
+.cartList small,.diff small {display:block;font-size:.75rem;color:var(--muted-foreground)}
+.compareDialog {width:min(95vw,50rem)!important;max-width:50rem!important;max-height:90dvh;overflow:auto}
+.compareDialog p {overflow-wrap:anywhere}
+.diffScroll {overflow:auto;max-height:48dvh}
+.diff {table-layout:fixed;width:100%;border-collapse:collapse;font-size:.8rem}
+.diff th,.diff td {text-align:start;vertical-align:top;padding:.43rem .55rem;border-bottom:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:600px){.toolbar,.search{width:100%}.table th,.table td{padding:.5rem .3rem}.actions{justify-content:flex-start}}

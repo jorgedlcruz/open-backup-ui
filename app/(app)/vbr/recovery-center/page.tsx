@@ -6,4 +6,7 @@ export async function generateMetadata() {
   const {t}=await getRequestI18n()
   return {title:t('Recovery Center')+' | Open Backup UI'}
 }
-export default function RecoveryCenterPage() {return <RecoveryCenterWorkspace/>}
+export default async function RecoveryCenterPage({searchParams}:{searchParams:Promise<{name?:string}>}) {
+  const {name}=await searchParams
+  return <RecoveryCenterWorkspace initialSearch={typeof name==='string'?name.slice(0,256):''}/>
+}

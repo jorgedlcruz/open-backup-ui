@@ -14,7 +14,11 @@ import { canUnmountGuestFiles, sessionProgress, type Mount } from '@/lib/activit
 import { recordStatus, time, validId } from '@/lib/investigation/model'
 import { findSessionLaunch } from '@/lib/restore-points/launch'
 import { GuestFileBrowser } from '@/components/restore-points/guest-file-browser'
+import { clearDirectoryCart } from '@/lib/restore-points/ad-cart'
 import { ActiveDirectoryExplorer } from '@/components/restore-points/active-directory-explorer'
+import { UnstructuredSession } from '@/components/restore-points/unstructured-session'
+import { EndStorageSession,useStorageStatus } from '@/components/restore-points/unstructured-session-controls'
+import { storageView } from '@/lib/restore-points/unstructured-workspace'
 import { SqlExplorer } from '@/components/restore-points/sql-explorer'
 import { adRequest,sqlRequest } from '@/lib/restore-points/ad-client'
 import { uncertainRestore } from '@/lib/restore-points/workflow'
@@ -57,7 +61,7 @@ function EndExplorer({id,sourceKey,kind,onEnded}:{id:string;sourceKey:string;kin
   async function finish() {
     if(lock.current)return
     lock.current=true;setMessage('');setPhase('sending')
-    try {await (kind==='sql'?sqlRequest:adRequest)({action:'finish',sourceKey,sessionId:id});setPhase('accepted');setOpen(false);onEnded()}
+    try {await (kind==='sql'?sqlRequest:adRequest)({action:'finish',sourceKey,sessionId:id});if(kind==='activeDirectory')clearDirectoryCart(sourceKey,id);setPhase('accepted');setOpen(false);onEnded()}
     catch(e) {setMessage(e instanceof Error?e.message:'Request failed.');const uncertain=uncertainRestore(e);lock.current=uncertain;setPhase(uncertain?'uncertain':undefined)}
   }
   if(phase==='accepted')return null
@@ -68,6 +72,21 @@ function EndExplorer({id,sourceKey,kind,onEnded}:{id:string;sourceKey:string;kin
     </AlertDialogHeader>{message && <p role="alert">{notice(message)}</p>}<AlertDialogFooter>
       <AlertDialogCancel disabled={phase==='sending'}>{t('Cancel')}</AlertDialogCancel><AlertDialogAction disabled={!!phase} onClick={e=>{e.preventDefault();void finish()}}>{phase==='sending'?t('Submitting…'):t('End browsing')}</AlertDialogAction>
     </AlertDialogFooter></AlertDialogContent></AlertDialog>
+}
+function ConnectExplorer({id,sourceKey,kind,active,refresh}:{id:string;sourceKey:string;kind:'activeDirectory'|'sql';active:boolean;refresh:()=>void}){
+  const {t,notice}=useInvestigationPresentation()
+  const [attempt,setAttempt]=useState(0),[error,setError]=useState('')
+  const flight=useRef<{attempt:number;result:Promise<unknown>}|null>(null)
+  useEffect(()=>{
+    if(!active)return
+    let current=true
+    if(flight.current?.attempt!==attempt)flight.current={attempt,result:applicationRequest('/api/vbr/restore/explorer-session',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({kind,sessionId:id,sourceKey})})}
+    void flight.current.result.then(()=>{if(current)refresh()},e=>{if(current)setError(e instanceof Error?e.message:'Request failed.')})
+    return ()=>{current=false}
+  },[active,attempt,id,kind,sourceKey,refresh])
+  return error?<div className={styles.commands}><p role="alert">{notice(error)}</p><Button size="sm" onClick={()=>{setError('');setAttempt(n=>n+1)}}>{t('Retry')}</Button></div>:
+    <RecoverySignal stage="data" status={t('Waiting for Explorer')}/>
 }
 function StopPublishing({mount, sourceKey, migrationLocked, phase, onPhase, onAccepted, distinguish}: {
   mount: Mount; sourceKey: string; migrationLocked: boolean; phase?: StopPhase
@@ -226,6 +245,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const [appVisited,setAppVisited]=useState(false)
   const [recoveryOpened, setRecoveryOpened] = useState(false)
   const [filesUnmounted, setFilesUnmounted] = useState(false)
+  const [storageEnded,setStorageEnded]=useState('')
   const [stopPhases, setStopPhases] = useState<Record<string, StopPhase | undefined>>({})
   const [migrationLocks, setMigrationLocks] = useState<Record<string, MigrationLock>>({})
   const sourceKey = data?.sourceKey || new URLSearchParams(query).get('sourceKey')
@@ -246,14 +266,13 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       } else if (window.location.hash === '#recovery-map') {
         setRecoveryOpened(true)
         setTab('recovery')
-      } else setTab(window.location.hash === '#application-items' ? 'application' : window.location.hash === '#session-log' ? 'logs' : 'default')
+      } else setTab(window.location.hash === '#unstructured-data' ? 'storage' : window.location.hash === '#application-items' ? 'application' : window.location.hash === '#session-log' ? 'logs' : 'default')
     }
     restoreTab()
     window.addEventListener('hashchange', restoreTab)
     return () => window.removeEventListener('hashchange', restoreTab)
   }, [])
   const [accepted, setAccepted] = useState(false)
-  const [resuming,setResuming]=useState(false),[resumeError,setResumeError]=useState('')
   const session = data?.session, mounts = data?.mounts.filter(m => !filesUnmounted || m.kind !== 'flr') ?? []
   const [receipt,setReceipt] = useState<ReturnType<typeof findSessionLaunch>>()
   useEffect(() => { if (sourceKey) setReceipt(findSessionLaunch(sourceKey, id)) }, [sourceKey, id])
@@ -262,21 +281,17 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const type = session?.sessionType || mounts[0]?.operation
   const isFile = !!fileMount || /FileLevelRestore/.test(type || '') || receipt?.operation === 'StartFlrRestore'
   const jobDone = !!session && (!!session.endTime || session.state === 'Stopped')
+  const storageKind=storageView(type,receipt?.sessionId===id&&receipt.sourceKey===sourceKey?receipt.operation:undefined)
+  const storageIdentity=(data?.sourceKey||'')+id
+  const storage=useStorageStatus(data?.sourceKey,id,!error&&!jobDone&&storageEnded!==storageIdentity?storageKind:undefined,revision)
   const status = mounts[0]?.state ?? (filesUnmounted && !jobDone ? 'Unmounted' : session ? recordStatus(session) : undefined)
   const child = data?.children
   const directory = data?.appExplorer
   // An Explorer mount is interactive. Its VBR session can sit at 0% for its entire lifetime.
-  const showTransfer = !directory || !!data?.throughput?.samples.length
+  const showTransfer = (!directory && !storageKind) || !!data?.throughput?.samples.length
   const showChildSessions = child && (!directory || child.data.length > 0 || !child.available || !child.complete)
   const providerName = directory?.kind==='sql' ? t('Microsoft SQL Server') : t('Active Directory')
   const directoryOpen = directory && !directory.closed && !jobDone
-  async function resumeExplorer() {
-    if(!directoryOpen || !data || resuming) return
-    setResuming(true);setResumeError('')
-    try { await applicationRequest('/api/vbr/restore/explorer-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:directory!.kind,sessionId:id,sourceKey:data.sourceKey})});refresh() }
-    catch(e){setResumeError(e instanceof Error ? e.message : 'Request failed.')}
-    finally{setResuming(false)}
-  }
   const storedMounts = data ? readPendingMigrationMounts(data.sourceKey, id) : []
   const mapMounts = data ? recoveryMapMounts(data, [...storedMounts, ...Object.values(migrationLocks).map(entry => entry.mount)], query) : []
   const migration = migrationTransfer(null, session, data?.instantMigration)
@@ -306,16 +321,16 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   }
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
-  const activeTab = tab === 'default' ? (directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
-    : (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
+  const activeTab = tab === 'default' ? (storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
+    : (tab === 'storage'&&!storage.status) || (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
   function selectTab(value: string) {
     if(value==='application' || activeTab==='application') setAppVisited(true)
     setTab(value)
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && (hasMap || directory) ? '#session-log' : ''
-    if (location.hash !== hash && (hash || ['#application-items','#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
+    const hash = value === 'storage' ? '#unstructured-data' : value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && (hasMap || directory || storageKind) ? '#session-log' : ''
+    if (location.hash !== hash && (hash || ['#unstructured-data','#application-items','#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
     }
@@ -336,6 +351,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       <div className={styles.commands}>{childState && data?.instantMigration ? <Status value={recordStatus(data.instantMigration)}/> : status && <Status value={status}/>}
         {data?.canStop && !error && <StopRestore key={data.sourceKey + id} data={data} refresh={refresh}/>}
         {data && directoryOpen && !directory.needsResume && !error && <EndExplorer key={data.sourceKey+id} id={id} kind={directory.kind} sourceKey={data.sourceKey} onEnded={refresh}/>}
+        {storage.status&&<EndStorageSession key={storageIdentity} status={storage.status} onEnded={()=>{setStorageEnded(storageIdentity);onAccepted()}}/>}
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         {data && mapMounts.filter(mount => canStopPublishing(mount, data, error)).map(mount => {
           const key = mountKey(mount)
@@ -365,7 +381,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             history={childState ? data.migrationThroughput : data.throughput}
             preferDisk={!!data.entireRestore && !childState}
             running={childState ? migrationPending : !!session && !jobDone}/>}
-          {!directory && (childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
+          {!directory && !storageKind && (childState ? migrationPending : !jobDone && !filesUnmounted) && percent != null && <div className={styles.progress}><span>{formatNumber(percent)}%</span><progress aria-label={t('Progress')} max={100} value={percent}/></div>}
         </div>
         {!!facts.length && <dl className={styles.facts}>{facts.map(([key,value]) => <div key={String(key)}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>}
         {session?.result?.message && session.result.message !== latest?.title && !['Success','None'].includes(session.result.message) && <p className={investigation.message}>{session.result.message}</p>}
@@ -377,11 +393,13 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           <TabsList className={styles.tabs} aria-label={t('Session evidence type')}>
             <TabsTrigger value="logs"><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
             {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!fileMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
+            {storage.status&&<TabsTrigger value="storage"><FolderOpen/>{storageKind==='instant'?t('Published share'):t('Files and folders')}</TabsTrigger>}
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
             {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
+          {storage.status&&<TabsContent value="storage" forceMount hidden={activeTab!=='storage'} className={styles.inset}><UnstructuredSession key={storageIdentity} status={storage.status} onSession={onAccepted}/></TabsContent>}
           <TabsContent value="workloads"><Workloads evidence={data} onInspect={task => setTaskId(task.id)}/></TabsContent>
           {fileOpened && fileMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
             <GuestFileBrowser key={data.sourceKey + fileMount.id} sourceKey={data.sourceKey} sessionId={fileMount.sessionId}/>
@@ -406,9 +424,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
               <RecoveryProperties mount={m}/>{!error && <MountControls key={m.id + m.state} mount={m} sourceKey={data.sourceKey} onAccepted={onAccepted}/>}</div>)}
           </TabsContent>}
           {(child || directory) && (activeTab==='application' || appVisited) && <TabsContent value="application" forceMount hidden={activeTab!=='application'} className={styles.inset}>
-            {directoryOpen && !error && (directory.needsResume ? <div className={styles.commands}>
-              <Button disabled={resuming} onClick={()=>void resumeExplorer()}><FolderOpen size={15}/>{t('Open')} · {providerName}</Button>{resumeError && <p role="alert">{notice(resumeError)}</p>}
-            </div> : directory.kind==='sql' ? <SqlExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/> : <ActiveDirectoryExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/>)}
+            {directoryOpen && !error && (directory.needsResume ? <ConnectExplorer key={data.sourceKey+id+directory.kind} active={activeTab==='application'} sourceKey={data.sourceKey} id={id} kind={directory.kind} refresh={refresh}/> : directory.kind==='sql' ? <SqlExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/> : <ActiveDirectoryExplorer key={data.sourceKey+id} sourceKey={data.sourceKey} sessionId={id} showFinish={false} onClose={refresh} onOperation={refresh}/>)}
             {directory?.kind==='sql' && !directoryOpen && !directory.needsResume && !error && <SqlExplorer key={data.sourceKey+id+'-operations'} sourceKey={data.sourceKey} sessionId={id} operationsOnly onOperation={refresh}/>}
             {showChildSessions && <section className={styles.childSessions}><h2>{t('Application item restores')}</h2>
             {child.data.map(s => <Link className={styles.child} key={s.id} href={link(s.id)}><Files size={17}/><span>{s.name || s.id}</span><Status value={recordStatus(s)}/><ArrowUpRight size={15}/></Link>)}
@@ -417,6 +433,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           </TabsContent>}
         </Tabs>
         {isFile && !fileMount && !data.mountWarnings.includes('flr') && <p className={styles.note}>{jobDone || filesUnmounted ? t('This session has no active guest file mount.') : t('Guest files become available when VBR reports a mount.')}</p>}
+        {storageKind&&!jobDone&&storage.error&&<p className={styles.note} role="status">{notice(storage.error)}</p>}
         {data.mountWarnings.length > 0 && <p className={styles.note}>{t('Some mount records could not be loaded.')}</p>}
         <footer className={ops.panelFoot}>{t('Updated {date}', {date:date(data.updatedAt)})} · <span>{id}</span>
           {related.map(next => <Link className={styles.related} key={next} href={link(next)}>{t('Related session')} <ArrowUpRight size={12}/></Link>)}</footer>

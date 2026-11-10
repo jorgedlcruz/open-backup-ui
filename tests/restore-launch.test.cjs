@@ -21,6 +21,17 @@ function newTab() {
   return freshClient()
 }
 
+test('the native unstructured write receives the durable Recovery Center request ID',async()=>{
+  const launch=newTab()
+  let submitted
+  const receipt=launch.beginRestoreLaunch({sourceKey,operation:'nas-entire'},'Share',undefined,async(draft,requestId)=>{
+    submitted={...draft,requestId};return {id,sourceKey}
+  })
+  await launch.observeRestoreLaunch(receipt.requestId)
+  assert.deepEqual(submitted,{sourceKey,operation:'nas-entire',requestId:receipt.requestId})
+  assert.equal(freshClient().readRestoreLaunch(receipt.requestId).sessionId,id)
+})
+
 test('every supported operation hands off its exact session, and observers never resubmit', async () => {
   const launch = newTab()
   for (const operation of [...restoreOperations, launch.activeDirectoryOperation, launch.sqlOperation]) {
@@ -206,4 +217,16 @@ test('historical Explorer network diagnostics remain visible as unconfirmed with
     global.sessionStorage.setItem('open-backup-ui.restore-launches',JSON.stringify([unchanged]))
     assert.equal(launch.readRestoreLaunch(id).phase,'rejected')
   }
+})
+
+test('an addressed Recovery Center request in a new tab observes only the exact server receipt',async()=>{
+  const launch=newTab(),sent=[]
+  const silent={send:async(provider,body)=>{sent.push(body.action);assert.equal(provider,'ad');assert.equal(body.requestId,id);assert.equal(body.sourceKey,sourceKey);return {...body,requestStatus:'ready',sessionId:id}}}
+  const address=launch.recoveryPreparingHref({sourceKey,operation:'BrowseActiveDirectory',requestId:id})
+  assert.match(address,/^\/vbr\/recovery-center\/preparing\?/);assert.match(address,/provider=ad/)
+  const seen=await launch.observeAddressedLaunch(id,sourceKey,'ad',silent)
+  assert.equal(seen.sessionId,id);assert.deepEqual(sent,['status'])
+  assert.equal(await launch.observeAddressedLaunch(id,'2'.repeat(64),'ad',silent),undefined)
+  assert.equal(await launch.observeAddressedLaunch(id,sourceKey,'sql-explorer',silent),undefined)
+  assert.deepEqual(sent,['status'])
 })

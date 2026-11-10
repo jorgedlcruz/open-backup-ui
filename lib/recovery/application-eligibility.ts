@@ -9,7 +9,7 @@ import type {VbrReader} from '../server/vbr-read'
 import {objectSchema,backupKey} from '../protected-data/model'
 import {readOperationsCollection} from '../operations/load'
 
-export const applicationObjectSchema = z.object({objectId:z.string().uuid().nullish(),backupId:z.string().uuid(),itemIconType:z.string().nullish(),repositoryType:z.string().nullish(),platformName:z.string().nullish(),name:z.string().nullish(),path:z.string().nullish(),operations:z.array(z.object({operation:z.string(),enabled:z.boolean()})).nullish()})
+export const applicationObjectSchema = z.object({id:z.string().uuid().nullish(),objectId:z.string().uuid().nullish(),backupId:z.string().uuid(),childBackupId:z.string().uuid().nullish(),fileServerId:z.string().uuid().nullish(),tenantName:z.string().nullish(),itemIconType:z.string().nullish(),repositoryType:z.string().nullish(),platformName:z.string().nullish(),name:z.string().nullish(),path:z.string().nullish(),operations:z.array(z.object({operation:z.string(),enabled:z.boolean()})).nullish()})
 const member = z.object({id:z.string().uuid(),backupId:z.string().uuid()})
 const policies = [{kind:'activeDirectory',operation:'ExploreForMsAd',permission:'StartExplorerForMsAd'},
   {kind:'sql',operation:'ExploreForMsSql',permission:'StartExplorerForMsSql'}] as const

@@ -3,7 +3,7 @@ import {mergeActivity,sessionProgress,type ActivityRow,type Mount} from '../acti
 import {sessionGroups} from '../activity/filters'
 import {recoveryCenterPath} from '../navigation/recovery'
 import {recordStatus,type Session} from '../investigation/model'
-import type {RestoreLaunch} from '../restore-points/launch'
+import {recoveryPreparingHref,type RestoreLaunch} from '../restore-points/launch'
 
 export const quickFilters=['all','active','pending','ready','attention','completed'] as const
 export type QuickFilter=typeof quickFilters[number]
@@ -30,7 +30,8 @@ function sessionLink(sourceKey:string,id:string,mount?:Mount) {
 const sourceTypes:Record<string,string>={StartViVMInstantRecovery:'InstantRecovery',StartHvVMInstantRecovery:'InstantRecovery',
   StartEntireVmRestore:'RestoreVm',StartEntireVmRestoreHyperV:'RestoreVm',StartEntireVmRestoreCloudDirector:'CloudDirectorVmRestore',
   StartFCDInstantRecovery:'FirstClassDiskInstantRestore',StartFlrRestore:'FileLevelRestore',StartDiskPublish:'PublishBackupContentViaMount',
-  BrowseActiveDirectory:'ApplicationLevelRestore',BrowseSql:'ApplicationLevelRestore'}
+  'agent-volumes':'RestoreRecoveryApplianceVolumes','nas-files':'UnstructuredDataBrowse','object-files':'UnstructuredDataBrowse','nas-entire':'NasRestore','object-entire':'NasRestore',
+  'nas-rollback':'NasRestore','object-rollback':'NasRestore','nas-instant':'FileInstantRecovery',BrowseActiveDirectory:'ApplicationLevelRestore',BrowseSql:'ApplicationLevelRestore'}
 const mountTypes:Record<Mount['kind'],string>={vSphere:'InstantRecovery',hyperV:'InstantRecovery',flr:'FileLevelRestore',fcd:'FirstClassDiskInstantRestore',
   publish:'PublishBackupContentViaMount',other:'InstantRecovery'}
 function nativeRow(row:ActivityRow,sourceKey:string):RecoveryRow {
@@ -44,6 +45,7 @@ function nativeRow(row:ActivityRow,sourceKey:string):RecoveryRow {
   else if(finished)category='completed'
   else if(state==='ActionRequired')category='ready'
   else if(['Idle','WaitingTape','WaitingRepository','WaitingSlot','Queued','Pending'].includes(state))category='pending'
+  else if(session?.sessionType==='UnstructuredDataBrowse'&&state==='Working')category='ready'
   else if(session?.sessionType==='ApplicationLevelRestore'&&state==='Working'&&/\bitems browsing\s*\(/i.test(session.name||''))category='ready'
   else if(mounted||['Starting','Working','Stopping','Pausing','Resuming','Postprocessing'].includes(state))category='active'
   const platform=session?.platformName||(mount?.kind==='vSphere'||mount?.kind==='fcd'?'VMware':mount?.kind==='hyperV'?'HyperV':undefined)
@@ -58,7 +60,8 @@ function operationPlatform(op:string) {
   if(op.includes('CloudDirector'))return 'CloudDirector'
   if(['StartViVMInstantRecovery','StartEntireVmRestore','StartFCDInstantRecovery'].includes(op))return 'VMware'
 }
-export function recoveryRows(sourceKey:string,sessions:Session[],mounts:Mount[],batches:RecoveryBatchSummary[],receipts:RestoreLaunch[]) {
+export type ExplorerRequestRow={requestId:string;kind:'activeDirectory'|'sql';requestStatus:'starting'|'pending'|'ready'|'failed'|'unknown';createdAt:string;restorePointId:string;backupId:string;backupObjectId:string;sessionId?:string;error?:string}
+export function recoveryRows(sourceKey:string,sessions:Session[],mounts:Mount[],batches:RecoveryBatchSummary[],receipts:RestoreLaunch[],requests:ExplorerRequestRow[]=[]) {
   const rows=mergeActivity(sessions.filter(isRecoverySession),mounts).map(row=>nativeRow(row,sourceKey))
   const native=new Map<string,RecoveryRow[]>()
   for(const row of rows)if(row.sessionId)native.set(row.sessionId,[...native.get(row.sessionId)||[],row])
@@ -76,16 +79,27 @@ export function recoveryRows(sourceKey:string,sessions:Session[],mounts:Mount[],
       if(id)known.add(id)
     }
   }
-  for(const receipt of receipts) {
-    if(receipt.sourceKey!==sourceKey||receipt.phase==='rejected'||receipt.sessionId&&known.has(receipt.sessionId))continue
+  const merged=new Map(receipts.filter(r=>r.sourceKey===sourceKey).map(r=>[r.requestId,r]))
+  for(const request of requests){
+    const operation=request.kind==='sql'?'BrowseSql':'BrowseActiveDirectory',local=merged.get(request.requestId)
+    const phase=request.requestStatus==='ready'&&request.sessionId?'accepted':request.requestStatus==='failed'?'rejected':request.requestStatus==='unknown'?'unknown':'starting'
+    merged.set(request.requestId,{requestId:request.requestId,sourceKey,operation,workload:local?.workload||(request.kind==='sql'?'Microsoft SQL Server':'Microsoft Active Directory'),
+      createdAt:request.createdAt,phase,sessionId:request.sessionId,explorerTracked:true,explorerStage:request.requestStatus==='pending'?'polling':'checking',message:request.error})
+  }
+  for(const receipt of merged.values()) {
+    if(receipt.sourceKey!==sourceKey||receipt.phase==='rejected'&&!receipt.explorerTracked||receipt.sessionId&&known.has(receipt.sessionId))continue
     const pending=receipt.phase==='starting',unknown=receipt.phase==='unknown'
     const explorer=receipt.operation==='BrowseActiveDirectory'||receipt.operation==='BrowseSql'
-    let state=unknown?'Outcome unknown':pending?'Submitting':'Accepted'
+    // A browser transport error without a server reservation is not a VBR session.
+    if(explorer&&!receipt.sessionId&&!requests.some(r=>r.requestId===receipt.requestId)&&!pending)continue
+    const failed=receipt.phase==='rejected'
+    let state=failed?'Failed':unknown?'Outcome unknown':pending?'Submitting':'Accepted'
     if(explorer&&unknown)state='Browse session unconfirmed'
     if(explorer&&pending)state=receipt.explorerStage==='checking'?'Checking with VBR':'Waiting for Explorer'
+    if(receipt.sessionId)known.add(receipt.sessionId)
     rows.push({key:'launch/'+receipt.requestId,name:receipt.workload,type:explorer?receipt.operation:sourceTypes[receipt.operation]||receipt.operation,platform:operationPlatform(receipt.operation),
-      category:unknown?'attention':pending?'pending':'other',state,started:receipt.createdAt,
-      sessionId:receipt.sessionId,href:receipt.sessionId?sessionLink(sourceKey,receipt.sessionId):prefix+'/preparing?'+new URLSearchParams({request:receipt.requestId,sourceKey})})
+      category:failed||unknown?'attention':pending?'pending':'other',state,started:receipt.createdAt,
+      sessionId:receipt.sessionId,href:receipt.sessionId?sessionLink(sourceKey,receipt.sessionId):recoveryPreparingHref(receipt)})
   }
   return rows
 }

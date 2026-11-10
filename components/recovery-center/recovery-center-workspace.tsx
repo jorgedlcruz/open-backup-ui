@@ -37,11 +37,11 @@ function typeIcon(type:string) {
   if(/Disk|Publish/.test(type))return HardDrive
   return Server
 }
-export function RecoveryCenterWorkspace() {
+export function RecoveryCenterWorkspace({initialSearch=''}:{initialSearch?:string}) {
   const {t,locale,formatNumber,formatDate}=useI18n(),{diagnostic}=useRecoveryPresentation()
   const [revision,setRevision]=useState(0),{feed,busy,error,receipts}=useRecoveryFeed(revision)
-  const [filters,setFilters]=useState(defaultGridFilters),[sort,setSort]=useState<RecoverySort>('started'),[ascending,setAscending]=useState(false),[offset,setOffset]=useState(0)
-  const rows=useMemo(()=>feed?recoveryRows(feed.sourceKey,feed.history,feed.mounts,feed.batches,receipts):[],[feed,receipts])
+  const [filters,setFilters]=useState({...defaultGridFilters,search:initialSearch}),[sort,setSort]=useState<RecoverySort>('started'),[ascending,setAscending]=useState(false),[offset,setOffset]=useState(0)
+  const rows=useMemo(()=>feed?recoveryRows(feed.sourceKey,feed.history,feed.mounts,feed.batches,receipts,feed.explorerRequests):[],[feed,receipts])
   const label=(raw:string)=>labels[raw]?t(labels[raw]):investigationLabel(t,raw).replace(/([a-z])([A-Z])/g,'$1 $2')
   const matches=selectRecoveryRows(rows,filters,sort,ascending,locale,label)
   const current=Math.min(offset,Math.max(0,Math.floor((matches.length-1)/limit)*limit)),visible=matches.slice(current,current+limit)
