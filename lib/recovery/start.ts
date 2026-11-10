@@ -8,6 +8,7 @@ import {validId} from '../investigation/model'
 import { inventorySchema, resolveInventory, type InventoryRef } from './inventory'
 import { findPoint, pointDisks, type SourcePoint } from './options'
 import { compileNetworks, networkMode, networkMapping } from './networks'
+import { linuxMountSettings, type PrivateFlrConnection } from './linux-flr'
 
 const endpoints = {
   StartViVMInstantRecovery: '/api/v1/restore/instantRecovery/vSphere/vm',
@@ -36,6 +37,7 @@ export const draftSchema = z.object({
   networkMode: networkMode.default('Original'), networkMappings: z.array(networkMapping).max(128).default([]),
   disks: z.array(z.object({ uid: z.string().min(1).max(2048), mountedName: name.optional(), registeredName: name.optional() })).max(256).optional(),
   mountServerId: z.string().uuid().optional(), credentialsId: z.string().uuid().optional(), guestOs: z.enum(['Windows', 'Linux']).optional(),
+  linuxMountType:z.enum(['OriginalHost','HelperHost','MountServer']).optional(), helperHostId:z.string().uuid().optional(),
   allowedIps: z.array(z.string().refine(value => isIP(value) !== 0, 'Enter valid iSCSI client IP addresses.')).max(128).optional(),
 })
 type Draft = z.infer<typeof draftSchema>
@@ -91,17 +93,17 @@ async function vmPayload(send: RecoverySend, point: SourcePoint, draft: Draft) {
     ...(datastore ? { datastore: { defaultDatastore: datastore } } : {}), restoreProxies: { autoSelectEnabled: true }, overwrite }
 }
 
-async function flrPayload(send: RecoverySend, point: SourcePoint, draft: Draft) {
+async function flrPayload(send: RecoverySend, point: SourcePoint, draft: Draft,open?:PrivateFlrConnection) {
   const knownOS = point.guestOsFamily === 'Windows' || point.guestOsFamily === 'Linux' ? point.guestOsFamily : null
   if (draft.guestOs && knownOS && draft.guestOs !== knownOS) throw new VbrRecoveryError('The guest operating system changed.')
   const type = knownOS || draft.guestOs
   if (!type) throw new VbrRecoveryError('Select the guest operating system.')
   const base = { restorePointId: point.id, reason: draft.reason, type, autoUnmount: { isEnabled: true, noActivityPeriodInMinutes: 30 } }
-  if (type === 'Windows') return { ...base, mountMode: 'Automatic', credentialsId: draft.credentialsId }
-  if (!draft.mountServerId) throw new VbrRecoveryError('Select a Linux mount server.')
-  const server = z.object({ id: z.string(), type: z.literal('Linux') }).safeParse(await send(`/api/v1/backupInfrastructure/mountServers/${draft.mountServerId}`))
-  if (!server.success || server.data.id !== draft.mountServerId) throw new VbrRecoveryError('Select an available Linux mount server.', 409)
-  return { ...base, mountMode: 'Manual', mountServer: { mountServerType: 'MountServer', mountServerId: server.data.id } }
+  if (type === 'Windows') {
+    if(draft.linuxMountType||draft.helperHostId)throw new VbrRecoveryError('The guest operating system changed.',409)
+    return { ...base, mountMode: 'Automatic', credentialsId: draft.credentialsId }
+  }
+  return { ...base, mountMode: 'Manual', mountServer:await linuxMountSettings(send,open,point.id,draft) }
 }
 
 async function diskPayload(send: RecoverySend, point: SourcePoint, draft: Draft) {
@@ -135,12 +137,12 @@ export function checkPointOperation(point: SourcePoint,draft: Draft) {
   }
   if (!point.allowedOperations.includes(draft.operation)) throw new VbrRecoveryError('VBR no longer allows this operation for the selected point.', 409)
 }
-export async function prepareRestore(send: RecoverySend, sourceKey: string, draft: Draft) {
+export async function prepareRestore(send: RecoverySend, sourceKey: string, draft: Draft,open?:PrivateFlrConnection) {
   checkSource(draft.sourceKey, sourceKey)
   const point = await findPoint(send, draft.restorePointId, draft.backupId)
   checkPointOperation(point,draft)
   const isFiles = draft.operation === 'StartFlrRestore'
-  const payload = isFiles ? await flrPayload(send, point, draft)
+  const payload = isFiles ? await flrPayload(send, point, draft,open)
     : draft.operation === 'StartFCDInstantRecovery' || draft.operation === 'StartDiskPublish' ? await diskPayload(send, point, draft)
     : await vmPayload(send, point, draft)
   return {operation:draft.operation,point,payload}
@@ -158,6 +160,6 @@ export async function submitPreparedRestore(send: RecoverySend, sourceKey: strin
   }
   return { id, sourceKey, sessionType: session.data.sessionType, state: session.data.state, mountErrors: session.data.mountErrors }
 }
-export async function startRestore(send:RecoverySend,sourceKey:string,draft:Draft,saveReceipt?:typeof saveEntireRestore) {
-  return submitPreparedRestore(send,sourceKey,await prepareRestore(send,sourceKey,draft),saveReceipt)
+export async function startRestore(send:RecoverySend,sourceKey:string,draft:Draft,saveReceipt?:typeof saveEntireRestore,open?:PrivateFlrConnection) {
+  return submitPreparedRestore(send,sourceKey,await prepareRestore(send,sourceKey,draft,open),saveReceipt)
 }

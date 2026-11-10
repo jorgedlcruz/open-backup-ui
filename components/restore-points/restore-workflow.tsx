@@ -12,6 +12,7 @@ import type { InventoryKind, RestoreDraft, RestoreInventoryItem, RestoreOperatio
 import { useRecoveryPresentation } from './use-presentation'
 import { TargetPicker } from './target-picker'
 import { RecoverySignal } from './recovery-signal'
+import { initialLinuxMount, linuxMountChoices, LinuxMountPicker, mountRoleLabel } from './linux-mount-picker'
 import styles from './workflow.module.css'
 
 function Check({ label, value, onChange }: { label: string; value: boolean; onChange: (next: boolean) => void }) {
@@ -74,6 +75,10 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
   const [allDisks, setAllDisks] = useState(true)
   const [guestOs, setGuestOs] = useState<'Windows' | 'Linux'>(/linux|unix/i.test(options.point.guestOsFamily || '') ? 'Linux' : 'Windows')
   const [mountServer, setMountServer] = useState('')
+  const linuxChoices=linuxMountChoices(options)
+  const [linuxMountKey,setLinuxMountKey]=useState(()=>initialLinuxMount(linuxChoices,options))
+  const linuxMount=linuxChoices.find(choice=>choice.key===linuxMountKey)
+  const [linuxCredential,setLinuxCredential]=useState('')
   const [ips, setIps] = useState('')
   const [reason, setReason] = useState(initialDraft?.reason||'')
   const [powerUp, setPowerUp] = useState(initialDraft?.powerUp??false)
@@ -95,7 +100,7 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
   const ipList = ips.trim().split(/[\s,]+/).filter(Boolean)
   const validTarget = !vm || !custom || (!!target.host && !!target.vmName?.trim() && (!fullVi || !!target.folder))
   const validDisks = !fcd || (!!target.cluster && disks.length > 0 && disks.every(disk => disk.mountedName.trim() && disk.registeredName.trim()))
-  const valid = validTarget && validDisks && validNetworks && (!publish || (ipList.length > 0 && (allDisks || disks.length > 0))) && (!flr || guestOs === 'Windows' || !!mountServer)
+  const valid = validTarget && validDisks && validNetworks && (!publish || (ipList.length > 0 && (allDisks || disks.length > 0))) && (!flr || guestOs === 'Windows' || !!linuxMount)
   const setTargetField = <K extends keyof RestoreTarget>(field: K, value: RestoreTarget[K]) => setTarget(previous => ({ ...previous, [field]: value }))
   const picker = (kind: Exclude<InventoryKind, 'Server'>, field: 'host' | 'cluster' | 'folder' | 'resourcePool' | 'datastore', prompt: string, required = false) =>
     <TargetPicker label={prompt} kind={kind} platform={hyperV ? 'HyperV' : 'VSphere'} sourceKey={options.sourceKey} server={server?.hostName} required={required}
@@ -123,7 +128,12 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
       ...(full && !custom && { quickRollback: rollback }),
       ...(vm && custom && { target }),
       ...(fcd && { target: { cluster: target.cluster, datastore: target.datastore }, disks }),
-      ...(flr && { guestOs, mountServerId: mountServer || undefined, credentialsId: credentialsId || undefined }),
+      ...(flr && {guestOs}),
+      ...(flr && guestOs==='Windows' && {mountServerId:mountServer||undefined,credentialsId:credentialsId||undefined}),
+      ...(flr && guestOs==='Linux' && linuxMount && {linuxMountType:linuxMount.type,
+        ...(linuxMount.type==='HelperHost'&&{helperHostId:linuxMount.id}),
+        ...(linuxMount.type==='MountServer'&&{mountServerId:linuxMount.id}),
+        ...(linuxMount.type==='OriginalHost'&&linuxCredential&&{credentialsId:linuxCredential})}),
       ...(publish && { allowedIps: ipList, disks: allDisks ? undefined : disks }),
     }
     if(onDraft){onDraft(draft,server);return}
@@ -172,10 +182,11 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
       {flr && <div className={styles.fields}>
         <label className={styles.field}>{t('Operating system')}<select value={guestOs} disabled={['Windows','Linux'].includes(options.point.guestOsFamily || '')} onChange={event => { setGuestOs(event.target.value as 'Windows' | 'Linux'); setMountServer('') }}>
           <option value="Windows">{t('Windows')}</option><option value="Linux">{t('Linux')}</option></select></label>
-        <label className={styles.field}>{t('Mount server')}<select required={guestOs === 'Linux'} value={mountServer} onChange={event => setMountServer(event.target.value)}>
-          <option value="">{guestOs === 'Windows' ? t('Automatic selection') : t('Select a destination')}</option>
-          {options.mountServers.filter(item => !item.type || item.type.toLowerCase().includes(guestOs.toLowerCase())).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
-        </select></label>
+        {guestOs==='Linux'?<LinuxMountPicker options={options} choices={linuxChoices} value={linuxMountKey} credentialId={linuxCredential}
+          onChange={setLinuxMountKey} onCredential={setLinuxCredential}/>:<label className={styles.field}>{t('Mount server')}<select value={mountServer} onChange={event => setMountServer(event.target.value)}>
+          <option value="">{t('Automatic selection')}</option>
+          {options.mountServers.filter(item => !item.type || item.type.toLowerCase().includes('windows')).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}
+        </select></label>}
         {guestOs === 'Windows' && !!options.credentials?.length && <label className={styles.field}>{t('Credentials')}<select value={credentialsId} onChange={event => setCredentialsId(event.target.value)}>
           <option value="">{t('Automatic selection')}</option>{options.credentials.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select></label>}
@@ -207,7 +218,9 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
           {canOverwrite && <div><dt>{t('Overwrite an existing VM')}</dt><dd>{overwrite ? t('Yes') : t('No')}</dd></div>}
           <div><dt>{t('Antivirus')}</dt><dd>{scan ? t('Enabled') : t('Disabled')}</dd></div>
           {full && !custom && rollback && <div><dt>{t('Quick rollback')}</dt><dd>{t('Enabled')}</dd></div>}</>}
-        {flr && <><div><dt>{t('Operating system')}</dt><dd>{guestOs}</dd></div><div><dt>{t('Mount server')}</dt><dd>{options.mountServers.find(item => item.id === mountServer)?.name || t('Automatic selection')}</dd></div></>}
+        {flr && <><div><dt>{t('Operating system')}</dt><dd>{t(guestOs)}</dd></div><div><dt>{t('Mount server')}</dt><dd>{guestOs==='Linux'&&linuxMount
+          ?linuxMount.name+' · '+t(mountRoleLabel[linuxMount.type]):options.mountServers.find(item=>item.id===mountServer)?.name||t('Automatic selection')}</dd></div>
+          {guestOs==='Linux'&&linuxMount?.type==='OriginalHost'&&<div><dt>{t('Guest credentials')}</dt><dd>{options.linuxMount?.credentials.find(c=>c.id===linuxCredential)?.name||t('Use job credentials')}</dd></div>}</>}
         {fcd && <><div><dt>{t('Cluster')}</dt><dd>{target.cluster?.name}</dd></div>
           {target.datastore && <div><dt>{t('Write cache datastore')}</dt><dd>{target.datastore.name}</dd></div>}
           {disks.map(disk => <div key={disk.uid}><dt>{options.disks.find(item => item.uid === disk.uid)?.name}</dt><dd>{disk.mountedName} → {disk.registeredName}</dd></div>)}</>}

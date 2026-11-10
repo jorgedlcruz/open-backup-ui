@@ -1,22 +1,27 @@
 /* Open Backup UI v1.0.2 */
-.signal { width:100%; min-width:0; container-type:inline-size; color:var(--foreground); text-align:start; }
-.signal[data-session] { padding:.9rem 1.15rem; }
-.row { display:grid; grid-template-columns:auto minmax(0,1fr) 1.8rem; align-items:center; gap:clamp(.55rem,3cqi,1.2rem); }
-.art { display:flex; align-items:start; direction:ltr; unicode-bidi:isolate; color:var(--primary); }
-.art pre { margin:0; padding:0; overflow:visible; color:inherit; font:600 clamp(.64rem,2cqi,.86rem)/1.08 var(--font-geist-mono,ui-monospace),monospace; font-variant-ligatures:none; white-space:pre; }
-.art .wire { color:var(--muted-foreground); }
-.copy { display:grid; min-width:0; gap:.27rem; }
-.status { font-size:.88rem; line-height:1.38; font-weight:600; }
-.caption { min-height:1.1em; font-size:.78rem; line-height:1.4; color:var(--muted-foreground); }
-.motion { display:grid; place-items:center; width:1.8rem; height:1.8rem; border-radius:.35rem; color:var(--muted-foreground); cursor:pointer; }
-.motion:hover,.motion:focus-visible { background:color-mix(in srgb,var(--primary) 10%,transparent); color:var(--primary); }
-.motion:focus-visible { outline:2px solid var(--ring); }
-.signal[data-compact] .art pre { font-size:.64rem; }
-.signal[data-compact] .row { gap:.65rem; }
-.signal[data-compact] .status { font-size:.8rem; }
-@container(max-width:24rem) {
-  .row { grid-template-columns:minmax(0,1fr) 1.8rem; gap:.45rem; }
-  .art { grid-column:1; grid-row:1; }
-  .copy { grid-column:1/-1; grid-row:2; }
-  .motion { grid-column:2; grid-row:1; align-self:start; }
+.signal { width: 100%; min-width: 0; color: var(--foreground); text-align: start; }
+.signal[data-session] { padding: .9rem 1.15rem; }
+.row { display: flex; align-items: center; gap: .7rem; }
+.copy { display: grid; min-width: 0; gap: .16rem; }
+.status { font-size: .88rem; line-height: 1.38; font-weight: 600; }
+.caption { min-height: 1.1em; font-size: .78rem; line-height: 1.4; color: var(--muted-foreground); }
+.indicator {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--primary);
+  border-radius: 50%;
+}
+button.indicator { cursor: pointer; }
+button.indicator:hover { background: color-mix(in srgb,var(--primary) 10%,transparent); }
+button.indicator:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.spinning { animation: spin .9s linear infinite; }
+.signal[data-compact] .status { font-size: .8rem; }
+.signal[data-compact] .row { gap: .5rem; }
+.signal[data-compact] .indicator svg { width: 1.15rem; height: 1.15rem; }
+@keyframes spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) {
+  .spinning { animation: none; }
 }

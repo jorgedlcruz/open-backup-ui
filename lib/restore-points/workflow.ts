@@ -26,11 +26,19 @@ export type RestoreInventoryPage = {
   data: RestoreInventoryItem[]
   pagination: { skip: number; count: number; total: number; limit: number }
 }
+export type LinuxMountType = 'OriginalHost'|'HelperHost'|'MountServer'
+export type LinuxMountOptions = {
+  originalHost:{available:boolean;name?:string}
+  helperHosts:{id:string;name:string}[]
+  credentials:{id:string;name:string}[]
+  recommended?:{type:LinuxMountType;id:string}
+}
 export type RestoreOptions = {
   point: RestorePoint
   sourceKey: string
   disks: { uid: string; name: string }[]
   mountServers: { id: string; name: string; type: string }[]
+  linuxMount?:LinuxMountOptions
   credentials?: {id: string; name: string}[]
   networks?: {id: string; name: string}[]
   warnings?: string[]
@@ -63,6 +71,8 @@ export type RestoreDraft = {
   antivirusScan?: boolean
   reviewedMalwareStatus?: string
   guestOs?: 'Windows' | 'Linux'
+  linuxMountType?: LinuxMountType
+  helperHostId?: string
   mountServerId?: string
   credentialsId?: string
   allowedIps?: string[]

@@ -121,6 +121,77 @@ test('Windows and Linux mount workflows return VBR sessionId and require an avai
   assert.deepEqual(linux.body.mountServer, { mountServerType: 'MountServer', mountServerId: backupId })
 })
 
+test('Linux FLR options use the exact point selector and SSH credentials, including a distinct original and helper without mount-server roles',async()=>{
+  const {restoreOptions}=require('../lib/recovery/options.ts')
+  const original={type:'Linux',mountServerType:'OriginalHost',name:'guest',mountServerId:pointId}
+  const helper={type:'Linux',mountServerType:'HelperHost',name:'helper',mountServerId:backupId}
+  const options=[original,helper,{...helper,type:'Windows',mountServerId:sessionId}]
+  const send=async path=>{
+    if(path.endsWith('/'+pointId))return {...point,guestOsFamily:'Linux',allowedOperations:['StartFlrRestore']}
+    assert.match(path,/credentials\?typeFilter=Linux/);return page([
+      {id:backupId,type:'Linux',username:'ssh'},{id:sessionId,type:'Standard',username:'standard'},
+      {id:pointId,type:'Linux',isDefaultAppliance:true,username:'appliance'}])
+  }
+  const web=()=>async(path,{method,body,mutation})=>{
+    assert.equal(method,'POST');assert.equal(mutation,undefined);assert.deepEqual(body,{restorePointId:pointId})
+    return path.endsWith('/autoselect')?{enabled:true,selectedMountServer:original}:{options}
+  }
+  const data=await restoreOptions(send,sourceKey,pointId,backupId,'StartFlrRestore',web)
+  assert.deepEqual(data.linuxMount,{originalHost:{available:true,name:'guest'},helperHosts:[{id:backupId,name:'helper'}],
+    credentials:[{id:backupId,name:'ssh'}],recommended:{type:'OriginalHost',id:pointId}})
+  assert.deepEqual(data.mountServers,[]);assert.deepEqual(data.warnings,[])
+  const fallback=await restoreOptions(async p=>p.includes('/mountServers?')?page([{id:sessionId,type:'Windows'},{id:backupId,type:'Linux',name:'dedicated role'}]):send(p),
+    sourceKey,pointId,backupId,'StartFlrRestore')
+  assert.equal(fallback.linuxMount,undefined);assert.deepEqual(fallback.mountServers,[{id:backupId,type:'Linux',name:'dedicated role'}]);assert.ok(fallback.warnings.length)
+})
+test('Linux FLR submits one canonical selected-host payload and rejects changed hosts, permissions, credentials and unexpected challenges before any mount',async()=>{
+  const linux={...point,guestOsFamily:'Linux',allowedOperations:['StartFlrRestore']}
+  const original={type:'Linux',mountServerType:'OriginalHost',name:'guest',mountServerId:pointId}
+  const helper={type:'Linux',mountServerType:'HelperHost',name:'helper',mountServerId:backupId}
+  const pos={result:'Success',prepareSpec:{restorePointId:pointId}}
+  const question={result:'InteractionRequired',interaction:[{id:'question',type:'FlrOriginalHost'}]}
+  let hosts=[original,helper],status=()=>pos,record={id:backupId,type:'Linux'},pointRead=linux
+  const mounts=[],checks=[]
+  async function run(draft,account=true){
+    const web=()=>async(path,options)=>{
+      if(path.endsWith('/select'))return {options:hosts}
+      assert.equal(path,'/private-api/v1/flr/validation/originalMountServer')
+      checks.push(options.body);return status(options.body)
+    }
+    return startRestore(async(path,options)=>{
+      if(path.includes('/restorePoints/'))return pointRead
+      if(path.includes('/credentials/'))return record
+      assert.equal(path,'/api/v1/restore/flr');assert.equal(options.mutation,true)
+      mounts.push(options.body);return {sessionId}
+    },sourceKey,draftSchema.parse({sourceKey,operation:'StartFlrRestore',restorePointId:pointId,backupId,...draft}),undefined,account?web:undefined)
+  }
+  await run({linuxMountType:'HelperHost',helperHostId:backupId});assert.equal(checks.length,0)
+  assert.deepEqual(mounts[0].mountServer,{mountServerType:'HelperHost',helperHost:{hostId:backupId}})
+  await run({linuxMountType:'OriginalHost'});assert.equal(mounts[1].mountMode,'Manual')
+  assert.deepEqual(mounts[1].mountServer,{mountServerType:'OriginalHost',originalHost:{}})
+  assert.deepEqual(checks.at(-1).prepareSpec.selectedMountServer,original)
+  status=body=>body.interaction.length?pos:question
+  await run({linuxMountType:'OriginalHost',credentialsId:backupId})
+  assert.deepEqual(checks.at(-1).interaction,[{id:'question',answer:'Yes',type:'FlrOriginalHost',credentialsId:backupId}])
+  assert.deepEqual(mounts[2].mountServer,{mountServerType:'OriginalHost',originalHost:{credentialsId:backupId}})
+  await assert.rejects(run({linuxMountType:'OriginalHost'}),/SSH credentials/)
+  await assert.rejects(run({linuxMountType:'HelperHost',helperHostId:backupId,credentialsId:sessionId}),/Review/)
+  await assert.rejects(run({linuxMountType:'HelperHost',helperHostId:sessionId}),/no longer available/)
+  await assert.rejects(run({linuxMountType:'HelperHost',helperHostId:backupId},false),/mount hosts/)
+  record={id:backupId,type:'Standard'}
+  await assert.rejects(run({linuxMountType:'OriginalHost',credentialsId:backupId}),/SSH credentials/)
+  status=()=>({result:'Success',prepareSpec:{restorePointId:sessionId}})
+  await assert.rejects(run({linuxMountType:'OriginalHost'}),/verify/)
+  status=()=>({result:'InteractionRequired',interaction:[{type:'ServerConfirmCertificate',id:'certificate',question:'Verify certificate'}]})
+  await assert.rejects(run({linuxMountType:'OriginalHost'}),/Verify certificate/)
+  hosts=[helper,helper,{...original,mountServerId:sessionId}]
+  await assert.rejects(run({linuxMountType:'HelperHost',helperHostId:backupId}),/no longer available/)
+  await assert.rejects(run({linuxMountType:'OriginalHost'}),/no longer available/)
+  pointRead={...linux,guestOsFamily:'Windows'}
+  await assert.rejects(run({linuxMountType:'OriginalHost'}),/operating system changed/)
+  assert.equal(mounts.length,3)
+})
+
 test('guest file browse and restore use the selected mount and original-guest paths', async () => {
   const calls = []
   const send = async (path, options = {}) => {

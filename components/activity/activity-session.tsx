@@ -351,7 +351,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     </header>
     {error && <div role="alert" className={ops.notice}>{notice(error)} {data && t('Showing the last successful snapshot.')}</div>}
     {accepted && <p className={ops.notice} role="status">{t('VBR accepted the request.')}</p>}
-    {!data && !error && <section className={ops.panel}><RecoverySignal stage="session" acknowledged={!!receipt}/></section>}
+    {!data && !error && <section className={ops.panel}><RecoverySignal stage="session"/></section>}
     {data && <div className={investigation.workspace}>
       <section className={ops.panel}>
         <div className={styles.progressNote}><div className={styles.glyph}>{isFile ? <FolderTree/> : isRecovery ? <Database/> : <Activity/>}</div>

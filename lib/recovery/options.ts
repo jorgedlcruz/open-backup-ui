@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
 import { VbrRecoveryError } from './error'
+import { linuxHostOptions,linuxCredential,usableLinuxCredential,type PrivateFlrConnection } from './linux-flr'
 
 const pointSchema = z.object({
   id: z.string().uuid(), backupId: z.string().uuid(), name: z.string(), platformName: z.string(), creationTime: z.string(),
@@ -49,7 +50,7 @@ export async function listGuestCredentials(send: RecoverySend) {
   return (await collect(send, '/api/v1/credentials', credentialSchema)).map(item => ({ id: item.id, name: item.name || item.username || item.id }))
 }
 
-export async function restoreOptions(send: RecoverySend, sourceKey: string, id: string, backupId: string, operation?: string) {
+export async function restoreOptions(send: RecoverySend, sourceKey: string, id: string, backupId: string, operation?: string,open?:PrivateFlrConnection) {
   const point = await findPoint(send, id, backupId)
   if (operation && !point.allowedOperations.includes(operation)) throw new VbrRecoveryError('VBR no longer allows this restore operation.', 409)
   const operations = operation ? [operation] : point.allowedOperations
@@ -62,15 +63,27 @@ export async function restoreOptions(send: RecoverySend, sourceKey: string, id: 
     }
   }
   const flr = operations.includes('StartFlrRestore')
-  const [disks, servers, creds, networks] = await Promise.all([
+  const linux=flr && point.guestOsFamily!=='Windows'
+  const [disks, native, creds, networks] = await Promise.all([
     operations.some(op => op === 'StartFCDInstantRecovery' || op === 'StartDiskPublish')
       ? optional(pointDisks(send, id), 'VBR could not list the disks at this restore point.') : [],
-    flr && point.guestOsFamily !== 'Windows' ? optional(collect(send, '/api/v1/backupInfrastructure/mountServers?typeFilter=Linux', mountSchema), 'VBR could not list Linux mount servers.') : [],
+    linux ? linuxHostOptions(open,id).catch(error=>{
+      if(error instanceof VbrRecoveryError&&error.status===401)throw error
+      warnings.push('VBR could not list mount hosts for this restore point.')
+      return undefined
+    }) : undefined,
     flr && point.guestOsFamily !== 'Linux' ? optional(listGuestCredentials(send), 'Saved guest credentials could not be listed.') : [],
     operations.some(op => ['StartEntireVmRestore', 'StartEntireVmRestoreHyperV', 'StartHvVMInstantRecovery', 'StartViVMInstantRecovery'].includes(op))
       ? optional(pointNetworks(send, id), 'The networks in this restore point could not be listed.') : [],
   ])
+  const [servers,linuxCredentials]=await Promise.all([
+    linux&&!native ? optional(collect(send,'/api/v1/backupInfrastructure/mountServers?typeFilter=Linux',mountSchema),'VBR could not list Linux mount servers.') : [],
+    native?.originalHost.available ? optional(collect(send,'/api/v1/credentials?typeFilter=Linux&includeDefaultApplianceCreds=false',linuxCredential),
+      'Saved guest credentials could not be listed.') : [],
+  ])
   return { sourceKey, point, disks, networks, warnings,
-    mountServers: servers.map(item => ({ id: item.id, type: item.type, name: item.name || `${item.isDefault ? 'Default ' : ''}${item.type} · ${item.id}` })),
+    linuxMount:native&&{originalHost:native.originalHost,helperHosts:native.helperHosts,recommended:native.recommended,
+      credentials:linuxCredentials.filter(usableLinuxCredential).map(row=>({id:row.id,name:row.username||row.id}))},
+    mountServers: native?.mountServers??servers.filter(item=>item.type==='Linux').map(item => ({ id: item.id, type: item.type, name: item.name || `${item.isDefault ? 'Default ' : ''}${item.type} · ${item.id}` })),
     credentials: creds }
 }

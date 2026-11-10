@@ -67,7 +67,8 @@ Use the full native objects returned by the lookup routes in the tables below. T
 | Full VMware, customized | Send `type: Customized`, `destinationHost`, optional `resourcePool`, and `folder: {vmName, folder, restoreVmTags}`. Set `datastore.defaultDatastore` for a new datastore. Source and target networks are inventory references. A guest adapter ID from `networkInfo` is insufficient to identify a distributed port group. |
 | Instant Hyper-V from VMware | Set `type: OtherPlatform` and supply the restore-scoped `destinationHost`. Put the recovered name in `target.vmName` and the storage directory in `datastore.configurationFilesPath`. An original-location Hyper-V restore uses its own discriminator. |
 | First Class Disk | Send `{restorePointId, destinationCluster, disksMapping, reason}`. Each mapping contains `nameInBackup`, `mountedDiskName` and `registeredFcdName`. Optional `writeCache` describes cache redirection. |
-| Windows file restore | Send `{restorePointId, type: "Windows", mountMode: "Automatic", autoUnmount: {isEnabled: true, noActivityPeriodInMinutes: 30}}`. Use the returned `sessionId` to browse. Linux manual mounting additionally requires a selected mount server. |
+| Windows file restore | Send `{restorePointId, type: "Windows", mountMode: "Automatic", autoUnmount: {isEnabled: true, noActivityPeriodInMinutes: 30}}`. Use the returned `sessionId` to browse. |
+| Linux file restore | Send the selected point with `type: "Linux"` and `mountMode: "Manual"`. In `mountServer`, set `mountServerType` to `OriginalHost` with `originalHost`, `HelperHost` with `helperHost.hostId`, or `MountServer` with the dedicated `mountServerId`. The original machine must be reachable to host the mount. |
 | Restore selected guest items | Browse a directory with `{path, pagination, order}`. Validate guest credentials before posting `{sourcePath, restoreType, credentialsId}` to `restore`. An alternate host uses `restoreTo` with `targetHost` and `targetPath`. Poll the returned task ID using `GET /api/v1/tasks/{id}`. |
 | Disk publish | The branch uses `{restorePointId, type: "ISCSITarget", diskNames, allowedIps, reason}`. VBR also defines Windows iSCSI mount and Linux FUSE mount modes. |
 | Cloud Director | The branch offers original-location recovery for an eligible Cloud Director point. The public customized spec also defines a target vApp, name, datastore and network in the Cloud Director inventory. |
@@ -228,9 +229,9 @@ Console client routes for this workflow.
 | Method | Console path |
 | --- | --- |
 | POST | `/private-api/v1/flr/validation/actionsAvailability` |
-| POST | `/private-api/v1/flr/validation/mountServer/autoselect` |
+| POST | `/private-api/v1/flr/validation/mountServer/autoselect` (VBR's suggested host for the supplied `restorePointId`) |
 | POST | `/private-api/v1/flr/validation/mountServer/prepareSpec` |
-| POST | `/private-api/v1/flr/validation/mountServer/select` |
+| POST | `/private-api/v1/flr/validation/mountServer/select` (eligible original and helper hosts for the supplied `restorePointId`) |
 | POST | `/private-api/v1/flr/validation/originalMountServer` |
 | POST | `/private-api/v1/flr/validation/restoreItem/targetPath` |
 | POST | `/private-api/v1/flr/validation/restorePoint` |

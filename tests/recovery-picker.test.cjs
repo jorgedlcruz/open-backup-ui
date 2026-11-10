@@ -31,6 +31,27 @@ test('picker filters exact native object and backup capability, point operation 
 test('batch selection only applies to virtual machine and instant VM recovery',()=>{
   assert.deepEqual(recoveryKinds.filter(bulkKind),['instant-vm','entire-vm'])
 })
+test('calendar and paging share native eligibility, copy identity, local midnight and DST folds',async()=>{
+  const {privateSend}=api()
+  const restore=(n,time,b=backup,ops=['StartEntireVmRestore'])=>({id:id(n),backupId:b,creationTime:time,allowedOperations:ops})
+  const input=[restore(11,'2026-11-01T05:30:00Z'),restore(12,'2026-11-01T06:30:00Z'),
+    restore(13,'2026-11-01T03:58:00Z'),restore(14,'2026-11-01T06:30:00Z',copy),
+    restore(15,'invalid date'),restore(16,null),restore(17,'2023-04-14T00:30:00Z'),restore(18,'2026-11-02T12:00:00Z',backup,[])]
+  const read=async path=>{assert.ok(path.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints?'));return {data:input,pagination:{total:input.length,skip:0}}}
+  const get=(args={})=>pickerPage(read,privateSend,'calendar-time-and-scope',{kind:'entire-vm',objectId:vm,view:'points',limit:1,offset:0,
+    calendarZone:'America/New_York',calendarIndex:true,...args})
+  const main=await get()
+  assert.deepEqual(Object.fromEntries(main.calendarDays.map(d=>[d.day,d.count])),{'2026-11-01':3,'2026-10-31':1,'2023-04-13':1,undated:2})
+  assert.equal(main.calendarDay,'2026-11-01');assert.equal(main.total,3)
+  assert.deepEqual((await get({calendarDay:'2026-11-01',offset:1,limit:2})).data.map(p=>[p.id,p.backupId]),[[id(14),copy],[id(11),backup]])
+  assert.deepEqual((await get({calendarDay:'undated',limit:3})).data.map(p=>p.id),[id(15),id(16)])
+  assert.equal((await get({calendarDay:'2023-04-13'})).data[0].id,id(17))
+  const sql=await get({kind:'sql',calendarDay:'2026-11-01',limit:5})
+  assert.deepEqual(sql.data.map(p=>[p.id,p.applications]),[id(12),id(11)].map(i=>[i,[{kind:'sql',objectId:vm}]]))
+  assert.equal(sql.calendarDays.find(d=>d.day==='2026-11-01').count,2)
+  assert.equal(sql.calendarDays.find(d=>d.day==='2026-11-02').count,1)
+  assert.deepEqual((await get({backupId:copy})).calendarDays,[{day:'2026-11-01',count:1}])
+})
 test('bearer-only application selection is empty without enumerating any guesses',async()=>{
   const result=await pickerPage(()=>{throw Error('unexpected read')},undefined,'public',{view:'objects',kind:'sql',limit:40,offset:0})
   assert.equal(result.total,0);assert.equal(result.notices.length,1)

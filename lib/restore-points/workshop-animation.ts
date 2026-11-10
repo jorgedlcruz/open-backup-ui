@@ -1,5 +1,5 @@
 // Open Backup UI v1.0.2
-/** Each caption or device appears once per shuffled cycle, including across short-lived loading panels. */
+/** Each caption appears once per shuffled cycle, including across short-lived loading panels. */
 export function shuffledCycle<T>(choices: readonly [T, ...T[]], random: () => number = Math.random) {
   let queue: T[] = []
   let previous: T | undefined
@@ -37,31 +37,4 @@ export const workshopCaptions = [
   'Asking the blinking lights for directions.',
 ] as const
 
-const devices = ['computer', 'tape', 'disk'] as const
-export type WorkshopDevice = typeof devices[number]
 export const nextWorkshopCaption = shuffledCycle(workshopCaptions)
-export const nextWorkshopDevice = shuffledCycle(devices)
-
-const cursors = ['>_', '> ', '>>', '> ']
-const reels = ['|', '/', '-', '\\']
-const disk = ['--->', ' -->', '  ->', '   >']
-
-export function workshopFrame(device: WorkshopDevice, tick: number, acknowledge: boolean) {
-  const at = tick % 4
-  const fan = reels[at]
-  const source = device === 'computer' ? [
-    '.--------.', '| ' + cursors[at] + '     |', '|________|', "    ||    ", '  __||__  ',
-  ] : device === 'tape' ? [
-    '.--------.', '| (' + fan + ')('+ reels[(at + 2) % 4] + ') |', '|  \\__/  |', '| [====] |', "'--------'",
-  ] : [
-    '.--------.', '|[===] []|', '|--------|', '| ' + disk[at] + '   |', "'--------'",
-  ]
-  const cable = Array.from('--------')
-  const position = acknowledge ? cable.length - 1 - tick % cable.length : tick % cable.length
-  cable[position] = acknowledge ? '<' : '>'
-  const link = ['', '', cable.join(''), '', '']
-  const server = [
-    '.----------.', '| ' + (at < 2 ? 'o' : '.') + '  [===] |', '| ' + (at < 2 ? '.' : 'o') + '  [===] |', '| (' + fan + ') [::] |', "'----------'",
-  ]
-  return { source:source.join('\n'), link:link.join('\n'), server:server.join('\n') }
-}

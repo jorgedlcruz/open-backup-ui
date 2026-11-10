@@ -5,7 +5,7 @@ import type {RecoverySend} from '../server/vbr-recovery'
 import {readOperationsCollection} from '../operations/load'
 import {objectSchema,backupKey} from '../protected-data/model'
 import {pointSchema} from '../restore-points/load'
-import type {RestorePoint} from '../restore-points/model'
+import {pointTime,type RestorePoint} from '../restore-points/model'
 import {recoveryKinds,pointOperations,type RecoveryKind,type RecoveryObject} from '../restore-points/recovery-picker'
 import {applicationAccess,publicBackupObjects,supportedApplications,verifiedBackupObjects} from './application-eligibility'
 import {collect} from './options'
@@ -125,6 +125,7 @@ function scopedCache<T>(limit:number){
 const cachedCatalog=scopedCache<Catalog>(32),cachedPoints=scopedCache<PointSet>(128)
 export async function pickerPage(read:VbrReader,send:RecoverySend|undefined,identity:string,request:{
   kind:RecoveryKind;view:'objects'|'points';objectId?:string;backupId?:string;restorePointId?:string;query?:string;offset:number;limit:number;refresh?:boolean
+  calendarZone?:string;calendarDay?:string;calendarIndex?:boolean
 }){
   const {kind,objectId,backupId,restorePointId,view,offset,limit,refresh}=request
   if(!send&&(kind==='sql'||kind==='active-directory')){
@@ -144,6 +145,21 @@ export async function pickerPage(read:VbrReader,send:RecoverySend|undefined,iden
   const points=await cachedPoints(identity+'/'+objectId,()=>objectPoints(read,objectId),refresh)
   const app=kind==='sql'?'sql':kind==='active-directory'?'activeDirectory':undefined
   const rows=points.data.filter(p=>copies.has(p.backupId)&&(!restorePointId||restorePointId===p.id)&&(app||pointOperations(p,kind).length>0))
-    .map(p=>app?{...p,applications:[{kind:app,objectId}]}:p).sort((a,b)=>(Date.parse(b.creationTime||'')||0)-(Date.parse(a.creationTime||'')||0)||a.id.localeCompare(b.id))
-  return {data:rows.slice(offset,offset+limit),total:rows.length,complete:points.complete&&catalog.complete,notices:points.complete?catalog.notices:[...catalog.notices,'The restore-point list is partial.']}
+    .map<RestorePoint>(p=>app?{...p,applications:[{kind:app,objectId}]}:p).sort((a,b)=>(Date.parse(b.creationTime||'')||0)-(Date.parse(a.creationTime||'')||0)||a.id.localeCompare(b.id)||a.backupId.localeCompare(b.backupId))
+  const quality={complete:points.complete&&catalog.complete,notices:points.complete?catalog.notices:[...catalog.notices,'The restore-point list is partial.']}
+  if(!request.calendarZone)return {data:rows.slice(offset,offset+limit),total:rows.length,...quality}
+
+  // Use the browser's named time zone, including historical daylight-saving rules.
+  // Swedish Gregorian numeric dates are ISO ordered year-month-day.
+  const formatter=new Intl.DateTimeFormat('sv-SE',{timeZone:request.calendarZone,calendar:'gregory',numberingSystem:'latn',year:'numeric',month:'2-digit',day:'2-digit'})
+  const counts=new Map<string,number>(),dayRows:RestorePoint[]=[]
+  let selectedDay=request.calendarDay
+  for(const point of rows){
+    const time=pointTime(point),day=time===null?'undated':formatter.format(time)
+    if(request.calendarIndex)counts.set(day,(counts.get(day)||0)+1)
+    selectedDay??=day
+    if(selectedDay===day)dayRows.push(point)
+  }
+  return {data:dayRows.slice(offset,offset+limit),total:dayRows.length,...quality,calendarDay:selectedDay,
+    ...(request.calendarIndex&&{calendarDays:[...counts].map(([day,count])=>({day,count}))})}
 }

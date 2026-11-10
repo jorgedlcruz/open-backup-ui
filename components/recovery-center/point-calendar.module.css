@@ -1,0 +1,36 @@
+/* Open Backup UI v1.0.2 */
+.panel {grid-column:1/-1;display:grid;grid-template-columns:minmax(15rem,.94fr) minmax(0,1.06fr);min-width:0;border:1px solid var(--border);border-radius:.7rem;background:color-mix(in srgb,var(--card) 65%,transparent);}
+.calendar,.times {min-width:0;padding:.9rem 1rem;}
+.times {border-inline-start:1px solid var(--border);}
+.panel h4 {display:flex;align-items:center;flex-wrap:wrap;gap:.38rem;margin:0 0 .65rem;color:var(--foreground);font-size:.85rem;font-weight:650;overflow-wrap:anywhere;}
+.panel h4 svg {color:var(--primary);flex:none;}
+.panel h4 span,.dayTitle,.pager,.notice {color:var(--muted-foreground);font-size:.78rem;}
+.toolbar {display:grid;grid-template-columns:auto minmax(0,1.2fr) minmax(0,.8fr) auto;align-items:stretch;gap:.3rem;margin-bottom:.5rem;}
+.toolbar select,.toolbar button,.unknown,.slots button {min-width:0;border:1px solid var(--border);border-radius:.4rem;color:var(--foreground);background:var(--field-background,var(--card));}
+.toolbar select {font-size:.8rem;padding:.3rem;}
+.toolbar button {display:grid;place-items:center;padding:.3rem .4rem;cursor:pointer;}
+.toolbar button:disabled {opacity:.4;cursor:default;}
+.grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.14rem;align-items:center;text-align:center;}
+.grid abbr {font-size:.7rem;color:var(--muted-foreground);text-decoration:none;padding:.12rem 0;}
+.grid button {display:grid;position:relative;align-content:center;justify-content:center;min-height:2.05rem;min-width:0;padding:.13rem .05rem .3rem;border:1px solid transparent;border-radius:.38rem;background:transparent;color:var(--foreground);font-size:.83rem;font-variant-numeric:tabular-nums;cursor:pointer;}
+.grid button:disabled {color:var(--muted-foreground);opacity:.72;cursor:default;}
+.grid button i {position:absolute;left:calc(50% - 2px);bottom:.18rem;width:4px;height:4px;border-radius:50%;background:var(--primary);}
+.grid button[aria-pressed=true],.unknown[aria-pressed=true],.slots button[aria-pressed=true] {border-color:var(--primary);background:color-mix(in srgb,var(--primary) 13%,var(--card));}
+.grid button:enabled:hover,.slots button:hover,.toolbar button:enabled:hover {background:color-mix(in srgb,var(--primary) 10%,var(--card));}
+.panel :is(button,select):focus-visible {outline:2px solid var(--ring);outline-offset:1px;}
+.unknown {padding:.3rem .55rem;margin-top:.35rem;font-size:.76rem;cursor:pointer;}
+.dayTitle {margin:0 0 .5rem;}
+.slots {display:grid;gap:.35rem;max-height:16rem;overflow:auto;padding:2px;}
+.slots button {display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.43rem .62rem;text-align:start;cursor:pointer;}
+.slots button>span,.slots button>span>span {display:block;overflow-wrap:anywhere;}
+.slots strong {font-size:.84rem;font-variant-numeric:tabular-nums;}
+.slots button>span>span {font-size:.75rem;color:var(--muted-foreground);}
+.slots button>svg {flex:none;color:var(--primary);}
+.pager,.notice {display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-top:.5rem;}
+.pager span {margin-inline-end:auto;}
+@media (max-width:600px) {
+  .panel {grid-template-columns:minmax(0,1fr);}
+  .calendar,.times {padding:.65rem;}
+  .times {border-inline-start:0;border-top:1px solid var(--border);}
+  .grid button {min-height:2.1rem;}
+}

@@ -92,6 +92,12 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'VBR could not list mount hosts for this restore point.':
+    case 'The selected Linux mount host is no longer available for this restore point.':
+    case 'VBR could not verify the original Linux host.':
+    case 'Choose saved Linux SSH credentials for the original host and try again.':
+    case 'Select a Linux mount host.':
+    case 'Review the selected Linux mount host and credentials.':
     case 'Choose one recovery method for the batch.':
     case 'Choose one restore point per virtual machine.':
     case 'Confirm the original VM location before starting this recovery.':

@@ -20,5 +20,6 @@ export function pointOperations(point:RestorePoint,kind:RecoveryKind) {
 }
 export type RecoveryObject={objectId:string;name:string;platform:string;distinguishingLocation?:string;copies:{backupId:string;name:string;kinds:RecoveryKind[]}[]}
 export type RecoverySeed={objectId:string;backupId?:string;restorePointId?:string}
-export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[]}
+export type CalendarDay={day:string;count:number}
+export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[];calendarDays?:CalendarDay[];calendarDay?:string}
 export type PickedVm={object:RecoveryObject;point:RestorePoint;operation?:RestoreOperation}
