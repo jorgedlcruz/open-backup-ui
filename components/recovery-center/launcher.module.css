@@ -35,7 +35,7 @@
   padding-inline-end: 2rem;
   gap: .35rem;
 }
-.methodHeader h2 {font-size: clamp(1.35rem,2vw,1.65rem); line-height: 1.2; letter-spacing: -.025em;}
+.dialog .methodHeader [data-slot=dialog-title] {font-size: clamp(1.35rem,2vw,1.65rem); line-height: 1.2; letter-spacing: -.025em;}
 .methodHeader p {line-height: 1.45;}
 .dialog:has(.methodChooser) > .body {
   min-height: 0;
@@ -61,7 +61,7 @@
 .methodGroup[data-group=apps] {--method-accent: color-mix(in srgb,var(--primary) 22%,#a08bf4);}
 .groupHeading {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem .75rem;}
 .methodGroup .groupHeading h3 {font-size: .9rem; line-height: 1.4; font-weight: 650;}
-.batchHint {display: inline-flex; align-items: center; gap: .34rem; color: var(--muted-foreground); font-size: .75rem;}
+.batchHint {display: inline-flex; align-items: center; gap: .34rem; color: color-mix(in srgb,var(--muted-foreground) 75%,var(--foreground)); font-size: .75rem;}
 .methodList {display: grid; gap: .43rem; grid-auto-rows: 1fr;}
 .methodGroup[data-group=machines] .methodList {grid-template-columns: repeat(2,minmax(0,1fr));gap: 1rem;}
 .methodCard {
@@ -90,7 +90,7 @@
 .methodCopy {display: grid; gap: .16rem; min-width: 0; overflow-wrap: anywhere;}
 .methodCopy strong {font-size: .9rem; line-height: 1.28; font-weight: 650;}
 .methodGroup[data-group=machines] .methodCopy strong {font-size: 1rem;}
-.methodCopy > span {font-size: .795rem; line-height: 1.38; color: var(--muted-foreground);}
+.methodCopy > span {font-size: .795rem; line-height: 1.38; color: color-mix(in srgb,var(--muted-foreground) 75%,var(--foreground));}
 .cardArrow {color: var(--muted-foreground); transition: transform .15s;}
 .methodCard:is(:hover,:focus-visible) {border-color: var(--primary); background: color-mix(in srgb,var(--primary) 11%,var(--card));}
 .methodCard:is(:hover,:focus-visible) .cardArrow {color: var(--primary); transform: translateX(2px);}
