@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .groupActions {display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border-block:1px solid var(--border);background:color-mix(in srgb,var(--primary) 6%,transparent);font-size:.8rem}
 .groupActions strong {margin-inline-end:auto}
 .expandRecovery {display:inline-flex;align-items:center;justify-self:start;gap:.4rem;color:var(--primary);font-size:.8rem}

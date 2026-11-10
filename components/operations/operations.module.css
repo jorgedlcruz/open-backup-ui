@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .console { --ops-green:var(--ops-accent); padding:18px 32px 22px; width:100%; max-width:1800px; margin-inline:auto; color:var(--foreground); font-size:var(--ops-text,13px); }
 .panel,.metric,.capacityIntro { box-shadow:var(--ops-panel-shadow,none); -webkit-backdrop-filter:var(--ops-panel-backdrop,none); backdrop-filter:var(--ops-panel-backdrop,none); }
 .header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:26px; }

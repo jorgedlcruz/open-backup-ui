@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 // API Route for Veeam Backup for Microsoft 365 ServiceInstance
 import { NextResponse } from 'next/server';
 import { getVB365Config, refreshVB365Token } from '@/lib/server/vb365-helper';

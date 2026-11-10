@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {createHmac,randomUUID} from 'node:crypto'
 import {z} from 'zod'
 import type {RecoverySend} from '../server/vbr-recovery'

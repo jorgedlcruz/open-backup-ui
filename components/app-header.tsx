@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { GlobalSearch, type GlobalSearchProps } from "@/components/global-search"
 import { ModeToggle } from "@/components/mode-toggle"

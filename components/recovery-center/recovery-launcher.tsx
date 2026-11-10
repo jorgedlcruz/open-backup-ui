@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {Suspense,useEffect,useRef,useState} from 'react'
 import {useRouter,useSearchParams} from 'next/navigation'
 import {ArrowLeft,ArrowRight,RotateCcw} from 'lucide-react'

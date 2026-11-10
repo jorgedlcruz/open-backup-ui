@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { NextRequest, NextResponse } from 'next/server'
 import { withVbrRead } from '@/lib/server/vbr-read'
 import { readCachedForecastSnapshot } from '@/lib/server/forecast-cache'

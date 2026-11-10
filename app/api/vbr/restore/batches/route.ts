@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {after,NextRequest} from 'next/server'
 import {withVbrRecovery} from '@/lib/server/vbr-recovery'
 import {restoreBatches} from '@/lib/server/restore-batches'

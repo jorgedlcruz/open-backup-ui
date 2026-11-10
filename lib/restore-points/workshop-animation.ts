@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /** Each caption appears once per shuffled cycle, including across short-lived loading panels. */
 export function shuffledCycle<T>(choices: readonly [T, ...T[]], random: () => number = Math.random) {
   let queue: T[] = []

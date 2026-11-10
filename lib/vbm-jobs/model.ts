@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { jobSchema, sessionSchema, jobMatches, status, type Evidence, type Snapshot, type JobIssue } from '../vbm-dashboard/model'
 import { time, validId } from '../investigation/model'

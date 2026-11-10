@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';

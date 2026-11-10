@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useMemo,useState} from 'react'
 import Link from 'next/link'
 import {Activity,ArrowDown,ArrowUp,ArrowUpDown,CheckCheck,ChevronLeft,ChevronRight,Clock3,Database,Files,FolderOpen,HardDrive,

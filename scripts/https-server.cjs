@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Optional production TLS terminator. Next continues to run as a normal server
 // on an ephemeral loopback port; the generated standalone server is supported.

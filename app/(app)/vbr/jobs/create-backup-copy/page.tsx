@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { Trans } from '@/components/providers/i18n-provider'
 import { CreateBackupCopyWizard } from "./_components/create-backup-copy-wizard"
 

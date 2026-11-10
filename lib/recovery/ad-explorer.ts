@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { z } from 'zod'
 import { validId } from '../investigation/model'

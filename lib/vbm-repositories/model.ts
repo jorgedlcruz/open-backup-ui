@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { repositorySchema as baseRepository, jobSchema, organizationSchema, usageSchema, capacity, jobMatches, type Evidence } from '../vbm-dashboard/model'
 import { knownSize } from '../restore-points/model'

@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .group { border-bottom:1px solid var(--border); min-width:0; }
 .group:last-child { border-bottom:0; }
 .group > summary { list-style:none; display:flex; gap:8px; align-items:center; cursor:pointer; padding:14px 0; font-size:12px; font-weight:600; color:var(--foreground); }

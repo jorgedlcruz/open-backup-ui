@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { ReportError, obj, str, list, template, parameter, sections, choices, validateValues, safeLink, state, pageData, type Template, type Definition, type RunStatus, type Row } from './model'
 export type Execute=(path:string,method?:'GET'|'POST',body?:unknown,once?:boolean)=>Promise<unknown>
 const api='/api/v2.3'

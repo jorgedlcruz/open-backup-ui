@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 // Veeam Backup & Replication API Client
 // This client now uses Next.js API routes to avoid CORS issues
 import { applicationRequest, ApplicationRequestError } from './application-request';

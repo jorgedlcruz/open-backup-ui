@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {RestoreBatches,BatchScope} from '../server/restore-batches'
 import type {RecoverySend} from '../server/vbr-recovery'
 import {saveEntireRestore} from '../server/entire-restore-records'

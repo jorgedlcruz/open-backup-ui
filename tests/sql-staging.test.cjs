@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 const {test}=require('node:test'),assert=require('node:assert/strict')
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),ts=require('typescript')
 require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Manrope, Roboto } from "next/font/google";
 import "./globals.css";

@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useState} from 'react'
 import {FileText,Folder,ShoppingCart,X} from 'lucide-react'
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog'

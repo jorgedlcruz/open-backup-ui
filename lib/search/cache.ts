@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { SearchIndex, PreviewResponse } from './model'
 
 type Entry<T> = { value?: T; expires: number; pending?: Promise<T> }

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { lenses } from '../lens/navigation'
 
 export const navigationLabels: Record<string,string> = {

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { validId, investigationSessionSchema, taskSchema, type Session } from '../investigation/model'
 import type { VbrReader, VmPowerReader } from '../server/vbr-read'

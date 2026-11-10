@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { v4 as uuid } from 'uuid'
 import { isRestoreOperation, uncertainRestore, type RestoreOperation, type RestoreResult } from './workflow'
 import {explorerHandoffIO,resolveExplorerHandoff,type ExplorerHandoffIO,type ExplorerSelection,type ExplorerStage} from './explorer-handoff'

@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { useRecoveryPresentation } from '@/components/restore-points/use-presentation'
 
 import { useState } from 'react'

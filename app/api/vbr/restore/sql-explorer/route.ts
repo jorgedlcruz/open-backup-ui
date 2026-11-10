@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {after,NextRequest} from 'next/server'
 import {runSqlExplorer, sqlAfterClose, sqlExplorerSchema, sqlRequestSession} from '@/lib/recovery/sql-explorer'
 import {verifyExplorerPoint} from '@/lib/recovery/application-eligibility'

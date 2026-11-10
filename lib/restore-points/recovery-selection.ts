@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {RecoveryKind} from './recovery-picker'
 import { validId } from '../investigation/model'
 import { recoveryCenterPath } from '../navigation/recovery'

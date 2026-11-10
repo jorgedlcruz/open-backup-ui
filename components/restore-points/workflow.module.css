@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .operations { display:flex; flex-wrap:wrap; gap:.4rem; }
 .operations button, .operations li > span { min-height:2rem; display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border:1px solid var(--border); border-radius:.4rem; font-size:.75rem; text-align:start; }
 .operations button { cursor:pointer; background:color-mix(in srgb,var(--primary) 5%,transparent); }

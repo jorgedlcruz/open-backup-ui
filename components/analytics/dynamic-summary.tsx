@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

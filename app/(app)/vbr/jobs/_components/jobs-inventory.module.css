@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .table { min-width:1100px; }
 .table td { max-width:300px; overflow-wrap:anywhere; }
 .description { display:block; max-width:300px; margin-top:5px; color:var(--muted-foreground); font-size:var(--ops-caption,10px); line-height:1.6; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { NextRequest } from 'next/server'
 import { withVbmRead } from '@/lib/server/vbm-read'
 import { loadSession } from '@/lib/vbm-jobs/load'

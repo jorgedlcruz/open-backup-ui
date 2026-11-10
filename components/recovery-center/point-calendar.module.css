@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .panel {grid-column:1/-1;display:grid;grid-template-columns:minmax(15rem,.94fr) minmax(0,1.06fr);min-width:0;border:1px solid var(--border);border-radius:.7rem;background:color-mix(in srgb,var(--card) 65%,transparent);}
 .calendar,.times {min-width:0;padding:.9rem 1rem;}
 .times {border-inline-start:1px solid var(--border);}

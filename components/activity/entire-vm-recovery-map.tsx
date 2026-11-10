@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useEffect, useState } from 'react'
 import { Box, Database, FileCode2, Folder, HardDrive, Layers, Server } from 'lucide-react'

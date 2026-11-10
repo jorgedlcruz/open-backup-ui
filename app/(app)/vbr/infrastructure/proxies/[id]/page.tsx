@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { notFound } from 'next/navigation'
 import { ProxyOperations } from '@/components/proxies/proxy-operations'
 import { validId } from '@/lib/investigation/model'

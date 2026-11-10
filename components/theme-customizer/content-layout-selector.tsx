@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { useThemeConfig } from "@/components/active-theme"
 import { AppearanceOptions } from "./appearance-options"
 export function ContentLayoutSelector() {

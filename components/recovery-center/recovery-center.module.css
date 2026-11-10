@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .header { align-items:center; margin-block:4px 22px; }
 .headerActions,.source,.metricLabel,.identity,.table th button,.badge,.progress,.panelHead {display:flex;align-items:center;gap:8px}
 .headerActions {flex-wrap:wrap;justify-content:flex-end}

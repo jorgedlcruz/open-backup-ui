@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { useState, useCallback, useEffect } from "react"
 import { VeeamProtectedWorkload } from "@/lib/types/veeam"
 import { veeamApi } from "@/lib/api/veeam-client"

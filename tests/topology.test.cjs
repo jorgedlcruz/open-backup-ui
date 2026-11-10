@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Use the existing TypeScript compiler with Node's test runner; no extra runner.
 const fs = require('node:fs')

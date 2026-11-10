@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export interface RecoveryPoint {
   id: string; backupId: string; creationTime: string; type?: string; malwareStatus?: string
   repositoryId?: string; repositoryName?: string

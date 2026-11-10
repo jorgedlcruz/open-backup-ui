@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {RecoveryObject} from './recovery-picker'
 
 export const workloadFilters={all:'All',vm:'Virtual machines',physical:'Computers',unstructured:'Unstructured data'} as const

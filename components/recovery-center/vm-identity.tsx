@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {RecoveryObject} from '@/lib/restore-points/recovery-picker'
 import {useRecoveryPresentation} from '../restore-points/use-presentation'
 

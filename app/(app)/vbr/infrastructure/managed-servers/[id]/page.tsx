@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { notFound } from 'next/navigation'
 import { ServerOperations } from '@/components/managed-servers/server-operations'
 import { validId } from '@/lib/investigation/model'

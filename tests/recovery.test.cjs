@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 const fs = require('node:fs')
 const { test } = require('node:test')
 const assert = require('node:assert/strict')

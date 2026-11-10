@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {sqlRequest, type AdScope} from './ad-client'
 
 export type SqlBrowseView = 'servers' | 'instances' | 'databases' | 'files'

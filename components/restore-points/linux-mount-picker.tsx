@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useId} from 'react'
 import type {LinuxMountType,RestoreOptions} from '@/lib/restore-points/workflow'
 import {useRecoveryPresentation} from './use-presentation'

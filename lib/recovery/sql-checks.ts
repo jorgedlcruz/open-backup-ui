@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {SqlIntent,SqlStep} from './sql-actions'
 
 export function requiredSqlChecks(intent:SqlIntent,settings:{pointInTime?:boolean}):SqlStep[] {

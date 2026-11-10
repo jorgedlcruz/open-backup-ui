@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { CreateEntraIdWizard, CreateEntraIdHeading } from "./_components/create-entraid-wizard"
 
 export default async function CreateEntraIdJobPage(props: { searchParams: Promise<{ type?: string }> }) {

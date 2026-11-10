@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import fs from 'fs';
 import path from 'path';
 import { encrypt, decrypt, ENCRYPTION_KEY, LEGACY_DEFAULT_KEY } from './encryption';

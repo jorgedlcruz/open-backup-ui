@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {time, type LogRecord, type Session, type Task} from '../investigation/model'
 import {processingBytesPerSecond, type ThroughputHistory} from './throughput'
 

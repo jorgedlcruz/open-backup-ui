@@ -1,9 +1,10 @@
 # Changelog
 
-## 1.0.2 (in development)
+## 1.2.0 (in development)
 
 - Start a VM restore from the selected calendar or table entry. Set the recovered VM name and destination together and review the settings before submission.
-- Follow sessions and mounted recoveries from Activity. Open a session log, migrate a recovered VM, or stop publishing.
+- Start recoveries by goal in Recovery Center, then follow their progress in the recovery session. Sessions also lists mounted recoveries and their logs, including actions to migrate a recovered VM or stop publishing.
+- Browse guest files, Active Directory objects, and SQL databases inside the recovery session. The Active Directory toolbar groups Restore, Export, Compare with production, and the recovery cart above the object grid.
 - Search and filter fields use the selected Glass theme's surface and foreground colors.
 
 See the [VM restore API map](docs/vm-restore-api.md) for the launch payloads and recovery lifecycle endpoints.

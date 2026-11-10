@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export class ApplicationRequestError extends Error {
   constructor(message: string, public kind: 'access' | 'network' | 'response', public status = 0) {
     super(message)

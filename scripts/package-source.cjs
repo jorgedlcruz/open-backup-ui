@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Distribute the application source and its assets without copying local state.
 // Uses only Node built-ins, so it also works before npm ci.

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),ts=require('typescript'),assert=require('node:assert/strict'),{test}=require('node:test')
 require.extensions['.ts']=(mod,file)=>mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,file)
 const {vmBatchSchema,checkBatchInput,collide,prepareBatchRow}=require('../lib/recovery/vm-batch.ts'),{runVmBatch}=require('../lib/recovery/run-vm-batch.ts')

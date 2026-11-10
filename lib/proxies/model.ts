@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { uuid, validId, type Evidence } from '../investigation/model'
 

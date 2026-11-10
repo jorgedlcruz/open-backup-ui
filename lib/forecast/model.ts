@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import type { RepositoryState, RepositoryConfig, Backup, File, ScaleOut } from '../repositories/model'
 import type { Collection } from '../operations/model'

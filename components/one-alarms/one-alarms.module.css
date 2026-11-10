@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .console { min-width:0; }
 .source { display:flex; flex-direction:column; gap:5px; text-align:right; font-size:var(--ops-small,11px); overflow-wrap:anywhere; }
 .source small,.hint { color:var(--muted-foreground); font-size:var(--ops-caption,10px); line-height:1.6; }

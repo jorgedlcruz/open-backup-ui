@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {
   Activity, Boxes, CalendarClock, ChartArea, ChartBar, ChartLine, ChartPie,
   ClipboardCheck, DatabaseBackup, Files, Gauge, HardDrive, History, KeyRound,

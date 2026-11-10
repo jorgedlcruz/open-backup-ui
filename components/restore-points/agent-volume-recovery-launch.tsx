@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useEffect,useRef,useState} from 'react'
 import {Disc3,KeyRound,HardDrive,ArrowRight,LoaderCircle} from 'lucide-react'
 import {Button} from '@/components/ui/button'

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export const CANVAS_WIDTH = 1440
 export const CANVAS_HEIGHT = 2400
 export const MAX_CANVAS_HEIGHT = 100000

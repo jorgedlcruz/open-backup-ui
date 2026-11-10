@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { ProxyInvestigation } from '@/components/vbm-proxies/proxy-investigation'
 import { getRequestI18n } from '@/lib/i18n/server'
 export async function generateMetadata() {const {t}=await getRequestI18n();return {title:`${t('Proxy investigation')} | Microsoft 365`}}

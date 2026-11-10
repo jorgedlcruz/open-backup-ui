@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { notFound } from 'next/navigation'
 import { ProtectionOperations } from '@/components/protection-groups/protection-operations'
 import { validId } from '@/lib/investigation/model'

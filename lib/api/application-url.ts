@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 // A server-to-server app request must not loop through the public access gate
 // or send a Veeam bearer token to an origin supplied by a browser Host header.
 export function applicationApiUrl(path: string): string {

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {mergeActivity,sessionProgress,type ActivityRow,type Mount} from '../activity/model'
 import {sessionGroups} from '../activity/filters'
 import {recoveryCenterPath} from '../navigation/recovery'

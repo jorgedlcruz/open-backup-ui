@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { validId, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
 import { readEntireRestore } from '../server/entire-restore-records'

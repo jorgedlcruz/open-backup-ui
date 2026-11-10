@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { DataLoading } from '@/components/ui/data-loading'
 
 export default function Loading() {

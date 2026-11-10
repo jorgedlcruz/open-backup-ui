@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Record the release that contains each tracked project file, including binary assets.
 const fs = require('node:fs')

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { Provider } from '../ai-integrations/model'
 import { EMPTY_SUMMARY, HEALTH_STREAM_TYPE, INTERRUPTED_SUMMARY, type HealthSummaryEvent, type HealthSummaryProblem } from '../ai-integrations/health-stream'
 import { healthSummaryProblem } from './health-summary-errors'

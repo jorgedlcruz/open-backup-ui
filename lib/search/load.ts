@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { jobSchema } from '../operations/model'
 import { stateSchema as repoSchema, reportedGB } from '../repositories/model'

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import posthog from 'posthog-js'
 import { readTelemetryPreference, TELEMETRY_CONFIG } from '../telemetry'
 import { captureSetting, configured, destination, type Snapshot } from './model'

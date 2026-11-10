@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { LOCALES, normalizeLocale, type Locale } from '../i18n/model'
 import type { Translator } from '../i18n/presentation'
 

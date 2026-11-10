@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { RecoverySignal } from '@/components/restore-points/recovery-signal'
 
 export function DataLoading({status, compact}: {status?: string; compact?: boolean}) {

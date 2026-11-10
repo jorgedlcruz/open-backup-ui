@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .page { min-width:0; }
 .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .metrics > div > strong { display:block; font-size:calc(20px * var(--ops-density,1)); line-height:1.4; letter-spacing:-.5px; font-weight:550; margin:13px 0 8px; overflow-wrap:anywhere; }

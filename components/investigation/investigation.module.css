@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .layout { display:grid; grid-template-columns:300px minmax(0,1fr); gap:20px; align-items:start; }
 .workspace { display:flex; flex-direction:column; min-width:0; gap:18px; }
 .historyList { padding:0 10px 8px; display:grid; gap:5px; max-height:520px; overflow:auto; }

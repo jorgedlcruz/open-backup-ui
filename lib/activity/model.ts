@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { investigationSessionSchema, recordStatus, time, uuid, validId, type Session } from '../investigation/model'
 import { instantVmEvidence, type InstantVmEvidence } from './instant-vm'

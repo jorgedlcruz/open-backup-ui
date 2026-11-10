@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .chart,.empty {
   --speed-accent:var(--ops-accent,var(--primary));
   flex:0 1 clamp(14rem,23vw,20rem);

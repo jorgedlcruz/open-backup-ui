@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { loadEnvConfig } = require('@next/env')
 const { createKioskServer } = require('./lib/kiosk-gateway.cjs')

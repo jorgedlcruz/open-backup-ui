@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .page { min-width:0; }
 .actions,.roleBadges { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .source { color:var(--muted-foreground); font-size:var(--ops-caption,11px); overflow-wrap:anywhere; }

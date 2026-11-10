@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, ArrowUpRight, Check, Copy, FlaskConical, Hand, LayoutGrid, LockKeyhole, Magnet, Maximize, MousePointer2, Plus, Redo2, RefreshCw, Share2, SlidersHorizontal, Trash2, Undo2, Unlock, X } from 'lucide-react'

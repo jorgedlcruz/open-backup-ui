@@ -2,9 +2,9 @@
 
 **A community Operations console for Veeam environments.**
 
-See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. Open Backup UI **v1.0.1** adds Kiosk Builder, read-only TV dashboards and AI summary PDF reports to the Operations experience across Veeam Backup & Replication, Veeam Backup for Microsoft 365, Veeam ONE, and administration. The initial kiosk source catalog covers VBR.
+See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. In **v1.2.0**, Recovery Center lets you choose what to recover and follow the session through to completion. Browse guest files, Active Directory objects, and SQL databases directly in the session.
 
-[What's new in v1.0.1](docs/releases/v1.0.1.md) · [Visual guide](docs/releases/v1.0.1-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+[What's new in v1.2.0](CHANGELOG.md#120-in-development) · [v1.0.1 visual guide](docs/releases/v1.0.1-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
 Preparing v1.0.1 in GitHub Desktop? Use the [PR Markdown](docs/releases/v1.0.1-pull-request.md) and [publication review](docs/releases/v1.0.1-validation.md#github-desktop-handoff). The earlier v1.0.0 offline package has its own [import guide](docs/github-desktop-import.md).
 
@@ -128,7 +128,7 @@ Run `npm ci` after cloning or extracting the source on a new machine; dependenci
 
 The release source ZIP includes the application, tests, documentation, release screenshots, and connection-page images. It excludes installed dependencies, generated builds, local credentials, and runtime `data/`. Configure your own connections after extracting it; keep your existing instance's `data/` and encryption key when upgrading.
 
-To create the source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.0.1.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
+To create the source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.2.0.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
 
 The separate Linux standalone release includes the production build and runtime dependencies. Follow [standalone startup instructions](STANDALONE.md) to run it directly; use the source ZIP to install and build on Windows, macOS, or another architecture.
 

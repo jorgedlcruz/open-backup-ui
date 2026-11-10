@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export type RecoveryDestination={platform:string;manager:string;folder:string;name:string}
 export function sameRecoveryDestination(a:RecoveryDestination,b:RecoveryDestination){
   const same=(x:string,y:string)=>x.trim().toLowerCase()===y.trim().toLowerCase()

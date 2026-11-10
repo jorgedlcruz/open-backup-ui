@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {createContext,useContext,useEffect,useRef,useState,type ReactNode} from 'react'
 import {useI18n} from '@/components/providers/i18n-provider'
 import {useRouter} from 'next/navigation'

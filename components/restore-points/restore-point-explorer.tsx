@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { useRecoveryPresentation } from './use-presentation'
 import { RestoreWorkflow } from './restore-workflow'
 import { ApplicationExplorerLaunch } from './active-directory-launch'

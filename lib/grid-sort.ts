@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export type SortKind = 'text' | 'number' | 'date' | 'auto'
 export type SortDirection = 'asc' | 'desc'
 export type SortColumn<T> = { id: string; value: (row: T) => unknown; kind?: SortKind }

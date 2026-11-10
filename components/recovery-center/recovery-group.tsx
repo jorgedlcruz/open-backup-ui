@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {ArrowLeft,ChevronRight,Monitor,RefreshCw} from 'lucide-react'

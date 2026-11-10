@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {notFound} from 'next/navigation'
 import {RecoveryGroup} from '@/components/recovery-center/recovery-group'
 import {getRequestI18n} from '@/lib/i18n/server'

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { enumLabel, type Translator } from '../i18n/presentation'
 import { vbrError } from '../i18n/vbr-errors'
 import { time, validId, type Session } from './model'

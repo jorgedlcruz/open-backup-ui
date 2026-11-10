@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type {AdEntry} from './ad-client'
 
 export const adCartLimit=256

@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .explorer{container-type:inline-size}
 .commandBar,.commandButtons,.sessionCommands,.recoveryActions,.jobActions{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;min-width:0}
 .commandBar{justify-content:space-between;gap:.65rem 1rem;padding-block:.15rem .75rem;border-bottom:1px solid var(--border)}

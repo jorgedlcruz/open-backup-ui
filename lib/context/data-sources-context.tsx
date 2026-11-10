@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
 import { clientSources, loadClientSources } from '../data-sources/client'

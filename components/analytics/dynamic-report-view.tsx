@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useState, useEffect, useCallback } from "react"
 import { SortableGrid } from '@/components/ui/sortable-grid'

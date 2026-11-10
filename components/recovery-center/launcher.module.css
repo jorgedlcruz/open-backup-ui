@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .dialog{width:min(94vw,57rem)!important;max-width:57rem!important;max-height:90dvh;overflow-y:auto;align-content:start}
 .body{display:grid;gap:.85rem;min-width:0}
 .dialog:has(.picker){width:min(96vw,70rem)!important;max-width:70rem!important}

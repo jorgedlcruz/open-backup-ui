@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export type ExplorerProvider='ad'|'sql-explorer'
 export type ExplorerStage='opening'|'polling'|'checking'
 export type ExplorerSelection={restorePointId:string;backupId:string;backupObjectId:string;reviewedMalwareStatus?:string}

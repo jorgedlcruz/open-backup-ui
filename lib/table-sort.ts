@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { compareSortValues, sortKind } from './grid-sort'
 

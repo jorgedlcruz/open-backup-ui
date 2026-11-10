@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {spawn} from 'node:child_process'
 import path from 'node:path'
 import {z} from 'zod'

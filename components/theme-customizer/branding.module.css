@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .page { min-width:0; }
 .saveHint { display:flex; align-items:center; gap:10px; color:var(--ops-success); }
 .saveHint strong { display:block; font-size:var(--ops-small,12px); font-weight:500; }

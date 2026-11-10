@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { PublishedRecoveryReader, VbrReader, VmPowerReader } from '../server/vbr-read'
 import { investigationSessionSchema, taskSchema, validId, revisionForBuild, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
 import { loadLogs } from '../investigation/load'

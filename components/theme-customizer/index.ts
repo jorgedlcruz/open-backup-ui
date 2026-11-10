@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export * from "./color-mode-selector";
 export * from "./content-layout-selector";
 export * from "./preset-selector";

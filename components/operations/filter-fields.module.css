@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .fields { display:flex; flex-direction:column; gap:8px; min-width:0; font-size:12px; }
 .fields > label,.condition { display:flex; flex-direction:column; align-items:stretch; gap:7px; min-width:0; color:var(--muted-foreground); font-size:11px; font-weight:500; }
 .fields select,.fields input:not([type=checkbox]):not([type=radio]),.condition select { width:100%; min-width:0; max-width:100%; border:1px solid var(--border); border-radius:6px; background:var(--field-background, var(--background)); color:var(--foreground); padding:8px; font:inherit; font-size:12px; }

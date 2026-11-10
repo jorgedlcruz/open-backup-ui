@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .map {min-width:0; color:var(--foreground)}
 .picker {display:flex; flex-wrap:wrap; align-items:center; gap:.55rem; margin-block-end:.7rem; font-size:.82rem}
 .picker > span, .detail, .task > span {color:var(--muted-foreground)}

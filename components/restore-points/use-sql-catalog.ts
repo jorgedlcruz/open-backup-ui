@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { useEffect, useMemo, useState } from 'react'
 import type { AdScope } from '@/lib/restore-points/ad-client'
 import {browseSqlPage, type SqlBrowseView} from '@/lib/restore-points/sql-browse-client'

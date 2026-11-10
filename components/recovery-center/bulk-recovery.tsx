@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useRef,useState} from 'react'
 import Link from 'next/link'
 import {v4 as uuid} from 'uuid'

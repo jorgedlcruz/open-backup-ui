@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 const test=require('node:test'), assert=require('node:assert/strict'), ts=require('typescript')
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path'), vm=require('node:vm')
 const {createRequire}=require('node:module')

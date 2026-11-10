@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {cloneElement,useId,type ReactElement,type ReactNode} from 'react'
 import {AlertTriangle,CalendarDays,ChevronLeft} from 'lucide-react'
 import {Button} from '@/components/ui/button'

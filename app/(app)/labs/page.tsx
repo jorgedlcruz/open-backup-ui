@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { cookies } from 'next/headers'
 import { LABS_COOKIE } from '@/lib/labs/model'
 import { LabsCanvas } from '@/components/labs/labs-canvas'

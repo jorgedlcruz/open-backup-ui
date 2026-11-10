@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export type CollectorStatus = {
   state: 'waiting' | 'running' | 'healthy' | 'partial' | 'error' | 'disabled' | 'unsupported' | 'stale'
   intervalMinutes: number

@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import {useEffect,useRef,useState} from 'react'
 import {addDays,eachDayOfInterval,endOfMonth,endOfWeek,format,isSameMonth,isToday,parseISO,startOfMonth,startOfWeek} from 'date-fns'
 import {CalendarDays,Check,ChevronLeft,ChevronRight,Clock3} from 'lucide-react'

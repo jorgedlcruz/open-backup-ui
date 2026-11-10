@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useDashboardPresentation } from '@/components/vbm-dashboard/presentation'
 import { m365Diagnostic, m365Label } from '@/lib/i18n/m365'

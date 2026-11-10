@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export const recoveryCenterPath = '/vbr/recovery-center'
 export const sessionsPath = '/vbr/activity'
 export type SessionHome = typeof recoveryCenterPath | typeof sessionsPath

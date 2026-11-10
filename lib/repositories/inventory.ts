@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { utilization } from '../operations/model'
 import { validId, type Evidence } from '../investigation/model'
 import { configuredImmutability, extentReferences, type RepositoryConfig, type RepositoryState, type ScaleOut } from './model'

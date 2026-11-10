@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Plus, X } from 'lucide-react'

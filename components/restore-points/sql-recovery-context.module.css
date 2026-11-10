@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .context,.label,.times{display:flex;gap:.43rem;align-items:center;flex-wrap:wrap}
 .context{min-width:0;border-inline-start:2px solid var(--primary);padding:.27rem .6rem;font-size:.76rem;gap:.45rem .8rem}
 .label{color:var(--muted-foreground);font-size:.74rem}

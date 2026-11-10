@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 // API Route for Veeam Managed Servers
 // This route proxies requests to the Veeam API for managed servers data
 

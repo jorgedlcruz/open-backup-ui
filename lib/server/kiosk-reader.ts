@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { configStore } from './config-store'
 import { tokenManager } from './token-manager'
 import { sourceBinding, ShareError, type ShareRecord } from './kiosk-shares'

@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { NextRequest } from 'next/server'
 import { withVbrRead } from '@/lib/server/vbr-read'
 import { loadProtectedData, loadProtectedRecoveryTimes } from '@/lib/protected-data/load'

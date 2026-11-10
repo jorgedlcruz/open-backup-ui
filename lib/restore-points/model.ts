@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 export interface RestorePoint {
   recoveryKinds?: import('./recovery-picker').RecoveryKind[];
   // Membership established by VBR's object-scoped restore-point collection.

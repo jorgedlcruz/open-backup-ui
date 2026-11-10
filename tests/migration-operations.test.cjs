@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), vm = require('node:vm')
 const {randomUUID} = require('node:crypto'), assert = require('node:assert/strict'), {test} = require('node:test')

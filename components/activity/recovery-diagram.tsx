@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useId, type HTMLAttributes, type ReactNode } from 'react'
 import { ArrowDownToLine, Ban, Box, Check, ChevronRight, CircleHelp, Clock3, Database, Network, Plus, TriangleAlert, X, type LucideIcon } from 'lucide-react'

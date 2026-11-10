@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .panel {
   margin-top:20px; min-width:0; color:var(--foreground); font-family:var(--text-family,inherit);
   font-size:var(--ops-text,13px); background:var(--card); border:1px solid var(--border);

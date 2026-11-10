@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ArrowRight, Database, GripVertical, HardDrive, Layers, MapPin, Power, Server } from 'lucide-react'

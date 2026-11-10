@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { NextRequest } from 'next/server'
 import { listShares, opaqueToken, publishSchema, publishShare, ShareError, sourceBinding } from '@/lib/server/kiosk-shares'
 import { cookieOptions, failure, json, linkInfo, managedSource, OWNER_COOKIE, ownerCookie, readBody, sameOrigin } from '@/lib/server/kiosk-http'

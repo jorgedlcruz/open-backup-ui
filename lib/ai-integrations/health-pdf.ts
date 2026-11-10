@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import type { Content, ContentStack, ContentText, Style, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces'
 import type { Root, RootContent, PhrasingContent } from 'mdast'
 import { unified } from 'unified'

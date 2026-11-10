@@ -1,4 +1,4 @@
-/* Open Backup UI v1.0.2 */
+/* Open Backup UI v1.2.0 */
 .scope { display:flex; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:22px; }
 .scope label { display:flex; flex-direction:column; gap:7px; color:var(--muted-foreground); font-size:12px; }
 .scope label:first-child { flex:1; min-width:200px; }

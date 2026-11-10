@@ -1,4 +1,4 @@
-// Open Backup UI v1.0.2
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { TopologyRequestError } from '../topology/load'
 import { jobSchema, sessionSchema, repositorySchema, securitySchema, type Collection, type OperationsSnapshot, type Range } from './model'
