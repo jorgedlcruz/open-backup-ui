@@ -2,9 +2,13 @@
 import type {RecoveryObject} from '@/lib/restore-points/recovery-picker'
 import {useRecoveryPresentation} from '../restore-points/use-presentation'
 
-export function VmIdentity({object}:{object:RecoveryObject}){
+export function VmIdentity({object,showPath=false}:{object:RecoveryObject;showPath?:boolean}){
   const {t}=useRecoveryPresentation()
-  if(!object.distinguishingLocation)return null
+  const location=showPath&&object.displayPath?object.displayPath:object.distinguishingLocation
+  if(!location)return null
   const fullId=t('Backup object ID')+' · '+object.objectId
-  return <small title={fullId}>{object.distinguishingLocation}<span className="sr-only"> · {fullId}</span></small>
+  const suffix=object.distinguishingLocation?.split(' · ').at(-1)
+  const ambiguous=showPath&&object.displayPath&&suffix&&suffix.length>=8&&object.objectId.endsWith(suffix)
+  return <small title={object.distinguishingLocation?fullId:location}>{location}{ambiguous?' · '+suffix:''}
+    {object.distinguishingLocation&&<span className="sr-only"> · {fullId}</span>}</small>
 }

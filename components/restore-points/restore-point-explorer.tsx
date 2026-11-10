@@ -87,7 +87,7 @@ export function RestorePointExplorer({ objectId, backupId, name }: { objectId?: 
     if (!objectId && !backupId) { setLoading(false); return; }
     const controller = new AbortController();
     setLoading(true); setError(null);
-    veeamApi.getRestorePointEvidence({ objectId, backupId }, controller.signal).then(value => {
+    veeamApi.getRestorePointEvidence({ objectId, backupId, refresh: revision > 0 }, controller.signal).then(value => {
       if (!controller.signal.aborted) setSnapshot(value);
     }).catch(err => {
       if (!controller.signal.aborted) setError(err instanceof Error ? err.message : 'Restore-point evidence could not be loaded.');

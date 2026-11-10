@@ -249,7 +249,7 @@ export class VeeamApiClient {
 
       if (!response.ok) {
         const errorMessage = data.error || data.message || `API request failed: ${response.status} ${response.statusText}`;
-        throw Object.assign(new Error(errorMessage), { uncertain: typeof data.uncertain === 'boolean' ? data.uncertain : response.status >= 500 });
+        throw Object.assign(new Error(errorMessage), { status:response.status, uncertain: typeof data.uncertain === 'boolean' ? data.uncertain : response.status >= 500 });
       }
       return data as T;
     }
@@ -257,7 +257,7 @@ export class VeeamApiClient {
     // Handle Text/HTML responses
     const text = await response.text();
     if (!response.ok) {
-      throw Object.assign(new Error(text || `API request failed: ${response.status} ${response.statusText}`), { uncertain: response.status >= 500 });
+      throw Object.assign(new Error(text || `API request failed: ${response.status} ${response.statusText}`), { status:response.status, uncertain: response.status >= 500 });
     }
     return text as unknown as T;
   }
@@ -880,10 +880,11 @@ export class VeeamApiClient {
 
 
 
-  async getRestorePointEvidence(params: { objectId?: string; backupId?: string }, signal?: AbortSignal): Promise<import('@/lib/restore-points/model').RestorePointSnapshot> {
+  async getRestorePointEvidence(params: { objectId?: string; backupId?: string; refresh?: boolean }, signal?: AbortSignal): Promise<import('@/lib/restore-points/model').RestorePointSnapshot> {
     const query = new URLSearchParams();
     if (params.objectId) query.set('objectId', params.objectId);
     if (params.backupId) query.set('backupId', params.backupId);
+    if (params.refresh) query.set('refresh', 'true');
     return this.request(`/restore-points?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 

@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "Diese Anforderung gehört bereits zu einer anderen Wiederherstellung.",
   "VBR did not return recovery media.": "VBR hat kein Wiederherstellungsmedium zurückgegeben.",
   "Check the recovery settings.": "Prüfen Sie die Wiederherstellungseinstellungen.",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "Dieses Wiederherstellungsformular ist veraltet. Aktualisieren Sie das Wiederherstellungscenter, bevor Sie beginnen."
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "Dieses Wiederherstellungsformular ist veraltet. Aktualisieren Sie das Wiederherstellungscenter, bevor Sie beginnen.",
+  "Computers": "Computer",
+  "The workload list expired. Refresh it to continue.": "Die Workload-Liste ist abgelaufen. Aktualisieren Sie sie, um fortzufahren.",
+  "Default": "Standard"
 }

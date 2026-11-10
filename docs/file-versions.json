@@ -810,6 +810,7 @@
     "lib/restore-points/ad-cart.ts": "1.0.2",
     "lib/restore-points/ad-client.ts": "1.0.2",
     "lib/restore-points/batch.ts": "1.0.2",
+    "lib/restore-points/cached-collection.ts": "1.0.2",
     "lib/restore-points/destination-collision.ts": "1.0.2",
     "lib/restore-points/explorer-handoff.ts": "1.0.2",
     "lib/restore-points/guest-workspace.ts": "1.0.2",
@@ -822,6 +823,8 @@
     "lib/restore-points/sql-browse-client.ts": "1.0.2",
     "lib/restore-points/unstructured-workspace.ts": "1.0.2",
     "lib/restore-points/workflow.ts": "1.0.2",
+    "lib/restore-points/workload-index.ts": "1.0.2",
+    "lib/restore-points/workload-search.ts": "1.0.2",
     "lib/restore-points/workshop-animation.ts": "1.0.2",
     "lib/search/cache.ts": "1.0.2",
     "lib/search/client.ts": "1.0.2",
@@ -1045,6 +1048,7 @@
     "tests/vbm-repositories.test.cjs": "1.0.2",
     "tests/virtual-infrastructure.test.cjs": "1.0.2",
     "tests/vm-batch.test.cjs": "1.0.2",
+    "tests/workload-search.test.cjs": "1.0.2",
     "tsconfig.json": "1.0.2"
   }
 }

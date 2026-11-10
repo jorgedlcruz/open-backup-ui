@@ -161,6 +161,7 @@ test('private capabilities recover after a transient zero; incomplete lists expi
   const capability=row(backup,vm,true,false),permissions=['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsSql']
   let mode='transient',attempts=0
   const send=async url=>{
+    if(url==='/private-api/v1/backups/objects')throw Object.assign(Error('Flat view is unavailable'),{status:404})
     if(url.includes('/permissions'))return {permissions}
     let data
     if(url.includes('/objects')){
@@ -177,5 +178,73 @@ test('private capabilities recover after a transient zero; incomplete lists expi
   const first=await get();assert.equal(first.data[0].objectId,vm);assert.equal(first.complete,true);assert.equal(attempts,2)
   mode='missing';const missing=await get(true)
   assert.equal(missing.total,0);assert.equal(missing.complete,false);assert.ok(missing.notices.length);assert.equal(attempts,6)
-  mode='revoked';const denied=await get();assert.equal(denied.complete,true);assert.equal(denied.total,0);assert.equal(attempts,7)
+  mode='revoked'
+  const held=await get();assert.deepEqual(held,missing);assert.equal(attempts,6,'verified partial results are reused briefly with their warning')
+  const [denied,concurrent]=await Promise.all([get(true),get(true)])
+  assert.deepEqual(denied,concurrent);assert.equal(denied.complete,true);assert.equal(denied.total,0);assert.equal(attempts,7)
+})
+test('workload index pins the authorized ordering, uses only visible name or path for search and revokes expired or denied continuations',async()=>{
+  const count=205,list=Array.from({length:count},(_,i)=>({...row(backup,id(800+i),false,false),
+    name:'Server-'+String(i).padStart(3,'0'),path:'dc01/floor-'+(i%3)+'/Server-'+String(i).padStart(3,'0')}))
+  let nativeReads=0,deny=false
+  const send=async url=>{
+    const u=new URL(url,'https://unit.invalid')
+    if(u.pathname.endsWith('/permissions'))return {permissions:deny?[]:['ViewBackupObjects','ViewRestorePoints']}
+    nativeReads++
+    const data=u.pathname.endsWith('/objects')?list:[{id:backup,name:'Hidden job alias',platformName:'VMware',objectsCount:count}]
+    const skip=Number(u.searchParams.get('skip')),limit=Number(u.searchParams.get('limit'))
+    return {data:data.slice(skip,skip+limit),pagination:{total:data.length,skip}}
+  }
+  const read=async()=>{throw Error('No public inventory')}
+  const get=(args={},identity='index-source-A/operator-A')=>pickerPage(read,send,identity,{view:'index',kind:'entire-vm',offset:0,limit:200,...args})
+  const page=await get(),snapshotId=page.snapshotId
+  assert.equal(page.total,count);assert.equal(page.data.length,200);assert.ok(snapshotId)
+  const reads=nativeReads
+  await assert.rejects(get({offset:200,snapshotId},'index-source-A/operator-B'),e=>e.status===409)
+  await assert.rejects(get({offset:200,snapshotId},'index-source-B/operator-A'),e=>e.status===409)
+  await assert.rejects(get({offset:200,snapshotId,kind:'instant-vm'}),e=>e.status===409)
+  await assert.rejects(get({offset:200}),e=>e.status===409)
+  const end=await get({offset:200,snapshotId})
+  assert.equal(end.snapshotId,snapshotId);assert.equal(end.data.length,5);assert.equal(end.data[0].name,'Server-200')
+  assert.equal(nativeReads,reads,'continuations never enumerate VBR again')
+  for(const q of ['Hidden job alias','VMware',list[0].objectId,backup])assert.equal((await get({view:'objects',query:q})).total,0)
+  assert.equal((await get({view:'objects',query:'Floor-2'})).total,68)
+  assert.equal((await get({view:'objects',query:'SERVER-204'})).data[0].displayPath,'dc01/floor-0/Server-204')
+  const now=Date.now
+  try{
+    Date.now=()=>now()+120_001
+    await assert.rejects(get({offset:200,snapshotId}),e=>e.status===409)
+  }finally{Date.now=now}
+  deny=true
+  await assert.rejects(get({refresh:true}),e=>e.status===403)
+  await assert.rejects(get({offset:200,snapshotId}),e=>e.status===409)
+  await assert.rejects(get(),e=>e.status===403)
+})
+test('the native flat index eliminates verified per-backup reads and falls back for a mismatched member',async()=>{
+  const calls=[]
+  const b1=row(backup,vm,true,false),b2=row(copy,directory,false,true)
+  const headers=[backup,copy].map(id=>({id,name:'Job',platformName:'VMware',objectsCount:1}))
+  const page=(data,skip=0)=>({data,pagination:{skip,total:data.length,count:data.length,limit:200}})
+  const send=async(url,options)=>{
+    calls.push(url)
+    if(url.includes('/permissions'))return {permissions:['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsSql','StartExplorerForMsAd']}
+    if(url==='/private-api/v1/backups/objects'){
+      assert.deepEqual(options,{method:'POST',body:{skip:0,limit:200}})
+      return page([b1,{...b2,objectId:id(990),name:'Unrelated'},row(id(999),id(991),true,false)])
+    }
+    if(url.includes('/'+copy+'/objects?'))return page([b2])
+    if(url.startsWith('/private-api/v1/backups?'))return page(headers)
+    assert.fail('Unexpected native read '+url)
+  }
+  const read=async url=>{
+    const parent=url.includes(backup)?backup:copy,o=parent===backup?b1:b2
+    return page([{id:o.objectId,backupId:parent,platformName:'VMware',type:'VM',name:o.name,path:'dc1/'+o.name}])
+  }
+  const args={view:'index',kind:'apps',limit:200,offset:0}
+  const result=await pickerPage(read,send,'verified-flat-scope',args)
+  assert.equal(result.complete,true);assert.equal(result.total,2)
+  assert.deepEqual(result.data.map(item=>item.objectId),[vm,directory])
+  assert.equal(calls.filter(p=>p.includes('/'+backup+'/objects?')).length,0)
+  assert.equal(calls.filter(p=>p.includes('/'+copy+'/objects?')).length,1)
+  assert.equal(calls.filter(p=>p==='/private-api/v1/backups/objects').length,1)
 })

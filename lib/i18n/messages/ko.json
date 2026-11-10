@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "이 요청은 이미 다른 복구 작업에 연결되어 있습니다.",
   "VBR did not return recovery media.": "VBR이 복구 미디어를 반환하지 않았습니다.",
   "Check the recovery settings.": "복구 설정을 확인하세요.",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "이 복구 양식은 오래되었습니다. 시작하기 전에 복구 센터를 새로 고치세요."
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "이 복구 양식은 오래되었습니다. 시작하기 전에 복구 센터를 새로 고치세요.",
+  "Computers": "컴퓨터",
+  "The workload list expired. Refresh it to continue.": "워크로드 목록이 만료되었습니다. 목록을 새로 고친 후 계속하세요.",
+  "Default": "기본값"
 }

@@ -3,11 +3,14 @@
 const http = require('node:http'), assert = require('node:assert/strict'), { test } = require('node:test')
 const { createKioskServer } = require('../scripts/lib/kiosk-gateway.cjs')
 const id = 'a'.repeat(43), origin = 'http://kiosk.example:3102'
-const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)))
+const listen = (server, hostname = '127.0.0.1') => new Promise((resolve, reject) => {
+  server.once('error', reject)
+  server.listen(0, hostname, () => { server.off('error', reject); resolve(server.address().port) })
+})
 const close = server => new Promise(resolve => { server.closeAllConnections(); server.close(resolve) })
-function request(port, path, method = 'GET', headers = {}, body) {
+function request(port, path, method = 'GET', headers = {}, body, hostname = '127.0.0.1') {
   return new Promise((resolve, reject) => {
-    const outgoing = http.request({ hostname: '127.0.0.1', port, path, method, headers: { host: 'kiosk.example:3102', ...headers } }, response => {
+    const outgoing = http.request({ hostname, port, path, method, headers: { host: 'kiosk.example:3102', ...headers } }, response => {
       const chunks = []; response.on('data', chunk => chunks.push(chunk)); response.on('end', () => resolve({ status: response.statusCode, headers: response.headers, body: Buffer.concat(chunks).toString() }))
     })
     outgoing.on('error', reject); outgoing.end(body)
@@ -59,3 +62,35 @@ test('unlock requires same-origin JSON, rejects oversized bodies, and refuses pr
 test('kiosk listener rejects credentials, paths, unsupported protocols and self-proxy configuration', () => {
   for (const appUrl of ['ftp://example.com', 'https://user:password@example.com', 'http://example.com/private', origin]) assert.throws(() => createKioskServer({ appUrl, publicOrigin: origin }))
 })
+
+test('kiosk startup rejects malformed CIDRs', () => {
+  for (const allowedSubnet of ['', 'localhost/8', '127.0.0.1', '192.168.1.0/33', '::1/129', 'fe80::1%eth0/64', '::1/-1', '::1/', '::1/1/2', '::1/1.0', '::1/ 1', '::1/01']) {
+    assert.throws(() => createKioskServer({ appUrl: 'http://127.0.0.1', publicOrigin: origin, allowedSubnet }), /KIOSK_ALLOWED_SUBNET/, allowedSubnet)
+  }
+})
+
+for (const [family, hostname, allowed, excluded, spoof] of [
+  ['IPv4', '127.0.0.1', '127.0.0.0/8', '192.168.1.0/24', '192.168.1.41'],
+  ['IPv6', '::1', '::1/128', '2001:db8::/32', '2001:db8::1'],
+]) {
+  test(`kiosk uses only the ${family} socket peer for subnet authorization`, async t => {
+    let calls = 0
+    const upstream = http.createServer((_req, res) => { calls++; res.end('ok') })
+    const appUrl = 'http://127.0.0.1:' + await listen(upstream)
+    t.after(() => close(upstream))
+    for (const [allowedSubnet, forwarded, expected] of [[allowed, spoof, 200], [excluded, spoof, 403]]) {
+      const gateway = createKioskServer({ appUrl, publicOrigin: origin, allowedSubnet })
+      let port
+      try { port = await listen(gateway, hostname) } catch (error) {
+        if (family === 'IPv6' && ['EAFNOSUPPORT', 'EADDRNOTAVAIL'].includes(error.code)) return t.skip('IPv6 loopback unavailable')
+        throw error
+      }
+      t.after(() => close(gateway))
+      const response = await request(port, '/share/kiosk/' + id, 'GET', {
+        forwarded: `for="${forwarded}"`, 'x-forwarded-for': forwarded, 'x-real-ip': forwarded,
+      }, undefined, hostname)
+      assert.equal(response.status, expected)
+    }
+    assert.equal(calls, 1)
+  })
+}

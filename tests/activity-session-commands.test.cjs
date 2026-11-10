@@ -6,10 +6,24 @@ const assert = require('node:assert/strict')
 require.extensions['.ts'] = (mod, file) => mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
   compilerOptions: {module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText, file)
-const {canStopPublishing, migrationDestination, migrationForMount, recoveryMapMounts} = require('../components/activity/session-commands.ts')
+const {browsableGuestMount, canStopPublishing, migrationDestination, migrationForMount, recoveryMapMounts} = require('../components/activity/session-commands.ts')
 
 const mount = {id:'mount-1', sessionId:'session-1', kind:'vSphere', state:'Mounted'}
 const detail = {id:'session-1', session:{state:'Working'}, mounts:[mount], mountWarnings:[]}
+
+test('guest browsing requires exact mounted evidence, preserves per-volume notices and clears on terminal or uncertain state',()=>{
+  const flr={...mount,kind:'flr'},live={...detail,mounts:[flr]}
+  assert.equal(browsableGuestMount(live,'',false),flr)
+  assert.equal(browsableGuestMount({...live,session:null},'',false),flr)
+  const partial={...flr,error:'Volume 2 could not be mounted'}
+  assert.equal(browsableGuestMount({...live,mounts:[partial]},'',false),partial)
+  for(const source of [undefined,detail,{...live,mounts:[]},{...live,mounts:[{...flr,sessionId:'foreign'}]},
+    {...live,mounts:[{...flr,state:'Mounting'}]},
+    {...live,mountWarnings:['flr']},{...live,session:{state:'Stopping'}},{...live,session:{state:'Stopped'}},
+    {...live,session:{state:'Working',endTime:'2026-11-11T01:00:00Z'}}])assert.equal(browsableGuestMount(source,'',false),undefined)
+  assert.equal(browsableGuestMount(live,'last read failed',false),undefined)
+  assert.equal(browsableGuestMount(live,'',true),undefined)
+})
 
 test('Stop publishing appears only for a verified and actionable VM publication on this session', () => {
   assert.equal(canStopPublishing(mount,detail,''),true)

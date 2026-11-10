@@ -37,6 +37,23 @@ export function RecoveryLauncherButton(props:LauncherProps){
 function Launcher({sourceKey,onCreated,initialKind,seeds=[]}:LauncherProps){
   const {t}=useRecoveryPresentation(),router=useRouter(),query=useSearchParams()?.toString()||''
   const triggerRef=useRef<HTMLButtonElement>(null)
+  useEffect(()=>{
+    if(!sourceKey)return
+    const controller=new AbortController()
+    let lastRead=0
+    const interval=5*60_000
+    // Keep the server's scoped eligibility catalog warm while Recovery Center is visible.
+    // Opening the wizard still authenticates the current user and source.
+    const warm=()=>{
+      if(document.visibilityState!=='visible'||Date.now()-lastRead<interval)return
+      lastRead=Date.now()
+      void catalogRequest<GoalAvailability>(sourceKey,'machines','goals',{},controller.signal).catch(()=>{})
+    }
+    warm()
+    const timer=window.setInterval(warm,interval)
+    document.addEventListener('visibilitychange',warm)
+    return()=>{controller.abort();window.clearInterval(timer);document.removeEventListener('visibilitychange',warm)}
+  },[sourceKey])
   const [opening,setOpening]=useState<{kind?:RecoveryKind;seeds:RecoverySeed[];mismatch?:boolean}>(),[locked,setLocked]=useState(false),handled=useRef('')
   useEffect(()=>{
     const params=new URLSearchParams(query),kind=params.get('recover')
@@ -155,7 +172,7 @@ function LauncherContent({sourceKey,opening,onBusy,onSingle,onBatch}:{sourceKey:
         loading?<RecoverySignal stage="options"/>:stage==='workloads'&&scope?<>{opening.mismatch&&<p role="alert" className={styles.warning}>{t('The connected VBR source changed. Reopen this workflow.')}</p>}
         {notices.map(n=><p key={n} role="alert" className={styles.warning}>{diagnostic(n)}</p>)}
         {!!unavailable.length&&<details className={styles.notice}><summary>{t('Details')}</summary><ul>{unavailable.map(v=><li key={v}>{v}</li>)}</ul></details>}
-        <RecoveryPicker sourceKey={sourceKey} kind={scope} chosen={chosen} setChosen={setChosen}/>
+        <RecoveryPicker key={sourceKey+'/'+scope} sourceKey={sourceKey} kind={scope} chosen={chosen} setChosen={setChosen}/>
         {chosen.length>1&&selection.length===chosen.length&&!methods.length&&<p role="status" className={styles.notice}>{t('These restore points have no common recovery method. Change a point or remove a workload.')}</p>}
         <div className={styles.actions}>{back(goal?.goal==='apps'&&goal.kinds.length>1?'application':'goals')}
           <Button disabled={!methods.length} onClick={()=>methods.length===1?selectMethod(methods[0]):setStage('method')}>{t('Continue')}<ArrowRight size={14}/></Button></div>

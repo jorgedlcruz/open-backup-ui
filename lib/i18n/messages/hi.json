@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "यह अनुरोध पहले से किसी अन्य पुनर्प्राप्ति से जुड़ा है।",
   "VBR did not return recovery media.": "VBR ने पुनर्प्राप्ति मीडिया नहीं लौटाया।",
   "Check the recovery settings.": "पुनर्प्राप्ति सेटिंग जाँचें।",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "यह पुनर्प्राप्ति फ़ॉर्म पुराना हो गया है। शुरू करने से पहले पुनर्प्राप्ति केंद्र रीफ़्रेश करें।"
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "यह पुनर्प्राप्ति फ़ॉर्म पुराना हो गया है। शुरू करने से पहले पुनर्प्राप्ति केंद्र रीफ़्रेश करें।",
+  "Computers": "कंप्यूटर",
+  "The workload list expired. Refresh it to continue.": "वर्कलोड की सूची की अवधि समाप्त हो गई है। जारी रखने के लिए इसे रीफ़्रेश करें।",
+  "Default": "डिफ़ॉल्ट"
 }

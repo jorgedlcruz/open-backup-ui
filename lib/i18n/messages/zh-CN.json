@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "此请求已关联到其他恢复任务。",
   "VBR did not return recovery media.": "VBR 未返回恢复介质。",
   "Check the recovery settings.": "请检查恢复设置。",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "此恢复表单已过期。请先刷新恢复中心，然后再开始。"
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "此恢复表单已过期。请先刷新恢复中心，然后再开始。",
+  "Computers": "计算机",
+  "The workload list expired. Refresh it to continue.": "工作负载列表已过期。请刷新列表以继续。",
+  "Default": "默认"
 }

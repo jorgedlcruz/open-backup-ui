@@ -2,16 +2,16 @@
 import { z } from 'zod'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
-import { enrichPoints, type RestorePointSnapshot } from './model'
+import { enrichPoints, type RestorePoint, type RestorePointSnapshot } from './model'
+import type { Collection } from '../operations/model'
+import { pointSchema } from './cached-collection'
+export { pointSchema } from './cached-collection'
 import { multiVmKind } from './recovery-selection'
 import { validId } from '../investigation/model'
 
 const text = z.string().nullable().optional();
 const number = z.number().nullable().optional();
 const strings = z.array(z.string()).nullable().optional();
-export const pointSchema = z.object({ id: z.string().min(1), backupId: z.string().min(1), name: text, creationTime: text,
-  type: text, platformName: text, backupFileId: text, malwareStatus: text, allowedOperations: strings,
-  gfsPeriods: strings, originalSize: number, sessionId: text, guestOsFamily: text });
 const fileSchema = z.object({ id: z.string().min(1), backupId: z.string().min(1), name: text, objectIds: strings,
   restorePointIds: strings, dataSize: number, backupSize: number, dedupRatio: number, compressRatio: number,
   gfsPeriods: strings, severity: text });
@@ -73,7 +73,8 @@ export async function completeVmMembership(read:Read, snapshot:RestorePointSnaps
   return eligible
 }
 
-export async function loadRestorePoints(read: Read, sourceName: string, selection: { objectId?: string; backupId?: string }): Promise<RestorePointSnapshot> {
+export async function loadRestorePoints(read: Read, sourceName: string, selection: { objectId?: string; backupId?: string },
+  objectPoints?: () => Promise<Collection<RestorePoint>>): Promise<RestorePointSnapshot> {
   const query = new URLSearchParams({ orderColumn: 'CreationTime', orderAsc: 'false' });
   if (selection.backupId) query.set('backupIdFilter', selection.backupId);
   const path = selection.objectId ? `/api/v1/backupObjects/${encodeURIComponent(selection.objectId)}/restorePoints` : '/api/v1/restorePoints';
@@ -85,7 +86,9 @@ export async function loadRestorePoints(read: Read, sourceName: string, selectio
     }
   }
   const [points, subject, repositories] = await Promise.all([
-    readOperationsCollection(read, `${path}?${query}`, pointSchema, 5000),
+    selection.objectId && objectPoints ? objectPoints().then(page => page.data.length > 5000
+      ? { ...page, data: page.data.slice(0, 5000), complete: false } : page)
+      : readOperationsCollection(read, `${path}?${query}`, pointSchema, 5000),
     optional(async () => {
       const id = selection.objectId || selection.backupId!;
       const subject = subjectSchema.parse(await read(`/api/v1/${selection.objectId ? 'backupObjects' : 'backups'}/${encodeURIComponent(id)}`));

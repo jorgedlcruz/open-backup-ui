@@ -1,6 +1,6 @@
 // Open Backup UI v1.0.2
 export const DEFAULT_THEME = {
-    preset: "default",
+    preset: "glass-ocean",
     radius: "default",
     scale: "none",
     contentLayout: "full",
@@ -41,7 +41,7 @@ export const THEMES = [
         colors: ["#c7b0ff", "#6450b3", "#c876a1"]
     },
     {
-        name: "Default",
+        name: "Classic",
         value: "default",
         colors: ["oklch(0.33 0 0)"]
     },

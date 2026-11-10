@@ -100,6 +100,7 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'The workload list expired. Refresh it to continue.': return t('The workload list expired. Refresh it to continue.')
     case 'VBR returned a different task.': return t('VBR could not verify this recovery request.')
     case 'VBR returned a different target.': return t('VBR could not verify this recovery request.')
     case 'VBR returned a different disk layout.': return t('VBR could not verify this recovery request.')

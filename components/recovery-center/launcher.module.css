@@ -4,6 +4,18 @@
 .dialog:has(.picker){width:min(96vw,70rem)!important;max-width:70rem!important}
 .calendarPane{min-width:0;container-type:inline-size;display:grid;gap:.75rem}
 .workloadRow{display:flex;gap:.25rem;align-items:stretch;min-width:0}
+.workloadHeading{display:flex;align-items:center;justify-content:space-between;gap:.35rem .65rem;flex-wrap:wrap}
+.workloadHeading h3,.workloadHeading small{display:inline-block}
+.workloadHeading small{margin-inline-start:.42rem}
+.typeFilter{position:relative;display:inline-flex;align-items:center;max-width:100%;margin-inline-start:auto;color:var(--foreground)}
+.typeFilter>svg{position:absolute;pointer-events:none;color:var(--muted-foreground)}
+.typeFilter>svg:first-child{inset-inline-start:.5rem}.typeFilter>svg:last-child{inset-inline-end:.45rem}
+.typeFilter select{appearance:none;max-width:100%;min-height:2rem;padding:.2rem 1.55rem .2rem 1.85rem;padding-inline:1.85rem 1.55rem;border:1px solid var(--border);border-radius:.45rem;font-size:.8rem;color:var(--foreground);background:var(--field-background,var(--card));cursor:pointer}
+.typeFilter select:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+@supports(field-sizing:content){.typeFilter select{field-sizing:content}}
+.search:focus-within{outline:2px solid var(--ring);outline-offset:1px}
+.search input:focus{outline:none;box-shadow:none}
+@media(forced-colors:active){.typeFilter select{appearance:auto;padding-inline:.35rem}.typeFilter>svg{display:none}}
 .workloadRow>button:first-child{flex:1;min-width:0}
 .workloadRow[data-focused=true]>button:first-child{box-shadow:inset 3px 0 0 var(--primary)}
 .workloadRow>button.removeWorkload{flex:none;padding:.45rem;color:var(--muted-foreground)}

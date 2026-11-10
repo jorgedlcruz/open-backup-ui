@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "This request already belongs to a different recovery.",
   "VBR did not return recovery media.": "VBR did not return recovery media.",
   "Check the recovery settings.": "Check the recovery settings.",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "This recovery form is out of date. Refresh Recovery Center before starting."
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "This recovery form is out of date. Refresh Recovery Center before starting.",
+  "Computers": "Computers",
+  "The workload list expired. Refresh it to continue.": "The workload list expired. Refresh it to continue.",
+  "Default": "Default"
 }

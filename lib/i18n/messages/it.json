@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "Questa richiesta è già associata a un altro ripristino.",
   "VBR did not return recovery media.": "VBR non ha restituito il supporto di ripristino.",
   "Check the recovery settings.": "Verificare le impostazioni di ripristino.",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "Questo modulo di ripristino non è aggiornato. Aggiornare il Centro di ripristino prima di iniziare."
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "Questo modulo di ripristino non è aggiornato. Aggiornare il Centro di ripristino prima di iniziare.",
+  "Computers": "Computer",
+  "The workload list expired. Refresh it to continue.": "L’elenco dei carichi di lavoro è scaduto. Aggiornalo per continuare.",
+  "Default": "Predefinito"
 }

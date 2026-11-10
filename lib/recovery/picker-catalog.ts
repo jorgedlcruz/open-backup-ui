@@ -1,14 +1,16 @@
 // Open Backup UI v1.0.2
 import {z} from 'zod'
+import {randomUUID} from 'node:crypto'
 import type {VbrReader} from '../server/vbr-read'
 import type {RecoverySend} from '../server/vbr-recovery'
 import {readOperationsCollection} from '../operations/load'
 import {objectSchema,backupKey} from '../protected-data/model'
-import {pointSchema} from '../restore-points/load'
+import {readObjectRestorePoints} from '../restore-points/cached-collection'
+import {matchesWorkloadSearch} from '../restore-points/workload-search'
 import {pointTime,type RestorePoint} from '../restore-points/model'
 import {recoveryKinds,recoveryGoals,scopeKinds,eligibleMethods,isUnstructuredKind,pointOperations,type PickerScope,type RecoveryKind,type RecoveryObject,type WorkloadType} from '../restore-points/recovery-picker'
 import {unstructuredCatalog,unstructuredPoints} from './unstructured-catalog'
-import {applicationAccess,publicBackupObjects,supportedApplications,verifiedBackupObjects} from './application-eligibility'
+import {applicationAccess,publicBackupObjects,readNativeBackupIndex,supportedApplications,verifiedBackupObjects,type NativeBackupIndex} from './application-eligibility'
 import {collect} from './options'
 import {TopologyRequestError} from '../topology/load'
 
@@ -18,7 +20,7 @@ const nativeKinds:Record<string,RecoveryKind>={InstantRecoveryToVi:'instant-vm',
 const physicalPlatform=(platform?:string|null)=>['WindowsPhysical','LinuxPhysical','LinuxPhysicalPpc'].includes(platform||'')
 type Catalog={objects:RecoveryObject[];complete:boolean;notices:string[]}
 type PointSet={data:RestorePoint[];complete:boolean}
-const passthrough=(e:unknown)=>e instanceof Error && 'status' in e && e.status===401
+const passthrough=(e:unknown)=>e instanceof Error && 'status' in e && (e.status===401||e.status===403)
 
 async function parallel<T>(rows:T[],work:(r:T)=>Promise<void>) {
   let cursor=0
@@ -35,11 +37,7 @@ function include(map:Map<string,RecoveryObject>,id:string,name:string,platform:s
   }
   else vm.copies.push(copy)
 }
-async function objectPoints(read:VbrReader,id:string):Promise<PointSet>{
-  const result=await readOperationsCollection(p=>read(p,'1.3-rev2'),'/api/v1/backupObjects/'+id+'/restorePoints?orderColumn=CreationTime&orderAsc=false',pointSchema,20000)
-  return {data:result.data,complete:result.complete}
-}
-export async function recoveryCatalog(read:VbrReader,privateSend?:RecoverySend):Promise<Catalog>{
+async function recoveryCatalog(read:VbrReader,privateSend:RecoverySend|undefined,publicIdentity:string,refresh:boolean|undefined,getNativeIndex:()=>Promise<NativeBackupIndex|undefined>):Promise<Catalog>{
   const objects=new Map<string,RecoveryObject>(),notices:string[]=[]
   const paths=new Map<string,string>()
   let complete=true
@@ -48,11 +46,12 @@ export async function recoveryCatalog(read:VbrReader,privateSend?:RecoverySend):
     if(!rights.has('ViewBackupObjects')||!rights.has('ViewRestorePoints'))throw new TopologyRequestError('Your VBR account cannot read the required backup records.',403)
     await parallel(backups.filter(b=>b.platformName!=='UnstructuredData'),async b=>{
       try{
-        const inventory=await publicBackupObjects(read,b.id)
+        const [inventory,native]=await Promise.all([publicBackupObjects(read,b.id),getNativeIndex()])
+        if(b.objectsCount===0&&inventory?.complete&&!inventory.data.length&&!native?.get(b.id)?.length)return
         const ids=(inventory?.data||[]).filter(o=>physicalPlatform(o.platformName)||['vm','virtualmachine'].includes(o.type?.toLowerCase()||'')).map(o=>o.id)
         for(const o of inventory?.data||[])if(o.path)paths.set(o.id,o.path)
         const {rows,complete:verified}=await verifiedBackupObjects(privateSend,b.id,{ids,minimum:b.objectsCount??undefined,
-          knownEmpty:!!inventory?.complete&&!ids.length&&!b.objectsCount})
+          knownEmpty:!!inventory?.complete&&!ids.length&&!b.objectsCount},inventory?.complete?native?.get(b.id):undefined)
         if(!verified)complete=false
         for(const row of rows){
           if(!row.objectId||row.backupId!==b.id)continue
@@ -88,7 +87,7 @@ export async function recoveryCatalog(read:VbrReader,privateSend?:RecoverySend):
     await parallel([...vms.values()],async vm=>{
       try{
         if(vm.path)paths.set(vm.id,vm.path)
-        const points=await objectPoints(read,vm.id)
+        const points=await readObjectRestorePoints(path=>read(path,'1.3-rev2'),publicIdentity,vm.id,{refresh})
         if(!points.complete)complete=false
         for(const point of points.data){
           const kinds=recoveryKinds.filter(kind=>pointOperations(point,kind).length>0)
@@ -110,7 +109,7 @@ export async function recoveryCatalog(read:VbrReader,privateSend?:RecoverySend):
     try{
       const details=objectSchema.parse(await read('/api/v1/backupObjects/'+vm.objectId,'1.3-rev2'))
       if(details.id===vm.objectId&&details.path)paths.set(vm.objectId,details.path)
-    }catch(e){if(passthrough(e))throw e}
+    }catch(e){if(e instanceof Error&&'status' in e&&e.status===401)throw e}
   })
   for(const group of ambiguous){
     const labels=group.map(vm=>{
@@ -126,39 +125,90 @@ export async function recoveryCatalog(read:VbrReader,privateSend?:RecoverySend):
       vm.distinguishingLocation=[location,vm.objectId.slice(-length)].filter(Boolean).join(' · ')
     })
   }
+  for(const vm of objects.values()){
+    const path=paths.get(vm.objectId)?.trim()
+    if(path&&path!==vm.name)vm.displayPath=path
+  }
   return {objects:[...objects.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.objectId.localeCompare(b.objectId)),complete,notices}
 }
 
-// Cache only successful scoped reads. Each request still authenticates its principal and VBR source.
-function scopedCache<T>(limit:number){
-  const store=new Map<string,{expires:number,result:Promise<T>}>()
-  return (key:string,load:()=>Promise<T>,refresh=false)=>{
+// Time freshness from completion. A slow native scan or concurrent explicit
+// refresh should still share one result. Failed/forbidden reads never replace it with stale data.
+function scopedCache<T extends {complete:boolean}>(limit:number,freshMs:number,partialMs=0){
+  const store=new Map<string,{expires:number,pending:boolean,result:Promise<T>}>()
+  const get=(key:string,load:()=>Promise<T>,refresh=false)=>{
     const old=store.get(key)
-    if(!refresh&&old&&old.expires>Date.now())return old.result
-    const result=load(),entry={expires:Date.now()+60_000,result}
+    if(old&&(old.pending||!refresh&&old.expires>Date.now()))return old.result
+    const result=load(),entry={expires:0,pending:true,result}
     store.set(key,entry)
     while(store.size>limit)store.delete(store.keys().next().value!)
     const forget=()=>{if(store.get(key)===entry)store.delete(key)}
-    void result.then(value=>{if(value&&typeof value==='object'&&'complete' in value&&!value.complete)forget()},forget)
+    void result.then(value=>{
+      entry.pending=false
+      const ttl=value.complete?freshMs:partialMs
+      if(ttl)entry.expires=Date.now()+ttl
+      else forget()
+    },forget)
     return result
   }
+  return Object.assign(get,{forget:(key:string)=>store.delete(key)})
 }
-const cachedCatalog=scopedCache<Catalog>(32),cachedStorage=scopedCache<Catalog>(32),cachedPoints=scopedCache<PointSet>(128)
+const cachedCatalog=scopedCache<Catalog>(32,300_000,25_000)
+const cachedStorage=scopedCache<Catalog>(32,300_000,25_000)
+const cachedPoints=scopedCache<PointSet>(128,60_000)
+
+type WorkloadSnapshot=Catalog&{identity:string;kind:PickerScope;expires:number}
+const snapshots=new Map<string,WorkloadSnapshot>()
+const invalidSnapshot=()=>new TopologyRequestError('The workload list expired. Refresh it to continue.',409)
+function discardSnapshots(identity:string){
+  for(const [id,page] of snapshots)if(page.identity===identity)snapshots.delete(id)
+}
+function indexPage(id:string,page:WorkloadSnapshot,offset:number,limit:number){
+  return {data:page.objects.slice(offset,offset+limit),total:page.objects.length,complete:page.complete,notices:page.notices,snapshotId:id}
+}
+function firstIndexPage(catalog:Catalog,identity:string,kind:PickerScope,limit:number){
+  const id=randomUUID(),now=Date.now()
+  const page={...catalog,identity,kind,expires:now+120_000}
+  for(const [key,prior] of snapshots)if(prior.expires<=now)snapshots.delete(key)
+  // One-page indexes have no continuation and need no server-side copy.
+  if(catalog.objects.length>limit){
+    snapshots.set(id,page)
+    while(snapshots.size>32)snapshots.delete(snapshots.keys().next().value!)
+  }
+  return indexPage(id,page,0,limit)
+}
 export async function pickerPage(read:VbrReader,send:RecoverySend|undefined,identity:string,request:{
-  kind:PickerScope;view:'goals'|'objects'|'points';objectId?:string;backupId?:string;restorePointId?:string;query?:string;offset:number;limit:number;refresh?:boolean
+  kind:PickerScope;view:'goals'|'objects'|'points'|'index';objectId?:string;backupId?:string;restorePointId?:string;query?:string;offset:number;limit:number;refresh?:boolean
+  snapshotId?:string;publicCacheKey?:string
   calendarZone?:string;calendarDay?:string;calendarIndex?:boolean
 }){
   const {kind,objectId,backupId,restorePointId,view,offset,limit,refresh}=request
+  if(view==='index'&&(request.snapshotId||offset)){
+    const id=request.snapshotId,snapshot=id&&snapshots.get(id)
+    if(!id||!snapshot||snapshot.expires<=Date.now()||snapshot.identity!==identity||snapshot.kind!==kind)throw invalidSnapshot()
+    return indexPage(id,snapshot,offset,limit)
+  }
+  const publicIdentity=(request.publicCacheKey||identity)+'/1.3-rev2'
+  if(refresh)discardSnapshots(identity)
   if(!send&&(kind==='sql'||kind==='active-directory')){
     if(view==='points')throw new TopologyRequestError('Application recovery requires a configured VBR web console connection.',409)
+    if(view==='index')return firstIndexPage({objects:[],complete:true,notices:['Application recovery requires a configured VBR web console connection.']},identity,kind,limit)
     return {data:[],total:0,complete:true,notices:['Application recovery requires a configured VBR web console connection.']}
   }
   const kinds=view==='goals'?[...recoveryKinds]:scopeKinds(kind)
+  let native:Promise<NativeBackupIndex|undefined>|undefined
+  const getNativeIndex=()=>native??=send?readNativeBackupIndex(send):Promise.resolve(undefined)
   const providers:Promise<Catalog>[]=[]
-  if(kinds.some(k=>!isUnstructuredKind(k)))providers.push(cachedCatalog(identity,()=>recoveryCatalog(read,send),refresh))
-  if(kinds.some(isUnstructuredKind))providers.push(cachedStorage(identity,()=>unstructuredCatalog(read,send),refresh))
+  if(kinds.some(k=>!isUnstructuredKind(k)))providers.push(cachedCatalog(identity,()=>recoveryCatalog(read,send,publicIdentity,refresh,getNativeIndex),refresh))
+  if(kinds.some(isUnstructuredKind))providers.push(cachedStorage(identity,()=>unstructuredCatalog(read,send,getNativeIndex),refresh))
   const catalogs=await Promise.all(providers.map(p=>p.catch(e=>{
-    if(passthrough(e)||providers.length===1)throw e
+    if(passthrough(e)){
+      discardSnapshots(identity)
+      cachedCatalog.forget(identity)
+      cachedStorage.forget(identity)
+      throw e
+    }
+    if(providers.length===1)throw e
     return {objects:[],complete:false,notices:['Some backups could not be checked. Only verified recovery options are shown.']}
   })))
   const catalog={objects:catalogs.flatMap(c=>c.objects).sort((a,b)=>a.name.localeCompare(b.name)||a.objectId.localeCompare(b.objectId)),
@@ -173,16 +223,17 @@ export async function pickerPage(read:VbrReader,send:RecoverySend|undefined,iden
   }
   const accepts=(c:RecoveryObject['copies'][number])=>c.kinds.some(k=>kinds.includes(k))&&(!backupId||c.backupId===backupId)
   const subset=catalog.objects.filter(o=>(!objectId||o.objectId===objectId)&&o.copies.some(accepts))
-  if(view==='objects'){
-    const q=request.query?.trim().toLocaleLowerCase()
-    const rows=subset.map(o=>({...o,copies:o.copies.filter(accepts)})).filter(o=>!q||[o.name,o.objectId,o.platform,o.distinguishingLocation||'',...o.copies.map(c=>c.name)].some(n=>n.toLocaleLowerCase().includes(q)))
+  if(view==='objects'||view==='index'){
+    const members=subset.map(o=>({...o,copies:o.copies.filter(accepts)}))
+    if(view==='index')return firstIndexPage({...catalog,objects:members},identity,kind,limit)
+    const rows=members.filter(o=>matchesWorkloadSearch(o,request.query||''))
     return {data:rows.slice(offset,offset+limit),total:rows.length,complete:catalog.complete,notices:catalog.notices}
   }
   const vm=subset[0]
   if(!objectId||!vm)throw new TopologyRequestError('This workload is unavailable for the selected recovery.',409)
   const copies=vm.copies.filter(accepts),storage=vm.workloadType==='nas'||vm.workloadType==='object'
   const pointSets=storage?await Promise.all(copies.map(c=>cachedPoints(identity+'/storage/'+objectId+'/'+c.backupId,()=>unstructuredPoints(read,objectId,c.backupId,send),refresh))):
-    [await cachedPoints(identity+'/'+objectId,()=>objectPoints(read,objectId),refresh)]
+    [await readObjectRestorePoints(path=>read(path,'1.3-rev2'),publicIdentity,objectId,{refresh,backupId})]
   const points={data:pointSets.flatMap(p=>p.data),complete:pointSets.every(p=>p.complete)}
   const rows:RestorePoint[]=[]
   for(const point of points.data){

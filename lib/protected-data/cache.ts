@@ -9,6 +9,13 @@ export class ProtectedDataCache {
   private entries = new Map<string, Entry>()
   constructor(private clock = Date.now, private limit = 20) {}
 
+  apiRevision(key: string): '1.3-rev1' | '1.3-rev2' | undefined {
+    const entry = this.entries.get(key)
+    if (!entry || entry.expires <= this.clock()) return undefined
+    const revision = entry.value?.apiRevision
+    return revision === '1.3-rev1' || revision === '1.3-rev2' ? revision : undefined
+  }
+
   async read(key: string, load: () => Promise<Snapshot>, enrich: (base: Snapshot) => Promise<Snapshot>, options: { recovery: boolean; force?: boolean }) {
     let entry = this.entries.get(key)
     if (entry && !entry.base && (entry.expires <= this.clock() || options.force)) {

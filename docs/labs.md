@@ -118,8 +118,11 @@ Use the server's LAN address for the public origin and kiosk listener. For examp
 KIOSK_PUBLIC_ORIGIN=http://192.168.1.250:3102
 KIOSK_HOST=192.168.1.250
 KIOSK_PORT=3102
+KIOSK_ALLOWED_SUBNET=192.168.1.0/24
 KIOSK_APP_URL=http://127.0.0.1:3101
 ```
+
+`KIOSK_ALLOWED_SUBNET` accepts one IPv4 or IPv6 CIDR. The gateway checks the connecting socket's IP address. Behind a reverse proxy, that address belongs to the proxy.
 
 Keep starting the main app with `npm run start -- --hostname 127.0.0.1 --port 3101`. Restart both processes after changing these values. Only the kiosk binds to the LAN address; the editor and private APIs remain on loopback. Binding to the specific LAN IP also avoids listening on VPN and virtual adapter addresses. Reserve the server address in DHCP or use a static address so saved links remain valid.
 

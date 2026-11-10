@@ -9,6 +9,35 @@ const assert = require('node:assert/strict');
 const { enrichPoints, fileAccounting, formatBytes, knownSize, recoveryReadiness } = require('../lib/restore-points/model.ts');
 const { loadRestorePoints } = require('../lib/restore-points/load.ts');
 const { TopologyRequestError } = require('../lib/topology/load.ts');
+const { readObjectRestorePoints } = require('../lib/restore-points/cached-collection.ts');
+
+test('object calendars and recovery pickers share scoped reads and isolate enrichment, retries and refreshes', async () => {
+  const scope = 'operator/source/1.3-rev2', rows = [{ id: 'a', backupId: 'b1' }, { id: 'b', backupId: 'b2' }];
+  let calls = 0, state = 'complete';
+  async function read(path) {
+    calls++;
+    if (state === 'denied') throw new TopologyRequestError('Denied', 403);
+    const backup = new URL(path, 'https://vbr.invalid').searchParams.get('backupIdFilter');
+    const data = backup ? rows.filter(p => p.backupId === backup) : rows;
+    return { data, pagination: { total: state === 'partial' ? 50 : data.length } };
+  }
+  const get = (options, identity = scope) => readObjectRestorePoints(read, identity, 'object', options);
+  const [picker, calendar] = await Promise.all([get(), get({ backupId: 'b1' })]);
+  assert.equal(calls, 1);
+  assert.equal(picker.data.length, 2);
+  assert.deepEqual(calendar.data, [rows[0]]);
+  calendar.data[0].applications = [{ kind: 'sql' }];
+  assert.equal((await get()).data[0].applications, undefined);
+  await get({}, 'another-principal');
+  assert.equal(calls, 2);
+  state = 'denied';
+  await assert.rejects(get({ refresh: true }), e => e.status === 403);
+  await assert.rejects(get(), e => e.status === 403);
+  state = 'partial';
+  assert.equal((await get()).complete, false);
+  state = 'complete';
+  assert.equal((await get()).complete, true);
+});
 
 const now = Date.parse('2026-10-17T12:00:00Z');
 const {completeVmMembership}=require('../lib/restore-points/load.ts');

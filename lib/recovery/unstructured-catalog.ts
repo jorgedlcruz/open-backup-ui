@@ -5,7 +5,7 @@ import type {RecoverySend} from '../server/vbr-recovery'
 import type {RecoveryObject} from '../restore-points/recovery-picker'
 import {pointSchema} from '../restore-points/load'
 import {readOperationsCollection} from '../operations/load'
-import {applicationAccess,applicationObjectSchema,publicBackupObjects,verifiedBackupObjects} from './application-eligibility'
+import {applicationAccess,applicationObjectSchema,publicBackupObjects,verifiedBackupObjects,type NativeBackupIndex} from './application-eligibility'
 import {VbrRecoveryError} from './error'
 
 export const unstructuredKinds=['nas-files','nas-entire','nas-rollback','nas-instant','object-files','object-entire','object-rollback'] as const
@@ -41,13 +41,13 @@ export async function unstructuredTargets(read:VbrReader){
   const rows=await page(read,'/api/v1/inventory/unstructuredDataServers',target,5000)
   return {...rows,data:rows.data.filter(t=>family(t.type)).map(t=>({id:t.id,type:t.type,name:t.name||t.friendlyName||t.id}))}
 }
-async function members(read:VbrReader,privateSend:RecoverySend,backupId:string){
-  const publicRows=await publicBackupObjects(read,backupId)
+async function members(read:VbrReader,privateSend:RecoverySend,backupId:string,getIndex?:()=>Promise<NativeBackupIndex|undefined>){
+  const [publicRows,index]=await Promise.all([publicBackupObjects(read,backupId),getIndex?.()])
   if(!publicRows?.complete)throw failure()
-  const native=await verifiedBackupObjects(privateSend,backupId,{ids:publicRows.data.map(o=>o.id),knownEmpty:publicRows.data.length===0})
+  const native=await verifiedBackupObjects(privateSend,backupId,{ids:publicRows.data.map(o=>o.id),knownEmpty:publicRows.data.length===0},index?.get(backupId))
   return {native:native.rows,publicRows:publicRows.data,complete:native.complete}
 }
-export async function unstructuredCatalog(read:VbrReader,privateSend?:RecoverySend) {
+export async function unstructuredCatalog(read:VbrReader,privateSend?:RecoverySend,getIndex?:()=>Promise<NativeBackupIndex|undefined>) {
   const objects=new Map<string,RecoveryObject>()
   if(!privateSend)return {objects:[],complete:false,notices:[partial]}
   const [backups,targets,rights]=await Promise.all([page(read,'/api/v1/backups?platformNameFilter=UnstructuredData',header,20000),unstructuredTargets(read),applicationAccess(privateSend)])
@@ -59,7 +59,7 @@ export async function unstructuredCatalog(read:VbrReader,privateSend?:RecoverySe
     while(cursor<candidates.length){
       const b=candidates[cursor++]
       try{
-        const bindings=await members(read,privateSend,b.id)
+        const bindings=await members(read,privateSend,b.id,getIndex)
         if(!bindings.complete)complete=false
         for(const obj of bindings.publicRows){
           const source=obj.fileServerId&&sources.get(obj.fileServerId)
@@ -68,10 +68,12 @@ export async function unstructuredCatalog(read:VbrReader,privateSend?:RecoverySe
           const kinds=row?unstructuredCapabilities(row,source.type,rights):[]
           if(!kinds.length)continue
           const found:RecoveryObject=objects.get(obj.id)??{objectId:obj.id,name:obj.name||source.name,platform:source.type,workloadType:family(source.type),copies:[]}
+          const path=(row?.path||obj.path)?.trim()
+          if(path&&path!==found.name)found.displayPath=path
           found.copies.push({backupId:b.id,name:b.name||b.id,kinds})
           objects.set(obj.id,found)
         }
-      }catch(error){if(error instanceof Error&&'status' in error&&error.status===401)throw error;complete=false}
+      }catch(error){if(error instanceof Error&&'status' in error&&(error.status===401||error.status===403))throw error;complete=false}
     }
   }))
   return {objects:[...objects.values()],complete,notices:complete?[]:[partial]}

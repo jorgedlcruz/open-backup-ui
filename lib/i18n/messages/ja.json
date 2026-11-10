@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "この要求はすでに別の復元に関連付けられています。",
   "VBR did not return recovery media.": "VBR からリカバリ メディアが返されませんでした。",
   "Check the recovery settings.": "復元設定を確認してください。",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "この復元フォームは古くなっています。開始する前にリカバリ センターを更新してください。"
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "この復元フォームは古くなっています。開始する前にリカバリ センターを更新してください。",
+  "Computers": "コンピューター",
+  "The workload list expired. Refresh it to continue.": "ワークロード一覧の有効期限が切れました。一覧を更新して続行してください。",
+  "Default": "既定"
 }

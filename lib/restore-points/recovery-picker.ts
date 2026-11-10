@@ -37,7 +37,7 @@ export function pointOperations(point:RestorePoint,kind:RecoveryKind) {
   return (point.allowedOperations||[]).filter((op):op is RestoreOperation=>operationKind[op as RestoreOperation]===kind)
 }
 export type WorkloadType='vm'|'physical'|'nas'|'object'
-export type RecoveryObject={objectId:string;name:string;platform:string;workloadType?:WorkloadType;distinguishingLocation?:string;copies:{
+export type RecoveryObject={objectId:string;name:string;platform:string;workloadType?:WorkloadType;displayPath?:string;distinguishingLocation?:string;copies:{
   backupId:string;name:string;kinds:RecoveryKind[];agentPointIds?:string[]
 }[]}
 export const isUnstructuredKind=(kind:RecoveryKind):kind is Extract<RecoveryKind,`nas-${string}`|`object-${string}`>=>kind.startsWith('nas-')||kind.startsWith('object-')
@@ -50,5 +50,5 @@ export function eligibleMethods(object:RecoveryObject,point:RestorePoint,scope:P
 }
 export type RecoverySeed={objectId:string;backupId?:string;restorePointId?:string}
 export type CalendarDay={day:string;count:number}
-export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[];calendarDays?:CalendarDay[];calendarDay?:string}
+export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[];snapshotId?:string;calendarDays?:CalendarDay[];calendarDay?:string}
 export type PickedVm={object:RecoveryObject;point:RestorePoint;operation?:RestoreOperation}

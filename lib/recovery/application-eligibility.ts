@@ -10,6 +10,46 @@ import {objectSchema,backupKey} from '../protected-data/model'
 import {readOperationsCollection} from '../operations/load'
 
 export const applicationObjectSchema = z.object({id:z.string().uuid().nullish(),objectId:z.string().uuid().nullish(),backupId:z.string().uuid(),childBackupId:z.string().uuid().nullish(),fileServerId:z.string().uuid().nullish(),tenantName:z.string().nullish(),itemIconType:z.string().nullish(),repositoryType:z.string().nullish(),platformName:z.string().nullish(),name:z.string().nullish(),path:z.string().nullish(),operations:z.array(z.object({operation:z.string(),enabled:z.boolean()})).nullish()})
+type NativeBackupObject=z.infer<typeof applicationObjectSchema>
+export type NativeBackupIndex=Map<string,NativeBackupObject[]>
+// The native Backups flat view uses SearchBackupObjects. On a fresh VBR web
+// session it can briefly return total=0 while its header view already has members.
+// Use one shared enumeration and corroborate each group just like the scoped read.
+export async function readNativeBackupIndex(send:RecoverySend):Promise<NativeBackupIndex|undefined>{
+  const page=z.object({data:z.array(applicationObjectSchema),pagination:z.object({total:z.number().int().nonnegative(),
+    count:z.number().int().nonnegative(),skip:z.number().int().nonnegative()})})
+  const groups:NativeBackupIndex=new Map()
+  let offset=0,reportedTotal:number|undefined
+  try{
+    for(let pageNo=0;pageNo<100;pageNo++){
+      const read=async()=>page.safeParse(await send('/private-api/v1/backups/objects',{method:'POST',body:{skip:offset,limit:200}}))
+      let result=await read()
+      if(!offset){
+        for(const delay of [900,2200]){
+          if(!result.success||result.data.data.length||result.data.pagination.total)break
+          await new Promise(resolve=>setTimeout(resolve,delay))
+          result=await read()
+        }
+      }
+      if(!result.success)return undefined
+      const {data,pagination}=result.data
+      if(pagination.skip!==offset||pagination.count!==data.length||offset+data.length>pagination.total||
+        reportedTotal!==undefined&&reportedTotal!==pagination.total)return undefined
+      for(const row of data){
+        const existing=groups.get(row.backupId)
+        if(existing)existing.push(row)
+        else groups.set(row.backupId,[row])
+      }
+      offset+=data.length;reportedTotal=pagination.total
+      if(offset===reportedTotal)return groups
+      if(!data.length)return undefined
+    }
+  }catch(e){
+    if(e instanceof Error&&'status' in e&&(e.status===401||e.status===403))throw e
+    // Older VBR versions may only support retrieving objects per backup.
+  }
+  return undefined
+}
 const member = z.object({id:z.string().uuid(),backupId:z.string().uuid()})
 const policies = [{kind:'activeDirectory',operation:'ExploreForMsAd',permission:'StartExplorerForMsAd'},
   {kind:'sql',operation:'ExploreForMsSql',permission:'StartExplorerForMsSql'}] as const
@@ -33,12 +73,15 @@ export async function publicBackupObjects(read:VbrReader,backupId:string) {
 // The web service occasionally reports a complete zero-row list while the backup
 // header still counts members and the public object/point inventory still exists.
 // A later read replaces the earlier one. Never replay cached capability grants.
-export async function verifiedBackupObjects(send:RecoverySend,id:string,expected:{ids:Iterable<string>;minimum?:number;knownEmpty?:boolean}){
+export async function verifiedBackupObjects(send:RecoverySend,id:string,expected:{ids:Iterable<string>;minimum?:number;knownEmpty?:boolean},suggested?:NativeBackupObject[]){
   const wanted=new Set(expected.ids),minimum=expected.minimum??0
   const load=async()=>(await collect(send,'/private-api/v1/backups/'+id+'/objects',applicationObjectSchema)).filter(o=>o.backupId===id)
   const verified=(rows:Awaited<ReturnType<typeof load>>)=>{
     const returned=new Set(rows.map(o=>o.objectId))
     return (rows.length>0||expected.knownEmpty===true)&&rows.length>=minimum&&[...wanted].every(key=>returned.has(key))
+  }
+  if(suggested?.length&&suggested.every(row=>row.backupId===id&&row.objectId&&wanted.has(row.objectId)&&Array.isArray(row.operations))&&verified(suggested)){
+    return {rows:suggested,complete:true}
   }
   let rows=await load()
   for(const delay of [300,950,2000]){

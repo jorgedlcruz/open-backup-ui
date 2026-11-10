@@ -4765,5 +4765,8 @@
   "This request already belongs to a different recovery.": "Этот запрос уже относится к другому восстановлению.",
   "VBR did not return recovery media.": "VBR не вернул носитель восстановления.",
   "Check the recovery settings.": "Проверьте параметры восстановления.",
-  "This recovery form is out of date. Refresh Recovery Center before starting.": "Эта форма восстановления устарела. Перед запуском обновите Центр восстановления."
+  "This recovery form is out of date. Refresh Recovery Center before starting.": "Эта форма восстановления устарела. Перед запуском обновите Центр восстановления.",
+  "Computers": "Компьютеры",
+  "The workload list expired. Refresh it to continue.": "Срок действия списка рабочих нагрузок истёк. Обновите его, чтобы продолжить.",
+  "Default": "По умолчанию"
 }

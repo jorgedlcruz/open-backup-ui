@@ -35,6 +35,12 @@ export function canStopPublishing(mount: Mount, data: ActivityDetail, readError:
       live.sessionId === data.id && ['Mounted', 'Failed', 'MountFailed', 'UnmountFailed'].includes(live.state))
 }
 
+export function browsableGuestMount(data:ActivityDetail|undefined,readError:string,unmounted:boolean) {
+  if(!data||readError||unmounted||data.mountWarnings.includes('flr')||data.session?.endTime||
+    ['Stopping','Stopped'].includes(data.session?.state||''))return undefined
+  return data.mounts.find(m=>m.kind==='flr'&&m.sessionId===data.id&&m.state==='Mounted')
+}
+
 // A migration can outlive the mount that started it. Only use a saved mount as display context.
 export function recoveryMapMounts(data: ActivityDetail, remembered: Mount[], query: string) {
   const params = new URLSearchParams(query)

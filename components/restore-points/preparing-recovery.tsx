@@ -29,7 +29,7 @@ export function PreparingRecovery({ requestId,sourceKey,provider }: { requestId:
       if (!active) return
       setReceipt(value)
       if (value?.phase === 'accepted' && value.sessionId) router.replace(sessionHref(home, value.sessionId, value.sourceKey) +
-        (value.operation === activeDirectoryOperation || value.operation === sqlOperation ? '#application-items' : ['nas-files','object-files','nas-instant'].includes(value.operation) ? '#unstructured-data' : '#session-log'))
+        (value.operation === activeDirectoryOperation || value.operation === sqlOperation ? '#application-items' : value.operation==='StartFlrRestore' ? '#guest-files' : ['nas-files','object-files','nas-instant'].includes(value.operation) ? '#unstructured-data' : '#session-log'))
     })
     return () => { active = false; window.removeEventListener('restore-launch-change', read) }
   }, [requestId, sourceKey, provider, router, home, revision])

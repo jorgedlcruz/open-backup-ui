@@ -31,7 +31,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InstantRecoveryControls, MountControls, readPendingMigrationMounts } from './mount-controls'
-import { canStopPublishing, isInstantVmMount, migrationForMount, mountKey, recoveryMapMounts } from './session-commands'
+import { browsableGuestMount, canStopPublishing, isInstantVmMount, migrationForMount, mountKey, recoveryMapMounts } from './session-commands'
 import { UnmountGuestFiles } from './unmount-guest-files'
 import { EntireVmRecoveryMap } from './entire-vm-recovery-map'
 import { MigrationMap } from './migration-map'
@@ -258,10 +258,10 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     })
   }, [sourceKey, id])
   const filesTab = useRef<HTMLButtonElement>(null)
+  const focusedGuestMount=useRef('')
   useEffect(() => {
     const restoreTab = () => {
       if (window.location.hash === '#guest-files') {
-        setFileOpened(true)
         setTab('files')
       } else if (window.location.hash === '#recovery-map') {
         setRecoveryOpened(true)
@@ -277,7 +277,10 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const [receipt,setReceipt] = useState<ReturnType<typeof findSessionLaunch>>()
   useEffect(() => { if (sourceKey) setReceipt(findSessionLaunch(sourceKey, id)) }, [sourceKey, id])
   const fileMount = mounts.find(m => m.kind === 'flr')
-  const readyToBrowse = fileMount?.state === 'Mounted' && !fileMount.error && !error
+  const browsableMount = browsableGuestMount(data,error,filesUnmounted)
+  // VBR can mount the readable volumes and report an error for an individual disk.
+  // Keep manual browsing available while reserving automatic entry for a healthy mount.
+  const readyToBrowse = !!browsableMount&&!browsableMount.error
   const type = session?.sessionType || mounts[0]?.operation
   const isFile = !!fileMount || /FileLevelRestore/.test(type || '') || receipt?.operation === 'StartFlrRestore'
   const jobDone = !!session && (!!session.endTime || session.state === 'Stopped')
@@ -321,15 +324,22 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   }
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
-  const activeTab = tab === 'default' ? (storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
-    : (tab === 'storage'&&!storage.status) || (tab === 'files' && !fileMount) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
+  const activeTab = tab === 'default' ? (readyToBrowse ? 'files' : storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
+    : (tab === 'storage'&&!storage.status) || (tab === 'files' && !(readyToBrowse || fileOpened&&browsableMount)) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
+  const guestMountKey=browsableMount&&data?.sourceKey+'/'+browsableMount.sessionId
+  useEffect(()=>{
+    if(activeTab!=='files'||!guestMountKey||focusedGuestMount.current===guestMountKey)return
+    setFileOpened(true)
+    focusedGuestMount.current=guestMountKey
+    if(!document.querySelector('[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"]'))filesTab.current?.focus()
+  },[activeTab,guestMountKey])
   function selectTab(value: string) {
     if(value==='application' || activeTab==='application') setAppVisited(true)
     setTab(value)
     if (value === 'files') setFileOpened(true)
     if (value === 'recovery') setRecoveryOpened(true)
     const location = new URL(window.location.href)
-    const hash = value === 'storage' ? '#unstructured-data' : value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' && (hasMap || directory || storageKind) ? '#session-log' : ''
+    const hash = value === 'storage' ? '#unstructured-data' : value === 'application' ? '#application-items' : value === 'files' ? '#guest-files' : value === 'recovery' && hasMap ? '#recovery-map' : value === 'logs' ? '#session-log' : ''
     if (location.hash !== hash && (hash || ['#unstructured-data','#application-items','#guest-files', '#recovery-map', '#session-log'].includes(location.hash))) {
       location.hash = hash
       window.history.replaceState(window.history.state, '', location)
@@ -391,8 +401,8 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
       <section className={ops.panel}>
         <Tabs value={activeTab} onValueChange={selectTab} className="gap-0">
           <TabsList className={styles.tabs} aria-label={t('Session evidence type')}>
-            <TabsTrigger value="logs"><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
-            {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!fileMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
+            <TabsTrigger value="logs" onClick={()=>{if(activeTab==='logs')selectTab('logs')}}><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
+            {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!browsableMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
             {storage.status&&<TabsTrigger value="storage"><FolderOpen/>{storageKind==='instant'?t('Published share'):t('Files and folders')}</TabsTrigger>}
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
@@ -401,8 +411,8 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
           {storage.status&&<TabsContent value="storage" forceMount hidden={activeTab!=='storage'} className={styles.inset}><UnstructuredSession key={storageIdentity} status={storage.status} onSession={onAccepted}/></TabsContent>}
           <TabsContent value="workloads"><Workloads evidence={data} onInspect={task => setTaskId(task.id)}/></TabsContent>
-          {fileOpened && fileMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
-            <GuestFileBrowser key={data.sourceKey + fileMount.id} sourceKey={data.sourceKey} sessionId={fileMount.sessionId}/>
+          {(fileOpened||activeTab==='files') && browsableMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
+            <GuestFileBrowser key={data.sourceKey + browsableMount.id} sourceKey={data.sourceKey} sessionId={browsableMount.sessionId}/>
           </TabsContent>}
           {(activeTab === 'recovery' || recoveryOpened || storedMounts.length > 0 || migrationPending || mapMounts.some(m => m.state === 'Migrating')) && <TabsContent value="recovery" forceMount hidden={activeTab !== 'recovery'} className={styles.inset}>
             {data.entireRestore && <EntireVmRecoveryMap data={data}/>}
