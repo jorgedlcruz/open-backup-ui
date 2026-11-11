@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "このブラウザーに操作を保存できませんでした。ブラウザーのストレージを空けてから再試行してください。",
   "This request is already being checked. Open Operations to review its status.": "このリクエストはすでに確認中です。「操作」を開いて状態を確認してください。",
   "Too many operations are still open. Review Operations before starting another.": "未完了の操作が多すぎます。新しい操作を開始する前に「操作」を確認してください。",
-  "Choose the required restore point in Recovery Center to restore an older version.": "以前のバージョンを復元するには、復元センターで必要な復元ポイントを選択してください。"
+  "Choose the required restore point in Recovery Center to restore an older version.": "以前のバージョンを復元するには、復元センターで必要な復元ポイントを選択してください。",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "移行が完了しました。残っている Instant Recovery のマウントの公開を停止しますか？",
+  "Review the migration session before stopping publication.": "公開を停止する前に、移行セッションを確認してください。"
 }

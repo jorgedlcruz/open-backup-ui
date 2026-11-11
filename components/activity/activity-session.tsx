@@ -34,7 +34,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InstantRecoveryControls, MountControls, readPendingMigrationMounts } from './mount-controls'
-import { browsableGuestMount, canStopPublishing, isInstantVmMount, migrationForMount, mountKey, recoveryMapMounts } from './session-commands'
+import { browsableGuestMount, canStopPublishing, currentMigrationSession, instantRecoveryLocks, isInstantVmMount, migrationForMount, mountKey, recoveryMapMounts } from './session-commands'
+import { migrationReceipts } from '@/lib/activity/migration-receipt'
 import { UnmountGuestFiles } from './unmount-guest-files'
 import { EntireVmRecoveryMap } from './entire-vm-recovery-map'
 import { MigrationMap } from './migration-map'
@@ -96,8 +97,9 @@ function ConnectExplorer({id,sourceKey,kind,active,refresh}:{id:string;sourceKey
   return error?<div className={styles.commands}><p role="alert">{notice(error)}</p><Button size="sm" onClick={()=>{setError('');setAttempt(n=>n+1)}}>{t('Retry')}</Button></div>:
     <RecoverySignal stage="data" status={t('Waiting for Explorer')}/>
 }
-function StopPublishing({mount, sourceKey, migrationLocked, phase, onPhase, onAccepted, distinguish}: {
+function StopPublishing({mount, sourceKey, migrationLocked, migrationFinished, phase, onPhase, onAccepted, distinguish}: {
   mount: Mount; sourceKey: string; migrationLocked: boolean; phase?: StopPhase
+  migrationFinished: boolean
   onPhase: (key: string, phase?: StopPhase) => void; onAccepted: (next?: string) => void; distinguish: boolean
 }) {
   const {t, notice} = useInvestigationPresentation()
@@ -135,7 +137,8 @@ function StopPublishing({mount, sourceKey, migrationLocked, phase, onPhase, onAc
     </Button></AlertDialogTrigger>
     <AlertDialogContent>
       <AlertDialogHeader><AlertDialogTitle>{label} · {target}</AlertDialogTitle>
-        <AlertDialogDescription>{t('Stop publishing this recovery and discard changes made since it was mounted?')}</AlertDialogDescription>
+        <AlertDialogDescription>{migrationFinished ? <>{t('Migration has finished. Stop publishing the remaining Instant Recovery mount?')}{' '}{t('Review the migration session before stopping publication.')}</> :
+          t('Stop publishing this recovery and discard changes made since it was mounted?')}</AlertDialogDescription>
       </AlertDialogHeader>
       {error && <p role="alert" className="text-sm text-destructive">{notice(error)}</p>}
       {phase === 'uncertain' && <p role="status" className="text-sm">{t('Check the session log before trying again.')}</p>}
@@ -380,11 +383,13 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
         {data && fileMount && canUnmountGuestFiles(fileMount, session) && !error && <UnmountGuestFiles sessionId={fileMount.sessionId} sourceKey={data.sourceKey} onUnmount={onFilesUnmounted}/>}
         {data && mapMounts.filter(mount => canStopPublishing(mount, data, error)).map(mount => {
           const key = mountKey(mount)
-          const phase = migrationTransfer(mount, session, scopedMigration(mount)).phase
-          const locked = ['migrating','pending','unknown'].includes(phase) || unscopedTransfer ||
-            (migrationLocks[key]?.locked ?? storedMounts.some(saved => mountKey(saved) === key))
+          const receipt = migrationReceipts(data.sourceKey, id).find(entry => mountKey(entry.mount) === key)
+          const child = scopedMigration(mount)
+          const verified = data.instantMigrations?.some(row => row.mountId === mount.id && row.session.id === child?.id)
+          const phase = migrationTransfer(mount, session, currentMigrationSession(child, receipt, verified)).phase
+          const locked = unscopedTransfer || instantRecoveryLocks(mount, phase, !!receipt, !!migrationLocks[key]?.locked).publication
           const completed = phase === 'succeeded' || phase === 'warning'
-          return !completed && stopPhases[key] !== 'accepted' && <StopPublishing key={data.sourceKey + key} mount={mount} sourceKey={data.sourceKey}
+          return stopPhases[key] !== 'accepted' && <StopPublishing key={data.sourceKey + key} mount={mount} sourceKey={data.sourceKey} migrationFinished={completed}
             distinguish={mapMounts.length > 1} migrationLocked={locked} phase={stopPhases[key]} onAccepted={onAccepted}
             onPhase={(which, phase) => setStopPhases(previous => ({...previous, [which]:phase}))}/>
         })}

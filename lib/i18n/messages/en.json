@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "The operation could not be saved in this browser. Free browser storage and try again.",
   "This request is already being checked. Open Operations to review its status.": "This request is already being checked. Open Operations to review its status.",
   "Too many operations are still open. Review Operations before starting another.": "Too many operations are still open. Review Operations before starting another.",
-  "Choose the required restore point in Recovery Center to restore an older version.": "Choose the required restore point in Recovery Center to restore an older version."
+  "Choose the required restore point in Recovery Center to restore an older version.": "Choose the required restore point in Recovery Center to restore an older version.",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "Migration has finished. Stop publishing the remaining Instant Recovery mount?",
+  "Review the migration session before stopping publication.": "Review the migration session before stopping publication."
 }

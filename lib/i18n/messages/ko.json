@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "이 브라우저에 작업을 저장할 수 없습니다. 브라우저 저장 공간을 확보한 후 다시 시도하세요.",
   "This request is already being checked. Open Operations to review its status.": "이미 이 요청을 확인하고 있습니다. 작업을 열어 상태를 확인하세요.",
   "Too many operations are still open. Review Operations before starting another.": "아직 열려 있는 작업이 너무 많습니다. 다른 작업을 시작하기 전에 작업을 검토하세요.",
-  "Choose the required restore point in Recovery Center to restore an older version.": "이전 버전을 복원하려면 복구 센터에서 필요한 복원 지점을 선택하세요."
+  "Choose the required restore point in Recovery Center to restore an older version.": "이전 버전을 복원하려면 복구 센터에서 필요한 복원 지점을 선택하세요.",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "마이그레이션이 완료되었습니다. 남아 있는 Instant Recovery 마운트의 게시를 중지할까요?",
+  "Review the migration session before stopping publication.": "게시를 중지하기 전에 마이그레이션 세션을 확인하세요."
 }

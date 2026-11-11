@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "Não foi possível salvar a operação neste navegador. Libere espaço no armazenamento do navegador e tente novamente.",
   "This request is already being checked. Open Operations to review its status.": "Esta solicitação já está sendo verificada. Abra Operações para consultar seu status.",
   "Too many operations are still open. Review Operations before starting another.": "Há muitas operações ainda abertas. Revise Operações antes de iniciar outra.",
-  "Choose the required restore point in Recovery Center to restore an older version.": "Escolha o ponto de restauração necessário no Centro de recuperação para restaurar uma versão anterior."
+  "Choose the required restore point in Recovery Center to restore an older version.": "Escolha o ponto de restauração necessário no Centro de recuperação para restaurar uma versão anterior.",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "A migração foi concluída. Parar a publicação da montagem de Instant Recovery restante?",
+  "Review the migration session before stopping publication.": "Revise a sessão de migração antes de parar a publicação."
 }

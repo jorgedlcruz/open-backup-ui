@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "Не удалось сохранить операцию в этом браузере. Освободите место в хранилище браузера и повторите попытку.",
   "This request is already being checked. Open Operations to review its status.": "Этот запрос уже проверяется. Откройте раздел «Операции», чтобы узнать его состояние.",
   "Too many operations are still open. Review Operations before starting another.": "Открыто слишком много операций. Проверьте раздел «Операции», прежде чем запускать ещё одну.",
-  "Choose the required restore point in Recovery Center to restore an older version.": "Чтобы восстановить более раннюю версию, выберите нужную точку восстановления в Центре восстановления."
+  "Choose the required restore point in Recovery Center to restore an older version.": "Чтобы восстановить более раннюю версию, выберите нужную точку восстановления в Центре восстановления.",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "Миграция завершена. Остановить публикацию оставшегося подключения Instant Recovery?",
+  "Review the migration session before stopping publication.": "Проверьте сеанс миграции перед остановкой публикации."
 }

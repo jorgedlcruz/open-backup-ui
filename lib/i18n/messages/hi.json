@@ -4823,5 +4823,7 @@
   "The operation could not be saved in this browser. Free browser storage and try again.": "इस ब्राउज़र में कार्य सहेजा नहीं जा सका। ब्राउज़र का स्टोरेज खाली करें और फिर कोशिश करें।",
   "This request is already being checked. Open Operations to review its status.": "इस अनुरोध की जाँच पहले से हो रही है। इसकी स्थिति देखने के लिए कार्य खोलें।",
   "Too many operations are still open. Review Operations before starting another.": "अभी बहुत सारे कार्य खुले हैं। नया कार्य शुरू करने से पहले कार्यों की समीक्षा करें।",
-  "Choose the required restore point in Recovery Center to restore an older version.": "पुराना संस्करण पुनर्स्थापित करने के लिए रिकवरी सेंटर में आवश्यक पुनर्स्थापना बिंदु चुनें।"
+  "Choose the required restore point in Recovery Center to restore an older version.": "पुराना संस्करण पुनर्स्थापित करने के लिए रिकवरी सेंटर में आवश्यक पुनर्स्थापना बिंदु चुनें।",
+  "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "माइग्रेशन पूरा हो गया है। क्या शेष Instant Recovery माउंट का प्रकाशन रोकना है?",
+  "Review the migration session before stopping publication.": "प्रकाशन रोकने से पहले माइग्रेशन सत्र की समीक्षा करें।"
 }

@@ -6,7 +6,7 @@ const assert = require('node:assert/strict')
 require.extensions['.ts'] = (mod, file) => mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
   compilerOptions: {module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022},
 }).outputText, file)
-const {browsableGuestMount, canStopPublishing, migrationDestination, migrationForMount, recoveryMapMounts} = require('../components/activity/session-commands.ts')
+const {browsableGuestMount, canStopPublishing, currentMigrationSession, instantRecoveryLocks, migrationDestination, migrationForMount, recoveryMapMounts} = require('../components/activity/session-commands.ts')
 
 const mount = {id:'mount-1', sessionId:'session-1', kind:'vSphere', state:'Mounted'}
 const detail = {id:'session-1', session:{state:'Working'}, mounts:[mount], mountWarnings:[]}
@@ -28,8 +28,11 @@ test('guest browsing requires exact mounted evidence, preserves per-volume notic
 test('Stop publishing appears only for a verified and actionable VM publication on this session', () => {
   assert.equal(canStopPublishing(mount,detail,''),true)
   assert.equal(canStopPublishing(mount,{...detail,session:null},''),true)
-  for (const session of [{state:'Stopping'},{state:'Stopped'},{endTime:'2026-11-09T00:00:00Z'}]) {
+  for (const session of [{state:'Stopping'}, {state:'Stopping',endTime:'2026-11-09T00:00:00Z'}]) {
     assert.equal(canStopPublishing(mount,{...detail,session},''),false)
+  }
+  for (const session of [{state:'Stopped'},{endTime:'2026-11-09T00:00:00Z'}]) {
+    assert.equal(canStopPublishing(mount,{...detail,session},''),true,'The retained publication is authoritative for cleanup')
   }
   for (const state of ['Migrating','Unmounting','Unmounted','Mounting']) {
     assert.equal(canStopPublishing(mount,{...detail,mounts:[{...mount,state}]},''),false)
@@ -44,6 +47,39 @@ test('Stop publishing appears only for a verified and actionable VM publication 
     const nonVm = {...mount,kind}
     assert.equal(canStopPublishing(nonVm,{...detail,mounts:[nonVm]},''),false)
   }
+})
+
+test('finished migration permits publication cleanup without enabling another migration, including restored receipts', () => {
+  for (const phase of ['succeeded', 'warning']) for (const receipt of [false, true]) {
+    assert.deepEqual(instantRecoveryLocks(mount,phase,receipt),{migration:true,publication:false})
+    assert.equal(instantRecoveryLocks(mount,phase,receipt,true).publication,false,'Server completion releases a stale callback from the hidden map')
+    assert.equal(canStopPublishing(mount,{...detail,instantMigration:{state:'Stopped',result:{result:phase==='succeeded'?'Success':'Warning'}}},''),true)
+    assert.equal(canStopPublishing(mount,{...detail,mounts:[]},''),false,'A remembered mount cannot authorize cleanup')
+  }
+  for (const phase of ['pending','migrating','unknown']) for (const receipt of [false,true]) {
+    assert.deepEqual(instantRecoveryLocks(mount,phase,receipt),{migration:true,publication:true})
+  }
+  assert.deepEqual(instantRecoveryLocks(mount,'idle',true),{migration:true,publication:true},'Unresolved submission stays locked')
+  assert.equal(instantRecoveryLocks(mount,'idle',false,true).publication,true,'An in-flight submission stays protected before server evidence arrives')
+  assert.deepEqual(instantRecoveryLocks(mount,'idle',false),{migration:false,publication:false})
+  for (const phase of ['failed','canceled']) {
+    assert.deepEqual(instantRecoveryLocks(mount,phase,true),{migration:false,publication:false})
+    assert.deepEqual(instantRecoveryLocks({...mount,state:'Migrating'},phase,true),{migration:true,publication:true})
+  }
+})
+
+test('an older terminal migration cannot unlock cleanup during a new unresolved submission', () => {
+  const old = {id:'previous-child',state:'Stopped',result:{result:'Failed'}}
+  for (const status of ['submitting','checking','unknown','accepted']) {
+    const receipt={mount,previousChildId:old.id,status,childId:status==='accepted'?'current-child':undefined}
+    assert.equal(currentMigrationSession(old,receipt),undefined)
+    assert.equal(currentMigrationSession(old,receipt,true),undefined,'Even a verified old link is not the current operation')
+    assert.equal(instantRecoveryLocks(mount,'idle',!!receipt).publication,true)
+  }
+  const current={...old,id:'current-child'}
+  assert.equal(currentMigrationSession(current,{mount,childId:current.id}),current)
+  assert.equal(currentMigrationSession(old,{mount,childId:current.id}),undefined)
+  assert.equal(currentMigrationSession(current,undefined),current)
 })
 
 test('recovery map preserves a missing source mount for progress display, scopes hints and prefers current evidence', () => {

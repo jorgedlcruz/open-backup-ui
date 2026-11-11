@@ -20,7 +20,7 @@ import { validId, type Session } from '@/lib/investigation/model'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 import { InstantRecoveryWorkspace, type InstantRecoveryTransfer } from './instant-recovery-workspace'
 import { MigrationForm, type MigrationPlacement } from './migration-form'
-import { migrationDestination } from './session-commands'
+import { currentMigrationSession, instantRecoveryLocks, migrationDestination } from './session-commands'
 
 function useMigrationSession(sourceKey: string, parentId:string, sessionId?: string) {
   const [record, setRecord] = useState<{id: string; sourceKey:string; detail?: ActivityDetail; unavailable?: boolean}>()
@@ -116,8 +116,7 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
     void observe()
     return () => {controller.abort(); clearTimeout(timer)}
   }, [trackingId, sourceKey, mount.kind, mount.id, mount.sessionId, refresh, t])
-  const linked = migrationSession && migrationSession.id !== receipt?.previousChildId &&
-    (association || !receipt?.childId || migrationSession.id === receipt.childId) ? migrationSession : undefined
+  const linked = currentMigrationSession(migrationSession, receipt, !!association)
   const childId = linked?.id || receipt?.childId
   const sessionHome = sessionHomeFor(usePathname())
   const child = useMigrationSession(sourceKey,mount.sessionId,childId)
@@ -131,10 +130,9 @@ export function InstantRecoveryControls({mount, sourceKey, session, migrationSes
   const {proxies,task:detailTask}=useMigrationTask(sourceKey,childId,task?.id,!!operation && !operation.endTime && operation.state!=='Stopped')
   const speed=single ? migrationSpeed(operation,task,true,detail?.throughput) ?? migrationSpeed(operation,detailTask,true) : undefined
   const evidence = migrationTransfer(mount, session, operation)
-  const recoverable = ['failed','canceled'].includes(evidence.phase) && mount.state === 'Mounted'
-  const locked = !recoverable && (!!receipt || evidence.phase !== 'idle')
-  const canConfigure = !disabled && !locked && mount.state === 'Mounted'
-  useEffect(() => {onMigrationLockChange(locked)}, [locked, onMigrationLockChange])
+  const locks = instantRecoveryLocks(mount, evidence.phase, !!receipt)
+  const canConfigure = !disabled && !locks.migration && mount.state === 'Mounted'
+  useEffect(() => {onMigrationLockChange(locks.publication)}, [locks.publication, onMigrationLockChange])
 
   async function migrate(placement: MigrationPlacement) {
     if (!canConfigure || !configuring || submitting.current || (mount.kind !== 'vSphere' && mount.kind !== 'hyperV')) return
