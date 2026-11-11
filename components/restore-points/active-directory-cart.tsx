@@ -2,11 +2,12 @@
 // Open Backup UI v1.2.0
 
 import { useState } from 'react'
-import { FileOutput, FileText, Folder, RotateCcw, Search, ShoppingCart, X } from 'lucide-react'
+import { FileOutput, RotateCcw, Search, ShoppingCart, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import type { AdEntry } from '@/lib/restore-points/ad-client'
 import { useRecoveryPresentation } from './use-presentation'
+import { DirectoryObjectIcon } from './directory-object-icon'
 import styles from './active-directory.module.css'
 
 type CartProps = {
@@ -56,9 +57,8 @@ export function DirectoryCart({items, open, ready, busy, error, onOpenChange, se
           <input type="search" placeholder={t('Search cart')} aria-label={t('Search cart')} value={query} onChange={e=>setQuery(e.target.value)}/>
         </label>
         {shown.length ? <ul className={styles.cartList}>{shown.map(row => {
-          const Icon = row.type === 'container' ? Folder : FileText
           return <li key={row.dnt}>
-            <Icon size={16}/>
+            <DirectoryObjectIcon entry={row}/>
             <span><strong>{row.name}</strong><small>{row.itemType || row.containerType || t('Directory objects')}</small></span>
             <Button type="button" size="icon-sm" variant="ghost" disabled={busy} aria-label={t('Remove {name}',{name:row.name})}
               onClick={()=>setItems(items.filter(item=>item.dnt!==row.dnt))}>

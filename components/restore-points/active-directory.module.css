@@ -32,6 +32,7 @@
 .table th:has(input), .table td:has(input) {width:2rem}
 .table tr[data-selected] {background:color-mix(in srgb,var(--primary) 8%,transparent)}
 .object {display:inline-flex; align-items:center; gap:.5rem; font-weight:550}
+.itemIcon {flex:none;width:1.125rem;height:1.125rem;color:var(--primary)}
 .selection {gap:.4rem; padding-bottom:.65rem; border-bottom:1px solid var(--border)}
 .pager span {flex:1}
 .pager, .quiet {color:var(--muted-foreground); font-size:.78rem}
@@ -59,12 +60,7 @@
 .cartList {list-style:none;padding:0;margin:0}
 .cartList li {display:flex;align-items:center;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border)}
 .cartList li>span {flex:1;min-width:0;overflow-wrap:anywhere}
-.cartList small,.diff small {display:block;font-size:.75rem;color:var(--muted-foreground)}
-.compareDialog {width:min(95vw,50rem)!important;max-width:50rem!important;max-height:90dvh;overflow:auto}
-.compareDialog p {overflow-wrap:anywhere}
-.diffScroll {overflow:auto;max-height:48dvh}
-.diff {table-layout:fixed;width:100%;border-collapse:collapse;font-size:.8rem}
-.diff th,.diff td {text-align:start;vertical-align:top;padding:.43rem .55rem;border-bottom:1px solid var(--border);white-space:pre-wrap;overflow-wrap:anywhere}
+.cartList small {display:block;font-size:.75rem;color:var(--muted-foreground)}
 @media(max-width:600px){.toolbar,.search{width:100%}.table th,.table td{padding:.5rem .3rem}.actions{justify-content:flex-start}}
 .explorer {container-type:inline-size}
 @container (max-width:40rem) {

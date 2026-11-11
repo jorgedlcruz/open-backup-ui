@@ -2,7 +2,7 @@
 // Open Backup UI v1.2.0
 
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react'
-import { ChevronRight, FileOutput, FileText, Folder, FolderTree, GitCompareArrows, Info, ListPlus, Network, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
+import { ChevronRight, FileOutput, FolderTree, Info, ListPlus, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { adParent, adRequest, type AdEntry, type AdPage, type AdScope, type AdWorkflow } from '@/lib/restore-points/ad-client'
@@ -11,8 +11,8 @@ import { useRecoveryPresentation } from './use-presentation'
 import { RecoverySignal } from './recovery-signal'
 import { DirectoryWorkflow } from './active-directory-workflow'
 import {DirectoryCart} from './active-directory-cart'
-import {DirectoryComparison} from './active-directory-compare'
 import { DirectoryNavigation, directoryPathKey } from './active-directory-navigation'
+import { DirectoryObjectIcon } from './directory-object-icon'
 import browse from './sql-browse-workspace.module.css'
 import styles from './active-directory.module.css'
 
@@ -50,10 +50,9 @@ function DirectoryPage({scope, view, parent, search, recursive, ldap, revision, 
       <th scope="col">{t('Name')}</th>{view==='items'&&<th scope="col">{t('Type')}</th>}</tr></thead>
       <tbody>{page.items.map(row=>{
         const checked=!!selected?.some(item=>item.dnt===row.dnt)
-        const Icon=row.type==='domain'?Network:row.type==='container'?Folder:FileText
         return <tr key={row.id} data-selected={checked||undefined}>
           {onSelect&&<td><input type="checkbox" aria-label={t('Select {name}',{name:row.name})} checked={checked} disabled={!selectableDirectoryItem(row)} onChange={()=>onSelect(row)}/></td>}
-          <td><button type="button" className={styles.object} onClick={()=>open?.(row)}><Icon size={15}/>{row.name}</button></td>
+          <td><button type="button" className={styles.object} onClick={()=>open?.(row)}><DirectoryObjectIcon entry={row}/>{row.name}</button></td>
           {view==='items'&&<td>{row.itemType||'—'}</td>}
         </tr>
       })}</tbody></table>}
@@ -74,7 +73,7 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
   const branchKey=directoryPathKey(path)
   const [branches,setBranches]=useState(() => new Map<string,AdEntry[]>())
   const selectionId=useId()
-  const [cart,setCart]=useState<AdEntry[]>([]),[cartOpen,setCartOpen]=useState(false),[compare,setCompare]=useState<AdEntry>()
+  const [cart,setCart]=useState<AdEntry[]>([]),[cartOpen,setCartOpen]=useState(false)
   const [cartReady,setCartReady]=useState(false)
   const [input,setInput]=useState(''),[query,setQuery]=useState({text:'',ldap:false,recursive:false}),[advanced,setAdvanced]=useState(false),[subtree,setSubtree]=useState(true)
   const [plan,setPlan]=useState<{workflow:AdWorkflow;objects:AdEntry[];fromCart:boolean}>(),[revision,setRevision]=useState(0),[finish,setFinish]=useState(false),[closed,setClosed]=useState(false)
@@ -140,7 +139,6 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
       <div className={styles.commandButtons} role="group" aria-label={t('Directory object actions')}>
         <Button size="sm" variant="outline" disabled={locked} aria-describedby={selectionId} onClick={()=>void launch('restore')}><RotateCcw/>{t('Restore')}</Button>
         <Button size="sm" variant="outline" disabled={locked} aria-describedby={selectionId} onClick={()=>void launch('export')}><FileOutput/>{t('Export')}</Button>
-        <Button size="sm" variant="outline" disabled={busy||!one||one.type!=='item'} aria-describedby={selectionId} onClick={()=>setCompare(one)}><GitCompareArrows/>{t('Compare with production')}</Button>
         <DirectoryCart items={cart} ready={cartReady} open={cartOpen} onOpenChange={setCartOpen} setItems={setCart}
           busy={busy||unconfirmed} error={error && diagnostic(error)} launch={intent=>void launch(intent,true)}/>
       </div>
@@ -195,7 +193,6 @@ function DirectorySession({sourceKey,sessionId,onClose,onOperation,showFinish=tr
     {inspect&&<Dialog open onOpenChange={open=>{if(!open)setInspect(undefined)}}><DialogContent className={styles.dialog}><DialogHeader><DialogTitle>{inspect.name}</DialogTitle>
       <DialogDescription>{inspect.description||inspect.itemType||t('Properties')}</DialogDescription></DialogHeader>
       <DirectoryPage scope={scope} revision={revision} view="attributes" parent={inspect}/></DialogContent></Dialog>}
-    {compare&&<DirectoryComparison scope={scope} object={compare} close={()=>setCompare(undefined)}/>}
     {plan&&<DirectoryWorkflow key={plan.workflow.id} scope={scope} workflow={plan.workflow} selected={plan.objects} onClose={()=>setPlan(undefined)}
       onAccepted={result=>{if(plan.fromCart)setCart(rows=>rows.filter(row=>!plan.objects.some(o=>o.dnt===row.dnt)));setSelected([]);setPlan(undefined);setMessage(result);onOperation?.()}}/>}
     {finish&&<Dialog open onOpenChange={open=>{if(!busy)setFinish(open)}}><DialogContent><DialogHeader><DialogTitle>{t('End browsing')}</DialogTitle>

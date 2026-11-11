@@ -100,12 +100,12 @@ export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:stri
         <button type="button" aria-label={t('Remove {name}',{name:vm.object.name})} onClick={()=>removed(vm)}><X size={14}/></button>
       </div>)}</div>}
     </>}</section>
-    {active&&<div className={styles.calendarPane}><PointCalendar key={sourceKey+'/'+kind+'/'+active.object.objectId} object={active.object} selected={active.point} sourceKey={sourceKey} kind={kind}
+    {active&&<section className={styles.calendarPane} aria-label={t('Restore point')}><div className={styles.restorePointHeading}><h3>{t('Restore point')}</h3></div><PointCalendar key={sourceKey+'/'+kind+'/'+active.object.objectId} object={active.object} selected={active.point} sourceKey={sourceKey} kind={kind}
       read={catalogRequest} choose={point=>{
         setEditing(active.object.objectId)
         setChosen(chosen.map(v=>v===active?{...v,point,operation:isRecoveryKind(kind)?suggestedOperation(point,kind):undefined}:v))
       }}/>
       {isRecoveryKind(kind)&&<RecoveryPlatform vm={active} kind={kind} changeOperation={operation=>setChosen(chosen.map(v=>v===active?{...v,operation}:v))}/>}
-    </div>}
+    </section>}
   </div>
 }

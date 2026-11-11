@@ -2,13 +2,6 @@
 import type {AdEntry} from './ad-client'
 
 export const adCartLimit=256
-export const directoryTransportMessage='Use HTTPS or open Open Backup UI on localhost to compare with production.'
-export function canSendDirectoryCredentials(origin:string){
-  try{
-    const url=new URL(origin)
-    return url.protocol==='https:'||url.protocol==='http:'&&(url.hostname==='localhost'||url.hostname==='[::1]'||/^127(?:\.\d{1,3}){3}$/.test(url.hostname))
-  }catch{return false}
-}
 const key=(sourceKey:string,sessionId:string)=>'open-backup-ui.ad-cart.'+sourceKey+'.'+sessionId
 export function selectableDirectoryItem(item:AdEntry){return (item.type==='item'||item.type==='container')&&Number.isInteger(item.dnt)&&item.dnt!>0&&item.dnt!<=2147483647}
 export function mergeDirectoryItems(existing:AdEntry[],additional:AdEntry[]){

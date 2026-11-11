@@ -2,9 +2,10 @@
 // Open Backup UI v1.2.0
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Folder, FolderTree, Network } from 'lucide-react'
+import { ChevronDown, ChevronRight, FolderTree } from 'lucide-react'
 import type { AdEntry } from '@/lib/restore-points/ad-client'
 import { useRecoveryPresentation } from './use-presentation'
+import { DirectoryObjectIcon } from './directory-object-icon'
 import browse from './sql-browse-workspace.module.css'
 import styles from './active-directory.module.css'
 
@@ -42,7 +43,6 @@ export function DirectoryNavigation({path, branches, navigate}: Props) {
       const expanded = onPath && !(folded?.location === location && folded.branch === key)
       const current = onPath && path.length === next.length
       const knownEmpty = branches.get(key)?.length === 0
-      const Icon = row.type === 'domain' ? Network : Folder
       return <li key={row.id}>
         <div className={browse.treeRow} data-current={current || undefined}>
           {knownEmpty ? <span className={browse.spacer}/> : <button type="button" className={browse.disclose}
@@ -55,7 +55,7 @@ export function DirectoryNavigation({path, branches, navigate}: Props) {
           </button>}
           <button type="button" className={browse.node} aria-current={current ? 'location' : undefined}
             title={row.name} onClick={() => open(next)}>
-            <Icon size={15}/><span>{row.name}</span>
+            <DirectoryObjectIcon entry={row}/><span>{row.name}</span>
           </button>
         </div>
         {expanded && children(next)}
