@@ -1,16 +1,18 @@
 'use client'
 // Open Backup UI v1.2.0
-import {useEffect,useRef,useState} from 'react'
+import {useEffect,useId,useRef,useState} from 'react'
 import {ChevronRight,File,Folder,FolderOpen,History,Search,ShoppingCart,X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog'
-import {finishedStorageTask,isFolder,itemIdentity,mergeStorageCart,readStorageCart,readStorageValue,storageEntry,storageSelectionValid,writeStorageValue,
-  type StorageAction,type StorageEntry,type StorageItem,type StorageStatus,type StorageTask,type StorageTransfer} from '@/lib/restore-points/unstructured-workspace'
+import {finishedStorageTask,isFolder,itemIdentity,mergeStorageCart,readStorageCart,storageEntry,storageSelectionValid,writeStorageValue,
+  type StorageAction,type StorageEntry,type StorageItem,type StorageStatus,type StorageTask} from '@/lib/restore-points/unstructured-workspace'
 import {StorageCommand,storageActionLabels,storageRequest} from './unstructured-session-controls'
 import {useRecoveryPresentation} from './use-presentation'
 import {control} from './workload-launch-shared'
 import {StorageFolderTree} from './storage-folder-tree'
 import {storageCrumbs} from '@/lib/restore-points/storage-navigation'
+import {useStorageOperations} from './use-storage-operations'
+import {StorageOperationsIndicator,StorageOperationsPanel} from './storage-operations'
 import files from './guest-files.module.css'
 import styles from './unstructured-browser.module.css'
 
@@ -64,7 +66,7 @@ function Versions({status,entry,onSelect,close}:{status:StorageStatus;entry:Stor
   </DialogContent></Dialog>
 }
 function StorageBrowser({status}:{status:StorageStatus}){
-  const {t,date,size,diagnostic,formatNumber,label}=useRecoveryPresentation()
+  const {t,date,size,diagnostic,formatNumber}=useRecoveryPresentation()
   const {sourceKey,sessionId,view}=status,scope={sourceKey,sessionId,view},may=(value:string)=>status.actions.includes(value)
   const [path,setPath]=useState(''),[query,setQuery]=useState(''),[search,setSearch]=useState<Search>(),[searchBusy,setSearchBusy]=useState(false)
   const [skip,setSkip]=useState(0),[version,setVersion]=useState<StorageEntry>(),[selected,setSelected]=useState<StorageEntry[]>([])
@@ -72,11 +74,10 @@ function StorageBrowser({status}:{status:StorageStatus}){
   const [command,setCommand]=useState<{action:'copy'|'restore';items:StorageEntry[]}>(),[error,setError]=useState(''),[listError,setListError]=useState('')
   const [page,setPage]=useState<{items:StorageItem[];total:number|null}>(),[revision,setRevision]=useState(0)
   const [roots,setRoots]=useState<{path:string;label:string}[]>([])
-  const [transfer,setTransfer]=useState(()=>readStorageValue<StorageTransfer>(scope,'transfer'))
-  const separator=status.pathSeparator||'/',searchTask=useTask(status,search),transferTask=useTask(status,transfer)
+  const {operations,retry:retryOperations}=useStorageOperations(scope),[operationsOpen,setOperationsOpen]=useState(false),operationsId=useId()
+  const separator=status.pathSeparator||'/',searchTask=useTask(status,search)
   const searchState=search&&searchTask.state?finishedStorageTask(searchTask.state):undefined
   const searchId=search?.taskId,searchKey=search?.taskKey,canBrowse=may('browse'),canSearch=may('search')
-  const working=!!transfer&&(!transferTask.state||finishedStorageTask(transferTask.state)==='working')
   const searchController=useRef<AbortController|null>(null)
   useEffect(()=>()=>searchController.current?.abort(),[])
   useEffect(()=>{
@@ -116,7 +117,7 @@ function StorageBrowser({status}:{status:StorageStatus}){
   }
   function openAction(action:'copy'|'restore',items:StorageEntry[]){setCartOpen(false);setCommand({action,items})}
   function actions(items:StorageEntry[]){
-    const valid=storageSelectionValid(items)&&!working
+    const valid=storageSelectionValid(items)
     return <>{may('restore')&&<Button size="sm" variant="outline" disabled={!valid} onClick={()=>openAction('restore',items)}>{t(storageActionLabels.restore)}</Button>}
       {may('copy')&&<Button size="sm" variant="outline" disabled={!valid} onClick={()=>openAction('copy',items)}>{t(storageActionLabels.copy)}</Button>}</>
   }
@@ -127,14 +128,12 @@ function StorageBrowser({status}:{status:StorageStatus}){
     <div className={styles.actions} role="group" aria-label={t('Recovery actions')}>{actions(selected)}
       {may('versions')&&<Button size="sm" variant="outline" disabled={selected.length!==1||selected[0].type!=='File'} onClick={()=>setVersion(selected[0])}><History size={14}/>{t('Versions')}</Button>}
       <Button size="sm" variant="outline" disabled={!selected.length} onClick={add}><ShoppingCart size={14}/>{t('Add to cart')}</Button>
-      <Button size="sm" variant="secondary" onClick={()=>setCartOpen(true)}><ShoppingCart size={14}/>{t('Recovery cart')} · {formatNumber(cart.length)}</Button></div></div>
+      <Button size="sm" variant="secondary" onClick={()=>setCartOpen(true)}><ShoppingCart size={14}/>{t('Recovery cart')} · {formatNumber(cart.length)}</Button>
+      <StorageOperationsIndicator operations={operations} open={operationsOpen} controls={operationsId} onClick={()=>setOperationsOpen(value=>!value)}/></div></div>
+    {operationsOpen&&<StorageOperationsPanel id={operationsId} operations={operations} retry={retryOperations} onClose={()=>setOperationsOpen(false)}/>}
     {canSearch&&<form className={files.searchForm} onSubmit={e=>{e.preventDefault();void searchFiles()}}><label className={files.searchBox}><Search size={16}/><input className={control} type="search" maxLength={256} aria-label={t('Search files and folders')} placeholder={t('Search files and folders')} value={query} onChange={e=>setQuery(e.target.value)}/></label>
       <Button type="submit" size="sm" variant="outline" disabled={!query.trim()||searchBusy}>{t('Search')}</Button></form>}
     {error&&<p role="alert">{diagnostic(error)}</p>}
-    {transfer&&<div className="rounded-md border px-3 py-2 text-sm" role="status">{t(storageActionLabels[transfer.action])} · {transferTask.error?diagnostic(transferTask.error):transferTask.state?
-      label(transferTask.state.result&&transferTask.state.result!=='None'?transferTask.state.result:transferTask.state.state):t('Checking with VBR')}
-      {transferTask.state&&finishedStorageTask(transferTask.state)==='working'&&typeof transferTask.state.progressPercent==='number'&&' · '+formatNumber(transferTask.state.progressPercent)+'%'}
-      {transferTask.error&&<Button size="sm" variant="ghost" onClick={transferTask.retry}>{t('Retry')}</Button>}</div>}
     <div className={files.layout}>
       {canBrowse&&<StorageFolderTree scope={scope} path={path} separator={separator} navigate={navigate} rootLabel={t('Root')} waitForCurrent={!search}
         observed={!search&&page?{path,skip,...page}:undefined}/>}
@@ -169,10 +168,8 @@ function StorageBrowser({status}:{status:StorageStatus}){
       <ul className="divide-y">{cartShown.map(row=><li key={itemIdentity(row)} className="flex items-center justify-between gap-2 py-2 text-sm"><span className="break-all">{row.path}{row.version&&' · '+date(row.version)}</span>
         <Button size="icon-sm" variant="ghost" aria-label={t('Remove {name}',{name:row.path})} onClick={()=>saveCart(cart.filter(r=>itemIdentity(r)!==itemIdentity(row)))}><X size={14}/></Button></li>)}</ul>
       {!cartShown.length&&<p>{cart.length?t('No matches'):t('The cart is empty.')}</p>}</DialogContent></Dialog>}
-    {command&&may(command.action)&&<StorageCommand status={status} {...command} onClose={()=>setCommand(undefined)} onAccepted={result=>{
-      const task:StorageTransfer={taskId:result.taskId!,taskKey:result.taskKey!,action:command.action}
-      setTransfer(task);writeStorageValue(scope,'transfer',task);setSelected([]);setCommand(undefined)
-    }}/>}
+    {command&&may(command.action)&&<StorageCommand status={status} {...command} onClose={()=>setCommand(undefined)} onAccepted={()=>undefined}
+      onQueued={()=>{setSelected([]);setCommand(undefined);setOperationsOpen(true)}}/>}
   </section>
 }
 export function UnstructuredSession({status,onSession}:{status:StorageStatus;onSession:(id?:string)=>void}){

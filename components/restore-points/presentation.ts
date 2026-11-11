@@ -113,6 +113,11 @@ export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'):
     case 'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.':
     case 'This destination browser is unavailable. Open the folder browser again.':
     case 'Choose a folder within the selected destination.':
+    case 'The operation could not be saved in this browser. Free browser storage and try again.':
+    case 'This request is already being checked. Open Operations to review its status.':
+    case 'Too many operations are still open. Review Operations before starting another.':
+    case 'Check the operation status before submitting the same files again.':
+    case 'Choose the required restore point in Recovery Center to restore an older version.':
     case 'This recovery form is out of date. Refresh Recovery Center before starting.':
     case 'Too many recovery preparations are open.':
     case 'This recovery point is unavailable for this computer.':

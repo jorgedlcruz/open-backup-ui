@@ -4807,5 +4807,21 @@
   "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Open Backup UI が復元要求を保存できなかったため、Explorer は起動されませんでした。データフォルダーに書き込めることを確認し、選択した復元ポイントを確認して、再試行してください。",
   "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI は VBR の応答を保存できませんでした。別の要求を送信する前に、復元の状態を確認してください。",
   "This destination browser is unavailable. Open the folder browser again.": "この復元先ブラウザーは利用できません。フォルダーブラウザーを開き直してください。",
-  "Choose a folder within the selected destination.": "選択した復元先内のフォルダーを選択してください。"
+  "Choose a folder within the selected destination.": "選択した復元先内のフォルダーを選択してください。",
+  "{count} active": "{count} 件実行中",
+  "{count} operations": "{count} 件の操作",
+  "Check the operation status before submitting the same files again.": "同じファイルを再送信する前に、操作の状態を確認してください。",
+  "Collapse operations": "操作を折りたたむ",
+  "Copies and restores started here will appear here.": "ここで開始したコピーと復元が表示されます。",
+  "Copy files": "ファイルをコピー",
+  "Items not reported": "項目は報告されていません",
+  "No operation log entries have been reported yet.": "操作ログはまだ報告されていません。",
+  "Operation log": "操作ログ",
+  "Progress could not be saved in this browser. Keep this page open until the operation finishes.": "このブラウザーに進行状況を保存できませんでした。操作が完了するまで、このページを開いたままにしてください。",
+  "Restore files": "ファイルを復元",
+  "Status unconfirmed": "状態未確認",
+  "The operation could not be saved in this browser. Free browser storage and try again.": "このブラウザーに操作を保存できませんでした。ブラウザーのストレージを空けてから再試行してください。",
+  "This request is already being checked. Open Operations to review its status.": "このリクエストはすでに確認中です。「操作」を開いて状態を確認してください。",
+  "Too many operations are still open. Review Operations before starting another.": "未完了の操作が多すぎます。新しい操作を開始する前に「操作」を確認してください。",
+  "Choose the required restore point in Recovery Center to restore an older version.": "以前のバージョンを復元するには、復元センターで必要な復元ポイントを選択してください。"
 }

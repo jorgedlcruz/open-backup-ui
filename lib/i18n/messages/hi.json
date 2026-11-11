@@ -4807,5 +4807,21 @@
   "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer शुरू नहीं हुआ क्योंकि Open Backup UI रिकवरी अनुरोध को सहेज नहीं सका। जाँचें कि उसके डेटा फ़ोल्डर में लिखने की अनुमति है, फिर चुने गए रिस्टोर पॉइंट की समीक्षा करें और फिर से प्रयास करें।",
   "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI, VBR का जवाब सहेज नहीं सका। दूसरा अनुरोध भेजने से पहले रिकवरी की स्थिति जाँचें।",
   "This destination browser is unavailable. Open the folder browser again.": "यह गंतव्य ब्राउज़र उपलब्ध नहीं है। फ़ोल्डर ब्राउज़र फिर से खोलें।",
-  "Choose a folder within the selected destination.": "चुने गए गंतव्य के भीतर कोई फ़ोल्डर चुनें।"
+  "Choose a folder within the selected destination.": "चुने गए गंतव्य के भीतर कोई फ़ोल्डर चुनें।",
+  "{count} active": "{count} सक्रिय",
+  "{count} operations": "{count} कार्य",
+  "Check the operation status before submitting the same files again.": "वही फ़ाइलें दोबारा भेजने से पहले कार्य की स्थिति जाँचें।",
+  "Collapse operations": "कार्य संक्षिप्त करें",
+  "Copies and restores started here will appear here.": "यहाँ शुरू की गई कॉपी और पुनर्स्थापन प्रक्रियाएँ यहाँ दिखाई देंगी।",
+  "Copy files": "फ़ाइलें कॉपी करें",
+  "Items not reported": "आइटम की जानकारी नहीं मिली",
+  "No operation log entries have been reported yet.": "अभी तक कार्य लॉग की कोई प्रविष्टि नहीं मिली है।",
+  "Operation log": "कार्य लॉग",
+  "Progress could not be saved in this browser. Keep this page open until the operation finishes.": "इस ब्राउज़र में प्रगति सहेजी नहीं जा सकी। कार्य पूरा होने तक यह पेज खुला रखें।",
+  "Restore files": "फ़ाइलें पुनर्स्थापित करें",
+  "Status unconfirmed": "स्थिति की पुष्टि नहीं हुई",
+  "The operation could not be saved in this browser. Free browser storage and try again.": "इस ब्राउज़र में कार्य सहेजा नहीं जा सका। ब्राउज़र का स्टोरेज खाली करें और फिर कोशिश करें।",
+  "This request is already being checked. Open Operations to review its status.": "इस अनुरोध की जाँच पहले से हो रही है। इसकी स्थिति देखने के लिए कार्य खोलें।",
+  "Too many operations are still open. Review Operations before starting another.": "अभी बहुत सारे कार्य खुले हैं। नया कार्य शुरू करने से पहले कार्यों की समीक्षा करें।",
+  "Choose the required restore point in Recovery Center to restore an older version.": "पुराना संस्करण पुनर्स्थापित करने के लिए रिकवरी सेंटर में आवश्यक पुनर्स्थापना बिंदु चुनें।"
 }

@@ -4807,5 +4807,21 @@
   "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Open Backup UI에서 복구 요청을 저장하지 못해 Explorer가 시작되지 않았습니다. 데이터 폴더에 쓰기 권한이 있는지 확인한 후, 선택한 복원 지점을 검토하고 다시 시도하세요.",
   "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI에서 VBR 응답을 저장하지 못했습니다. 다른 요청을 제출하기 전에 복구 상태를 확인하세요.",
   "This destination browser is unavailable. Open the folder browser again.": "이 대상 브라우저를 사용할 수 없습니다. 폴더 브라우저를 다시 여세요.",
-  "Choose a folder within the selected destination.": "선택한 대상 내의 폴더를 선택하세요."
+  "Choose a folder within the selected destination.": "선택한 대상 내의 폴더를 선택하세요.",
+  "{count} active": "{count}개 실행 중",
+  "{count} operations": "작업 {count}개",
+  "Check the operation status before submitting the same files again.": "같은 파일을 다시 제출하기 전에 작업 상태를 확인하세요.",
+  "Collapse operations": "작업 접기",
+  "Copies and restores started here will appear here.": "여기에서 시작한 복사 및 복원 작업이 표시됩니다.",
+  "Copy files": "파일 복사",
+  "Items not reported": "항목이 보고되지 않음",
+  "No operation log entries have been reported yet.": "아직 보고된 작업 로그 항목이 없습니다.",
+  "Operation log": "작업 로그",
+  "Progress could not be saved in this browser. Keep this page open until the operation finishes.": "이 브라우저에 진행 상황을 저장할 수 없습니다. 작업이 완료될 때까지 이 페이지를 열어 두세요.",
+  "Restore files": "파일 복원",
+  "Status unconfirmed": "상태 미확인",
+  "The operation could not be saved in this browser. Free browser storage and try again.": "이 브라우저에 작업을 저장할 수 없습니다. 브라우저 저장 공간을 확보한 후 다시 시도하세요.",
+  "This request is already being checked. Open Operations to review its status.": "이미 이 요청을 확인하고 있습니다. 작업을 열어 상태를 확인하세요.",
+  "Too many operations are still open. Review Operations before starting another.": "아직 열려 있는 작업이 너무 많습니다. 다른 작업을 시작하기 전에 작업을 검토하세요.",
+  "Choose the required restore point in Recovery Center to restore an older version.": "이전 버전을 복원하려면 복구 센터에서 필요한 복원 지점을 선택하세요."
 }

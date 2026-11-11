@@ -4807,5 +4807,21 @@
   "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "O Explorer não foi iniciado porque o Open Backup UI não conseguiu salvar a solicitação de recuperação. Verifique se é possível gravar na pasta de dados, revise o ponto de restauração selecionado e tente novamente.",
   "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "O Open Backup UI não conseguiu salvar a resposta do VBR. Verifique o status da recuperação antes de enviar outra solicitação.",
   "This destination browser is unavailable. Open the folder browser again.": "Este navegador de destinos não está disponível. Abra novamente o navegador de pastas.",
-  "Choose a folder within the selected destination.": "Escolha uma pasta dentro do destino selecionado."
+  "Choose a folder within the selected destination.": "Escolha uma pasta dentro do destino selecionado.",
+  "{count} active": "{count} ativas",
+  "{count} operations": "{count} operações",
+  "Check the operation status before submitting the same files again.": "Verifique o status da operação antes de enviar os mesmos arquivos novamente.",
+  "Collapse operations": "Recolher operações",
+  "Copies and restores started here will appear here.": "As cópias e restaurações iniciadas aqui aparecerão aqui.",
+  "Copy files": "Copiar arquivos",
+  "Items not reported": "Itens não informados",
+  "No operation log entries have been reported yet.": "Nenhuma entrada de log da operação foi recebida ainda.",
+  "Operation log": "Log da operação",
+  "Progress could not be saved in this browser. Keep this page open until the operation finishes.": "Não foi possível salvar o progresso neste navegador. Mantenha esta página aberta até a operação terminar.",
+  "Restore files": "Restaurar arquivos",
+  "Status unconfirmed": "Status não confirmado",
+  "The operation could not be saved in this browser. Free browser storage and try again.": "Não foi possível salvar a operação neste navegador. Libere espaço no armazenamento do navegador e tente novamente.",
+  "This request is already being checked. Open Operations to review its status.": "Esta solicitação já está sendo verificada. Abra Operações para consultar seu status.",
+  "Too many operations are still open. Review Operations before starting another.": "Há muitas operações ainda abertas. Revise Operações antes de iniciar outra.",
+  "Choose the required restore point in Recovery Center to restore an older version.": "Escolha o ponto de restauração necessário no Centro de recuperação para restaurar uma versão anterior."
 }

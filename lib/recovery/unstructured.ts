@@ -10,6 +10,7 @@ import {collect} from './options'
 import {pointSchema} from '../restore-points/load'
 import {applicationAccess,publicBackupObjects} from './application-eligibility'
 import {targetBrowsePermissions,unstructuredTargetBrowse} from './unstructured-target-browser'
+import {readUnstructuredTask,unstructuredTaskSchema} from './unstructured-task'
 
 const guid=z.string().uuid().transform(v=>v.toLowerCase()),scope=z.string().regex(/^[\da-f]{64}$/)
 const location=z.string().max(8192).refine(v=>!/[\u0000-\u001f]/.test(v)&&!v.split(/[\\/]/).includes('..'))
@@ -35,6 +36,7 @@ export const unstructuredCommand=z.discriminatedUnion('action',[
   z.object({...session,action:z.literal('search'),path:location.default(''),query:text}).strict(),
   z.object({...session,...range,action:z.literal('results'),taskId:guid,taskKey:z.string().max(256)}).strict(),
   z.object({...session,action:z.literal('task'),taskId:guid,taskKey:z.string().max(256)}).strict(),
+  z.object({...session,action:z.literal('operationReceipt'),requestId:guid,operation:z.enum(['copy','restore'])}).strict(),
   z.object({...item,action:z.literal('restore')}).strict(),z.object({...item,action:z.literal('copy'),destinationId:guid,targetPath:location.min(1)}).strict(),
   z.object({...session,...write,action:z.literal('finish')}).strict(),z.object({...session,...write,action:z.literal('switchover')}).strict(),
   z.object({...session,...write,...shares,action:z.literal('migrate'),destinationId:guid,path:location.min(1),overwriteMode:z.enum(['Overwrite','ReplaceOlder']),
@@ -51,8 +53,6 @@ const flr='/api/v1/backupBrowser/flr/unstructuredData',ir='/api/v1/restore/insta
 const viewItem=z.object({name:z.string(),type:z.string(),location:z.string().nullish(),size:z.number().nullish(),versionsCount:z.number().nullish(),
   modifiedDate:z.string().nullish(),itemState:z.string().nullish()})
 const paging=z.object({total:z.number().int().nonnegative().optional()}).nullish()
-const version=z.object({id:guid,creationTime:z.string(),fileSize:z.number().nullish(),fileModificationDate:z.string().nullish()})
-const task=z.object({id:guid,type:z.string(),state:z.string(),result:z.string().nullish(),progressPercent:z.number().nullish()})
 const post=(send:RecoverySend,path:string,body?:unknown,mutation=false)=>send(path,{method:'POST',body,mutation})
 export async function unstructuredOptions(ctx:Context,input:z.infer<typeof pointQuery>){
   checkSource(input.sourceKey,ctx.sourceKey)
@@ -93,7 +93,7 @@ function checkedTask(ctx:Context,sid:string,id:string,key:string,types:string[])
   return types.some(type=>{const expected=Buffer.from(taskKey(ctx,sid,id,type)),supplied=Buffer.from(key);return expected.length===supplied.length&&timingSafeEqual(expected,supplied)})
 }
 function taskReceipt(raw:unknown,ctx:Context,sid:string,type:string){
-  const t=task.safeParse(raw)
+  const t=unstructuredTaskSchema.pick({id:true,type:true}).safeParse(raw)
   if(!t.success||t.data.type!==type)throw missing()
   return {id:t.data.id,taskId:t.data.id,taskKey:taskKey(ctx,sid,t.data.id,type)}
 }
@@ -111,6 +111,20 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
     })
   }
   const sid=input.sessionId,base=flr+'/'+sid,rights=await applicationAccess(ctx.privateSend)
+  // A file copy/restore task outlives its browse mount. Its signed receipt binds
+  // source, authenticated principal, parent session, native task and task type.
+  if(input.action==='task'){
+    if(!rights.has('ViewTasks')||!checkedTask(ctx,sid,input.taskId,input.taskKey,['FlrSearch','FlrRestore']))throw deny()
+    const t=readUnstructuredTask(await send('/api/v1/tasks/'+input.taskId))
+    if(t.id!==input.taskId||!checkedTask(ctx,sid,t.id,input.taskKey,[t.type]))throw deny()
+    return t
+  }
+  if(input.action==='operationReceipt'){
+    if(!rights.has('ViewTasks'))throw deny()
+    const result=await receipts.operationStatus(ctx.sourceKey,ctx.cacheKey,input.requestId,{sessionId:sid,view:input.view,action:input.operation})
+    if(result.phase==='accepted'&&(!result.taskId||!result.taskKey||!checkedTask(ctx,sid,result.taskId,result.taskKey,['FlrRestore'])))throw deny()
+    return result
+  }
   // Destination inventory cleanup must still work after the source FLR mount ends.
   if(input.action==='stopTargetBrowse')return unstructuredTargetBrowse(ctx,input,rights)
   if(input.view==='instant'){
@@ -151,7 +165,9 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
   if(!m.success||m.data.sessionId!==sid)throw deny('This mounted recovery is no longer available.')
   const browseAllowed=rights.has('BrowseFLRUnstructuredData'),searchAllowed=browseAllowed&&rights.has('UnstructuredDataFlrSearchFor')&&rights.has('ViewTasks')
   const actions:string[]=[]
-  if(browseAllowed)actions.push('browse','versions')
+  // Our launches mount a specific point. The native browse model exposes no
+  // verified all-time flag, so do not offer a version override for this mount.
+  if(browseAllowed)actions.push('browse')
   if(searchAllowed)actions.push('search','results')
   if(rights.has('ViewTasks'))actions.push('task')
   if(rights.has('CopyUnstructuredDataFlrItem'))actions.push('copy','targets')
@@ -166,6 +182,8 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
   }
   if(workloadType&&rights.has('PerformRestoreToOriginal')&&rights.has(workloadType==='nas'?'RestoreFileShareFiles':'RestoreObjects'))actions.push('restore')
   if(input.action==='status')return {sessionId:sid,view:'browse',workloadType,pathSeparator:m.data.properties?.pathSeparator,backupId,actions}
+  if(input.action==='versions'||(input.action==='copy'||input.action==='restore')&&input.toDateTime)
+    throw deny('Choose the required restore point in Recovery Center to restore an older version.')
   if(!actions.includes(input.action))throw deny()
   if(input.action==='startTargetBrowse'||input.action==='browseTarget')return unstructuredTargetBrowse(ctx,input,rights)
   if(input.action==='targets')return {targets:(await unstructuredTargets(asRead(send))).data}
@@ -176,17 +194,7 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
       ...(input.action==='browse'?{path:input.path}:{}),pagination:{skip:input.skip,limit:input.limit}}))
     return {items:result.items,total:result.pagination?.total??null}
   }
-  if(input.action==='versions'){
-    const result=z.object({data:z.array(version),pagination:paging}).parse(await post(send,base+'/restorePoints',{path:input.path,pagination:{skip:input.skip,limit:input.limit}}))
-    return {versions:result.data,total:result.pagination?.total??null}
-  }
   if(input.action==='search')return taskReceipt(await post(send,base+'/search',{path:input.path,searchString:input.query,disableRecursiveSearch:false}),ctx,sid,'FlrSearch')
-  if(input.action==='task'){
-    if(!checkedTask(ctx,sid,input.taskId,input.taskKey,['FlrSearch','FlrRestore']))throw deny()
-    const t=task.parse(await send('/api/v1/tasks/'+input.taskId))
-    if(t.id!==input.taskId||!checkedTask(ctx,sid,t.id,input.taskKey,[t.type]))throw deny()
-    return t
-  }
   if(input.action!=='restore'&&input.action!=='copy'&&input.action!=='finish')throw deny()
   return receipts.submit(ctx.sourceKey,ctx.cacheKey,input.requestId,input,async()=>{
     if(input.action==='finish'){
@@ -197,22 +205,14 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
     const paths=input.sourcePaths??(input.path?[input.path]:[])
     if(!paths.length||paths.some(p=>!p.trim()||p==='/'||p==='\\')||input.path&&input.sourcePaths)throw deny('Select files or folders to restore.')
     if(input.restoreType!=='Keep'&&!input.confirmOverwrite)throw deny('Confirm the overwrite before continuing.')
-    if(input.toDateTime&&paths.length!==1)throw deny('Select a single item version.')
-    if(input.toDateTime){
-      let found=false
-      for(let skip=0;skip<5000;skip+=250){
-        const result=z.object({data:z.array(version),pagination:paging}).parse(await post(send,base+'/restorePoints',{path:paths[0],pagination:{skip,limit:250}}))
-        found=result.data.some(v=>v.creationTime===input.toDateTime)
-        if(found||result.data.length<250||skip+250>=(result.pagination?.total??Infinity))break
-      }
-      if(!found)throw deny('Select a single item version.')
-    }
     if(input.action==='copy'){
       const targets=await unstructuredTargets(asRead(send))
       if(!targets.data.some(t=>t.id===input.destinationId))throw deny('Select a destination from the connected VBR source.')
     }
+    // A point-mounted browse already identifies the chosen restore point. VBR
+    // explicitly disallows overriding it with LatestPoint (and its UI omits it).
     const body={sourcePath:paths,isRecursive:input.isRecursive,restoreType:input.restoreType,restorePermissions:input.restorePermissions,
-      restoreMode:input.toDateTime?'Custom':'LatestPoint',toDateTime:input.toDateTime,...(input.action==='copy'?{unstructuredDataServerId:input.destinationId,path:input.targetPath}:{})}
+      ...(input.action==='copy'?{unstructuredDataServerId:input.destinationId,path:input.targetPath}:{})}
     return taskReceipt(await post(send,base+'/'+(input.action==='copy'?'copyTo':'restore'),body,true),ctx,sid,'FlrRestore')
   })
 }

@@ -10,6 +10,7 @@ import {uncertainRestore} from '@/lib/restore-points/workflow'
 import {control,FormField,workloadRequest} from './workload-launch-shared'
 import {useRecoveryPresentation} from './use-presentation'
 import {StorageTargetFolderPicker} from './storage-target-folder-picker'
+import {acceptedStorageOperation,importLegacyStorageRequests,queueStorageOperation,readStorageOperations,updateStorageOperation,type StorageOperation} from '@/lib/restore-points/storage-operations'
 
 export async function storageRequest<T>(scope:StorageScope,command:Record<string,unknown>,signal?:AbortSignal){
   const result=await workloadRequest<T & {sourceKey:string}>('unstructured',{...command,...scope},signal)
@@ -42,8 +43,8 @@ export function useStorageStatus(sourceKey:string|undefined,sessionId:string,vie
 export const storageActionLabels={copy:'Copy to…',restore:'Restore to original location',finish:'End browsing',migrate:'Migrate to production',switchover:'Switch to production'} as const
 type NativeTarget={id:string;type:string;name?:string;friendlyName?:string}
 type Accepted=Partial<StorageTask> & {sessionId?:string}
-type CommandProps={status:StorageStatus;action:StorageAction;items?:StorageEntry[];onClose:()=>void;onAccepted:(r:Accepted)=>void}
-export function StorageCommand({status,action,items=[],onClose,onAccepted}:CommandProps){
+type CommandProps={status:StorageStatus;action:StorageAction;items?:StorageEntry[];onClose:()=>void;onAccepted:(r:Accepted)=>void;onQueued?:()=>void}
+export function StorageCommand({status,action,items=[],onClose,onAccepted,onQueued}:CommandProps){
   const {t,diagnostic,date}=useRecoveryPresentation()
   const {sessionId,sourceKey,view}=status
   const [targets,setTargets]=useState<NativeTarget[]>(),[target,setTarget]=useState(''),[path,setPath]=useState('')
@@ -77,15 +78,34 @@ export function StorageCommand({status,action,items=[],onClose,onAccepted}:Comma
     if(action==='migrate')Object.assign(cmd,{destinationId:target,path:path.trim(),preserveHierarchy:hierarchy,overwriteMode:mode,switchover:switchMode,
       scheduleTime:switchMode==='Scheduled'?new Date(schedule).toISOString():undefined})
     const fingerprint=JSON.stringify(cmd),key='request-'+action,prior=readStorageValue<{fingerprint:string;requestId:string}>(scope,key)
-    if(prior&&prior.fingerprint!==fingerprint){setError('Check Sessions before submitting another request.');return}
-    const requestId=prior?.requestId||uuid()
-    lock.current=true;setBusy(true);setError('');writeStorageValue(scope,key,{requestId,fingerprint})
+    const journaled=selection&&!!onQueued
+    // Older previews kept one unresolved command per action. Retain its identity
+    // without replaying it or blocking a different selection/destination.
+    if(journaled&&prior){
+      importLegacyStorageRequests(scope)
+      if(prior.fingerprint===fingerprint&&!readStorageOperations(scope).some(row=>row.requestId===prior.requestId)){
+        setError('Check the operation status before submitting the same files again.');return
+      }
+    }
+    if(!journaled&&prior&&prior.fingerprint!==fingerprint){setError('Check Sessions before submitting another request.');return}
+    const requestId=journaled?uuid():prior?.requestId||uuid()
+    if(journaled){
+      const now=Date.now(),operation:StorageOperation={requestId,action:action as 'copy'|'restore',fingerprint,createdAt:now,updatedAt:now,phase:'submitting',items:items.map(item=>({...item})),
+        ...(action==='copy'?{destination:{id:target,name:selectedTarget?.friendlyName||selectedTarget?.name||target,path}}:{})}
+      try{queueStorageOperation(scope,operation)}catch(e){setError(e instanceof Error?e.message:'Request failed.');return}
+    }else writeStorageValue(scope,key,{requestId,fingerprint})
+    lock.current=true;setBusy(true);setError('')
+    if(journaled)onQueued?.()
     try{
       const result=await storageRequest<Accepted>(scope,{...cmd,requestId})
       if(selection?(!result.taskId||!result.taskKey):!result.sessionId)throw Object.assign(new Error('Check Sessions before submitting another request.'),{uncertain:true})
-      writeStorageValue(scope,key);onAccepted(result)
-    }catch(e){if(!uncertainRestore(e))writeStorageValue(scope,key);setError(e instanceof Error?e.message:'Request failed.')}
-    finally{lock.current=false;setBusy(false)}
+      if(journaled)acceptedStorageOperation(scope,requestId,{taskId:result.taskId!,taskKey:result.taskKey!})
+      else{writeStorageValue(scope,key);onAccepted(result)}
+    }catch(e){
+      if(journaled)updateStorageOperation(scope,requestId,{phase:uncertainRestore(e)?'unknown':'rejected',error:e instanceof Error?e.message:'Request failed.'})
+      else{if(!uncertainRestore(e))writeStorageValue(scope,key);setError(e instanceof Error?e.message:'Request failed.')}
+    }
+    finally{lock.current=false;if(!journaled)setBusy(false)}
   }
   return <Dialog open onOpenChange={open=>{if(!open&&!busy)onClose()}}><DialogContent className="max-h-[85dvh] overflow-y-auto">
     <DialogHeader><DialogTitle>{label}</DialogTitle><DialogDescription>

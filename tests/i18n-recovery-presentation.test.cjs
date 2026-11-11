@@ -53,6 +53,11 @@ test('Explorer startup and destination browsing diagnostics translate without re
     'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.',
     'This destination browser is unavailable. Open the folder browser again.',
     'Choose a folder within the selected destination.',
+    'The operation could not be saved in this browser. Free browser storage and try again.',
+    'This request is already being checked. Open Operations to review its status.',
+    'Too many operations are still open. Review Operations before starting another.',
+    'Check the operation status before submitting the same files again.',
+    'Choose the required restore point in Recovery Center to restore an older version.',
   ]
   for (const locale of ['de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pt-BR', 'ru', 'zh-CN']) {
     const messages = require(`../lib/i18n/messages/${locale}.json`)

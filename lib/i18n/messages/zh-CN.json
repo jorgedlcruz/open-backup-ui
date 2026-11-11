@@ -4807,5 +4807,21 @@
   "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "由于 Open Backup UI 无法保存恢复请求，Explorer 未启动。请检查其数据文件夹是否可写，然后检查所选还原点并重试。",
   "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI 无法保存 VBR 响应。请在提交其他请求之前检查恢复状态。",
   "This destination browser is unavailable. Open the folder browser again.": "此目标浏览器不可用。请重新打开文件夹浏览器。",
-  "Choose a folder within the selected destination.": "请选择所选目标内的文件夹。"
+  "Choose a folder within the selected destination.": "请选择所选目标内的文件夹。",
+  "{count} active": "{count} 项正在运行",
+  "{count} operations": "{count} 项操作",
+  "Check the operation status before submitting the same files again.": "再次提交相同文件之前，请先检查操作状态。",
+  "Collapse operations": "收起操作",
+  "Copies and restores started here will appear here.": "此处发起的复制和还原操作将显示在这里。",
+  "Copy files": "复制文件",
+  "Items not reported": "未报告项目",
+  "No operation log entries have been reported yet.": "尚未收到操作日志条目。",
+  "Operation log": "操作日志",
+  "Progress could not be saved in this browser. Keep this page open until the operation finishes.": "无法在此浏览器中保存进度。请保持此页面打开，直到操作完成。",
+  "Restore files": "还原文件",
+  "Status unconfirmed": "状态未确认",
+  "The operation could not be saved in this browser. Free browser storage and try again.": "无法在此浏览器中保存操作。请释放浏览器存储空间后重试。",
+  "This request is already being checked. Open Operations to review its status.": "正在检查此请求。请打开“操作”查看其状态。",
+  "Too many operations are still open. Review Operations before starting another.": "仍有过多操作尚未结束。开始新操作前，请先查看“操作”。",
+  "Choose the required restore point in Recovery Center to restore an older version.": "要还原旧版本，请在恢复中心选择所需的还原点。"
 }

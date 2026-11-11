@@ -17,6 +17,8 @@ import { GuestFileBrowser } from '@/components/restore-points/guest-file-browser
 import { clearDirectoryCart } from '@/lib/restore-points/ad-cart'
 import { ActiveDirectoryExplorer } from '@/components/restore-points/active-directory-explorer'
 import { UnstructuredSession } from '@/components/restore-points/unstructured-session'
+import { StorageOperationsView } from '@/components/restore-points/storage-operations'
+import { useStorageOperationJournal } from '@/components/restore-points/use-storage-operations'
 import { EndStorageSession,useStorageStatus } from '@/components/restore-points/unstructured-session-controls'
 import { storageView } from '@/lib/restore-points/unstructured-workspace'
 import { SqlExplorer } from '@/components/restore-points/sql-explorer'
@@ -43,7 +45,7 @@ import styles from './session.module.css'
 
 const sessionTabHashes: Record<string, string> = {
   logs: '#session-log', application: '#application-items', staging: '#sql-staging-server',
-  storage: '#unstructured-data', files: '#guest-files', recovery: '#recovery-map', workloads: '#workloads',
+  storage: '#unstructured-data', storageOperations: '#file-operations', files: '#guest-files', recovery: '#recovery-map', workloads: '#workloads',
 }
 
 function RecoveryProperties({mount}: {mount: Mount}) {
@@ -292,6 +294,9 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const storageKind=storageView(type,receipt?.sessionId===id&&receipt.sourceKey===sourceKey?receipt.operation:undefined)
   const storageIdentity=(data?.sourceKey||'')+id
   const storage=useStorageStatus(data?.sourceKey,id,!error&&!jobDone&&storageEnded!==storageIdentity?storageKind:undefined,revision)
+  const storageOperationScope = data?.sourceKey && storageKind === 'browse' ? {sourceKey:data.sourceKey,sessionId:id,view:'browse' as const} : undefined
+  const storageJournal = useStorageOperationJournal(storageOperationScope)
+  const showStorageOperations = !!storageOperationScope && !storage.status && !error && storageJournal.operations.length > 0
   const status = mounts[0]?.state ?? (filesUnmounted && !jobDone ? 'Unmounted' : session ? recordStatus(session) : undefined)
   const child = data?.children
   const directory = data?.appExplorer
@@ -334,7 +339,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
   const activeTab = tab === 'default' || (tab === 'workloads' && !showWorkloads) ? (readyToBrowse ? 'files' : storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
     : tab === 'staging' ? (stagingAvailable ? 'staging' : sqlBrowsing ? 'application' : 'logs')
-    : (tab === 'storage'&&!storage.status) || (tab === 'files' && !(readyToBrowse || fileOpened&&browsableMount)) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
+    : (tab === 'storage'&&!storage.status) || (tab === 'storageOperations'&&!showStorageOperations) || (tab === 'files' && !(readyToBrowse || fileOpened&&browsableMount)) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
   const guestMountKey=browsableMount&&data?.sourceKey+'/'+browsableMount.sessionId
   useEffect(()=>{
     if(activeTab!=='files'||!guestMountKey||focusedGuestMount.current===guestMountKey)return
@@ -414,6 +419,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             <TabsTrigger value="logs" onClick={()=>{if(activeTab==='logs')selectTab('logs')}}><FileText/>{t('Session log')}{data.logs.available && <small>{formatNumber(data.logs.data.length)}</small>}</TabsTrigger>
             {isFile && <TabsTrigger ref={filesTab} value="files" disabled={!browsableMount}><FolderTree/>{t('Guest files')}</TabsTrigger>}
             {storage.status&&<TabsTrigger value="storage"><FolderOpen/>{storageKind==='instant'?t('Published share'):t('Files and folders')}</TabsTrigger>}
+            {showStorageOperations&&<TabsTrigger value="storageOperations"><Files/>{t('Operations')}<small>{formatNumber(storageJournal.operations.length)}</small></TabsTrigger>}
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
             {stagingAvailable && <TabsTrigger value="staging"><Settings2/>{t('SQL staging server')}</TabsTrigger>}
@@ -421,6 +427,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
           </TabsList>
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
           {storage.status&&<TabsContent value="storage" forceMount hidden={activeTab!=='storage'} className={styles.inset}><UnstructuredSession key={storageIdentity} status={storage.status} onSession={onAccepted}/></TabsContent>}
+          {showStorageOperations&&storageOperationScope&&<TabsContent value="storageOperations" forceMount hidden={activeTab!=='storageOperations'} className={styles.inset}><StorageOperationsView key={storageIdentity} scope={storageOperationScope}/></TabsContent>}
           {showWorkloads && <TabsContent value="workloads"><Workloads evidence={data} onInspect={task => setTaskId(task.id)}/></TabsContent>}
           {(fileOpened||activeTab==='files') && browsableMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
             <GuestFileBrowser key={data.sourceKey + browsableMount.id} sourceKey={data.sourceKey} sessionId={browsableMount.sessionId}/>
