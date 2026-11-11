@@ -941,6 +941,7 @@
     "package.json": "1.2.0",
     "postcss.config.mjs": "1.2.0",
     "public/apple-touch-icon.png": "1.2.0",
+    "public/brand/open-backup-icon-light.svg": "1.2.0",
     "public/brand/open-backup-icon.svg": "1.2.0",
     "public/brand/open-backup-logo-light.svg": "1.2.0",
     "public/brand/open-backup-logo.svg": "1.2.0",

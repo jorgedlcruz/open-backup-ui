@@ -1,6 +1,7 @@
 /* Open Backup UI v1.2.0 */
 .logo {
   --ob-logo-accent: #007f99;
+  --ob-logo-foreground: #102d43;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -11,10 +12,11 @@
 
 :global(.dark) .logo {
   --ob-logo-accent: #43d9ed;
+  --ob-logo-foreground: #f3f8ff;
 }
 
 .accent { fill: var(--ob-logo-accent); }
-.mark { display: block; width: 32px; height: 32px; flex: 0 0 32px; }
+.mark { display: block; width: 32px; height: 32px; flex: 0 0 32px; color: var(--ob-logo-foreground); }
 .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; font-weight: 600; line-height: 1.25; text-align: left; }
 .logo[data-compact="true"] { width: 32px; justify-content: center; gap: 0; }
 
