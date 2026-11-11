@@ -43,6 +43,11 @@ function result(entry: Entry): PointWindow {
     pointCount: page.data.length, pointLimit: entry.depth, pointTotal: page.total,
     hasMorePoints: !page.exhausted, pointsFetchedAt: page.fetchedAt, ...(entry.stale && { stale: true }) })
 }
+function covers(entry: Entry, requested: number, restorePointId?: string) {
+  const page = entry.snapshot
+  return !!page && !page.partial && !entry.stale && (page.exhausted || page.skip >= requested) &&
+    (!restorePointId || page.data.some(point => point.id.toLowerCase() === restorePointId.toLowerCase()))
+}
 export function invalidateObjectRestorePointCache(identity: string) {
   for (const key of entries.keys()) if (key.startsWith(JSON.stringify([identity]).slice(0, -1) + ',')) entries.delete(key)
 }
@@ -92,11 +97,12 @@ export async function readObjectRestorePointWindow(read: Read, identity: string,
   }
   const full = backupId && !options.refresh ? entries.get(prefix) : undefined
   if (full) {
-    try { await full.pending } catch (error) {
+    const readableDuringRefresh = !!full.pending && full.snapshot?.exhausted && covers(full, requested, options.restorePointId)
+    try { if (!readableDuringRefresh) await full.pending } catch (error) {
       if (isAbortedRead(error)) return readObjectRestorePointWindow(read, identity, objectId, options)
       throw error
     }
-    if (full.snapshot?.exhausted && !full.snapshot.partial && !full.stale && full.expires > Date.now()) {
+    if (full.snapshot?.exhausted && !full.snapshot.partial && !full.stale && (readableDuringRefresh || full.expires > Date.now())) {
       const data = full.snapshot.data.filter(point => point.backupId.toLowerCase() === backupId)
       return { ...result(full), data: structuredClone(data), pointCount: data.length, pointTotal: data.length }
     }
@@ -109,11 +115,15 @@ export async function readObjectRestorePointWindow(read: Read, identity: string,
   let force = !!options.refresh
   while (true) {
     if (entry.pending) {
+      if (!force && covers(entry, requested, options.restorePointId)) return result(entry)
       try { await entry.pending } catch (error) {
         if (isAbortedRead(error)) return readObjectRestorePointWindow(read, identity, objectId, options)
         throw error
       }
       force = false
+      // Another waiter may already have started the next page while this one
+      // resumed. Recheck pending before deciding whether to extend the window.
+      continue
     }
     const page = entry.snapshot, expired = entry.expires <= Date.now()
     const needsSeed = !!options.restorePointId && !page?.data.some(point => point.id.toLowerCase() === options.restorePointId!.toLowerCase())

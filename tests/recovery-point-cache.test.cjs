@@ -119,3 +119,51 @@ test('goal refresh describes only this caller’s visited windows and point refr
   await get({refresh:true,pointLimit:400});assert.equal(privateCalls,nativeBefore);assert.equal(inventoryCalls,inventoryBefore)
   const other=await get({view:'goals',refresh:true},'another-visited-scope');assert.deepEqual(other.pointRefreshes,[])
 })
+test('ordinary catalog reads keep a healthy snapshot while explicit refresh callers await atomic replacement',async()=>{
+  const cache=scopedRecoveryCache(4),old={complete:true,data:['cached']},fresh={complete:true,data:['refreshed']}
+  await cache('nonblocking-catalog',async()=>old)
+  let release
+  const gate=new Promise(resolve=>{release=resolve})
+  const refresh=cache('nonblocking-catalog',()=>gate,true)
+  const explicit=cache('nonblocking-catalog',async()=>assert.fail('Concurrent refresh must coalesce'),true)
+  try{
+    const ordinary=cache('nonblocking-catalog',async()=>assert.fail('Ordinary read must use cached data'))
+    assert.deepEqual(await Promise.race([ordinary,Promise.resolve('blocked')]),old)
+    assert.equal(await Promise.race([explicit,Promise.resolve('waiting')]),'waiting')
+  }finally{release(fresh)}
+  assert.deepEqual(await refresh,fresh);assert.deepEqual(await explicit,fresh)
+  assert.deepEqual(await cache('nonblocking-catalog',async()=>assert.fail('Cache must be replaced')),fresh)
+  await assert.rejects(cache('nonblocking-catalog',async()=>{throw Object.assign(Error('Denied'),{status:403})},true),e=>e.status===403)
+  await assert.rejects(cache('nonblocking-catalog',async()=>{throw Object.assign(Error('Denied'),{status:403})}),e=>e.status===403)
+})
+test('ordinary point reads stay fast during refresh but extensions and uncached seeds wait for the fresh window',async()=>{
+  const a=api(353),scope='nonblocking-point-window'
+  const cached=await window(a.read,scope,'vm')
+  let release
+  const gate=new Promise(resolve=>{release=resolve})
+  const freshRows=makeRows(353,10000)
+  const refresh=window(async()=>{await gate;return {data:freshRows.slice(0,200),pagination:{skip:0,total:353}}},scope,'vm',{refresh:true})
+  a.rows=freshRows
+  const extension=window(a.read,scope,'vm',{pointLimit:400})
+  const seeded=window(a.read,scope,'vm',{restorePointId:freshRows[320].id})
+  try{
+    assert.deepEqual(await Promise.race([window(a.read,scope,'vm'),Promise.resolve('blocked')]),cached)
+    assert.equal(await Promise.race([extension,Promise.resolve('waiting')]),'waiting')
+    assert.equal(await Promise.race([seeded,Promise.resolve('waiting')]),'waiting')
+  }finally{release()}
+  assert.equal((await refresh).data[0].id,freshRows[0].id)
+  assert.equal((await extension).data.length,353)
+  assert.ok((await seeded).data.some(p=>p.id===freshRows[320].id))
+  assert.deepEqual(a.calls,[[0,200],[200,200]])
+  const all=api(3),allScope='nonblocking-complete-points'
+  await window(all.read,allScope,'vm')
+  let releaseAll
+  const allGate=new Promise(resolve=>{releaseAll=resolve})
+  const allRefresh=window(async()=>{await allGate;return {data:all.rows,pagination:{skip:0,total:3}}},allScope,'vm',{refresh:true})
+  try{
+    const filtered=window(all.read,allScope,'vm',{backupId:id(1)})
+    const result=await Promise.race([filtered,Promise.resolve('blocked')])
+    assert.notEqual(result,'blocked');assert.equal(result.data.length,3)
+  }finally{releaseAll()}
+  await allRefresh
+})

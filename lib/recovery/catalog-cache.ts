@@ -8,6 +8,9 @@ export function scopedRecoveryCache<T extends { complete: boolean }>(limit: numb
   const entries = new Map<string, { expires: number; pending?: Promise<T>; value?: T }>()
   const get = (key: string, load: () => Promise<T>, refresh = false): Promise<T> => {
     const old = entries.get(key)
+    // A background refresh replaces the snapshot atomically. Ordinary readers
+    // can keep using the last healthy inventory while its owner awaits VBR.
+    if (old?.pending && !refresh && old.value?.complete) return Promise.resolve(old.value)
     if (old?.pending) return old.pending.catch(error => {
       // The owner's HTTP request may have closed while this caller is still live.
       // Retry with this caller's authenticated reader, never with the expired one.
