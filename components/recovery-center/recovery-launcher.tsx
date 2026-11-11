@@ -37,23 +37,6 @@ export function RecoveryLauncherButton(props:LauncherProps){
 function Launcher({sourceKey,onCreated,initialKind,seeds=[]}:LauncherProps){
   const {t}=useRecoveryPresentation(),router=useRouter(),query=useSearchParams()?.toString()||''
   const triggerRef=useRef<HTMLButtonElement>(null)
-  useEffect(()=>{
-    if(!sourceKey)return
-    const controller=new AbortController()
-    let lastRead=0
-    const interval=5*60_000
-    // Keep the server's scoped eligibility catalog warm while Recovery Center is visible.
-    // Opening the wizard still authenticates the current user and source.
-    const warm=()=>{
-      if(document.visibilityState!=='visible'||Date.now()-lastRead<interval)return
-      lastRead=Date.now()
-      void catalogRequest<GoalAvailability>(sourceKey,'machines','goals',{},controller.signal).catch(()=>{})
-    }
-    warm()
-    const timer=window.setInterval(warm,interval)
-    document.addEventListener('visibilitychange',warm)
-    return()=>{controller.abort();window.clearInterval(timer);document.removeEventListener('visibilitychange',warm)}
-  },[sourceKey])
   const [opening,setOpening]=useState<{kind?:RecoveryKind;seeds:RecoverySeed[];mismatch?:boolean}>(),[locked,setLocked]=useState(false),handled=useRef('')
   useEffect(()=>{
     const params=new URLSearchParams(query),kind=params.get('recover')

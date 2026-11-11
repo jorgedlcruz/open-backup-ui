@@ -28,6 +28,11 @@
 .slots button>svg {flex:none;color:var(--primary);}
 .pager,.notice {display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-top:.5rem;}
 .pager span {margin-inline-end:auto;}
+.history {grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:.65rem;flex-wrap:wrap;border-top:1px solid var(--border);padding:.7rem 1rem;color:var(--muted-foreground);font-size:.76rem;}
+.history button {margin-inline-start:auto;white-space:normal;text-align:start;}
+.historySpinner {animation:history-spin .85s linear infinite;transform-origin:center;}
+@keyframes history-spin {to {transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce) {.historySpinner {animation:none;}}
 @container (max-width:35rem) {
   .panel {grid-template-columns:minmax(0,1fr);}
   .calendar,.times {padding:.65rem;}

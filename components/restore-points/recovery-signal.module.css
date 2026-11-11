@@ -17,11 +17,21 @@
 button.indicator { cursor: pointer; }
 button.indicator:hover { background: color-mix(in srgb,var(--primary) 10%,transparent); }
 button.indicator:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-.spinning { animation: spin .9s linear infinite; }
+/* Start with the server-rendered indicator, without waiting for hydration. */
+.spinning {
+  animation: recoverySignalRotate .9s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.play { display: none; }
+.signal[data-hidden] .spinning { animation-play-state: paused; }
+.signal[data-paused] .spinning { animation-play-state: paused; display: none; }
+.signal[data-paused] .play { display: block; }
 .signal[data-compact] .status { font-size: .8rem; }
 .signal[data-compact] .row { gap: .5rem; }
 .signal[data-compact] .indicator svg { width: 1.15rem; height: 1.15rem; }
-@keyframes spin { to { transform: rotate(1turn); } }
+@keyframes recoverySignalRotate { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) {
-  .spinning { animation: none; }
+  .signal:not([data-motion-override]) .spinning { animation: none; display: none; }
+  .signal:not([data-motion-override]) .play { display: block; }
 }

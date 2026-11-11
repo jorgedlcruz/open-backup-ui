@@ -7,6 +7,8 @@ import {pointSchema} from '../restore-points/load'
 import {readOperationsCollection} from '../operations/load'
 import {applicationAccess,applicationObjectSchema,publicBackupObjects,verifiedBackupObjects,type NativeBackupIndex} from './application-eligibility'
 import {VbrRecoveryError} from './error'
+import {readObjectRestorePointWindow,type PointWindow} from '../restore-points/cached-collection'
+import {scopedRecoveryCache,isAbortedRead} from './catalog-cache'
 
 export const unstructuredKinds=['nas-files','nas-entire','nas-rollback','nas-instant','object-files','object-entire','object-rollback'] as const
 export type UnstructuredKind=typeof unstructuredKinds[number]
@@ -73,7 +75,7 @@ export async function unstructuredCatalog(read:VbrReader,privateSend?:RecoverySe
           found.copies.push({backupId:b.id,name:b.name||b.id,kinds})
           objects.set(obj.id,found)
         }
-      }catch(error){if(error instanceof Error&&'status' in error&&(error.status===401||error.status===403))throw error;complete=false}
+      }catch(error){if(isAbortedRead(error)||error instanceof Error&&'status' in error&&(error.status===401||error.status===403))throw error;complete=false}
     }
   }))
   return {objects:[...objects.values()],complete,notices:complete?[]:[partial]}
@@ -96,4 +98,24 @@ export async function unstructuredPoints(read:VbrReader,objectId:string,backupId
   // The private object row explicitly pairs its native point ID and object ID.
   const mapped=relevant.filter(p=>binding.onlyMember||p.id===binding.anchor)
   return {data:mapped.map(p=>({...p,verifiedObjectId:objectId,recoveryKinds:binding.kinds})),complete:points.complete&&mapped.length===relevant.length}
+}
+
+type Binding={value:Awaited<ReturnType<typeof unstructuredSelection>>;complete:boolean;stale?:boolean}
+const bindings=scopedRecoveryCache<Binding>(128,value=>({...value,complete:false,stale:true}))
+const bindingPrefix=(identity:string)=>JSON.stringify([identity]).slice(0,-1)+','
+export function invalidateUnstructuredPointBindings(identity:string){bindings.forgetPrefix(bindingPrefix(identity))}
+/** Cache raw pages separately from the private capability and membership evidence. */
+export async function unstructuredPointWindow(read:VbrReader,objectId:string,backupId:string,privateSend:RecoverySend|undefined,
+  options:{identity:string;publicIdentity:string;pointLimit:number;refresh?:boolean;restorePointId?:string;window?:PointWindow}):Promise<PointWindow>{
+  if(!privateSend)throw failure()
+  const [binding,points]=await Promise.all([
+    bindings(JSON.stringify([options.identity,objectId,backupId]),async()=>({value:await unstructuredSelection(read,objectId,backupId,privateSend),complete:true}),options.refresh),
+    options.window||readObjectRestorePointWindow(path=>read(path,'1.3-rev2'),options.publicIdentity,objectId,{backupId,pointLimit:options.pointLimit,refresh:options.refresh,restorePointId:options.restorePointId}),
+  ])
+  const relevant=points.data.filter(p=>p.backupId===backupId&&p.platformName==='UnstructuredData')
+  const mapped=relevant.filter(p=>binding.value.onlyMember||p.id===binding.value.anchor)
+  return {...points,data:mapped.map(p=>({...p,verifiedObjectId:objectId,recoveryKinds:binding.value.kinds})),
+    pointTotal:binding.value.onlyMember?points.pointTotal:undefined,
+    complete:points.complete&&binding.complete&&mapped.length===relevant.length,
+    ...((points.stale||binding.stale)&&{stale:true})}
 }

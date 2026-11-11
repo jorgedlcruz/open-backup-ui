@@ -1,0 +1,20 @@
+/* Open Backup UI v1.2.0 */
+.toolbar,.toolbar h3,.actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.toolbar{justify-content:space-between;gap:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.toolbar h3{font-size:.9rem;font-weight:650}
+.toolbar h3 svg{color:var(--primary)}
+.actions{justify-content:flex-end;margin-inline-start:auto}
+.directory{min-width:0;min-height:19rem}
+.directory>p{padding:.75rem}
+.scroll{min-width:0;overflow:auto;max-height:25rem}
+.scroll table{font-size:.8rem}
+.scroll th{position:sticky;top:0;background:var(--card);font-size:.75rem;font-weight:600;color:var(--muted-foreground);z-index:1}
+.scroll th:first-child{width:2rem}
+.scroll th:nth-child(2){width:60%}
+.scroll td{vertical-align:top;padding-block:.65rem}
+.scroll td svg{flex:none;color:var(--muted-foreground);margin-top:1px}
+.row{border-top:1px solid var(--border)}
+.row:hover{background:color-mix(in srgb,var(--primary) 4%,transparent)}
+.row[data-selected=true]{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+.pagination:has(>div){padding:.6rem .75rem;border-top:1px solid var(--border)}
+@container(max-width:40rem){.actions{justify-content:flex-start;margin-inline-start:0}.scroll table{min-width:28rem}.directory{min-height:12rem}}

@@ -16,6 +16,7 @@ import {investigationLabel} from '@/lib/investigation/presentation'
 import {defaultGridFilters,quickFilters,quickLabels,recoveryRows,selectRecoveryRows,type RecoveryGridFilters,type RecoverySort} from '@/lib/recovery-center/model'
 import {RecoveryLauncherButton} from './recovery-launcher'
 import {useRecoveryFeed} from './use-recovery-feed'
+import {useRecoveryCatalog} from './use-recovery-catalog'
 import ops from '@/components/operations/operations.module.css'
 import css from './recovery-center.module.css'
 
@@ -40,6 +41,7 @@ function typeIcon(type:string) {
 export function RecoveryCenterWorkspace({initialSearch=''}:{initialSearch?:string}) {
   const {t,locale,formatNumber,formatDate}=useI18n(),{diagnostic}=useRecoveryPresentation()
   const [revision,setRevision]=useState(0),{feed,busy,error,receipts}=useRecoveryFeed(revision)
+  const catalog=useRecoveryCatalog(feed?.sourceKey)
   const [filters,setFilters]=useState({...defaultGridFilters,search:initialSearch}),[sort,setSort]=useState<RecoverySort>('started'),[ascending,setAscending]=useState(false),[offset,setOffset]=useState(0)
   const rows=useMemo(()=>feed?recoveryRows(feed.sourceKey,feed.history,feed.mounts,feed.batches,receipts,feed.explorerRequests):[],[feed,receipts])
   const label=(raw:string)=>labels[raw]?t(labels[raw]):investigationLabel(t,raw).replace(/([a-z])([A-Z])/g,'$1 $2')
@@ -58,11 +60,12 @@ export function RecoveryCenterWorkspace({initialSearch=''}:{initialSearch?:strin
   return <main className={ops.console}>
     <header className={ops.header+' '+css.header}><div><h1>{t('Recovery Center')}</h1>
       {feed&&<p className={css.source}><Server size={13} aria-hidden/>{feed.sourceName}</p>}</div>
-      <div className={css.headerActions}><Button variant="outline" size="sm" disabled={busy} onClick={()=>setRevision(v=>v+1)}>
-        <RefreshCw size={15} aria-hidden className={busy?'animate-spin':''}/>{t('Refresh')}</Button>
+      <div className={css.headerActions}><Button variant="outline" size="sm" disabled={busy||catalog.refreshing} onClick={()=>{setRevision(v=>v+1);void catalog.refresh()}}>
+        <RefreshCw size={15} aria-hidden className={busy||catalog.refreshing?'animate-spin':''}/>{t('Refresh')}</Button>
         {feed&&<RecoveryLauncherButton sourceKey={feed.sourceKey} onCreated={()=>setRevision(v=>v+1)}/>}</div>
     </header>
     {error&&<p role="alert" className={ops.notice}>{diagnostic(error)}</p>}
+    {catalog.error&&<p role="alert" className={ops.notice}>{t('Recovery options could not be refreshed.')} {diagnostic(catalog.error)}</p>}
     {!!feed?.warnings.length&&<p className={ops.warnings} role="status">{t('Partial collection')} · {feed.warnings.map(text=>t(mountLabels[text]||text)).join(', ')}</p>}
     <div role="group" aria-label={t('Recovery status')} className={css.metrics}>
       {quickFilters.map(quick=>{const Icon=icons[quick]

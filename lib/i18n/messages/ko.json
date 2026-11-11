@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "SQL 스테이징 인증 모드를 확인하세요.",
   "Your VBR account cannot change these SQL staging settings.": "현재 VBR 계정으로 이 SQL 스테이징 설정을 변경할 수 없습니다.",
   "VBR could not list SQL staging server instances.": "VBR에서 SQL 스테이징 서버 인스턴스를 나열할 수 없습니다.",
-  "Re-enter the Windows password to use this account for SQL connections.": "SQL 연결에 이 계정을 사용하려면 Windows 암호를 다시 입력하세요."
+  "Re-enter the Windows password to use this account for SQL connections.": "SQL 연결에 이 계정을 사용하려면 Windows 암호를 다시 입력하세요.",
+  "Recovery options could not be refreshed.": "복구 옵션을 새로 고칠 수 없습니다.",
+  "Some recovery options could not be refreshed.": "일부 복구 옵션을 새로 고칠 수 없습니다.",
+  "{count} of {total} restore points loaded": "복원 지점 {total}개 중 {count}개 로드됨",
+  "{count} restore points loaded": "복원 지점 {count}개 로드됨",
+  "Load 200 more restore points": "복원 지점 200개 더 로드",
+  "No eligible restore points in the loaded history.": "로드된 기록에 사용 가능한 복원 지점이 없습니다.",
+  "History limit reached": "기록 한도에 도달했습니다"
 }

@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "SQL ステージングの認証モードを確認してください。",
   "Your VBR account cannot change these SQL staging settings.": "お使いの VBR アカウントには、この SQL ステージング設定を変更する権限がありません。",
   "VBR could not list SQL staging server instances.": "VBR は SQL ステージングサーバーのインスタンスを一覧表示できませんでした。",
-  "Re-enter the Windows password to use this account for SQL connections.": "このアカウントを SQL 接続に使用するには、Windows のパスワードを再入力してください。"
+  "Re-enter the Windows password to use this account for SQL connections.": "このアカウントを SQL 接続に使用するには、Windows のパスワードを再入力してください。",
+  "Recovery options could not be refreshed.": "復元オプションを更新できませんでした。",
+  "Some recovery options could not be refreshed.": "一部の復元オプションを更新できませんでした。",
+  "{count} of {total} restore points loaded": "{total} 個中 {count} 個の復元ポイントを読み込み済み",
+  "{count} restore points loaded": "{count} 個の復元ポイントを読み込み済み",
+  "Load 200 more restore points": "さらに 200 個の復元ポイントを読み込む",
+  "No eligible restore points in the loaded history.": "読み込んだ履歴に利用可能な復元ポイントはありません。",
+  "History limit reached": "履歴の上限に達しました"
 }

@@ -1,4 +1,5 @@
 // Open Backup UI v1.2.0
+import {isAbortedRead} from './catalog-cache'
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
 import type { RestorePoint } from '../restore-points/model'
@@ -45,7 +46,7 @@ export async function readNativeBackupIndex(send:RecoverySend):Promise<NativeBac
       if(!data.length)return undefined
     }
   }catch(e){
-    if(e instanceof Error&&'status' in e&&(e.status===401||e.status===403))throw e
+    if(isAbortedRead(e)||e instanceof Error&&'status' in e&&(e.status===401||e.status===403))throw e
     // Older VBR versions may only support retrieving objects per backup.
   }
   return undefined
@@ -68,7 +69,7 @@ export function supportedApplications(row:z.infer<typeof applicationObjectSchema
 export async function publicBackupObjects(read:VbrReader,backupId:string) {
   try{
     return await readOperationsCollection(p=>read(p,'1.3-rev2'),'/api/v1/backups/'+backupId+'/objects',objectSchema,20000,backupKey)
-  }catch(e){if(e instanceof Error&&'status' in e&&e.status===401)throw e;return undefined}
+  }catch(e){if(isAbortedRead(e)||e instanceof Error&&'status' in e&&(e.status===401||e.status===403))throw e;return undefined}
 }
 // The web service occasionally reports a complete zero-row list while the backup
 // header still counts members and the public object/point inventory still exists.

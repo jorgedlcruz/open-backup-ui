@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "Проверьте режим проверки подлинности промежуточного SQL-сервера.",
   "Your VBR account cannot change these SQL staging settings.": "Ваша учётная запись VBR не может изменять эти параметры промежуточного SQL-сервера.",
   "VBR could not list SQL staging server instances.": "VBR не удалось получить список экземпляров промежуточного SQL-сервера.",
-  "Re-enter the Windows password to use this account for SQL connections.": "Чтобы использовать эту учётную запись для подключения к SQL, введите пароль Windows ещё раз."
+  "Re-enter the Windows password to use this account for SQL connections.": "Чтобы использовать эту учётную запись для подключения к SQL, введите пароль Windows ещё раз.",
+  "Recovery options could not be refreshed.": "Не удалось обновить параметры восстановления.",
+  "Some recovery options could not be refreshed.": "Не удалось обновить некоторые параметры восстановления.",
+  "{count} of {total} restore points loaded": "Загружено {count} из {total} точек восстановления",
+  "{count} restore points loaded": "Загружено точек восстановления: {count}",
+  "Load 200 more restore points": "Загрузить ещё 200 точек восстановления",
+  "No eligible restore points in the loaded history.": "В загруженной истории нет подходящих точек восстановления.",
+  "History limit reached": "Достигнут предел истории"
 }

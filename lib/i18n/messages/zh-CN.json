@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "请检查 SQL 暂存服务器的身份验证模式。",
   "Your VBR account cannot change these SQL staging settings.": "您的 VBR 帐户无法更改这些 SQL 暂存设置。",
   "VBR could not list SQL staging server instances.": "VBR 无法列出 SQL 暂存服务器实例。",
-  "Re-enter the Windows password to use this account for SQL connections.": "请重新输入 Windows 密码，以使用此帐户进行 SQL 连接。"
+  "Re-enter the Windows password to use this account for SQL connections.": "请重新输入 Windows 密码，以使用此帐户进行 SQL 连接。",
+  "Recovery options could not be refreshed.": "无法刷新恢复选项。",
+  "Some recovery options could not be refreshed.": "部分恢复选项无法刷新。",
+  "{count} of {total} restore points loaded": "已加载 {count} 个恢复点，共 {total} 个",
+  "{count} restore points loaded": "已加载 {count} 个恢复点",
+  "Load 200 more restore points": "再加载 200 个恢复点",
+  "No eligible restore points in the loaded history.": "已加载的历史记录中没有符合条件的恢复点。",
+  "History limit reached": "已达到历史记录上限"
 }

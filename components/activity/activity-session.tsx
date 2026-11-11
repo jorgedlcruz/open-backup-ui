@@ -43,7 +43,7 @@ import styles from './session.module.css'
 
 const sessionTabHashes: Record<string, string> = {
   logs: '#session-log', application: '#application-items', staging: '#sql-staging-server',
-  storage: '#unstructured-data', files: '#guest-files', recovery: '#recovery-map',
+  storage: '#unstructured-data', files: '#guest-files', recovery: '#recovery-map', workloads: '#workloads',
 }
 
 function RecoveryProperties({mount}: {mount: Mount}) {
@@ -319,6 +319,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   const hasMap = mapMounts.length > 0 || !!data?.entireRestore || directMigration || linkedMigrations.length > 0
   const hasRecovery = hasMap || mounts.some(m => m.kind !== 'flr')
   const isRecovery = isFile || hasRecovery || !!child || /Restore|Recovery|Publish|Migration/.test(type || '')
+  const showWorkloads = storageKind !== 'browse' && (!isRecovery || (data?.tasks.data.length ?? 0) > 0)
   const link = (next: string) => sessionHref(home, next, sourceKey || data?.sourceKey)
   function onAccepted(next?: string) {
     if (validId(next) && next !== id) router.push(link(next))
@@ -331,7 +332,7 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
   }
   const latest = data?.logs.data.reduce<(ActivityDetail['logs']['data'][number]) | undefined>((a,b) =>
     !a || (time(b.updateTime || b.startTime) ?? 0) >= (time(a.updateTime || a.startTime) ?? 0) ? b : a, undefined)
-  const activeTab = tab === 'default' ? (readyToBrowse ? 'files' : storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
+  const activeTab = tab === 'default' || (tab === 'workloads' && !showWorkloads) ? (readyToBrowse ? 'files' : storage.status ? 'storage' : directoryOpen ? 'application' : hasMap ? 'recovery' : 'logs')
     : tab === 'staging' ? (stagingAvailable ? 'staging' : sqlBrowsing ? 'application' : 'logs')
     : (tab === 'storage'&&!storage.status) || (tab === 'files' && !(readyToBrowse || fileOpened&&browsableMount)) || (tab === 'recovery' && !hasRecovery) || (tab === 'application' && !child && !directory) ? 'logs' : tab
   const guestMountKey=browsableMount&&data?.sourceKey+'/'+browsableMount.sessionId
@@ -416,11 +417,11 @@ export function ActivitySession({id, query}: {id: string; query: string}) {
             {hasRecovery && <TabsTrigger value="recovery">{hasMap ? <MapIcon/> : <Database/>}{hasMap ? t('Recovery map') : t('Recovery actions')}</TabsTrigger>}
             {(child || directory) && <TabsTrigger value="application"><Layers/>{directory ? providerName : t('Application items')}</TabsTrigger>}
             {stagingAvailable && <TabsTrigger value="staging"><Settings2/>{t('SQL staging server')}</TabsTrigger>}
-            {(!isRecovery || data.tasks.data.length > 0) && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
+            {showWorkloads && <TabsTrigger value="workloads"><Server/>{t('Workloads')}{data.tasks.available && <small>{formatNumber(data.tasks.data.length)}</small>}</TabsTrigger>}
           </TabsList>
           <TabsContent value="logs"><LogViewer id={id} logs={data.logs} title={t('Session log')} newestFirst/></TabsContent>
           {storage.status&&<TabsContent value="storage" forceMount hidden={activeTab!=='storage'} className={styles.inset}><UnstructuredSession key={storageIdentity} status={storage.status} onSession={onAccepted}/></TabsContent>}
-          <TabsContent value="workloads"><Workloads evidence={data} onInspect={task => setTaskId(task.id)}/></TabsContent>
+          {showWorkloads && <TabsContent value="workloads"><Workloads evidence={data} onInspect={task => setTaskId(task.id)}/></TabsContent>}
           {(fileOpened||activeTab==='files') && browsableMount && <TabsContent value="files" forceMount hidden={activeTab !== 'files'} className={'p-4 ' + styles.filePanel}>
             <GuestFileBrowser key={data.sourceKey + browsableMount.id} sourceKey={data.sourceKey} sessionId={browsableMount.sessionId}/>
           </TabsContent>}

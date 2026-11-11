@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "Prüfen Sie den Authentifizierungsmodus des SQL-Stagingservers.",
   "Your VBR account cannot change these SQL staging settings.": "Ihr VBR-Konto darf diese SQL-Staging-Einstellungen nicht ändern.",
   "VBR could not list SQL staging server instances.": "VBR konnte die Instanzen des SQL-Stagingservers nicht auflisten.",
-  "Re-enter the Windows password to use this account for SQL connections.": "Geben Sie das Windows-Passwort erneut ein, um dieses Konto für SQL-Verbindungen zu verwenden."
+  "Re-enter the Windows password to use this account for SQL connections.": "Geben Sie das Windows-Passwort erneut ein, um dieses Konto für SQL-Verbindungen zu verwenden.",
+  "Recovery options could not be refreshed.": "Die Wiederherstellungsoptionen konnten nicht aktualisiert werden.",
+  "Some recovery options could not be refreshed.": "Einige Wiederherstellungsoptionen konnten nicht aktualisiert werden.",
+  "{count} of {total} restore points loaded": "{count} von {total} Wiederherstellungspunkten geladen",
+  "{count} restore points loaded": "{count} Wiederherstellungspunkte geladen",
+  "Load 200 more restore points": "200 weitere Wiederherstellungspunkte laden",
+  "No eligible restore points in the loaded history.": "Im geladenen Verlauf sind keine geeigneten Wiederherstellungspunkte vorhanden.",
+  "History limit reached": "Verlaufsgrenze erreicht"
 }

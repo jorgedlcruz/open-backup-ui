@@ -1,7 +1,7 @@
 'use client'
 // Open Backup UI v1.2.0
 import {useEffect,useRef,useState} from 'react'
-import {ArrowLeft,ChevronRight,File,Folder,FolderOpen,History,Search,ShoppingCart,X} from 'lucide-react'
+import {ChevronRight,File,Folder,FolderOpen,History,Search,ShoppingCart,X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog'
 import {finishedStorageTask,isFolder,itemIdentity,mergeStorageCart,readStorageCart,readStorageValue,storageEntry,storageSelectionValid,writeStorageValue,
@@ -9,6 +9,10 @@ import {finishedStorageTask,isFolder,itemIdentity,mergeStorageCart,readStorageCa
 import {StorageCommand,storageActionLabels,storageRequest} from './unstructured-session-controls'
 import {useRecoveryPresentation} from './use-presentation'
 import {control} from './workload-launch-shared'
+import {StorageFolderTree} from './storage-folder-tree'
+import {storageCrumbs} from '@/lib/restore-points/storage-navigation'
+import files from './guest-files.module.css'
+import styles from './unstructured-browser.module.css'
 
 const pageSize=50
 type Search=StorageTask & {query:string}
@@ -62,13 +66,14 @@ function Versions({status,entry,onSelect,close}:{status:StorageStatus;entry:Stor
 function StorageBrowser({status}:{status:StorageStatus}){
   const {t,date,size,diagnostic,formatNumber,label}=useRecoveryPresentation()
   const {sourceKey,sessionId,view}=status,scope={sourceKey,sessionId,view},may=(value:string)=>status.actions.includes(value)
-  const [trail,setTrail]=useState<string[]>(['']),[query,setQuery]=useState(''),[search,setSearch]=useState<Search>(),[searchBusy,setSearchBusy]=useState(false)
+  const [path,setPath]=useState(''),[query,setQuery]=useState(''),[search,setSearch]=useState<Search>(),[searchBusy,setSearchBusy]=useState(false)
   const [skip,setSkip]=useState(0),[version,setVersion]=useState<StorageEntry>(),[selected,setSelected]=useState<StorageEntry[]>([])
   const [cart,setCart]=useState(()=>readStorageCart(scope)),[cartOpen,setCartOpen]=useState(false),[cartQuery,setCartQuery]=useState('')
   const [command,setCommand]=useState<{action:'copy'|'restore';items:StorageEntry[]}>(),[error,setError]=useState(''),[listError,setListError]=useState('')
   const [page,setPage]=useState<{items:StorageItem[];total:number|null}>(),[revision,setRevision]=useState(0)
+  const [roots,setRoots]=useState<{path:string;label:string}[]>([])
   const [transfer,setTransfer]=useState(()=>readStorageValue<StorageTransfer>(scope,'transfer'))
-  const path=trail[trail.length-1],separator=status.pathSeparator||'/',searchTask=useTask(status,search),transferTask=useTask(status,transfer)
+  const separator=status.pathSeparator||'/',searchTask=useTask(status,search),transferTask=useTask(status,transfer)
   const searchState=search&&searchTask.state?finishedStorageTask(searchTask.state):undefined
   const searchId=search?.taskId,searchKey=search?.taskKey,canBrowse=may('browse'),canSearch=may('search')
   const working=!!transfer&&(!transferTask.state||finishedStorageTask(transferTask.state)==='working')
@@ -79,11 +84,19 @@ function StorageBrowser({status}:{status:StorageStatus}){
     const controller=new AbortController();setPage(undefined);setListError('')
     const action=searchId?{action:'results',taskId:searchId,taskKey:searchKey}:{action:'browse',path}
     storageRequest<{items:StorageItem[];total:number|null}>({sourceKey,sessionId,view},{...action,skip,limit:pageSize},controller.signal)
-      .then(r=>{if(!controller.signal.aborted)setPage(r)}).catch(e=>{if(!controller.signal.aborted)setListError(e instanceof Error?e.message:'Request failed.')})
+      .then(r=>{if(!controller.signal.aborted){
+        setPage(r)
+        if(!searchId&&!path)setRoots(previous=>[...new Map([...previous,...r.items.flatMap(item=>{
+          const entry=storageEntry(item,'',separator)
+          return entry&&isFolder(entry)?[{path:entry.path,label:item.name}]:[]
+        })].map(root=>[root.path,root])).values()])
+      }}).catch(e=>{if(!controller.signal.aborted)setListError(e instanceof Error?e.message:'Request failed.')})
     return ()=>controller.abort()
-  },[sourceKey,sessionId,view,path,skip,searchId,searchKey,searchState,revision,canBrowse,canSearch])
-  function navigate(next:string[]){
-    searchController.current?.abort();setPage(undefined);setTrail(next);setQuery('');setSearch(undefined);setSearchBusy(false);setSkip(0);setSelected([]);setError('')
+  },[sourceKey,sessionId,view,path,skip,searchId,searchKey,searchState,revision,canBrowse,canSearch,separator])
+  function navigate(next:string){
+    if(next===path&&!search&&!searchBusy)return
+    searchController.current?.abort();setPage(undefined);setPath(next);setQuery('');setSearch(undefined);setSearchBusy(false);setSkip(0);setSelected([]);setError('')
+    setRevision(value=>value+1)
   }
   async function searchFiles(){
     if(!query.trim()||searchBusy||!canSearch)return
@@ -109,34 +122,45 @@ function StorageBrowser({status}:{status:StorageStatus}){
   }
   const rows=(page?.items||[]).map(item=>({item,entry:storageEntry(item,path,separator,!!search)}))
   const cartShown=cart.filter(e=>e.path.toLocaleLowerCase().includes(cartQuery.trim().toLocaleLowerCase()))
-  return <section className="grid min-w-0 gap-4" aria-label={t('Files and folders')}>
-    {canSearch&&<form className="flex flex-wrap items-center gap-2" onSubmit={e=>{e.preventDefault();void searchFiles()}}><input className={control+' flex-1 basis-48'} type="search" maxLength={256} aria-label={t('Search files and folders')} placeholder={t('Search files and folders')} value={query} onChange={e=>setQuery(e.target.value)}/>
-      <Button type="submit" size="sm" variant="outline" disabled={!query.trim()||searchBusy}><Search size={14}/>{t('Search')}</Button></form>}
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Recovery actions')}>{actions(selected)}
+  return <section className={files.explorer} aria-label={t('Files and folders')}>
+    <div className={styles.toolbar}><h3><FolderOpen size={18}/>{t('Files and folders')}</h3>
+    <div className={styles.actions} role="group" aria-label={t('Recovery actions')}>{actions(selected)}
       {may('versions')&&<Button size="sm" variant="outline" disabled={selected.length!==1||selected[0].type!=='File'} onClick={()=>setVersion(selected[0])}><History size={14}/>{t('Versions')}</Button>}
       <Button size="sm" variant="outline" disabled={!selected.length} onClick={add}><ShoppingCart size={14}/>{t('Add to cart')}</Button>
-      <Button size="sm" variant="secondary" onClick={()=>setCartOpen(true)}><ShoppingCart size={14}/>{t('Recovery cart')} · {formatNumber(cart.length)}</Button></div>
+      <Button size="sm" variant="secondary" onClick={()=>setCartOpen(true)}><ShoppingCart size={14}/>{t('Recovery cart')} · {formatNumber(cart.length)}</Button></div></div>
+    {canSearch&&<form className={files.searchForm} onSubmit={e=>{e.preventDefault();void searchFiles()}}><label className={files.searchBox}><Search size={16}/><input className={control} type="search" maxLength={256} aria-label={t('Search files and folders')} placeholder={t('Search files and folders')} value={query} onChange={e=>setQuery(e.target.value)}/></label>
+      <Button type="submit" size="sm" variant="outline" disabled={!query.trim()||searchBusy}>{t('Search')}</Button></form>}
     {error&&<p role="alert">{diagnostic(error)}</p>}
     {transfer&&<div className="rounded-md border px-3 py-2 text-sm" role="status">{t(storageActionLabels[transfer.action])} · {transferTask.error?diagnostic(transferTask.error):transferTask.state?
       label(transferTask.state.result&&transferTask.state.result!=='None'?transferTask.state.result:transferTask.state.state):t('Checking with VBR')}
       {transferTask.state&&finishedStorageTask(transferTask.state)==='working'&&typeof transferTask.state.progressPercent==='number'&&' · '+formatNumber(transferTask.state.progressPercent)+'%'}
       {transferTask.error&&<Button size="sm" variant="ghost" onClick={transferTask.retry}>{t('Retry')}</Button>}</div>}
-    <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm"><Button variant="outline" size="sm" disabled={trail.length===1&&!search} aria-label={t('Back')} onClick={()=>navigate(search?trail:trail.slice(0,-1))}><ArrowLeft size={14}/></Button>
-      <FolderOpen size={16}/><strong className="break-all">{search?t('Search results')+' · '+search.query:path||t('Root')}</strong></div>
+    <div className={files.layout}>
+      {canBrowse&&<StorageFolderTree scope={scope} path={path} separator={separator} navigate={navigate} rootLabel={t('Root')} waitForCurrent={!search}
+        observed={!search&&page?{path,skip,...page}:undefined}/>}
+      <div className={files.content}>
+      <nav className={files.crumbs} aria-label={t('Path')}>
+        <button type="button" aria-current={!path&&!search?'location':undefined} onClick={()=>navigate('')}><FolderOpen size={15}/>{t('Root')}</button>
+        {storageCrumbs(path,separator,roots).map((crumb,index,all)=><span key={crumb.path}><ChevronRight size={12}/><button type="button"
+          aria-current={!search&&index===all.length-1?'location':undefined} onClick={()=>navigate(crumb.path)}>{crumb.label}</button></span>)}
+        {search&&<span><ChevronRight size={12}/>{t('Search results')} · {search.query}<button type="button" aria-label={t('Dismiss search')} className={files.iconButton} onClick={()=>navigate(path)}><X size={14}/></button></span>}
+      </nav>
+      <div className={styles.directory}>
     {searchTask.error?<p role="alert">{diagnostic(searchTask.error)} <Button size="sm" variant="outline" onClick={searchTask.retry}>{t('Retry')}</Button></p>:
       searchState==='failed'?<p role="alert">{t('Search failed.')}</p>:listError?<p role="alert">{diagnostic(listError)} <Button size="sm" variant="outline" onClick={()=>setRevision(i=>i+1)}>{t('Retry')}</Button></p>:
-      !canBrowse?null:!page?<p role="status">{t('Loading…')}</p>:<div className="min-w-0 overflow-x-auto rounded-md border">
+      !canBrowse?null:!page?<p className={files.reading} role="status">{t('Loading…')}</p>:<div className={styles.scroll}>
       <table className="w-full text-left text-sm"><thead className="bg-muted/40"><tr><th className="p-2"><span className="sr-only">{t('Select')}</span></th><th className="p-2">{t('Name')}</th><th className="p-2">{t('Size')}</th><th className="p-2">{t('Modified')}</th></tr></thead>
         <tbody>{rows.map(({item,entry},index)=>{
           const chosen=selected.find(r=>r.path===entry?.path),folder=entry&&isFolder(entry)
-          return <tr className="border-t align-top" key={entry?.path||index}><td className="p-2"><input type="checkbox" checked={!!chosen} disabled={!entry||!storageSelectionValid([entry])} aria-label={t('Select {name}',{name:item.name})}
+          return <tr className={styles.row} data-selected={!!chosen} key={entry?.path||index}><td className="p-2"><input type="checkbox" checked={!!chosen} disabled={!entry||!storageSelectionValid([entry])} aria-label={t('Select {name}',{name:item.name})}
             onChange={()=>entry&&setSelected(prev=>chosen?prev.filter(r=>r.path!==entry.path):[...prev,entry])}/></td>
             <td className="p-2"><div className="flex items-start gap-2">{folder?<Folder size={16}/>:<File size={16}/>}
-              {folder?<button className="break-all text-left text-primary hover:underline" onClick={()=>navigate([...trail,entry.path])}>{item.name}</button>:<span className="break-all">{item.name}</span>}</div>
+              {folder?<button className="break-all text-left text-primary hover:underline" onClick={()=>navigate(entry.path)}>{item.name}</button>:<span className="break-all">{item.name}</span>}</div>
               {search&&<small className="break-all text-muted-foreground">{item.location}</small>}{chosen?.version&&<small className="block">{date(chosen.version)}</small>}</td>
             <td className="p-2 whitespace-nowrap">{item.size!=null?size(item.size):'—'}</td><td className="p-2">{item.modifiedDate?date(item.modifiedDate):'—'}</td></tr>})}</tbody></table>
         {!rows.length&&<p className="p-3 text-sm">{t('No items found.')}</p>}</div>}
-    {page&&<Pager skip={skip} count={page.items.length} total={page.total} move={v=>{setPage(undefined);setSkip(v);setSelected([])}}/>}
+    {page&&<div className={styles.pagination}><Pager skip={skip} count={page.items.length} total={page.total} move={v=>{setPage(undefined);setSkip(v);setSelected([])}}/></div>}
+      </div></div></div>
     {version&&may('versions')&&<Versions status={status} entry={version} close={()=>setVersion(undefined)} onSelect={entry=>{setSelected([entry]);setVersion(undefined)}}/>}
     {cartOpen&&<Dialog open onOpenChange={open=>{if(!open)setCartOpen(false)}}><DialogContent className="max-h-[85dvh] overflow-y-auto"><DialogHeader><DialogTitle>{t('Recovery cart')}</DialogTitle><DialogDescription>{t('{count} items',{count:cart.length})}</DialogDescription></DialogHeader>
       <input className={control} type="search" aria-label={t('Search cart')} placeholder={t('Search cart')} value={cartQuery} onChange={e=>setCartQuery(e.target.value)}/>
@@ -153,7 +177,7 @@ function StorageBrowser({status}:{status:StorageStatus}){
 }
 export function UnstructuredSession({status,onSession}:{status:StorageStatus;onSession:(id?:string)=>void}){
   const {t,label}=useRecoveryPresentation(),[operation,setOperation]=useState<StorageAction>()
-  if(status.view==='browse')return <StorageBrowser status={status}/>
+  if(status.view==='browse')return <StorageBrowser key={status.sourceKey+'/'+status.sessionId} status={status}/>
   return <section className="grid gap-4"><div><h2 className="text-base font-semibold">{status.name||t('Published share')}</h2>
     {status.state&&<p className="text-sm text-muted-foreground">{label(status.state)}</p>}</div>
     <div className="flex flex-wrap gap-2" role="group" aria-label={t('Recovery actions')}>{(['migrate','switchover'] as const).filter(op=>status.actions.includes(op)).map(op=>

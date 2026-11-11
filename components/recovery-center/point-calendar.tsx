@@ -2,13 +2,14 @@
 // Open Backup UI v1.2.0
 import {useEffect,useRef,useState} from 'react'
 import {addDays,eachDayOfInterval,endOfMonth,endOfWeek,format,isSameMonth,isToday,parseISO,startOfMonth,startOfWeek} from 'date-fns'
-import {CalendarDays,Check,ChevronLeft,ChevronRight,Clock3} from 'lucide-react'
+import {CalendarDays,Check,ChevronDown,ChevronLeft,ChevronRight,Clock3,LoaderCircle} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {pointTime,type RestorePoint} from '@/lib/restore-points/model'
 import type {CalendarDay,PickerPage,PickerScope,RecoveryObject} from '@/lib/restore-points/recovery-picker'
 import {RecoverySignal} from '../restore-points/recovery-signal'
 import {useRecoveryPresentation} from '../restore-points/use-presentation'
 import styles from './point-calendar.module.css'
+import {recoveryCatalogUpdated} from '@/lib/restore-points/catalog-refresh'
 
 const pageSize=40
 const undated='undated'
@@ -23,32 +24,49 @@ export function PointCalendar({object,selected,sourceKey,kind,read,choose}:{
   object:RecoveryObject;selected?:RestorePoint;sourceKey:string;kind:PickerScope;read:Reader;choose:(point:RestorePoint)=>void
 }){
   const {t,formatDate,formatNumber,label,diagnostic}=useRecoveryPresentation()
-  const [query,setQuery]=useState(()=>({day:selected?dayOf(selected):undefined as string|undefined,offset:0,revision:0}))
+  const [query,setQuery]=useState(()=>({day:selected?dayOf(selected):undefined as string|undefined,offset:0,revision:0,pointLimit:200,cycle:0}))
   const [days,setDays]=useState<CalendarDay[]>(),[page,setPage]=useState<PickerPage<RestorePoint>>(),[error,setError]=useState('')
-  const hasIndex=useRef(false),retried=useRef(0)
+  const [loading,setLoading]=useState(true)
+  const retried=useRef(0)
   const backupId=object.copies.length===1?object.copies[0].backupId:undefined
   useEffect(()=>{
     const ctrl=new AbortController(),refresh=query.revision!==retried.current
     retried.current=query.revision
     const args={objectId:object.objectId,...(backupId&&{backupId}),limit:String(pageSize),offset:String(query.offset),
       calendarZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(query.day&&{calendarDay:query.day}),
-      ...(!hasIndex.current||refresh?{calendarIndex:'true'}:{}),...(refresh&&{refresh:'true'})}
-    setPage(undefined);setError('')
+      calendarIndex:'true',pointLimit:String(query.pointLimit),...(refresh&&{refresh:'true'})}
+    setLoading(true);setError('')
     read(sourceKey,kind,'points',args,ctrl.signal).then(result=>{
       if(ctrl.signal.aborted)return
-      if(result.calendarDays){hasIndex.current=true;setDays(result.calendarDays)}
-      setPage(result)
-    }).catch(e=>{if(!ctrl.signal.aborted)setError(e.message)})
+      if(result.calendarDays)setDays(result.calendarDays)
+      setPage(result);setLoading(false)
+    }).catch(e=>{if(!ctrl.signal.aborted){setError(e.message);setLoading(false)}})
     return()=>ctrl.abort()
   },[sourceKey,kind,read,object.objectId,backupId,query])
+  useEffect(()=>{
+    const updated=(event:Event)=>{
+      if((event as CustomEvent<{sourceKey:string}>).detail?.sourceKey===sourceKey)
+        setQuery(current=>({...current,cycle:current.cycle+1}))
+    }
+    window.addEventListener(recoveryCatalogUpdated,updated)
+    return()=>window.removeEventListener(recoveryCatalogUpdated,updated)
+  },[sourceKey])
 
   const navigate=(day:string,offset=0)=>{setPage(undefined);setQuery(current=>({...current,day,offset}))}
   const retry=()=>setQuery(current=>({...current,offset:0,revision:current.revision+1}))
-  const notices=page&&!page.complete?<div className={styles.notice} role="status">{t('The restore-point list is partial.')}
+  const notices=page&&!page.complete?<div className={styles.notice} role="status"><span>{page.notices.length?page.notices.map(n=>t(n)).join(' '):t('The restore-point list is partial.')}</span>
     <Button type="button" size="sm" variant="outline" onClick={retry}>{t('Retry')}</Button></div>:null
+  const history=page?.pointCount!==undefined?<div className={styles.history}>
+    <span role="status">{page.pointTotal!==undefined?t('{count} of {total} restore points loaded',{count:formatNumber(page.pointCount),total:formatNumber(page.pointTotal)})
+      :t('{count} restore points loaded',{count:formatNumber(page.pointCount)})}</span>
+    {page.hasMorePoints&&<Button type="button" size="sm" variant="outline" disabled={loading||(page.pointLimit||0)>=20_000} onClick={()=>setQuery(current=>({...current,
+      pointLimit:Math.min(20_000,Math.max(current.pointLimit,page.pointLimit||200)+200)}))}>
+      {loading?<LoaderCircle size={14} className={styles.historySpinner} aria-hidden/>:<ChevronDown size={14} aria-hidden/>}
+      {loading?t('Loading…'):(page.pointLimit||0)>=20_000?t('History limit reached'):t('Load 200 more restore points')}</Button>}
+  </div>:null
   if(!days&&!error)return <RecoverySignal stage="data" compact/>
   if(!days?.length)return error?<div role="alert">{diagnostic(error)} <Button type="button" onClick={retry}>{t('Retry')}</Button></div>
-    :<div>{page?.complete&&<p role="status">{t('No eligible restore points for this workload.')}</p>}{notices}</div>
+    :<div>{page?.complete&&<p role="status">{t(page.hasMorePoints?'No eligible restore points in the loaded history.':'No eligible restore points for this workload.')}</p>}{history}{notices}</div>
 
   const counts=new Map(days.map(d=>[d.day,d.count]))
   const dated=days.map(d=>d.day).filter(day=>day!==undated).sort().reverse()
@@ -106,5 +124,6 @@ export function PointCalendar({object,selected,sourceKey,kind,read,choose}:{
         {!points.length&&page.complete&&<p role="status">{t('No restore points')}</p>}
         {notices}</>}
     </div>
+    {history}
   </section>
 }

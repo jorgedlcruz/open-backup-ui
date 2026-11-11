@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "Vérifiez le mode d’authentification du serveur SQL de transit.",
   "Your VBR account cannot change these SQL staging settings.": "Votre compte VBR ne peut pas modifier ces paramètres du serveur SQL de transit.",
   "VBR could not list SQL staging server instances.": "VBR n’a pas pu répertorier les instances du serveur SQL de transit.",
-  "Re-enter the Windows password to use this account for SQL connections.": "Saisissez à nouveau le mot de passe Windows pour utiliser ce compte pour les connexions SQL."
+  "Re-enter the Windows password to use this account for SQL connections.": "Saisissez à nouveau le mot de passe Windows pour utiliser ce compte pour les connexions SQL.",
+  "Recovery options could not be refreshed.": "Impossible d’actualiser les options de récupération.",
+  "Some recovery options could not be refreshed.": "Certaines options de récupération n’ont pas pu être actualisées.",
+  "{count} of {total} restore points loaded": "{count} points de restauration chargés sur {total}",
+  "{count} restore points loaded": "{count} points de restauration chargés",
+  "Load 200 more restore points": "Charger 200 points de restauration supplémentaires",
+  "No eligible restore points in the loaded history.": "Aucun point de restauration admissible dans l’historique chargé.",
+  "History limit reached": "Limite de l’historique atteinte"
 }

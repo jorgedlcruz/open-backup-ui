@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "SQL स्टेजिंग का प्रमाणीकरण मोड जाँचें।",
   "Your VBR account cannot change these SQL staging settings.": "आपका VBR खाता इन SQL स्टेजिंग सेटिंग को नहीं बदल सकता।",
   "VBR could not list SQL staging server instances.": "VBR, SQL स्टेजिंग सर्वर इंस्टेंस की सूची नहीं दिखा सका।",
-  "Re-enter the Windows password to use this account for SQL connections.": "SQL कनेक्शन के लिए इस खाते का उपयोग करने हेतु Windows पासवर्ड दोबारा दर्ज करें।"
+  "Re-enter the Windows password to use this account for SQL connections.": "SQL कनेक्शन के लिए इस खाते का उपयोग करने हेतु Windows पासवर्ड दोबारा दर्ज करें।",
+  "Recovery options could not be refreshed.": "पुनर्प्राप्ति विकल्प रीफ़्रेश नहीं किए जा सके।",
+  "Some recovery options could not be refreshed.": "कुछ पुनर्प्राप्ति विकल्प रीफ़्रेश नहीं किए जा सके।",
+  "{count} of {total} restore points loaded": "{total} में से {count} पुनर्स्थापना बिंदु लोड हुए",
+  "{count} restore points loaded": "{count} पुनर्स्थापना बिंदु लोड हुए",
+  "Load 200 more restore points": "200 और पुनर्स्थापना बिंदु लोड करें",
+  "No eligible restore points in the loaded history.": "लोड किए गए इतिहास में कोई उपयुक्त पुनर्स्थापना बिंदु नहीं है।",
+  "History limit reached": "इतिहास की सीमा पूरी हो गई"
 }

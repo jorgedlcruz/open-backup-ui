@@ -50,5 +50,7 @@ export function eligibleMethods(object:RecoveryObject,point:RestorePoint,scope:P
 }
 export type RecoverySeed={objectId:string;backupId?:string;restorePointId?:string}
 export type CalendarDay={day:string;count:number}
-export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[];snapshotId?:string;calendarDays?:CalendarDay[];calendarDay?:string}
+export type PickerPage<T>={sourceKey:string;data:T[];total:number;complete:boolean;notices:string[];snapshotId?:string;calendarDays?:CalendarDay[];calendarDay?:string;
+  pointCount?:number;pointLimit?:number;pointTotal?:number;hasMorePoints?:boolean;pointsFetchedAt?:string;
+  pointRefreshes?:{objectId:string;backupId?:string;pointLimit:number;kind:PickerScope}[]}
 export type PickedVm={object:RecoveryObject;point:RestorePoint;operation?:RestoreOperation}

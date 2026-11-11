@@ -10,15 +10,18 @@ import styles from './recovery-signal.module.css'
 type Stage = 'options' | 'request' | 'accepted' | 'session' | 'data' | 'guest'
 
 const pauseKey = 'open-backup-ui.recovery-animation-paused'
+const motionOverrideKey = 'open-backup-ui.recovery-animation-enabled'
 const pauseEvent = 'recovery-animation-pause'
+type MotionPreference = {paused: boolean; override: boolean}
 
 export function RecoverySignal({stage, status, compact = false}: {
   stage: Stage; status?: string; compact?: boolean
 }) {
   const { t } = useI18n()
-  const [motionAllowed, setMotionAllowed] = useState(false)
+  const [motionAllowed, setMotionAllowed] = useState<boolean | null>(null)
+  const [motionOverride, setMotionOverride] = useState(false)
   const [paused, setPaused] = useState(false)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const [caption, setCaption] = useState('')
   const assignedStage = useRef<Stage | undefined>(undefined)
 
@@ -28,8 +31,15 @@ export function RecoverySignal({stage, status, compact = false}: {
       setMotionAllowed(!preference.matches)
       setVisible(!document.hidden)
     }
-    const pause = (event: Event) => setPaused((event as CustomEvent<boolean>).detail)
-    try { setPaused(sessionStorage.getItem(pauseKey) === 'true') } catch { /* The local control still works. */ }
+    const pause = (event: Event) => {
+      const preference = (event as CustomEvent<MotionPreference>).detail
+      setPaused(preference.paused)
+      setMotionOverride(preference.override)
+    }
+    try {
+      setPaused(sessionStorage.getItem(pauseKey) === 'true')
+      setMotionOverride(sessionStorage.getItem(motionOverrideKey) === 'true')
+    } catch { /* The local control still works. */ }
     sync()
     preference.addEventListener('change', sync)
     document.addEventListener('visibilitychange', sync)
@@ -48,7 +58,8 @@ export function RecoverySignal({stage, status, compact = false}: {
     setCaption(nextWorkshopCaption())
   }, [stage])
 
-  const moving = motionAllowed && !paused && visible
+  const animationEnabled = !paused && (motionAllowed !== false || motionOverride)
+  const moving = animationEnabled && visible
   useEffect(() => {
     if (!moving) return
     const captionTimer = window.setInterval(() => setCaption(nextWorkshopCaption()), 6500)
@@ -56,24 +67,29 @@ export function RecoverySignal({stage, status, compact = false}: {
   }, [moving, stage])
 
   function togglePause() {
-    const next = !paused
-    try { sessionStorage.setItem(pauseKey, String(next)) } catch { /* Optional tab preference. */ }
-    window.dispatchEvent(new CustomEvent(pauseEvent, {detail:next}))
+    const next: MotionPreference = animationEnabled
+      ? {paused: true, override: motionOverride}
+      : {paused: false, override: motionOverride || motionAllowed === false}
+    try {
+      sessionStorage.setItem(pauseKey, String(next.paused))
+      sessionStorage.setItem(motionOverrideKey, String(next.override))
+    } catch { /* Optional tab preference. */ }
+    window.dispatchEvent(new CustomEvent<MotionPreference>(pauseEvent, {detail:next}))
   }
 
   const message = status ?? (stage === 'options' ? t('Loading recovery options…') : stage === 'request' ? t('Waiting for the recovery session from VBR.')
     : stage === 'accepted' ? t('VBR accepted the request.') : stage === 'session' ? t('Waiting for VBR to report this session.')
     : stage === 'guest' ? t('Reading the guest folder…') : t('Loading…'))
 
-  return <div className={styles.signal} data-session={stage === 'session' || undefined} data-compact={compact || undefined}>
+  return <div className={styles.signal} data-session={stage === 'session' || undefined} data-compact={compact || undefined}
+    data-paused={paused || undefined} data-hidden={!visible || undefined} data-motion-override={motionOverride || undefined}>
     <div className={styles.row}>
-      {motionAllowed ? (
-        <button type="button" className={styles.indicator} onClick={togglePause}
-          aria-label={paused ? t('Resume animation') : t('Pause animation')}
-          title={paused ? t('Resume animation') : t('Pause animation')}>
-          {paused ? <Play aria-hidden="true" size={18}/> : <LoaderCircle aria-hidden="true" className={moving ? styles.spinning : undefined}/>}
-        </button>
-      ) : <span className={styles.indicator}><LoaderCircle aria-hidden="true"/></span>}
+      <button type="button" className={styles.indicator} onClick={togglePause}
+        aria-label={animationEnabled ? t('Pause animation') : t('Resume animation')}
+        title={animationEnabled ? t('Pause animation') : t('Resume animation')}>
+        <LoaderCircle aria-hidden="true" className={styles.spinning}/>
+        <Play aria-hidden="true" size={18} className={styles.play}/>
+      </button>
       <div className={styles.copy}>
         <span className={styles.status} role="status" aria-atomic="true">{message}</span>
         <span className={styles.caption} aria-hidden="true">{caption && t(caption)}</span>

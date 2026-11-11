@@ -8,6 +8,12 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
 }).outputText, file)
 const {shuffledCycle, workshopCaptions} = require('../lib/restore-points/workshop-animation.ts')
 
+test('the workshop has 200 distinct, compact captions', () => {
+  assert.equal(workshopCaptions.length, 200)
+  assert.equal(new Set(workshopCaptions.map(caption => caption.toLocaleLowerCase())).size, 200)
+  assert(workshopCaptions.every(caption => caption.trim() === caption && caption.length > 0 && caption.length <= 90))
+})
+
 test('the workshop shows every caption before recycling and avoids a repeat across shuffle boundaries', () => {
   let seed = 41
   const next = shuffledCycle(workshopCaptions, () => {

@@ -4786,5 +4786,12 @@
   "Review the SQL staging authentication mode.": "Review the SQL staging authentication mode.",
   "Your VBR account cannot change these SQL staging settings.": "Your VBR account cannot change these SQL staging settings.",
   "VBR could not list SQL staging server instances.": "VBR could not list SQL staging server instances.",
-  "Re-enter the Windows password to use this account for SQL connections.": "Re-enter the Windows password to use this account for SQL connections."
+  "Re-enter the Windows password to use this account for SQL connections.": "Re-enter the Windows password to use this account for SQL connections.",
+  "Recovery options could not be refreshed.": "Recovery options could not be refreshed.",
+  "Some recovery options could not be refreshed.": "Some recovery options could not be refreshed.",
+  "{count} of {total} restore points loaded": "{count} of {total} restore points loaded",
+  "{count} restore points loaded": "{count} restore points loaded",
+  "Load 200 more restore points": "Load 200 more restore points",
+  "No eligible restore points in the loaded history.": "No eligible restore points in the loaded history.",
+  "History limit reached": "History limit reached"
 }
