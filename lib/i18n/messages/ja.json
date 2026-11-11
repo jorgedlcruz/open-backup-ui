@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} 個の復元ポイントを読み込み済み",
   "Load 200 more restore points": "さらに 200 個の復元ポイントを読み込む",
   "No eligible restore points in the loaded history.": "読み込んだ履歴に利用可能な復元ポイントはありません。",
-  "History limit reached": "履歴の上限に達しました"
+  "History limit reached": "履歴の上限に達しました",
+  "Choose destination folder": "復元先フォルダーを選択",
+  "Loading folders…": "フォルダーを読み込み中…",
+  "Symbolic link — enter a destination path manually": "シンボリックリンク — 復元先のパスを手動で入力してください",
+  "Symbolic link": "シンボリックリンク",
+  "No subfolders in this location.": "この場所にサブフォルダーはありません。",
+  "Page {page}": "{page} ページ",
+  "Choose folder": "フォルダーを選択",
+  "Browse": "参照",
+  "Review and try again": "確認して再試行",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer は起動されませんでした。Open Backup UI はこの要求の準備を完了できませんでした。選択した復元ポイントを確認して、再試行してください。",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Open Backup UI が復元要求を保存できなかったため、Explorer は起動されませんでした。データフォルダーに書き込めることを確認し、選択した復元ポイントを確認して、再試行してください。",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI は VBR の応答を保存できませんでした。別の要求を送信する前に、復元の状態を確認してください。",
+  "This destination browser is unavailable. Open the folder browser again.": "この復元先ブラウザーは利用できません。フォルダーブラウザーを開き直してください。",
+  "Choose a folder within the selected destination.": "選択した復元先内のフォルダーを選択してください。"
 }

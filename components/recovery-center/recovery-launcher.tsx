@@ -94,11 +94,11 @@ function LauncherContent({sourceKey,opening,onBusy,onSingle,onBatch}:{sourceKey:
             const page=await catalogRequest<RecoveryObject>(sourceKey,initial,'objects',identity,ctrl.signal)
             const object=page.data.find(vm=>vm.objectId===s.objectId)
             if(!object){omitted.push(s.objectId);continue}
-            if(!s.restorePointId){kept[index]={object};continue}
+            if(!s.restorePointId){kept[index]={object,seed:s};continue}
             const matches=await catalogRequest<RestorePoint>(sourceKey,initial,'points',{...identity,restorePointId:s.restorePointId},ctrl.signal)
             const point=matches.data.find(p=>p.id===s.restorePointId&&(!s.backupId||p.backupId===s.backupId))
-            if(!point){omitted.push(object.name+' · '+s.restorePointId);kept[index]={object};continue}
-            kept[index]={object,point,operation:suggestedOperation(point,initial)}
+            if(!point){omitted.push(object.name+' · '+s.restorePointId);kept[index]={object,seed:s};continue}
+            kept[index]={object,point,operation:suggestedOperation(point,initial),seed:s}
           }catch{if(!ctrl.signal.aborted)omitted.push(s.objectId)}
         }
       }))

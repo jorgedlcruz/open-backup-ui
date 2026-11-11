@@ -3,6 +3,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import { replaceFile } from './atomic-file'
 
 const ids=z.object({sourceKey:z.string().regex(/^[a-f0-9]{64}$/),principalKey:z.string().regex(/^[a-f0-9]{64}$/),sessionId:z.string().uuid()})
 export type ExplorerKind='activeDirectory'|'sql'
@@ -24,6 +25,6 @@ export async function rememberExplorerSession(key:Key,kind:ExplorerKind,closed:b
   const value=record.parse({...key,kind,createdAt:old?.createdAt??now,closedAt:closed?now:old?.closedAt,restorePointId:restorePointId??old?.restorePointId})
   const tmp=target+'.'+randomUUID()
   await fs.mkdir(path.dirname(target),{recursive:true,mode:0o700})
-  try { await fs.writeFile(tmp,JSON.stringify(value),{flag:'wx',mode:0o600}); await fs.rename(tmp,target) }
+  try { await fs.writeFile(tmp,JSON.stringify(value),{flag:'wx',mode:0o600}); await replaceFile(tmp,target) }
   finally { await fs.unlink(tmp).catch(()=>{}) }
 }

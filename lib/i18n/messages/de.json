@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} Wiederherstellungspunkte geladen",
   "Load 200 more restore points": "200 weitere Wiederherstellungspunkte laden",
   "No eligible restore points in the loaded history.": "Im geladenen Verlauf sind keine geeigneten Wiederherstellungspunkte vorhanden.",
-  "History limit reached": "Verlaufsgrenze erreicht"
+  "History limit reached": "Verlaufsgrenze erreicht",
+  "Choose destination folder": "Zielordner auswählen",
+  "Loading folders…": "Ordner werden geladen…",
+  "Symbolic link — enter a destination path manually": "Symbolischer Link — geben Sie den Zielpfad manuell ein",
+  "Symbolic link": "Symbolischer Link",
+  "No subfolders in this location.": "An diesem Speicherort gibt es keine Unterordner.",
+  "Page {page}": "Seite {page}",
+  "Choose folder": "Ordner auswählen",
+  "Browse": "Durchsuchen",
+  "Review and try again": "Überprüfen und erneut versuchen",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer wurde nicht gestartet. Open Backup UI konnte die Vorbereitung dieser Anfrage nicht abschließen. Überprüfen Sie den ausgewählten Wiederherstellungspunkt und versuchen Sie es erneut.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer wurde nicht gestartet, da Open Backup UI die Wiederherstellungsanfrage nicht speichern konnte. Prüfen Sie, ob der Datenordner beschreibbar ist, überprüfen Sie den ausgewählten Wiederherstellungspunkt und versuchen Sie es erneut.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI konnte die VBR-Antwort nicht speichern. Prüfen Sie den Wiederherstellungsstatus, bevor Sie eine weitere Anfrage senden.",
+  "This destination browser is unavailable. Open the folder browser again.": "Dieser Zielbrowser ist nicht verfügbar. Öffnen Sie die Ordnerauswahl erneut.",
+  "Choose a folder within the selected destination.": "Wählen Sie einen Ordner innerhalb des ausgewählten Ziels aus."
 }

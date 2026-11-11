@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "복원 지점 {count}개 로드됨",
   "Load 200 more restore points": "복원 지점 200개 더 로드",
   "No eligible restore points in the loaded history.": "로드된 기록에 사용 가능한 복원 지점이 없습니다.",
-  "History limit reached": "기록 한도에 도달했습니다"
+  "History limit reached": "기록 한도에 도달했습니다",
+  "Choose destination folder": "대상 폴더 선택",
+  "Loading folders…": "폴더를 불러오는 중…",
+  "Symbolic link — enter a destination path manually": "심볼릭 링크 — 대상 경로를 직접 입력하세요",
+  "Symbolic link": "심볼릭 링크",
+  "No subfolders in this location.": "이 위치에는 하위 폴더가 없습니다.",
+  "Page {page}": "{page}페이지",
+  "Choose folder": "폴더 선택",
+  "Browse": "찾아보기",
+  "Review and try again": "검토 후 다시 시도",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer가 시작되지 않았습니다. Open Backup UI에서 이 요청의 준비를 완료하지 못했습니다. 선택한 복원 지점을 검토하고 다시 시도하세요.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Open Backup UI에서 복구 요청을 저장하지 못해 Explorer가 시작되지 않았습니다. 데이터 폴더에 쓰기 권한이 있는지 확인한 후, 선택한 복원 지점을 검토하고 다시 시도하세요.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI에서 VBR 응답을 저장하지 못했습니다. 다른 요청을 제출하기 전에 복구 상태를 확인하세요.",
+  "This destination browser is unavailable. Open the folder browser again.": "이 대상 브라우저를 사용할 수 없습니다. 폴더 브라우저를 다시 여세요.",
+  "Choose a folder within the selected destination.": "선택한 대상 내의 폴더를 선택하세요."
 }

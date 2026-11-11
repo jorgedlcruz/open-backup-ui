@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} points de restauration chargés",
   "Load 200 more restore points": "Charger 200 points de restauration supplémentaires",
   "No eligible restore points in the loaded history.": "Aucun point de restauration admissible dans l’historique chargé.",
-  "History limit reached": "Limite de l’historique atteinte"
+  "History limit reached": "Limite de l’historique atteinte",
+  "Choose destination folder": "Choisir le dossier de destination",
+  "Loading folders…": "Chargement des dossiers…",
+  "Symbolic link — enter a destination path manually": "Lien symbolique — saisissez manuellement un chemin de destination",
+  "Symbolic link": "Lien symbolique",
+  "No subfolders in this location.": "Aucun sous-dossier à cet emplacement.",
+  "Page {page}": "Page {page}",
+  "Choose folder": "Choisir le dossier",
+  "Browse": "Parcourir",
+  "Review and try again": "Vérifier et réessayer",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer n’a pas démarré. Open Backup UI n’a pas pu terminer la préparation de cette demande. Vérifiez le point de restauration sélectionné et réessayez.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer n’a pas démarré, car Open Backup UI n’a pas pu enregistrer la demande de récupération. Vérifiez que son dossier de données est accessible en écriture, puis vérifiez le point de restauration sélectionné et réessayez.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI n’a pas pu enregistrer la réponse de VBR. Vérifiez l’état de la récupération avant d’envoyer une autre demande.",
+  "This destination browser is unavailable. Open the folder browser again.": "Cet explorateur de destinations n’est pas disponible. Ouvrez à nouveau l’explorateur de dossiers.",
+  "Choose a folder within the selected destination.": "Choisissez un dossier dans la destination sélectionnée."
 }

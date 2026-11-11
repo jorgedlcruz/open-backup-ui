@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} pontos de restauração carregados",
   "Load 200 more restore points": "Carregar mais 200 pontos de restauração",
   "No eligible restore points in the loaded history.": "Nenhum ponto de restauração compatível no histórico carregado.",
-  "History limit reached": "Limite do histórico atingido"
+  "History limit reached": "Limite do histórico atingido",
+  "Choose destination folder": "Escolher pasta de destino",
+  "Loading folders…": "Carregando pastas…",
+  "Symbolic link — enter a destination path manually": "Link simbólico — insira um caminho de destino manualmente",
+  "Symbolic link": "Link simbólico",
+  "No subfolders in this location.": "Não há subpastas neste local.",
+  "Page {page}": "Página {page}",
+  "Choose folder": "Escolher pasta",
+  "Browse": "Procurar",
+  "Review and try again": "Revisar e tentar novamente",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "O Explorer não foi iniciado. O Open Backup UI não conseguiu concluir a preparação desta solicitação. Revise o ponto de restauração selecionado e tente novamente.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "O Explorer não foi iniciado porque o Open Backup UI não conseguiu salvar a solicitação de recuperação. Verifique se é possível gravar na pasta de dados, revise o ponto de restauração selecionado e tente novamente.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "O Open Backup UI não conseguiu salvar a resposta do VBR. Verifique o status da recuperação antes de enviar outra solicitação.",
+  "This destination browser is unavailable. Open the folder browser again.": "Este navegador de destinos não está disponível. Abra novamente o navegador de pastas.",
+  "Choose a folder within the selected destination.": "Escolha uma pasta dentro do destino selecionado."
 }

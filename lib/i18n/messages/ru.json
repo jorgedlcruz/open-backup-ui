@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "Загружено точек восстановления: {count}",
   "Load 200 more restore points": "Загрузить ещё 200 точек восстановления",
   "No eligible restore points in the loaded history.": "В загруженной истории нет подходящих точек восстановления.",
-  "History limit reached": "Достигнут предел истории"
+  "History limit reached": "Достигнут предел истории",
+  "Choose destination folder": "Выбрать папку назначения",
+  "Loading folders…": "Загрузка папок…",
+  "Symbolic link — enter a destination path manually": "Символическая ссылка — введите путь назначения вручную",
+  "Symbolic link": "Символическая ссылка",
+  "No subfolders in this location.": "В этом расположении нет вложенных папок.",
+  "Page {page}": "Страница {page}",
+  "Choose folder": "Выбрать папку",
+  "Browse": "Обзор",
+  "Review and try again": "Проверить и повторить",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer не запущен. Open Backup UI не удалось завершить подготовку этого запроса. Проверьте выбранную точку восстановления и повторите попытку.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer не запущен, поскольку Open Backup UI не удалось сохранить запрос на восстановление. Убедитесь, что папка данных доступна для записи, затем проверьте выбранную точку восстановления и повторите попытку.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI не удалось сохранить ответ VBR. Проверьте состояние восстановления, прежде чем отправлять другой запрос.",
+  "This destination browser is unavailable. Open the folder browser again.": "Этот браузер назначения недоступен. Откройте браузер папок заново.",
+  "Choose a folder within the selected destination.": "Выберите папку в пределах выбранного назначения."
 }

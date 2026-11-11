@@ -2,6 +2,7 @@
 import { v4 as uuid } from 'uuid'
 import { isRestoreOperation, uncertainRestore, type RestoreOperation, type RestoreResult } from './workflow'
 import {explorerHandoffIO,resolveExplorerHandoff,type ExplorerHandoffIO,type ExplorerSelection,type ExplorerStage} from './explorer-handoff'
+import {recoveryPickerHref} from './recovery-selection'
 
 export const activeDirectoryOperation = 'BrowseActiveDirectory'
 export const sqlOperation = 'BrowseSql'
@@ -105,6 +106,15 @@ export function recentRestoreLaunches(sourceKey:string,now=Date.now()):RestoreLa
 type TrackedExplorer=RestoreLaunch & {explorerTracked:true;operation:typeof activeDirectoryOperation|typeof sqlOperation}
 export function canCheckExplorerLaunch(receipt?:RestoreLaunch):receipt is TrackedExplorer{
   return !!receipt?.explorerTracked&&(receipt.operation===activeDirectoryOperation||receipt.operation===sqlOperation)&&(receipt.phase==='starting'||receipt.phase==='unknown')
+}
+
+export function explorerRetryHref(receipt?:RestoreLaunch) {
+  if(receipt?.phase!=='rejected'||!receipt.explorerTracked||!receipt.explorerPoint||
+    ![activeDirectoryOperation,sqlOperation].includes(receipt.operation)||
+    !Object.values(receipt.explorerPoint).every(value=>uuidPattern.test(value)))return
+  const {backupObjectId,backupId,restorePointId}=receipt.explorerPoint
+  return recoveryPickerHref(receipt.operation===sqlOperation?'sql':'active-directory',receipt.sourceKey,
+    [{objectId:backupObjectId,backupId,restorePointId}])
 }
 
 function trackExplorer(receipt:TrackedExplorer,selection:ExplorerSelection|undefined,io:ExplorerHandoffIO){

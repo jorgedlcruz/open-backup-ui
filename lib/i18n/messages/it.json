@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} punti di ripristino caricati",
   "Load 200 more restore points": "Carica altri 200 punti di ripristino",
   "No eligible restore points in the loaded history.": "Nessun punto di ripristino idoneo nella cronologia caricata.",
-  "History limit reached": "Limite della cronologia raggiunto"
+  "History limit reached": "Limite della cronologia raggiunto",
+  "Choose destination folder": "Scegli cartella di destinazione",
+  "Loading folders…": "Caricamento delle cartelle…",
+  "Symbolic link — enter a destination path manually": "Collegamento simbolico — inserisci manualmente un percorso di destinazione",
+  "Symbolic link": "Collegamento simbolico",
+  "No subfolders in this location.": "Nessuna sottocartella in questa posizione.",
+  "Page {page}": "Pagina {page}",
+  "Choose folder": "Scegli cartella",
+  "Browse": "Sfoglia",
+  "Review and try again": "Verifica e riprova",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer non è stato avviato. Open Backup UI non ha potuto completare la preparazione di questa richiesta. Verifica il punto di ripristino selezionato e riprova.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer non è stato avviato perché Open Backup UI non ha potuto salvare la richiesta di recupero. Verifica che la sua cartella dei dati sia scrivibile, quindi controlla il punto di ripristino selezionato e riprova.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI non ha potuto salvare la risposta di VBR. Verifica lo stato del recupero prima di inviare un’altra richiesta.",
+  "This destination browser is unavailable. Open the folder browser again.": "Questo browser di destinazione non è disponibile. Apri nuovamente il browser delle cartelle.",
+  "Choose a folder within the selected destination.": "Scegli una cartella all’interno della destinazione selezionata."
 }

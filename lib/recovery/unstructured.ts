@@ -9,6 +9,7 @@ import {checkSource,VbrRecoveryError} from './error'
 import {collect} from './options'
 import {pointSchema} from '../restore-points/load'
 import {applicationAccess,publicBackupObjects} from './application-eligibility'
+import {targetBrowsePermissions,unstructuredTargetBrowse} from './unstructured-target-browser'
 
 const guid=z.string().uuid().transform(v=>v.toLowerCase()),scope=z.string().regex(/^[\da-f]{64}$/)
 const location=z.string().max(8192).refine(v=>!/[\u0000-\u001f]/.test(v)&&!v.split(/[\\/]/).includes('..'))
@@ -26,6 +27,9 @@ const item={...session,...write,path:location.optional(),sourcePaths:z.array(loc
 export const pointQuery=z.object({...base,...point}).strict()
 export const unstructuredCommand=z.discriminatedUnion('action',[
   start,z.object({...session,action:z.literal('status')}).strict(),z.object({...session,action:z.literal('targets')}).strict(),
+  z.object({...session,action:z.literal('startTargetBrowse'),destinationId:guid}).strict(),
+  z.object({...session,...range,limit:z.number().int().min(1).max(200).default(200),action:z.literal('browseTarget'),destinationId:guid,browseSessionId:guid,browseKey:z.string().max(256),path:location}).strict(),
+  z.object({...session,action:z.literal('stopTargetBrowse'),destinationId:guid,browseSessionId:guid,browseKey:z.string().max(256)}).strict(),
   z.object({...session,...range,action:z.literal('browse'),path:location.default('')}).strict(),
   z.object({...session,...range,action:z.literal('versions'),path:location.min(1)}).strict(),
   z.object({...session,action:z.literal('search'),path:location.default(''),query:text}).strict(),
@@ -107,6 +111,8 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
     })
   }
   const sid=input.sessionId,base=flr+'/'+sid,rights=await applicationAccess(ctx.privateSend)
+  // Destination inventory cleanup must still work after the source FLR mount ends.
+  if(input.action==='stopTargetBrowse')return unstructuredTargetBrowse(ctx,input,rights)
   if(input.view==='instant'){
     const mounts=(await collect(send,ir,instant)).filter(m=>m.sessionId===sid)
     if(mounts.length!==1)throw deny('This mounted recovery is no longer available.')
@@ -149,6 +155,7 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
   if(searchAllowed)actions.push('search','results')
   if(rights.has('ViewTasks'))actions.push('task')
   if(rights.has('CopyUnstructuredDataFlrItem'))actions.push('copy','targets')
+  if(targetBrowsePermissions.every(right=>rights.has(right)))actions.push('startTargetBrowse','browseTarget')
   if(rights.has('UnmountUnstructuredDataFLRVolumes'))actions.push('finish')
   let workloadType:'nas'|'object'|undefined
   const backupId=m.data.sourceProperties?.backupId
@@ -160,6 +167,7 @@ export async function unstructuredAction(ctx:Context,input:z.infer<typeof unstru
   if(workloadType&&rights.has('PerformRestoreToOriginal')&&rights.has(workloadType==='nas'?'RestoreFileShareFiles':'RestoreObjects'))actions.push('restore')
   if(input.action==='status')return {sessionId:sid,view:'browse',workloadType,pathSeparator:m.data.properties?.pathSeparator,backupId,actions}
   if(!actions.includes(input.action))throw deny()
+  if(input.action==='startTargetBrowse'||input.action==='browseTarget')return unstructuredTargetBrowse(ctx,input,rights)
   if(input.action==='targets')return {targets:(await unstructuredTargets(asRead(send))).data}
   if(input.action==='browse'||input.action==='results'){
     if(input.action==='results'&&!checkedTask(ctx,sid,input.taskId,input.taskKey,['FlrSearch']))throw deny()

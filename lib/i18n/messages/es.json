@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} puntos de restauración cargados",
   "Load 200 more restore points": "Cargar 200 puntos de restauración más",
   "No eligible restore points in the loaded history.": "No hay puntos de restauración aptos en el historial cargado.",
-  "History limit reached": "Se alcanzó el límite del historial"
+  "History limit reached": "Se alcanzó el límite del historial",
+  "Choose destination folder": "Seleccionar carpeta de destino",
+  "Loading folders…": "Cargando carpetas…",
+  "Symbolic link — enter a destination path manually": "Enlace simbólico — introduzca una ruta de destino manualmente",
+  "Symbolic link": "Enlace simbólico",
+  "No subfolders in this location.": "No hay subcarpetas en esta ubicación.",
+  "Page {page}": "Página {page}",
+  "Choose folder": "Seleccionar carpeta",
+  "Browse": "Examinar",
+  "Review and try again": "Revisar y volver a intentar",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer no se ha iniciado. Open Backup UI no pudo terminar de preparar esta solicitud. Revise el punto de restauración seleccionado y vuelva a intentarlo.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer no se ha iniciado porque Open Backup UI no pudo guardar la solicitud de recuperación. Compruebe que su carpeta de datos permite escritura; después, revise el punto de restauración seleccionado y vuelva a intentarlo.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI no pudo guardar la respuesta de VBR. Compruebe el estado de la recuperación antes de enviar otra solicitud.",
+  "This destination browser is unavailable. Open the folder browser again.": "Este explorador de destinos no está disponible. Abra de nuevo el explorador de carpetas.",
+  "Choose a folder within the selected destination.": "Seleccione una carpeta dentro del destino seleccionado."
 }

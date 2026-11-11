@@ -46,6 +46,26 @@ test('recovery capacity, age and date formatting use the selected locale and pre
   assert.equal(recoveryDate(t, timestamp, 'es'), new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(timestamp))
 })
 
+test('Explorer startup and destination browsing diagnostics translate without rewriting upstream messages', () => {
+  const keys = [
+    'Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.',
+    'Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.',
+    'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.',
+    'This destination browser is unavailable. Open the folder browser again.',
+    'Choose a folder within the selected destination.',
+  ]
+  for (const locale of ['de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pt-BR', 'ru', 'zh-CN']) {
+    const messages = require(`../lib/i18n/messages/${locale}.json`)
+    const localized = (key, values) => translate(messages, key, values)
+    for (const key of keys) {
+      assert.notEqual(messages[key], key, `${locale}: ${key}`)
+      assert.equal(recoveryDiagnostic(localized, key, locale), messages[key])
+    }
+    const provider = 'VBR error 1705: target folder is unavailable.'
+    assert.equal(recoveryDiagnostic(localized, provider, locale), provider)
+  }
+})
+
 test('repository detail and recovery explorer, calendar and table register all static UI copy', () => {
   const files = ['components/repositories/repository-investigation.tsx', 'components/restore-points/restore-point-explorer.tsx', 'components/restore-points/presentation.ts', 'components/vbr-restore-points-table.tsx', 'components/vbr-restore-points-calendar.tsx', 'app/(app)/vbr/protected-data/restore-points/page.tsx']
   const audit = createAudit(root, files.map(file => [path.join(root, file), fs.readFileSync(path.join(root, file), 'utf8')]))

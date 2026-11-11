@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} पुनर्स्थापना बिंदु लोड हुए",
   "Load 200 more restore points": "200 और पुनर्स्थापना बिंदु लोड करें",
   "No eligible restore points in the loaded history.": "लोड किए गए इतिहास में कोई उपयुक्त पुनर्स्थापना बिंदु नहीं है।",
-  "History limit reached": "इतिहास की सीमा पूरी हो गई"
+  "History limit reached": "इतिहास की सीमा पूरी हो गई",
+  "Choose destination folder": "गंतव्य फ़ोल्डर चुनें",
+  "Loading folders…": "फ़ोल्डर लोड हो रहे हैं…",
+  "Symbolic link — enter a destination path manually": "सांकेतिक लिंक — गंतव्य पथ मैन्युअल रूप से दर्ज करें",
+  "Symbolic link": "सांकेतिक लिंक",
+  "No subfolders in this location.": "इस स्थान पर कोई सबफ़ोल्डर नहीं है।",
+  "Page {page}": "पृष्ठ {page}",
+  "Choose folder": "फ़ोल्डर चुनें",
+  "Browse": "ब्राउज़ करें",
+  "Review and try again": "समीक्षा करके फिर से प्रयास करें",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer शुरू नहीं हुआ। Open Backup UI इस अनुरोध की तैयारी पूरी नहीं कर सका। चुने गए रिस्टोर पॉइंट की समीक्षा करें और फिर से प्रयास करें।",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer शुरू नहीं हुआ क्योंकि Open Backup UI रिकवरी अनुरोध को सहेज नहीं सका। जाँचें कि उसके डेटा फ़ोल्डर में लिखने की अनुमति है, फिर चुने गए रिस्टोर पॉइंट की समीक्षा करें और फिर से प्रयास करें।",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI, VBR का जवाब सहेज नहीं सका। दूसरा अनुरोध भेजने से पहले रिकवरी की स्थिति जाँचें।",
+  "This destination browser is unavailable. Open the folder browser again.": "यह गंतव्य ब्राउज़र उपलब्ध नहीं है। फ़ोल्डर ब्राउज़र फिर से खोलें।",
+  "Choose a folder within the selected destination.": "चुने गए गंतव्य के भीतर कोई फ़ोल्डर चुनें।"
 }

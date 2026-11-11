@@ -1,11 +1,11 @@
 'use client'
 // Open Backup UI v1.2.0
-import {useEffect,useMemo,useState} from 'react'
+import {useEffect,useMemo,useState,type Dispatch,type SetStateAction} from 'react'
 import {Boxes,Check,ChevronDown,Folder,ListFilter,Monitor,Search,Server,X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {veeamApi} from '@/lib/api/veeam-client'
-import {bulkKind,isRecoveryKind,pointOperations,type PickedVm,type PickerPage,type PickerScope,type RecoveryKind,type RecoveryObject,type RecoverySeed} from '@/lib/restore-points/recovery-picker'
-import type {RestorePoint} from '@/lib/restore-points/model'
+import {bulkKind,isRecoveryKind,pointOperations,type PickedVm,type PickerPage,type PickerScope,type RecoveryKind,type RecoveryObject} from '@/lib/restore-points/recovery-picker'
+import {suggestedOperation,type RecoverySelection} from '@/lib/restore-points/default-point'
 import {matchesWorkloadType,searchableText,workloadFilters,workloadSearchText,type WorkloadFilter} from '@/lib/restore-points/workload-search'
 import {readWorkloadIndex} from '@/lib/restore-points/workload-index'
 import {RecoverySignal} from '../restore-points/recovery-signal'
@@ -13,20 +13,15 @@ import {useRecoveryPresentation} from '../restore-points/use-presentation'
 import styles from './launcher.module.css'
 import {VmIdentity} from './vm-identity'
 import {PointCalendar} from './point-calendar'
+import {useDefaultRestorePoints} from './use-default-restore-points'
 
-export type Selection={object:RecoveryObject;point?:RestorePoint;operation?:PickedVm['operation'];seed?:RecoverySeed}
+export type Selection=RecoverySelection
+export {suggestedOperation} from '@/lib/restore-points/default-point'
 export function catalogRequest<T>(sourceKey:string,kind:PickerScope,view:'goals'|'objects'|'points'|'index',args:Record<string,string>,signal?:AbortSignal){
   return veeamApi.getRecoveryPickerPage<T>(new URLSearchParams({sourceKey,kind,view,...args}),signal).then(page=>{
     if(page.sourceKey!==sourceKey)throw Object.assign(Error('The connected VBR source changed. Reopen this workflow.'),{status:409})
     return page
   })
-}
-export function suggestedOperation(point:RestorePoint,kind:RecoveryKind){
-  const offered=pointOperations(point,kind)
-  const local=point.platformName?.toLowerCase().replace('-','')
-  const preferred=local==='hyperv'?(kind==='instant-vm'?'StartHvVMInstantRecovery':'StartEntireVmRestoreHyperV')
-    :local==='clouddirector'?'StartEntireVmRestoreCloudDirector':kind==='instant-vm'?'StartViVMInstantRecovery':'StartEntireVmRestore'
-  return offered.find(op=>op===preferred)||offered[0]
 }
 export function RecoveryPlatform({vm,kind,changeOperation}:{vm:Selection;kind:RecoveryKind;changeOperation:(op:PickedVm['operation'])=>void}){
   const {t,label}=useRecoveryPresentation()
@@ -35,7 +30,8 @@ export function RecoveryPlatform({vm,kind,changeOperation}:{vm:Selection;kind:Re
   return <label className={styles.field}>{t('Recovery platform')}<select value={vm.operation} onChange={e=>{const op=operations.find(v=>v===e.target.value);if(op)changeOperation(op)}}>
     {operations.map(op=><option key={op} value={op}>{label(op)}</option>)}</select></label>
 }
-export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:string;kind:PickerScope;chosen:Selection[];setChosen:(items:Selection[])=>void}){
+export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:string;kind:PickerScope;chosen:Selection[];setChosen:Dispatch<SetStateAction<Selection[]>>}){
+  useDefaultRestorePoints(sourceKey,kind,chosen,setChosen,catalogRequest)
   const {t,diagnostic,formatNumber,date,label}=useRecoveryPresentation()
   const [editing,setEditing]=useState<string>()
   const active=chosen.find(s=>s.object.objectId===editing)||chosen.find(s=>!s.point)||chosen[0]
@@ -60,7 +56,7 @@ export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:stri
   },[indexed,query,type])
   const pageSize=40,first=Math.min(offset,Math.max(0,Math.floor((filtered.length-1)/pageSize)*pageSize))
   const visible=filtered.slice(first,first+pageSize).map(row=>row.object)
-  const removed=(vm:Selection)=>setChosen(chosen.filter(s=>s.object.objectId!==vm.object.objectId))
+  const removed=(vm:Selection)=>setChosen(current=>current.filter(s=>s.object.objectId!==vm.object.objectId))
   const batch=kind==='machines'||isRecoveryKind(kind)&&bulkKind(kind)
   const virtual=(vm:RecoveryObject)=>!vm.workloadType||vm.workloadType==='vm'
   const offPage=chosen.filter(s=>!visible.some(o=>o.objectId===s.object.objectId))
@@ -85,7 +81,7 @@ export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:stri
         return <div key={id} className={styles.workloadRow} data-workload-type={vm.workloadType||'vm'} data-focused={active?.object.objectId===id}>
           <button type="button" aria-pressed={!!picked} disabled={!picked&&batch&&(chosen.length>=32||chosen.length>1&&!virtual(vm))} onClick={()=>{
             setEditing(id)
-            if(!picked)setChosen(batch&&virtual(vm)&&chosen.every(s=>virtual(s.object))?[...chosen,{object:vm}]:[{object:vm}])
+            if(!picked)setChosen(current=>batch&&virtual(vm)&&current.every(s=>virtual(s.object))?[...current,{object:vm}]:[{object:vm}])
           }}>
             <Icon size={17}/><span><strong>{vm.name}</strong><VmIdentity object={vm} showPath/>
               <small>{picked?.point?date(picked.point.creationTime):[label(vm.platform),...new Set(vm.copies.map(c=>c.name))].filter(Boolean).join(' · ')}</small></span>
@@ -103,9 +99,9 @@ export function RecoveryPicker({sourceKey,kind,chosen,setChosen}:{sourceKey:stri
     {active&&<section className={styles.calendarPane} aria-label={t('Restore point')}><div className={styles.restorePointHeading}><h3>{t('Restore point')}</h3></div><PointCalendar key={sourceKey+'/'+kind+'/'+active.object.objectId} object={active.object} selected={active.point} sourceKey={sourceKey} kind={kind}
       read={catalogRequest} choose={point=>{
         setEditing(active.object.objectId)
-        setChosen(chosen.map(v=>v===active?{...v,point,operation:isRecoveryKind(kind)?suggestedOperation(point,kind):undefined}:v))
+        setChosen(current=>current.map(v=>v.object.objectId===active.object.objectId?{...v,point,operation:isRecoveryKind(kind)?suggestedOperation(point,kind):undefined}:v))
       }}/>
-      {isRecoveryKind(kind)&&<RecoveryPlatform vm={active} kind={kind} changeOperation={operation=>setChosen(chosen.map(v=>v===active?{...v,operation}:v))}/>}
+      {isRecoveryKind(kind)&&<RecoveryPlatform vm={active} kind={kind} changeOperation={operation=>setChosen(current=>current.map(v=>v.object.objectId===active.object.objectId?{...v,operation}:v))}/>}
     </section>}
   </div>
 }

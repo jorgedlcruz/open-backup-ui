@@ -98,6 +98,26 @@ test('Recovery Center observes in-flight receipts only for this source and ages 
 const explorerSelection={sourceKey,restorePointId:id,backupId:'22222222-2222-4222-8222-222222222222',backupObjectId:'33333333-3333-4333-8333-333333333333',reviewedMalwareStatus:'Suspicious'}
 const skipWait=async()=>{}
 
+test('a definite Explorer rejection offers the same point for review without resubmitting the failed request',async()=>{
+  const launch=newTab(),calls=[]
+  const io={wait:skipWait,send:async(_provider,c)=>{
+    calls.push(c.action)
+    return {sourceKey,requestId:c.requestId,requestStatus:'failed',error:'Explorer was not started.'}
+  }}
+  const start=launch.beginExplorerLaunch({...explorerSelection,operation:'BrowseActiveDirectory'},'AD-DNS-001',undefined,io)
+  const rejected=await launch.observeRestoreLaunch(start.requestId,io)
+  const href=new URL(launch.explorerRetryHref(rejected),'https://fixture.test')
+  assert.equal(href.pathname,'/vbr/recovery-center')
+  assert.equal(href.searchParams.get('recover'),'active-directory')
+  assert.equal(href.searchParams.get('sourceKey'),sourceKey)
+  assert.equal(href.searchParams.get('objectId'),explorerSelection.backupObjectId)
+  assert.equal(href.searchParams.get('restorePointId'),explorerSelection.restorePointId)
+  for(const phase of ['starting','unknown','accepted'])assert.equal(launch.explorerRetryHref({...rejected,phase}),undefined)
+  assert.deepEqual(calls,['start'])
+  await launch.observeRestoreLaunch(start.requestId,io)
+  assert.deepEqual(calls,['start'])
+})
+
 test('a new explicit review can recover a lost outbound POST using the original reservation',async()=>{
   const launch=newTab(),click={...explorerSelection,operation:'BrowseActiveDirectory'}
   const starts=[]

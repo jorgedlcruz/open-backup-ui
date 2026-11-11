@@ -2,13 +2,14 @@
 // Open Backup UI v1.2.0
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {v4 as uuid} from 'uuid'
-import {Square} from 'lucide-react'
+import {FolderOpen,Square} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle} from '@/components/ui/dialog'
 import {readStorageValue,storageSelectionValid,writeStorageValue,type StorageAction,type StorageEntry,type StorageScope,type StorageStatus,type StorageTask,type StorageView} from '@/lib/restore-points/unstructured-workspace'
 import {uncertainRestore} from '@/lib/restore-points/workflow'
 import {control,FormField,workloadRequest} from './workload-launch-shared'
 import {useRecoveryPresentation} from './use-presentation'
+import {StorageTargetFolderPicker} from './storage-target-folder-picker'
 
 export async function storageRequest<T>(scope:StorageScope,command:Record<string,unknown>,signal?:AbortSignal){
   const result=await workloadRequest<T & {sourceKey:string}>('unstructured',{...command,...scope},signal)
@@ -46,6 +47,7 @@ export function StorageCommand({status,action,items=[],onClose,onAccepted}:Comma
   const {t,diagnostic,date}=useRecoveryPresentation()
   const {sessionId,sourceKey,view}=status
   const [targets,setTargets]=useState<NativeTarget[]>(),[target,setTarget]=useState(''),[path,setPath]=useState('')
+  const [folderPicker,setFolderPicker]=useState(false)
   const [mode,setMode]=useState(action==='migrate'?'ReplaceOlder':'Keep'),[switchMode,setSwitchMode]=useState('Manual'),[schedule,setSchedule]=useState('')
   const [confirmed,setConfirmed]=useState(false),[recursive,setRecursive]=useState(items.some(r=>r.type==='Folder'||r.type==='Drive'))
   const [hierarchy,setHierarchy]=useState(true),[permissions,setPermissions]=useState(false)
@@ -54,6 +56,8 @@ export function StorageCommand({status,action,items=[],onClose,onAccepted}:Comma
   const destination=action==='copy'||action==='migrate',selection=action==='copy'||action==='restore'
   const warning=action==='migrate'||action==='switchover'||(selection&&mode!=='Keep')
   const label=action==='finish'&&view==='instant'?t('Stop publishing'):t(storageActionLabels[action])
+  const selectedTarget=targets?.find(row=>row.id===target)
+  const canBrowse=action==='copy'&&status.actions.includes('startTargetBrowse')&&!!selectedTarget&&['FileServer','NASFiler','SMBShare','NFSShare','SANSMBShare','SANNFSShare'].includes(selectedTarget.type)
   useEffect(()=>{
     if(!destination)return
     const controller=new AbortController()
@@ -69,7 +73,7 @@ export function StorageCommand({status,action,items=[],onClose,onAccepted}:Comma
     const scope={sourceKey,sessionId,view}
     const cmd:Record<string,unknown>={action,confirmOverwrite:warning&&confirmed}
     if(selection)Object.assign(cmd,{sourcePaths:items.map(r=>r.path),toDateTime:items[0]?.version,isRecursive:recursive,restoreType:mode,restorePermissions:permissions})
-    if(action==='copy')Object.assign(cmd,{destinationId:target,targetPath:path.trim()})
+    if(action==='copy')Object.assign(cmd,{destinationId:target,targetPath:path})
     if(action==='migrate')Object.assign(cmd,{destinationId:target,path:path.trim(),preserveHierarchy:hierarchy,overwriteMode:mode,switchover:switchMode,
       scheduleTime:switchMode==='Scheduled'?new Date(schedule).toISOString():undefined})
     const fingerprint=JSON.stringify(cmd),key='request-'+action,prior=readStorageValue<{fingerprint:string;requestId:string}>(scope,key)
@@ -88,10 +92,13 @@ export function StorageCommand({status,action,items=[],onClose,onAccepted}:Comma
       {selection?t('{count} items',{count:items.length}):action==='finish'?(view==='instant'?t('VBR will stop publishing this file share.'):t('VBR will close this file browsing session.')):status.name||t('Published share')}
     </DialogDescription></DialogHeader>
     {selection&&<ul className="max-h-32 space-y-1 overflow-auto rounded-md border p-3 text-sm">{items.map(r=><li className="break-all" key={r.path}>{r.path}{r.version&&' · '+date(r.version)}</li>)}</ul>}
-    {destination&&<><FormField label={t('Destination')}><select className={control} value={target} onChange={e=>setTarget(e.target.value)}>
+    {destination&&<><FormField label={t('Destination')}><select className={control} value={target} onChange={e=>{setTarget(e.target.value);setPath('');setFolderPicker(false)}}>
       <option value="">{targets?t('Select a destination'):t('Loading…')}</option>{targets?.map(r=><option key={r.id} value={r.id}>{r.friendlyName||r.name||r.id} · {r.type}</option>)}</select></FormField>
       {targetError&&<p role="alert" className="text-sm">{diagnostic(targetError)} <Button variant="outline" size="sm" onClick={()=>setReload(v=>v+1)}>{t('Retry')}</Button></p>}
-      <FormField label={t('Destination path')}><input className={control} value={path} onChange={e=>setPath(e.target.value)}/></FormField></>}
+      <FormField label={t('Destination path')}><div className="flex min-w-0 gap-2"><input className={control+' min-w-0 flex-1'} value={path} onChange={e=>setPath(e.target.value)}/>
+        {canBrowse&&<Button type="button" variant="outline" disabled={busy} onClick={()=>setFolderPicker(true)}><FolderOpen aria-hidden size={16}/>{t('Browse')}</Button>}</div></FormField></>}
+    {folderPicker&&canBrowse&&selectedTarget&&<StorageTargetFolderPicker key={sourceKey+sessionId+target} scope={{sourceKey,sessionId,view}} destinationId={target}
+      serverName={selectedTarget.friendlyName||selectedTarget.name||target} onClose={()=>setFolderPicker(false)} onChoose={value=>{setPath(value);setFolderPicker(false)}}/>}
     {(selection||action==='migrate')&&<FormField label={t('Existing items')}><select className={control} value={mode} onChange={e=>{setMode(e.target.value);setConfirmed(false)}}>
       {(selection?[['Keep','Keep'],['ChangedOnly','Changed items only'],['Overwrite','Overwrite']]:[['ReplaceOlder','Replace older items'],['Overwrite','Overwrite']]).map(([value,text])=><option key={value} value={value}>{t(text)}</option>)}</select></FormField>}
     {selection&&<><label className="flex gap-2 text-sm"><input type="checkbox" checked={recursive} onChange={e=>setRecursive(e.target.checked)}/>{t('Include subfolders')}</label>

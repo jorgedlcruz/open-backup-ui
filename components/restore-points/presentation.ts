@@ -108,6 +108,11 @@ export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'):
     case 'Invalid recovery media request.': return t('Check the recovery settings.')
     case 'Invalid recovery request.': return t('Check the recovery settings.')
     case 'Select a restore point.': return t('Select a restore point')
+    case 'Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.':
+    case 'Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.':
+    case 'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.':
+    case 'This destination browser is unavailable. Open the folder browser again.':
+    case 'Choose a folder within the selected destination.':
     case 'This recovery form is out of date. Refresh Recovery Center before starting.':
     case 'Too many recovery preparations are open.':
     case 'This recovery point is unavailable for this computer.':

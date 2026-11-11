@@ -4793,5 +4793,19 @@
   "{count} restore points loaded": "{count} restore points loaded",
   "Load 200 more restore points": "Load 200 more restore points",
   "No eligible restore points in the loaded history.": "No eligible restore points in the loaded history.",
-  "History limit reached": "History limit reached"
+  "History limit reached": "History limit reached",
+  "Choose destination folder": "Choose destination folder",
+  "Loading folders…": "Loading folders…",
+  "Symbolic link — enter a destination path manually": "Symbolic link — enter a destination path manually",
+  "Symbolic link": "Symbolic link",
+  "No subfolders in this location.": "No subfolders in this location.",
+  "Page {page}": "Page {page}",
+  "Choose folder": "Choose folder",
+  "Browse": "Browse",
+  "Review and try again": "Review and try again",
+  "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.": "Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.",
+  "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.": "Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.",
+  "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.": "Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.",
+  "This destination browser is unavailable. Open the folder browser again.": "This destination browser is unavailable. Open the folder browser again.",
+  "Choose a folder within the selected destination.": "Choose a folder within the selected destination."
 }

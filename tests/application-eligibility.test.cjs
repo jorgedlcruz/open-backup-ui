@@ -1,4 +1,5 @@
 // Open Backup UI v1.2.0
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs=require('node:fs'),ts=require('typescript'),assert=require('node:assert/strict'),{test}=require('node:test')
 require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,f)
 const {attachApplications,verifyExplorerPoint}=require('../lib/recovery/application-eligibility.ts')
@@ -27,8 +28,88 @@ function durableFixture(t){
     assert.equal(path,base+'/'+other+'/result')
     return {id:sessionId}
   }
-  return {state,send,reopen,store:reopen(),key:launchScope,req:id(50)}
+  return {state,send,reopen,store:reopen(),key:launchScope,req:id(50),dir}
 }
+test('transient Windows intent locks retry atomically before the single native POST',async t=>{
+  const {store,state,send,key,req,dir}=durableFixture(t)
+  await store.reserve(key,req,launchPoint)
+  const target=require('node:path').join(dir,key.sourceKey,key.principalKey,req+'.json')
+  const rename=fs.promises.rename
+  let failures=0
+  t.mock.method(fs.promises,'rename',async(from,to)=>{
+    if(to===target&&failures++<2)throw Object.assign(new Error('sharing violation'),{code:'EPERM'})
+    return rename(from,to)
+  })
+  const guarded=async(...args)=>{
+    assert.equal(JSON.parse(await fs.promises.readFile(target,'utf8')).attempted,true)
+    return send(...args)
+  }
+  await Promise.all([store.submit(key,req,launchPoint,async()=>{},guarded),store.submit(key,req,launchPoint,async()=>{},guarded)])
+  assert.equal(state.created,1)
+  assert.equal((await store.response(key,req,'fixture')).requestStatus,'pending')
+  assert.ok(!fs.existsSync(target+'.failure'))
+})
+test('permanent pre-POST receipt failure is durable, prompt and cannot be claimed by another worker',async t=>{
+  const {store,reopen,state,send,key,req,dir}=durableFixture(t)
+  await store.reserve(key,req,launchPoint)
+  const target=require('node:path').join(dir,key.sourceKey,key.principalKey,req+'.json')
+  const rename=fs.promises.rename
+  t.mock.method(fs.promises,'rename',async(from,to)=>{
+    if(to===target)throw Object.assign(new Error('locked'),{code:'EPERM'})
+    return rename(from,to)
+  })
+  await Promise.all([store.submit(key,req,launchPoint,async()=>{},send),reopen().submit(key,req,launchPoint,async()=>{},send)])
+  assert.equal(state.created,0)
+  assert.equal(JSON.parse(fs.readFileSync(target,'utf8')).attempted,false)
+  const current=reopen(),status=await current.response(key,req,'fixture',send)
+  assert.equal(status.requestStatus,'failed')
+  assert.match(status.error,/Explorer was not started.*could not save/)
+  assert.equal((await current.list(key))[0].requestStatus,'failed')
+  assert.equal(await current.reserve(key,req,launchPoint),false)
+  await current.submit(key,req,launchPoint,async()=>{},send)
+  assert.equal(state.created,0)
+})
+test('transient and permanent acknowledgement locks never turn a sent POST into a definite failure',async t=>{
+  for(const permanent of [false,true]){
+    const {store,reopen,state,send,key,req,dir}=durableFixture(t)
+    await store.reserve(key,req,launchPoint)
+    const target=require('node:path').join(dir,key.sourceKey,key.principalKey,req+'.json')
+    const rename=fs.promises.rename
+    let failures=0
+    const mock=t.mock.method(fs.promises,'rename',async(from,to)=>{
+      if(to===target&&state.created>0&&(permanent||failures++<2))throw Object.assign(new Error('sharing violation'),{code:'EACCES'})
+      return rename(from,to)
+    })
+    await store.submit(key,req,launchPoint,async()=>{},send)
+    assert.equal(state.created,1)
+    const current=reopen()
+    assert.equal((await current.response(key,req,'fixture')).requestStatus,permanent?'unknown':'pending')
+    const status=await current.response(key,req,'fixture',send)
+    assert.equal(status.requestStatus,'pending')
+    await current.submit(key,req,launchPoint,async()=>{},send)
+    assert.equal(state.created,1)
+    mock.mock.restore()
+    if(permanent){
+      const {resolveExplorerHandoff}=require('../lib/restore-points/explorer-handoff.ts')
+      const actions=[]
+      const outcome=await resolveExplorerHandoff({provider:'ad',sourceKey:key.sourceKey,requestId:req},undefined,()=>{}, {
+        wait:async()=>{state.done=true},
+        send:async(_provider,command)=>{
+          actions.push(command.action)
+          return current.response(key,req,'fixture',send,command.pending)
+        },
+      })
+      assert.deepEqual(actions,['status','poll'])
+      assert.deepEqual(outcome,{phase:'accepted',sessionId})
+    }
+    state.done=true
+    const ready=await current.response(key,req,'fixture',send)
+    assert.equal(ready.requestStatus,'ready')
+    assert.equal(ready.sessionId,sessionId)
+    assert.equal((await reopen().response(key,req,'fixture',send)).sessionId,sessionId)
+    assert.equal(state.created,1)
+  }
+})
 test('Explorer launch reserves one immutable scoped UUID and reconciles the exact native task after restart',async t=>{
   const {store,reopen,state,send,key,req}=durableFixture(t)
   const owners=await Promise.all([store.reserve(key,req,launchPoint),store.reserve(key,req,launchPoint)])
