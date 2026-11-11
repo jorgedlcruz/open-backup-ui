@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "Se desconoce el resultado. Consulte Sesiones antes de volver a intentarlo.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR aceptó la operación, pero no devolvió un ID de sesión. Consulte Sesiones antes de volver a intentarlo.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR aceptó la restauración de archivos, pero el ID de tarea no está disponible. Consulte Sesiones antes de volver a intentarlo.",
-  "Check the file restore in the recovery cart before unmounting.": "Comprueba la restauración de archivos en el carrito de recuperación antes de desmontar.",
+  "Check the file restore task before unmounting.": "Comprueba la tarea de restauración de archivos antes de desmontar.",
   "Check the session log before trying again.": "Consulta el registro de la sesión antes de volver a intentarlo.",
   "Review restore": "Revisar restauración",
   "{count} selected": "{count} seleccionados",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Hay demasiadas operaciones abiertas. Revisa Operaciones antes de iniciar otra.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Elige el punto de restauración necesario en el Centro de recuperación para restaurar una versión anterior.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "La migración ha finalizado. ¿Detener la publicación del montaje de Instant Recovery que permanece activo?",
-  "Review the migration session before stopping publication.": "Revisa la sesión de migración antes de detener la publicación."
+  "Review the migration session before stopping publication.": "Revisa la sesión de migración antes de detener la publicación.",
+  "Browse files": "Explorar archivos",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "No se ha podido verificar la máquina virtual seleccionada en esta copia de seguridad. Vuelve a abrir el asistente de recuperación."
 }

@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "The result is unknown. Check Sessions before trying again.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR accepted the operation but returned no session ID. Check Sessions before trying again.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.",
-  "Check the file restore in the recovery cart before unmounting.": "Check the file restore in the recovery cart before unmounting.",
+  "Check the file restore task before unmounting.": "Check the file restore task before unmounting.",
   "Check the session log before trying again.": "Check the session log before trying again.",
   "Review restore": "Review restore",
   "{count} selected": "{count} selected",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Too many operations are still open. Review Operations before starting another.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Choose the required restore point in Recovery Center to restore an older version.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "Migration has finished. Stop publishing the remaining Instant Recovery mount?",
-  "Review the migration session before stopping publication.": "Review the migration session before stopping publication."
+  "Review the migration session before stopping publication.": "Review the migration session before stopping publication.",
+  "Browse files": "Browse files",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard."
 }

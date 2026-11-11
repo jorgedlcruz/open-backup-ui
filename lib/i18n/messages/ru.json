@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "Результат неизвестен. Перед повторной попыткой проверьте сеансы.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR принял операцию, но не вернул идентификатор сеанса. Перед повторной попыткой проверьте сеансы.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR принял запрос на восстановление файлов, но идентификатор задачи недоступен. Перед повторной попыткой проверьте сеансы.",
-  "Check the file restore in the recovery cart before unmounting.": "Перед отключением проверьте восстановление файлов в корзине восстановления.",
+  "Check the file restore task before unmounting.": "Перед отключением проверьте задачу восстановления файлов.",
   "Check the session log before trying again.": "Перед повторной попыткой проверьте журнал сеанса.",
   "Review restore": "Проверить параметры восстановления",
   "{count} selected": "Выбрано объектов: {count}",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Открыто слишком много операций. Проверьте раздел «Операции», прежде чем запускать ещё одну.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Чтобы восстановить более раннюю версию, выберите нужную точку восстановления в Центре восстановления.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "Миграция завершена. Остановить публикацию оставшегося подключения Instant Recovery?",
-  "Review the migration session before stopping publication.": "Проверьте сеанс миграции перед остановкой публикации."
+  "Review the migration session before stopping publication.": "Проверьте сеанс миграции перед остановкой публикации.",
+  "Browse files": "Просмотр файлов",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "Не удалось проверить выбранную виртуальную машину в этой резервной копии. Заново откройте мастер восстановления."
 }

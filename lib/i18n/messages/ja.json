@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "結果は不明です。再試行する前にセッションを確認してください。",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR は操作を受け付けましたが、セッション ID を返しませんでした。再試行する前にセッションを確認してください。",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR はファイルの復元を受け付けましたが、タスク ID を取得できません。再試行する前にセッションを確認してください。",
-  "Check the file restore in the recovery cart before unmounting.": "マウントを解除する前に、復元カートでファイルの復元状況を確認してください。",
+  "Check the file restore task before unmounting.": "マウントを解除する前に、ファイルの復元タスクを確認してください。",
   "Check the session log before trying again.": "再試行する前にセッションログを確認してください。",
   "Review restore": "復元内容を確認",
   "{count} selected": "{count} 件を選択中",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "未完了の操作が多すぎます。新しい操作を開始する前に「操作」を確認してください。",
   "Choose the required restore point in Recovery Center to restore an older version.": "以前のバージョンを復元するには、復元センターで必要な復元ポイントを選択してください。",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "移行が完了しました。残っている Instant Recovery のマウントの公開を停止しますか？",
-  "Review the migration session before stopping publication.": "公開を停止する前に、移行セッションを確認してください。"
+  "Review the migration session before stopping publication.": "公開を停止する前に、移行セッションを確認してください。",
+  "Browse files": "ファイルを参照",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "このバックアップ内で選択した仮想マシンを確認できませんでした。復元ウィザードを開き直してください。"
 }

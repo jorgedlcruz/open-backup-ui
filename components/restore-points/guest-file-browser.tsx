@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { readWorkspace, workspaceKey, type GuestWorkspace } from '@/lib/restore-points/guest-workspace'
 import { GuestFileExplorer } from './guest-file-explorer'
 import { GuestRecoveryCart } from './guest-recovery-cart'
-import { useRecoveryPresentation } from './use-presentation'
 import styles from './workflow.module.css'
 
 type BrowserProps = { sessionId: string; sourceKey: string }
@@ -25,7 +24,6 @@ function MountedBrowser(props: BrowserProps) {
 }
 
 function Browser({ sessionId, sourceKey, initial, storageKey }: BrowserProps & { initial: GuestWorkspace; storageKey: string }) {
-  const { t } = useRecoveryPresentation()
   const [workspace, setWorkspace] = useState(initial)
   const [ready, setReady] = useState(false)
   useEffect(() => {
@@ -34,9 +32,8 @@ function Browser({ sessionId, sourceKey, initial, storageKey }: BrowserProps & {
     window.dispatchEvent(new CustomEvent('guest-workspace-changed', { detail: { storageKey, workspace } }))
   }, [storageKey, workspace])
   return <section className={styles.browser}>
-    <div className={styles.bar}><h3>{t('Guest file restore')}</h3>
-      <GuestRecoveryCart sessionId={sessionId} sourceKey={sourceKey} workspace={workspace} setWorkspace={setWorkspace} ready={ready}/>
-    </div>
-    <GuestFileExplorer sessionId={sessionId} sourceKey={sourceKey} workspace={workspace} setWorkspace={setWorkspace} onMountAvailable={setReady}/>
+    <GuestRecoveryCart sessionId={sessionId} sourceKey={sourceKey} workspace={workspace} setWorkspace={setWorkspace} ready={ready}>
+      <GuestFileExplorer sessionId={sessionId} sourceKey={sourceKey} workspace={workspace} setWorkspace={setWorkspace} onMountAvailable={setReady}/>
+    </GuestRecoveryCart>
   </section>
 }

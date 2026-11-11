@@ -7,10 +7,11 @@ const id=n=>'d0000000-0000-4000-8000-'+String(n).padStart(12,'0'),scope={sourceK
 function fixture(t,op='StartViVMInstantRecovery'){
   const directory=fs.mkdtempSync(path.join(os.tmpdir(),'vm-batch-'));t.after(()=>fs.rmSync(directory,{force:true,recursive:true}))
   let time=Date.now()
-  const store=new RestoreBatches(directory,()=>time),calls=[],objects=new Map(),points=new Map(),members=new Map(),results=new Map(),logs=[]
+  const store=new RestoreBatches(directory,()=>time),calls=[],objects=new Map(),backupObjects=new Map(),points=new Map(),members=new Map(),results=new Map(),logs=[]
   const items=[1,2,3].map((n)=>{
     const objectId=id(n),pointId=id(n+10),backupId=id(20+n),name='vm-'+n
     objects.set(objectId,{id:objectId,name,objectId:'vm-'+(100+n),path:'vc.example\\DC\\'+name,platformName:'VMware',type:'VM',platformId:id(30)})
+    backupObjects.set(backupId,[objectId])
     points.set(pointId,{id:pointId,backupId,name,allowedOperations:[op],platformName:'VMware',creationTime:'2026-11-10T12:00:00Z',malwareStatus:'Clean'})
     members.set(objectId,[{id:pointId,backupId}]);results.set(pointId,{id:id(n+40),sessionType:'InstantRecovery',state:'Starting'})
     return {objectId,name,draft:{sourceKey:scope.sourceKey,restorePointId:pointId,backupId,operation:op,mode:'OriginalLocation'}}
@@ -24,14 +25,64 @@ function fixture(t,op='StartViVMInstantRecovery'){
       return value
     }
     const [pathname]=url.split('?'),[,idPart]=pathname.match(/\/backupObjects\/([^/]+)/)||[]
+    const backupId=pathname.match(/^\/api\/v1\/backups\/([^/]+)\/objects$/)?.[1]
+    if(backupId){
+      const all=(backupObjects.get(backupId)||[]).map(id=>objects.get(id)),skip=Number(new URL(url,'http://vbr').searchParams.get('skip'))
+      return {data:all.slice(skip,skip+200),pagination:{skip,total:all.length}}
+    }
     if(pathname.endsWith('/restorePoints')){const data=members.get(idPart)||[];return {data,pagination:{skip:0,total:data.length}}}
-    if(idPart)return objects.get(idPart)
+    if(idPart)throw new VbrRecoveryError('Not found',404)
     if(url.includes('/restorePoints/'))return points.get(pathname.split('/').at(-1))
     throw Error('unexpected URL: '+url)
   }
   async function run(runner,db=store){return runVmBatch(db,scope,batch.batchId,runner,send,async(...args)=>logs.push(args))}
-  return {batch,store,directory,send,run,calls,objects,points,members,results,logs,advance:()=>{time+=300000},writes:()=>calls.filter(c=>c.opts.mutation)}
+  return {batch,store,directory,send,run,calls,objects,backupObjects,points,members,results,logs,advance:()=>{time+=300000},writes:()=>calls.filter(c=>c.opts.mutation)}
 }
+
+test('mass recovery resolves exact backup collection IDs when standalone object details return 404',async t=>{
+  const f=fixture(t),b=f.batch
+  // Public backup collections may return child-backup IDs in their member rows.
+  // Membership is established by the backup-scoped URL and exact point check.
+  f.objects.get(id(1)).backupId=id(99)
+  await assert.rejects(f.send('/api/v1/backupObjects/'+id(1)),error=>error.status===404)
+  f.calls.length=0
+  await f.run((await f.store.create(scope,b)).runner)
+  const receipt=await f.store.get(scope,b.batchId)
+  assert.deepEqual(receipt.items.map(i=>i.status),['accepted','accepted','accepted'])
+  assert.equal(f.writes().length,3)
+  assert.equal(f.calls.filter(c=>/^\/api\/v1\/backups\/[^/]+\/objects\?/.test(c.url)).length,3)
+  assert.equal(f.calls.some(c=>/^\/api\/v1\/backupObjects\/[^/?]+$/.test(c.url)),false)
+})
+
+test('backup collection lookup never substitutes a same-name VM or bypasses denied access',async t=>{
+  const f=fixture(t),row=f.batch.items[0]
+  f.objects.get(id(2)).name=f.objects.get(id(1)).name
+  f.backupObjects.set(row.draft.backupId,[id(2)])
+  await assert.rejects(prepareBatchRow(f.send,scope.sourceKey,row),/could not be verified in this backup/)
+  await assert.rejects(prepareBatchRow(async(url,opts)=>{
+    if(url.includes('/objects?'))throw new VbrRecoveryError('Access denied',403)
+    return f.send(url,opts)
+  },scope.sourceKey,row),error=>error.status===403)
+  assert.equal(f.writes().length,0)
+})
+
+test('backup object resolution follows pagination and refuses incomplete or ambiguous inventories',async t=>{
+  const f=fixture(t),row=f.batch.items[0],requested=[]
+  const paginated=async(url,opts)=>{
+    if(!url.includes('/objects?'))return f.send(url,opts)
+    const skip=Number(new URL(url,'http://vbr').searchParams.get('skip'));requested.push(skip)
+    return {data:[f.objects.get(skip===0?id(2):id(1))],pagination:{skip,total:2}}
+  }
+  const ready=await prepareBatchRow(paginated,scope.sourceKey,row)
+  assert.equal(ready.name,'vm-1');assert.deepEqual(requested,[0,1])
+  for(const data of [[],[f.objects.get(id(1)),f.objects.get(id(1))]]){
+    await assert.rejects(prepareBatchRow(async(url,opts)=>url.includes('/objects?')
+      ?{data,pagination:{skip:0,total:2}}:f.send(url,opts),scope.sourceKey,row),/incomplete|could not be verified/)
+  }
+  await assert.rejects(prepareBatchRow(async(url,opts)=>url.includes('/objects?')
+    ?{data:[f.objects.get(id(1))],pagination:{skip:1,total:1}}:f.send(url,opts),scope.sourceKey,row),/invalid selection list/)
+  assert.equal(f.writes().length,0)
+})
 test('same scope/id reserves once before native writes, unrelated accounts cannot observe or resume, receipts survive process restart',async t=>{
   const f=fixture(t),b=f.batch;checkBatchInput(b,scope.sourceKey)
   const [a,c]=await Promise.all([f.store.create(scope,b),f.store.create(scope,b)]),runner=a.runner||c.runner

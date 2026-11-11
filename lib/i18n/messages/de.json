@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "Das Ergebnis ist unbekannt. Prüfen Sie die Sitzungen, bevor Sie es erneut versuchen.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR hat den Vorgang angenommen, aber keine Sitzungs-ID zurückgegeben. Prüfen Sie die Sitzungen, bevor Sie es erneut versuchen.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR hat die Dateiwiederherstellung angenommen, aber die Aufgaben-ID ist nicht verfügbar. Prüfen Sie die Sitzungen, bevor Sie es erneut versuchen.",
-  "Check the file restore in the recovery cart before unmounting.": "Prüfen Sie vor dem Aushängen die Dateiwiederherstellung im Wiederherstellungskorb.",
+  "Check the file restore task before unmounting.": "Prüfen Sie vor dem Aushängen die Dateiwiederherstellungsaufgabe.",
   "Check the session log before trying again.": "Prüfen Sie vor einem weiteren Versuch das Sitzungsprotokoll.",
   "Review restore": "Wiederherstellung prüfen",
   "{count} selected": "{count} ausgewählt",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Es sind noch zu viele Vorgänge offen. Prüfen Sie Vorgänge, bevor Sie einen weiteren starten.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Wählen Sie im Wiederherstellungscenter den gewünschten Wiederherstellungspunkt, um eine ältere Version wiederherzustellen.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "Die Migration ist abgeschlossen. Veröffentlichung des verbleibenden Instant-Recovery-Mounts beenden?",
-  "Review the migration session before stopping publication.": "Prüfen Sie die Migrationssitzung, bevor Sie die Veröffentlichung beenden."
+  "Review the migration session before stopping publication.": "Prüfen Sie die Migrationssitzung, bevor Sie die Veröffentlichung beenden.",
+  "Browse files": "Dateien durchsuchen",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "Die ausgewählte virtuelle Maschine konnte in diesem Backup nicht verifiziert werden. Öffnen Sie den Wiederherstellungsassistenten erneut."
 }

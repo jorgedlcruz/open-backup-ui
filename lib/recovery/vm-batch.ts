@@ -5,6 +5,7 @@ import {sameRecoveryDestination,type RecoveryDestination} from '../restore-point
 import {VbrRecoveryError,checkSource} from './error'
 import type {RecoverySend} from '../server/vbr-recovery'
 import {draftSchema,prepareRestore} from './start'
+import {collect} from './options'
 
 const guid=z.string().uuid().transform(id=>id.toLowerCase())
 const pointRef=z.object({id:guid,backupId:guid})
@@ -29,6 +30,16 @@ export function checkBatchInput(batch:VmBatch,sourceKey:string) {
 }
 const object=z.object({id:guid,name:z.string().min(1),type:z.string(),platformName:z.string(),platformId:z.string().nullish(),
   objectId:z.string().nullish(),path:z.string().nullish()})
+async function resolveBatchObject(send:RecoverySend,row:VmBatchRow){
+  // VBR can list a valid object in its backup while the standalone object GET
+  // returns 404. Resolve the exact public object ID from that backup instead.
+  // A row's own backupId may identify a child backup; verifyMember below proves
+  // the selected point belongs to the requested object and parent backup.
+  const objects=await collect(send,'/api/v1/backups/'+row.draft.backupId+'/objects',object)
+  const matches=objects.filter(vm=>vm.id===row.objectId)
+  if(matches.length!==1)throw new VbrRecoveryError('The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.',409)
+  return matches[0]
+}
 const members=z.object({data:z.array(pointRef),pagination:z.object({skip:z.number().int(),total:z.number().int().nonnegative()})})
 async function verifyMember(send:RecoverySend,row:VmBatchRow){
   let skip=0
@@ -54,7 +65,7 @@ export function collide(a:BatchIdentity,b:BatchIdentity) {
 }
 export async function prepareBatchRow(send:RecoverySend,sourceKey:string,row:VmBatchRow){
   const {draft}=row
-  const [vm,prepared]=await Promise.all([send('/api/v1/backupObjects/'+row.objectId).then(raw=>object.parse(raw)),
+  const [vm,prepared]=await Promise.all([resolveBatchObject(send,row),
     prepareRestore(send,sourceKey,draft),verifyMember(send,row)])
   if(vm.id!==row.objectId||!['vm','virtualmachine'].includes(norm(vm.type))||vm.platformName!==prepared.point.platformName)throw new VbrRecoveryError('Select a current virtual machine on the same VBR platform.',409)
   const op=draft.operation

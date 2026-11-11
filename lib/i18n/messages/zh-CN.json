@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "结果未知。请在重试前查看会话。",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR 已接受操作，但未返回会话 ID。请在重试前查看会话。",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR 已接受文件恢复请求，但任务 ID 不可用。请在重试前查看会话。",
-  "Check the file restore in the recovery cart before unmounting.": "卸载前，请在恢复购物车中查看文件还原状态。",
+  "Check the file restore task before unmounting.": "卸载前，请查看文件还原任务。",
   "Check the session log before trying again.": "重试前请查看会话日志。",
   "Review restore": "检查还原设置",
   "{count} selected": "已选择 {count} 项",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "仍有过多操作尚未结束。开始新操作前，请先查看“操作”。",
   "Choose the required restore point in Recovery Center to restore an older version.": "要还原旧版本，请在恢复中心选择所需的还原点。",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "迁移已结束。是否停止发布剩余的 Instant Recovery 挂载？",
-  "Review the migration session before stopping publication.": "停止发布前，请检查迁移会话。"
+  "Review the migration session before stopping publication.": "停止发布前，请检查迁移会话。",
+  "Browse files": "浏览文件",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "无法验证此备份中选定的虚拟机。请重新打开恢复向导。"
 }

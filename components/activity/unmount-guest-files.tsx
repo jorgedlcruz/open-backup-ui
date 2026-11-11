@@ -49,7 +49,7 @@ export function UnmountGuestFiles({sessionId, sourceKey, onUnmount}: {
         current = workspace.current.task?.id === task.id ? { ...workspace.current, task } : workspace.current
       }
       if (guestRestoreBusy(current)) {
-        setError(t('Check the file restore in the recovery cart before unmounting.'))
+        setError(t('Check the file restore task before unmounting.'))
         return
       }
       sent = true

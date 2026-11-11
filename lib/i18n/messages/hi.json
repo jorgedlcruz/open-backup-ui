@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "परिणाम अज्ञात है। फिर से कोशिश करने से पहले सत्र देखें।",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR ने कार्रवाई स्वीकार कर ली, लेकिन सत्र आईडी नहीं लौटाई। फिर से कोशिश करने से पहले सत्र देखें।",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR ने फ़ाइल पुनर्स्थापना स्वीकार कर ली, लेकिन कार्य आईडी उपलब्ध नहीं है। फिर से कोशिश करने से पहले सत्र देखें।",
-  "Check the file restore in the recovery cart before unmounting.": "अनमाउंट करने से पहले रिकवरी कार्ट में फ़ाइल पुनर्स्थापना की स्थिति देखें।",
+  "Check the file restore task before unmounting.": "अनमाउंट करने से पहले फ़ाइल पुनर्स्थापना कार्य की स्थिति देखें।",
   "Check the session log before trying again.": "दोबारा कोशिश करने से पहले सत्र लॉग देखें।",
   "Review restore": "पुनर्स्थापना की समीक्षा करें",
   "{count} selected": "{count} चयनित",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "अभी बहुत सारे कार्य खुले हैं। नया कार्य शुरू करने से पहले कार्यों की समीक्षा करें।",
   "Choose the required restore point in Recovery Center to restore an older version.": "पुराना संस्करण पुनर्स्थापित करने के लिए रिकवरी सेंटर में आवश्यक पुनर्स्थापना बिंदु चुनें।",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "माइग्रेशन पूरा हो गया है। क्या शेष Instant Recovery माउंट का प्रकाशन रोकना है?",
-  "Review the migration session before stopping publication.": "प्रकाशन रोकने से पहले माइग्रेशन सत्र की समीक्षा करें।"
+  "Review the migration session before stopping publication.": "प्रकाशन रोकने से पहले माइग्रेशन सत्र की समीक्षा करें।",
+  "Browse files": "फ़ाइलें ब्राउज़ करें",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "इस बैकअप में चयनित वर्चुअल मशीन की पुष्टि नहीं हो सकी। रिकवरी विज़ार्ड फिर से खोलें।"
 }

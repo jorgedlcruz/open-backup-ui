@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "O resultado é desconhecido. Consulte as sessões antes de tentar novamente.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "O VBR aceitou a operação, mas não retornou um ID de sessão. Consulte as sessões antes de tentar novamente.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "O VBR aceitou a restauração dos arquivos, mas o ID da tarefa não está disponível. Consulte as sessões antes de tentar novamente.",
-  "Check the file restore in the recovery cart before unmounting.": "Verifique a restauração dos arquivos no carrinho de recuperação antes de desmontar.",
+  "Check the file restore task before unmounting.": "Verifique a tarefa de restauração dos arquivos antes de desmontar.",
   "Check the session log before trying again.": "Verifique o log da sessão antes de tentar novamente.",
   "Review restore": "Revisar restauração",
   "{count} selected": "{count} selecionados",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Há muitas operações ainda abertas. Revise Operações antes de iniciar outra.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Escolha o ponto de restauração necessário no Centro de recuperação para restaurar uma versão anterior.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "A migração foi concluída. Parar a publicação da montagem de Instant Recovery restante?",
-  "Review the migration session before stopping publication.": "Revise a sessão de migração antes de parar a publicação."
+  "Review the migration session before stopping publication.": "Revise a sessão de migração antes de parar a publicação.",
+  "Browse files": "Procurar arquivos",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "Não foi possível verificar a máquina virtual selecionada neste backup. Abra novamente o assistente de recuperação."
 }

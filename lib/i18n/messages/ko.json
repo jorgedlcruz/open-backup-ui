@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "결과를 알 수 없습니다. 다시 시도하기 전에 세션을 확인하세요.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR에서 작업을 수락했지만 세션 ID를 반환하지 않았습니다. 다시 시도하기 전에 세션을 확인하세요.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR에서 파일 복원을 수락했지만 작업 ID를 사용할 수 없습니다. 다시 시도하기 전에 세션을 확인하세요.",
-  "Check the file restore in the recovery cart before unmounting.": "마운트를 해제하기 전에 복구 장바구니에서 파일 복원 상태를 확인하세요.",
+  "Check the file restore task before unmounting.": "마운트를 해제하기 전에 파일 복원 작업을 확인하세요.",
   "Check the session log before trying again.": "다시 시도하기 전에 세션 로그를 확인하세요.",
   "Review restore": "복원 검토",
   "{count} selected": "{count}개 선택됨",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "아직 열려 있는 작업이 너무 많습니다. 다른 작업을 시작하기 전에 작업을 검토하세요.",
   "Choose the required restore point in Recovery Center to restore an older version.": "이전 버전을 복원하려면 복구 센터에서 필요한 복원 지점을 선택하세요.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "마이그레이션이 완료되었습니다. 남아 있는 Instant Recovery 마운트의 게시를 중지할까요?",
-  "Review the migration session before stopping publication.": "게시를 중지하기 전에 마이그레이션 세션을 확인하세요."
+  "Review the migration session before stopping publication.": "게시를 중지하기 전에 마이그레이션 세션을 확인하세요.",
+  "Browse files": "파일 찾아보기",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "이 백업에서 선택한 가상 머신을 확인할 수 없습니다. 복구 마법사를 다시 여세요."
 }

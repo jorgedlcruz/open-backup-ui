@@ -4241,7 +4241,7 @@
   "The result is unknown. Check Sessions before trying again.": "L’esito è sconosciuto. Controlla le sessioni prima di riprovare.",
   "VBR accepted the operation but returned no session ID. Check Sessions before trying again.": "VBR ha accettato l’operazione senza restituire un ID di sessione. Controlla le sessioni prima di riprovare.",
   "VBR accepted the file restore but its task ID is unavailable. Check Sessions before trying again.": "VBR ha accettato il ripristino dei file, ma l’ID attività non è disponibile. Controlla le sessioni prima di riprovare.",
-  "Check the file restore in the recovery cart before unmounting.": "Controlla il ripristino dei file nel carrello di ripristino prima di smontare i dischi.",
+  "Check the file restore task before unmounting.": "Controlla l’attività di ripristino dei file prima di smontare i dischi.",
   "Check the session log before trying again.": "Controlla il registro della sessione prima di riprovare.",
   "Review restore": "Verifica ripristino",
   "{count} selected": "{count} selezionati",
@@ -4825,5 +4825,7 @@
   "Too many operations are still open. Review Operations before starting another.": "Ci sono troppe operazioni ancora aperte. Controlla Operazioni prima di avviarne un’altra.",
   "Choose the required restore point in Recovery Center to restore an older version.": "Scegli il punto di ripristino necessario nel Centro di recupero per ripristinare una versione precedente.",
   "Migration has finished. Stop publishing the remaining Instant Recovery mount?": "La migrazione è terminata. Interrompere la pubblicazione del montaggio Instant Recovery ancora presente?",
-  "Review the migration session before stopping publication.": "Controlla la sessione di migrazione prima di interrompere la pubblicazione."
+  "Review the migration session before stopping publication.": "Controlla la sessione di migrazione prima di interrompere la pubblicazione.",
+  "Browse files": "Sfoglia file",
+  "The selected virtual machine could not be verified in this backup. Reopen the recovery wizard.": "Impossibile verificare la macchina virtuale selezionata in questo backup. Riapri la procedura guidata di ripristino."
 }
