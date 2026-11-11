@@ -3,6 +3,23 @@
   display: none;
 }
 
+.brandButton {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 48px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--sidebar-foreground);
+  background: transparent;
+  cursor: pointer;
+}
+.brandButton:hover { background: var(--sidebar-accent); }
+.brandButton:focus-visible { outline: 2px solid var(--sidebar-ring); outline-offset: 2px; }
+.brandButton[data-compact="true"] { flex: 0 0 32px; width: 32px; padding: 0; justify-content: center; }
+
 /* Navigation scrolls vertically. Radix's table wrapper otherwise grows to the
    minimum width of translated product names plus their connection badges. */
 .navigation :global([data-sidebar="content"]) > :global([data-slot="scroll-area-viewport"]) > div {

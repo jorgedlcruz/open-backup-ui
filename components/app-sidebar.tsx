@@ -4,7 +4,7 @@
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
+import { OpenBackupLogo } from "@/components/brand/open-backup-logo"
 import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles, Network, Aperture, Menu, X, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import styles from "./mobile-navigation.module.css"
@@ -273,7 +273,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname()
   const { t } = useI18n()
-  const { toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, setOpenMobile, state } = useSidebar()
   const mobileTrigger = React.useRef<HTMLButtonElement>(null)
   const mobileNavigationId = React.useId()
   const { sectionNames } = useSectionNames()
@@ -313,7 +313,7 @@ export function AppSidebar({
         onClick={() => setOpenMobile(!openMobile)}>
         {openMobile ? <X size={20} /> : <Menu size={20} />}<span>{t("Menu")}</span>
       </Button>
-      <div className={styles.brand}><Image src="/logo.webp" alt="" width={24} height={24} /><span>Open Backup UI</span></div>
+      <div className={styles.brand}><OpenBackupLogo /></div>
     </div>
     <Sidebar collapsible="icon" {...props} id={mobileNavigationId} className={[styles.navigation, props.className].filter(Boolean).join(" ")}
       role={isMobile ? "navigation" : undefined} aria-label={isMobile ? t("Main navigation") : undefined}
@@ -324,24 +324,17 @@ export function AppSidebar({
       <SidebarHeader className="hidden md:flex">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex-1"
+            <button
+              type="button"
+              className={styles.brandButton}
+              data-compact={state === "collapsed"}
+              aria-label={`Open Backup UI · ${t("Toggle Sidebar")}`}
+              aria-expanded={state === "expanded"}
+              title="Open Backup UI"
               onClick={toggleSidebar}
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Image
-                  src="/logo.webp"
-                  alt="Open Backup UI"
-                  width={24}
-                  height={24}
-                  className="size-4"
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Open Backup UI</span>
-              </div>
-            </SidebarMenuButton>
+              <OpenBackupLogo compact={state === "collapsed"} />
+            </button>
             <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground" />
           </SidebarMenuItem>
         </SidebarMenu>
