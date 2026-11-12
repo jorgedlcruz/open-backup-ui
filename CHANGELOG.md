@@ -16,7 +16,7 @@
 - **Localization:** recovery controls, status labels, guidance and known diagnostics extend the existing eleven language catalogs.
 - **Final QA fixes:** slow individual restore starts keep a durable acknowledgement across navigation/reload; completed SQL operations retain their permanent-session result; native attempt records protect starts, batch rows and migrations against duplicate dispatch after stale-lock races. The standalone archive now includes the kiosk viewer's launcher dependencies.
 
-[Full release notes](docs/releases/v1.2.0.md) · [PR description](docs/releases/v1.2.0-pull-request.md) · [Validation and publication checklist](docs/releases/v1.2.0-validation.md) · [Restore API map](docs/vm-restore-api.md)
+[Full release notes](docs/releases/v1.2.0.md) · [PR description](docs/releases/v1.2.0-pull-request.md) · [Validation and publication checklist](docs/releases/v1.2.0-validation.md)
 
 ## 1.0.1
 

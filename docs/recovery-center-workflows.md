@@ -34,5 +34,3 @@ The supported Copy to endpoint is `POST /api/v1/backupBrowser/flr/unstructuredDa
 **Loading feedback.** The real operation status is separate from a shuffled collection of 200 playful captions. A small, continuously rotating loading circle appears in front; it has no controls or saved animation preferences. Captions pause while the browser tab is hidden and are excluded from screen-reader announcements.
 
 **Volume recovery.** This workflow accepts Windows physical-computer backups (`WindowsPhysical`) and a connected, verified Windows recovery appliance. Boot and verify that appliance before mapping disks. Review VBR's source, destination and proposed mappings; if needed, stage a different source/destination disk pair. A disk write requires the target computer name and a final native layout check. Media generation produces a downloadable ISO; creating a recovery token grants temporary access to the displayed backup chain. Neither operation starts a volume restore.
-
-For VM-specific request schemas and endpoint details, see [VM restore API map](vm-restore-api.md).

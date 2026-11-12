@@ -6,30 +6,29 @@ See protection health, investigate failures, plan storage, and recover data from
 
 [What's new in v1.2.0](docs/releases/v1.2.0.md) · [Validation and release checklist](docs/releases/v1.2.0-validation.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
-Preparing the v1.2.0 PR? Use the [review-ready PR description](docs/releases/v1.2.0-pull-request.md) and [publication checklist](docs/releases/v1.2.0-validation.md#publication-checklist).
-
 > [!IMPORTANT]
 > This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
 
 ## What's new in v1.2.0
 
-- **Recovery Center:** start with machines, files and objects, application items, or disks and volumes. The picker shows eligible workloads and methods for the connected VBR source, with workload search and type filters.
+- **Recovery Center:** start with **Entire workload**, **Files, folders and objects**, **Application items**, or **Disks and volumes**. The picker shows eligible workloads and methods for the connected VBR source, with workload search and type filters.
 - **A restore-point calendar:** select a workload on the left and inspect its calendar and restore times on the right. The latest eligible point is selected automatically; month/year navigation and **Load more** make older recovery history accessible.
 - **VM recovery, individually or together:** Instant VM Recovery and entire-VM restore, with original or customized placement, per-VM restore points and names, and recovery groups for up to 32 VMs. Availability follows VBR's reported capabilities.
 - **Files in the session:** browse Windows/Linux guest files in a folder tree, search, collect items, download ZIP archives, and restore with **Keep both copies** or **Overwrite**. The inline cart returns to browsing after submission and keeps progress in one expandable task strip.
 - **Application recovery:** embedded Active Directory and SQL Server explorers with selection-scoped actions. Recover or export directory objects; browse SQL instances and databases, restore or instantly recover databases, export, publish, and configure a SQL staging server.
 - **More workload families:** NAS/file-share and object-storage recovery from a selected restore point, destination browsing for Copy to, and tracked file operations; physical-computer guest files and supported disk tools. Windows volume restore uses a connected recovery appliance.
-- **Recovery you can follow:** dedicated Sessions, filtered recovery activity, pending and ready-for-action views, contextual breadcrumbs, and recovery maps showing repositories, VMs, proxies and destinations. Live processing-rate history remains available for 12 hours after a session finishes.
+- **Recovery maps and migration:** follow the source backup, VM, storage, reported proxies and production destination. Configure migration from the Instant Recovery map; animated read/write paths and processing-rate charts show the work as it happens. Collected rate history remains available for 12 hours after a session finishes.
+- **Sessions and recovery activity:** investigate backup and restore runs in Sessions, or focus on recoveries in Recovery Center with Pending, Ready for action and other quick filters. Return links preserve where you started, and cleanup actions stay with the session while applicable.
 - **Faster repeated selection:** shared, scoped restore-point caching, local workload search, 30-minute refresh while Recovery Center is open, manual Refresh, and older restore points loaded in batches of 200 per backup copy.
 - **A refreshed identity:** the new OB restore-and-check icon, Glass Ocean as the default for new preferences, theme-aware controls, 200 rotating loading captions, and connection status with the release version in the footer.
 
 The [release notes](docs/releases/v1.2.0.md) explain the workflows and their boundaries. Several Explorer and unstructured-data workflows use VBR's private Web APIs; server version, credentials, permissions, and the selected restore point determine which actions are available. This is not complete parity with every native Veeam console.
 
-![Recovery Center in Glass Ocean, with recovery status filters and workload activity](docs/releases/images/v1.2.0/01-recovery-center.webp)
+![Recovery Center in Glass Ocean, with recovery status filters and workload activity](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.2.0/01-recovery-center.webp)
 
 *Recovery Center brings recovery activity and the next action together. [See eight English, Glass Ocean screenshots](docs/releases/v1.2.0-gallery.md), including the goal picker, restore-point calendar, multi-VM selection, recovery maps and Sessions.*
 
-![Instant Recovery after migration, with its source backup, VM, proxy, production destination and processing-rate history](docs/releases/images/v1.2.0/08-migration-statistics.webp)
+![Instant Recovery after migration, with its source backup, VM, proxy, production destination and processing-rate history](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.2.0/08-migration-statistics.webp)
 
 *An actual completed lab migration, with its reported proxy path and retained processing-rate history.*
 
@@ -41,7 +40,7 @@ The [release notes](docs/releases/v1.2.0.md) explain the workflows and their bou
 - **Cached capacity evidence:** repository forecasts, runway, footprint, retention and hygiene widgets, plus a populated forecast miniature in the Lens selector.
 - **AI summaries and PDF reports:** clearer provider setup and errors, a panel that follows Branding, and local export of completed analyses with linked contents and embedded multilingual fonts.
 
-![Kiosk Builder shared TV view](docs/releases/images/v1.0.1/08-kiosk-tv.webp)
+![Kiosk Builder shared TV view](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.0.1/08-kiosk-tv.webp)
 
 *A ten-widget monitoring screen in Glass Aurora. [Explore all 15 release images](docs/releases/v1.0.1-gallery.md), the [Kiosk Builder guide](docs/labs.md), and [AI PDF export](docs/ai-summary-pdf.md).*
 
@@ -59,7 +58,7 @@ The [release notes](docs/releases/v1.2.0.md) explain the workflows and their bou
 
 Browse the [visual guide](docs/releases/v1.0.0-gallery.md) for 43 application screenshots, including the Glass themes, Spanish interface, and connection-page showcase. The [full release notes](docs/releases/v1.0.0.md) describe the changes and deployment considerations.
 
-![Protection Lens overview](docs/releases/images/v1.0.0/01-protection-lens.webp)
+![Protection Lens overview](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.0.0/01-protection-lens.webp)
 
 *Protection Lens brings health, investigation priorities, and capacity into one view.*
 
@@ -74,7 +73,7 @@ Browse the [visual guide](docs/releases/v1.0.0-gallery.md) for 43 application sc
 | **Jobs & Policies** | Search and filter jobs; sort last/next runs; inspect workloads, sessions, logs, and supported retry chains; retain start, stop, retry, enable, and disable actions. |
 | **Job builder** | Create VMware vSphere or Hyper-V backup jobs using live workload/storage choices, policy settings, preflight checks, and a reviewable JSON payload. Existing backup-copy and Entra ID forms remain available. |
 | **Policy Profiles** | Save, duplicate, revise, import, and export source-specific retention, guest-processing, and schedule profiles. Applying a profile copies its settings into a new job. |
-| **Protected Data** | Switch between coverage inventory and HexMap; inspect restore-point counts, sizes, recovery age, and RPO indicators. Start recovery from an exact calendar/table point and continue in Recovery Center. [Restore API map](docs/vm-restore-api.md). |
+| **Protected Data** | Switch between coverage inventory and HexMap; inspect restore-point counts, sizes, recovery age, and RPO indicators. Start recovery from an exact calendar/table point and continue in Recovery Center. |
 | **Recovery Center** | Choose a recovery goal, select eligible workloads and restore points, launch individual or grouped VM recovery, and follow recovery-only activity. Work inside mounted file, AD and SQL explorers, with session-level cleanup controls. |
 | **Sessions** | Follow backup and restore runs, filter by state/type/platform, and inspect logs, workloads and related sessions. Restore detail links retain the section you entered from. |
 | **Protection Topology** | Explore confirmed workload → job → repository paths in map/list views; investigate a workload's restore points across repository lanes. |
@@ -116,19 +115,19 @@ Optional AI health summaries support OpenAI, Google Gemini, and Anthropic. Gener
 
 New browser preferences start with **Glass Ocean**. Choose the compact **Operations** appearance, **Glass Forest**, or **Glass Aurora** in Branding & Appearance; existing saved choices are preserved. Each preset supports light and dark modes, with adjustable accents, typography, density, and sidebar layout. Changes apply instantly, save in this browser, and have an example-data preview.
 
-![Glass Ocean appearance preview](docs/releases/images/v1.0.0/39-theme-ocean.webp)
+![Glass Ocean appearance preview](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.0.0/39-theme-ocean.webp)
 
 *Explore the [Forest and Aurora previews](docs/releases/v1.0.0-gallery.md#40--glass-forest) in the visual guide.*
 
 Language selection applies to navigation and shared controls, Protection Lens widgets, jobs and policies, capacity planning, topology, ransomware review, protected data, and the migrated VBR and Microsoft 365 investigation views. Dates and numbers in these views follow the selected locale. Translation catalogs are bundled with the app and require no external translation service.
 
-![Protection Lens in Spanish](docs/releases/images/v1.0.0/42-localization-spanish.webp)
+![Protection Lens in Spanish](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.0.0/42-localization-spanish.webp)
 
 *The Spanish interface includes application-authored status labels, counts, and guidance. Product names, resource names, paths, and vendor logs retain their original values. See the [coverage notes](docs/i18n.md#coverage) for the current scope and remaining legacy views.*
 
 The **Connect** page introduces features through nine real application screenshots: Protection Lens, forecasting, HexMap, job creation, Microsoft 365, three Glass themes, and the Spanish interface. Captions are translated and slideshow controls let you choose what to explore. The images retain the language in which they were captured.
 
-![Connection page with the feature showcase](docs/releases/images/v1.0.0/43-connect-showcase.webp)
+![Connection page with the feature showcase](https://raw.githubusercontent.com/jorgedlcruz/open-backup-ui/v1.2.0/docs/releases/images/v1.0.0/43-connect-showcase.webp)
 
 ## Get started
 
@@ -177,7 +176,7 @@ Additional `test:*` commands in `package.json` cover each platform and workspace
 
 | Platform | Current integration |
 | --- | --- |
-| **VBR** | Public `/api/v1` with `1.3-rev1` and selected `1.3-rev2` readers/actions. Explorer, recovery and unstructured-data workflows also use authenticated `/private-api/v1` Web API routes. See the [implementation/API map](docs/vm-restore-api.md). |
+| **VBR** | Public `/api/v1` with `1.3-rev1` and selected `1.3-rev2` readers/actions. Explorer, recovery and unstructured-data workflows also use authenticated `/private-api/v1` Web API routes. See the [Recovery Center workflow guide](docs/recovery-center-workflows.md). |
 | **Microsoft 365 backup** | `/v8` resource routes; stored-source authentication currently uses `/v7/Token`. |
 | **Veeam ONE** | `/api/v2.3` reporting and alarm routes. |
 | **Recovery Orchestrator** | `/api/v7.21/Plans`. |
@@ -240,7 +239,7 @@ Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, Radix/shadcn contro
 - [Kiosk Builder and sharing](docs/labs.md) and [AI summary PDF export](docs/ai-summary-pdf.md)
 - [v1.0 release notes](docs/releases/v1.0.0.md) and [screenshot checklist](docs/releases/v1.0.0-screenshots.md)
 - [Operations implementation and metric definitions](docs/operations-revamp.md)
-- [Protection Topology](docs/protection-topology.md) and [workload resilience](docs/workload-resilience.md)
+- [Protection Topology](docs/protection-topology.md)
 - [Deployment](docs/deployment.md), [containers](CONTAINER.md), and [troubleshooting](TROUBLESHOOTING.md)
 - [Contributing](CONTRIBUTING.md), [Developer Certificate of Origin](DCO.md), and [license](LICENSE)
 
