@@ -20,11 +20,15 @@ function listen(server, port, host) {
     server.listen(port, host)
   })
 }
-async function availablePort() {
+async function reservePort(excludedPort) {
   const probe = net.createServer()
   const port = await listen(probe, 0, '127.0.0.1')
-  await new Promise(resolve => probe.close(resolve))
-  return port
+  const release = () => new Promise(resolve => probe.close(resolve))
+  if (port === excludedPort) {
+    // Keep this port occupied while choosing another, so it cannot be reused.
+    try { return await reservePort(excludedPort) } finally { await release() }
+  }
+  return { port, release }
 }
 function sendJson(response, status, result) {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
@@ -115,9 +119,10 @@ async function waitForApplication(port, child) {
   while (Date.now() < deadline) {
     if (child.exitCode !== null || child.signalCode !== null) throw new Error('The application server exited before becoming ready.')
     const ready = await new Promise(resolve => {
-      const request = http.get({ hostname: '127.0.0.1', port, path: '/connect', timeout: 1500 }, response => { response.resume(); resolve(response.statusCode < 500) })
+      const request = http.get({ hostname: '127.0.0.1', port, path: '/connect', timeout: 1500 }, response => { response.resume(); resolve(response.statusCode >= 200 && response.statusCode < 400) })
       request.on('timeout', () => request.destroy()); request.on('error', () => resolve(false))
     })
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error('The application server exited before becoming ready.')
     if (ready) return
     await new Promise(resolve => setTimeout(resolve, 250))
   }
@@ -133,28 +138,46 @@ async function main() {
   if (adminToken && (adminToken.length < 32 || adminToken.length > 512)) throw new Error('HTTPS_ADMIN_TOKEN must contain 32 to 512 characters, or be omitted to disable uploads.')
   const standalone = path.join(root, 'server.js')
   let childArgs
-  const upstreamPort = await availablePort()
-  if (fs.existsSync(standalone)) childArgs = [standalone]
-  else {
-    if (!fs.existsSync(path.join(root, '.next', 'BUILD_ID'))) throw new Error('Build the production application with npm run build before starting HTTPS.')
-    childArgs = [require.resolve('next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(upstreamPort)]
+  const reservation = await reservePort(port)
+  const upstreamPort = reservation.port
+  let server, control, child
+  try {
+    if (fs.existsSync(standalone)) childArgs = [standalone]
+    else {
+      if (!fs.existsSync(path.join(root, '.next', 'BUILD_ID'))) throw new Error('Build the production application with npm run build before starting HTTPS.')
+      childArgs = [require.resolve('next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', String(upstreamPort)]
+    }
+    const directory = path.resolve(process.env.HTTPS_DATA_DIR || path.join(root, 'data', 'tls'))
+    let certificate = loadBundle(directory)
+    if (!certificate) {
+      certificate = generateSelfSigned(directory)
+      console.log('Generated a unique self-signed certificate for this installation. Replace it with a trusted certificate in Settings > HTTPS.')
+    }
+    const secret = crypto.randomBytes(48).toString('hex')
+    server = createProxyServer(certificate, upstreamPort, secret, port)
+    const controller = createCertificateController(server, certificate, directory)
+    control = controlServer(controller, secret, { uploadsEnabled: !!adminToken, httpsPort: port })
+    let controlPort = await listen(control, 0, '127.0.0.1')
+    if (controlPort === port) {
+      await new Promise(resolve => control.close(resolve))
+      const publicPortGuard = net.createServer()
+      try {
+        await listen(publicPortGuard, port, '127.0.0.1')
+        controlPort = await listen(control, 0, '127.0.0.1')
+      } finally { await new Promise(resolve => publicPortGuard.close(resolve)) }
+    }
+    // The control listener must bind before the child claims its reserved port.
+    await reservation.release()
+    child = spawn(process.execPath, childArgs, { cwd: root, windowsHide: true, stdio: 'inherit', env: {
+      ...process.env, NODE_ENV: 'production', HOSTNAME: '127.0.0.1', PORT: String(upstreamPort),
+      INTERNAL_APP_URL: `http://127.0.0.1:${upstreamPort}`, OPEN_BACKUP_HTTPS_CONTROL_PORT: String(controlPort),
+      OPEN_BACKUP_HTTPS_CONTROL_TOKEN: secret, OPEN_BACKUP_HTTPS_PORT: String(port),
+    } })
+  } catch (error) {
+    await reservation.release()
+    server?.close(); control?.close()
+    throw error
   }
-  const directory = path.resolve(process.env.HTTPS_DATA_DIR || path.join(root, 'data', 'tls'))
-  let certificate = loadBundle(directory)
-  if (!certificate) {
-    certificate = generateSelfSigned(directory)
-    console.log('Generated a unique self-signed certificate for this installation. Replace it with a trusted certificate in Settings > HTTPS.')
-  }
-  const secret = crypto.randomBytes(48).toString('hex')
-  const server = createProxyServer(certificate, upstreamPort, secret, port)
-  const controller = createCertificateController(server, certificate, directory)
-  const control = controlServer(controller, secret, { uploadsEnabled: !!adminToken, httpsPort: port })
-  const controlPort = await listen(control, 0, '127.0.0.1')
-  const child = spawn(process.execPath, childArgs, { cwd: root, windowsHide: true, stdio: 'inherit', env: {
-    ...process.env, NODE_ENV: 'production', HOSTNAME: '127.0.0.1', PORT: String(upstreamPort),
-    INTERNAL_APP_URL: `http://127.0.0.1:${upstreamPort}`, OPEN_BACKUP_HTTPS_CONTROL_PORT: String(controlPort),
-    OPEN_BACKUP_HTTPS_CONTROL_TOKEN: secret, OPEN_BACKUP_HTTPS_PORT: String(port),
-  } })
   let stopping = false
   const onInterrupt = () => stop()
   const onTerminate = () => stop()

@@ -216,6 +216,107 @@ test('HTTPS proxy preserves application traffic while replacing untrusted forwar
   } finally { await close(proxy); await close(app) }
 })
 
+// Model an OS that immediately reuses the lowest free ephemeral port. This
+// deterministically reproduces the upstream/control collision seen on Linux.
+function isolatedLauncher({ firstPort = 45000, reuseClosedPorts = true, readiness = [], failCertificate = false } = {}) {
+  const { EventEmitter } = require('node:events')
+  const bound = new Map(), responses = []
+  let childEnvironment, nextPort = firstPort
+  class Server extends EventEmitter {
+    constructor(kind) { super(); this.kind = kind; this.listening = false }
+    listen(requested) {
+      let port = requested
+      if (!port) { port = reuseClosedPorts ? firstPort : nextPort++; while (bound.has(port)) port++ }
+      if (bound.has(port)) { queueMicrotask(() => this.emit('error', new Error('EADDRINUSE'))); return this }
+      this.port = port; this.listening = true; bound.set(port, this)
+      queueMicrotask(() => this.emit('listening'))
+      return this
+    }
+    address() { return { port: this.port } }
+    close(callback) {
+      if (bound.get(this.port) === this) bound.delete(this.port)
+      this.listening = false
+      if (callback) queueMicrotask(callback)
+      return this
+    }
+    closeAllConnections() {}
+  }
+  const child = new EventEmitter()
+  child.exitCode = null; child.signalCode = null
+  child.kill = () => { bound.get(Number(childEnvironment.PORT))?.close(); child.signalCode = 'SIGTERM'; child.emit('exit', null, 'SIGTERM') }
+  const runtimeProcess = Object.assign(new EventEmitter(), {
+    env: { HTTPS_PORT: '3443', HTTPS_ADMIN_TOKEN: 'x'.repeat(32) }, execPath: process.execPath, cwd: () => root,
+  })
+  const mocks = {
+    'node:fs': { existsSync: () => true },
+    'node:net': { createServer: () => new Server('reservation') },
+    'node:https': { createServer: () => new Server('https') },
+    'node:http': {
+      createServer: () => new Server('control'),
+      get(options, callback) {
+        const request = new EventEmitter()
+        queueMicrotask(() => {
+          const statusCode = readiness.length ? readiness.shift() : bound.get(options.port)?.kind === 'application' ? 200 : 403
+          responses.push(statusCode)
+          callback({ statusCode, resume() {} })
+        })
+        return request
+      },
+    },
+    'node:child_process': {
+      spawn(_command, _args, options) {
+        childEnvironment = options.env
+        const port = Number(options.env.PORT)
+        assert.equal(bound.has(port), false, 'the control listener must not occupy the application port at spawn')
+        const application = new Server('application'); application.listen(port)
+        return child
+      },
+    },
+    '../lib/server/tls-runtime.cjs': {
+      loadBundle() { if (failCertificate) throw new Error('invalid certificate'); return { options: {} } },
+      createCertificateController: () => ({}),
+    },
+  }
+  const loadedModule = { exports: {} }
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'scripts/https-server.cjs'), 'utf8'), {
+    module: loadedModule, require: name => mocks[name] || require(name), process: runtimeProcess, console: { log() {}, error() {} },
+    setTimeout(callback) { queueMicrotask(callback); return { unref() {} } }, clearTimeout() {},
+  })
+  return { launcher: loadedModule.exports, bound, responses, get childEnvironment() { return childEnvironment } }
+}
+
+test('launcher reserves the upstream port until its control listener has bound', async () => {
+  const fixture = isolatedLauncher()
+  const running = await fixture.launcher.main()
+  try {
+    assert.notEqual(fixture.childEnvironment.PORT, fixture.childEnvironment.OPEN_BACKUP_HTTPS_CONTROL_PORT)
+    assert.deepEqual(fixture.responses, [200])
+  } finally { running.stop() }
+  assert.equal(fixture.bound.size, 0)
+})
+
+test('launcher does not accept Forbidden as application readiness', async () => {
+  const fixture = isolatedLauncher({ reuseClosedPorts: false, readiness: [403, 200] })
+  const running = await fixture.launcher.main()
+  try { assert.deepEqual(fixture.responses, [403, 200]) } finally { running.stop() }
+})
+
+test('launcher keeps both internal listeners off its configured HTTPS port', async () => {
+  const fixture = isolatedLauncher({ firstPort: 3443 })
+  const running = await fixture.launcher.main()
+  try {
+    assert.notEqual(fixture.childEnvironment.PORT, '3443')
+    assert.notEqual(fixture.childEnvironment.OPEN_BACKUP_HTTPS_CONTROL_PORT, '3443')
+  } finally { running.stop() }
+  assert.equal(fixture.bound.size, 0)
+})
+
+test('launcher releases its application reservation when certificate initialization fails', async () => {
+  const fixture = isolatedLauncher({ failCertificate: true })
+  await assert.rejects(fixture.launcher.main(), /invalid certificate/)
+  assert.equal(fixture.bound.size, 0)
+})
+
 test('production launcher starts and stops a standalone child on loopback with persistent identity', { skip }, async () => {
   const directory = path.join(root, 'standalone')
   fs.mkdirSync(directory)
