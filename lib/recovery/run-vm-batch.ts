@@ -46,10 +46,10 @@ async function execute(store:RestoreBatches,scope:BatchScope,id:string,runner:st
   for(const [i,plan] of ready){
     const {draft}=rows[i]
     try {checkPointOperation(await findPoint(send,draft.restorePointId,draft.backupId),draft)}
-    catch(err){await update(r=>{r.rows[i].item.status='failed';r.rows[i].item.message=errorMessage(err)});continue}
-    // Persist ownership before the irreversible POST. A crash between these lines
-    // is conservatively unknown; a resume only ever processes never-started rows.
-    await update(r=>{r.rows[i].item.status='submitting'})
+    catch(err){await update(r=>{const item=r.rows[i].item;if(item.status==='queued'){item.status='failed';item.message=errorMessage(err)}});continue}
+    // Exclusive, permanent attempt ownership survives a stale mutable receipt or
+    // overlapping file leases. Only its creator may issue this row's native POST.
+    if(!await store.beginAttempt(scope,id,runner,i,{objectId:rows[i].item.objectId,draft}))continue
     let result:Awaited<ReturnType<typeof submitPreparedRestore>>
     try{
       result=await submitPreparedRestore(send,scope.sourceKey,plan.prepared,save)

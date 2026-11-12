@@ -24,7 +24,7 @@ export type SqlItem = {key:string; type:string; id?:string; name?:string; server
   timeRange?:{from?:string;to?:string;startTime?:string;endTime?:string}; allowedOperations?:string[]; guestBackupStartTime?:string;guestBackupEndTime?:string;backupCreated?:string}
 export type SqlIntent='restore'|'exportFiles'|'export'|'instant'|'publish'|'exportPublished'
 export type SqlFlow={id:string;key:string;intent:SqlIntent}
-type SqlJob={jobId:string;key:string;permanentSessionId?:string;name?:string;state?:string;operationStatus?:string;intent:SqlIntent;database?:string|{sourceDatabase:string};targetHost?:string;targetName?:string;allowedOperations:string[]}
+type SqlJob={jobId:string;key:string;permanentSessionId?:string;name?:string;state?:string;operationStatus?:string;sessionStatus?:string;intent:SqlIntent;database?:string|{sourceDatabase:string};targetHost?:string;targetName?:string;allowedOperations:string[]}
 const jobName=(job:SqlJob)=>(typeof job.database==='string'?job.database:job.database?.sourceDatabase)||job.name||job.jobId
 type ExplorerProps=AdScope&{operationsOnly?:boolean;showFinish?:boolean;onClose?:()=>void;onOperation?:()=>void}
 export const sqlCaptions:Record<SqlIntent,string>={restore:'Restore databases',instant:'Instant database recovery',publish:'Publish databases',export:'Export database backups',exportFiles:'Export database files',exportPublished:'Export published backup'}
@@ -85,7 +85,7 @@ function SqlSession({sourceKey,sessionId,operationsOnly=false,showFinish=true,on
     {uncertain&&<p role="alert">{t('Check Sessions before submitting another request.')}</p>}{notice&&<p role="status" className={styles.feedback}>{notice}</p>}</>
   const operations=<div className={css.jobs}>{feedback}{!jobs?(!jobsError&&<RecoverySignal stage="data" compact/>):!jobs.length?<p className={styles.empty}>{t('No SQL operations have been reported for this session.')}</p>:
       jobs.map(job=><article key={job.jobId} className={css.job}><div><h4>{jobName(job)}</h4>
-        <p>{t(sqlCaptions[job.intent])} · {label(job.operationStatus||job.state||'Not reported')}{job.targetHost&&' · '+job.targetHost}{job.targetName&&' · '+job.targetName}</p></div><div className={css.jobActions}>
+        <p>{t(sqlCaptions[job.intent])} · {job.sessionStatus?`${t('Session')}: ${label(job.sessionStatus)}`:label(job.operationStatus||job.state||'Not reported')}{job.targetHost&&' · '+job.targetHost}{job.targetName&&' · '+job.targetName}</p></div><div className={css.jobActions}>
         {job.permanentSessionId&&<Button size="sm" variant="outline" asChild><Link href={sessionHref(home,job.permanentSessionId,sourceKey)+'#session-log'}>{t('Session log')}</Link></Button>}
         {(job.allowedOperations||[]).filter(action=>['stop','edit','switchover','exportPublished'].includes(action)).map(action=><Button size="sm" variant="outline" key={action} disabled={busy||uncertain||!!jobsError}
           onClick={()=>{if(action==='exportPublished')prepare('exportPublished',[{key:job.key,type:'SQLDatabase',name:jobName(job)}],undefined,job);else{setSchedule('Manual');setScheduledAt('');setCommand({job,action})}}}>{mountedLabel(action)}</Button>)}</div></article>)}</div>

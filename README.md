@@ -1,17 +1,39 @@
 # Open Backup UI
 
-**A community Operations console for Veeam environments.**
+**A community operations and recovery console for Veeam environments.**
 
-See protection health, investigate failures, explore recovery evidence, and plan storage from one interface. In **v1.2.0**, Recovery Center lets you choose what to recover and follow the session through to completion. Browse guest files, Active Directory objects, and SQL databases directly in the session.
+See protection health, investigate failures, plan storage, and recover data from one interface. **v1.2.0 introduces Recovery Center**: choose a recovery goal, select a workload and restore point, review the destination, and follow the operation in its own workspace. Browse files, Active Directory objects, and SQL databases inside the recovery session.
 
-[What's new in v1.2.0](CHANGELOG.md#120-in-development) · [v1.0.1 visual guide](docs/releases/v1.0.1-gallery.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+[What's new in v1.2.0](docs/releases/v1.2.0.md) · [Validation and release checklist](docs/releases/v1.2.0-validation.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
-Preparing v1.0.1 in GitHub Desktop? Use the [PR Markdown](docs/releases/v1.0.1-pull-request.md) and [publication review](docs/releases/v1.0.1-validation.md#github-desktop-handoff). The earlier v1.0.0 offline package has its own [import guide](docs/github-desktop-import.md).
+Preparing the v1.2.0 PR? Use the [review-ready PR description](docs/releases/v1.2.0-pull-request.md) and [publication checklist](docs/releases/v1.2.0-validation.md#publication-checklist).
 
 > [!IMPORTANT]
 > This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
 
-## What's new in v1.0.1
+## What's new in v1.2.0
+
+- **Recovery Center:** start with machines, files and objects, application items, or disks and volumes. The picker shows eligible workloads and methods for the connected VBR source, with workload search and type filters.
+- **A restore-point calendar:** select a workload on the left and inspect its calendar and restore times on the right. The latest eligible point is selected automatically; month/year navigation and **Load more** make older recovery history accessible.
+- **VM recovery, individually or together:** Instant VM Recovery and entire-VM restore, with original or customized placement, per-VM restore points and names, and recovery groups for up to 32 VMs. Availability follows VBR's reported capabilities.
+- **Files in the session:** browse Windows/Linux guest files in a folder tree, search, collect items, download ZIP archives, and restore with **Keep both copies** or **Overwrite**. The inline cart returns to browsing after submission and keeps progress in one expandable task strip.
+- **Application recovery:** embedded Active Directory and SQL Server explorers with selection-scoped actions. Recover or export directory objects; browse SQL instances and databases, restore or instantly recover databases, export, publish, and configure a SQL staging server.
+- **More workload families:** NAS/file-share and object-storage recovery from a selected restore point, destination browsing for Copy to, and tracked file operations; physical-computer guest files and supported disk tools. Windows volume restore uses a connected recovery appliance.
+- **Recovery you can follow:** dedicated Sessions, filtered recovery activity, pending and ready-for-action views, contextual breadcrumbs, and recovery maps showing repositories, VMs, proxies and destinations. Live processing-rate history remains available for 12 hours after a session finishes.
+- **Faster repeated selection:** shared, scoped restore-point caching, local workload search, 30-minute refresh while Recovery Center is open, manual Refresh, and older restore points loaded in batches of 200 per backup copy.
+- **A refreshed identity:** the new OB restore-and-check icon, Glass Ocean as the default for new preferences, theme-aware controls, 200 rotating loading captions, and connection status with the release version in the footer.
+
+The [release notes](docs/releases/v1.2.0.md) explain the workflows and their boundaries. Several Explorer and unstructured-data workflows use VBR's private Web APIs; server version, credentials, permissions, and the selected restore point determine which actions are available. This is not complete parity with every native Veeam console.
+
+![Recovery Center in Glass Ocean, with recovery status filters and workload activity](docs/releases/images/v1.2.0/01-recovery-center.webp)
+
+*Recovery Center brings recovery activity and the next action together. [See eight English, Glass Ocean screenshots](docs/releases/v1.2.0-gallery.md), including the goal picker, restore-point calendar, multi-VM selection, recovery maps and Sessions.*
+
+![Instant Recovery after migration, with its source backup, VM, proxy, production destination and processing-rate history](docs/releases/images/v1.2.0/08-migration-statistics.webp)
+
+*An actual completed lab migration, with its reported proxy path and retained processing-rate history.*
+
+## Also included from v1.0.1
 
 - **Kiosk Builder (Labs):** enable it in Settings and build a canvas from sixteen VBR sources and ten visual forms, with editable mappings, series, filters and columns.
 - **A layout that makes room:** magnetic alignment, cascading repulsion, consistent padding, undo/redo and browser-local composition import/export.
@@ -52,8 +74,9 @@ Browse the [visual guide](docs/releases/v1.0.0-gallery.md) for 43 application sc
 | **Jobs & Policies** | Search and filter jobs; sort last/next runs; inspect workloads, sessions, logs, and supported retry chains; retain start, stop, retry, enable, and disable actions. |
 | **Job builder** | Create VMware vSphere or Hyper-V backup jobs using live workload/storage choices, policy settings, preflight checks, and a reviewable JSON payload. Existing backup-copy and Entra ID forms remain available. |
 | **Policy Profiles** | Save, duplicate, revise, import, and export source-specific retention, guest-processing, and schedule profiles. Applying a profile copies its settings into a new job. |
-| **Protected Data** | Switch between coverage inventory and HexMap; inspect restore-point counts, sizes, recovery age, and RPO indicators. Select an exact restore point in the calendar or table to recover a VM, disks or guest files. [VM restore API map](docs/vm-restore-api.md). |
-| **Sessions** | Follow backup and restore runs, inspect their logs, browse mounted guest files and manage recovered VMs. |
+| **Protected Data** | Switch between coverage inventory and HexMap; inspect restore-point counts, sizes, recovery age, and RPO indicators. Start recovery from an exact calendar/table point and continue in Recovery Center. [Restore API map](docs/vm-restore-api.md). |
+| **Recovery Center** | Choose a recovery goal, select eligible workloads and restore points, launch individual or grouped VM recovery, and follow recovery-only activity. Work inside mounted file, AD and SQL explorers, with session-level cleanup controls. |
+| **Sessions** | Follow backup and restore runs, filter by state/type/platform, and inspect logs, workloads and related sessions. Restore detail links retain the section you entered from. |
 | **Protection Topology** | Explore confirmed workload → job → repository paths in map/list views; investigate a workload's restore points across repository lanes. |
 | **Ransomware Detection** | Review native suspicious-activity events, affected workloads, detection settings, and the separate backup data-reduction indicators. |
 | **Backup Infrastructure** | Inspect repository capacity, consumption, scale-out grouping and immutability; proxy transport/task settings; managed-server roles and component updates. |
@@ -91,7 +114,7 @@ Optional AI health summaries support OpenAI, Google Gemini, and Anthropic. Gener
 
 ### Themes and languages
 
-Keep the compact **Operations** appearance or choose **Glass Ocean**, **Glass Forest**, or **Glass Aurora**. Each preset supports light and dark modes, with adjustable accents, typography, density, and sidebar layout. Branding & Appearance applies changes instantly, saves preferences in this browser, and shows an example-data preview.
+New browser preferences start with **Glass Ocean**. Choose the compact **Operations** appearance, **Glass Forest**, or **Glass Aurora** in Branding & Appearance; existing saved choices are preserved. Each preset supports light and dark modes, with adjustable accents, typography, density, and sidebar layout. Changes apply instantly, save in this browser, and have an example-data preview.
 
 ![Glass Ocean appearance preview](docs/releases/images/v1.0.0/39-theme-ocean.webp)
 
@@ -144,6 +167,7 @@ The separate Linux standalone release includes the production build and runtime 
 | `npm test` | Complete automated regression suite |
 | `npm run typecheck` | Standalone TypeScript check |
 | `npm run lint` | ESLint |
+| `npm run version:files` | Synchronize source headers and the tracked-file version manifest with `package.json` |
 | `npm run test:forecast` | Forecast, retention/storage investigation, and collector tests |
 | `npm run test:job-builder` | Job/profile models, native API contract, and submission safeguards |
 
@@ -153,7 +177,7 @@ Additional `test:*` commands in `package.json` cover each platform and workspace
 
 | Platform | Current integration |
 | --- | --- |
-| **VBR** | Primarily `/api/v1` with `1.3-rev1`; selected investigation/builder readers negotiate `1.3-rev2` for supported server builds. |
+| **VBR** | Public `/api/v1` with `1.3-rev1` and selected `1.3-rev2` readers/actions. Explorer, recovery and unstructured-data workflows also use authenticated `/private-api/v1` Web API routes. See the [implementation/API map](docs/vm-restore-api.md). |
 | **Microsoft 365 backup** | `/v8` resource routes; stored-source authentication currently uses `/v7/Token`. |
 | **Veeam ONE** | `/api/v2.3` reporting and alarm routes. |
 | **Recovery Orchestrator** | `/api/v7.21/Plans`. |
@@ -168,6 +192,8 @@ Forecasts are advisory. Retained-file history is not historical disk usage, and 
 Use a persistent Node server or container for unattended capacity collection. Persist `data/` and the encryption key across upgrades. Profiles and capacity history are local to the application instance; this is not a distributed or multi-tenant service.
 
 Capacity planning uses a server-memory cache scoped to the authenticated source and principal. Saved VBR connections refresh their planning evidence in the background every 30 minutes, even with the browser closed. The page shows the snapshot time and refresh state; **Refresh** requests current evidence immediately. Transient refresh failures retain the previous snapshot with a visible warning. The cache rebuilds after a server restart. Browser-only sessions can use the cache while connected but cannot refresh unattended; `CAPACITY_COLLECTOR_ENABLED=false` disables both background planning refresh and physical-capacity collection.
+
+Recovery Center has a separate catalog and restore-point cache. It reuses scoped evidence for responsive search and selection, refreshes while the page remains open, and supports a manual page Refresh. Older-point requests extend the cache in 200-point pages per backup copy. Recovery receipts, batch state and short-lived throughput history use local runtime storage; preserve `data/` when updating the application. An interrupted or unconfirmed request must be checked in the session before submitting another restore.
 
 **Access and TLS:** the app can use saved platform credentials and perform management actions. Put shared instances behind an authenticated access layer. The existing `npm start` script disables outbound TLS certificate verification; review the [deployment guide](docs/deployment.md) before production use. A phone only needs access to this web app, not to the backup servers.
 
@@ -202,11 +228,14 @@ Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, Radix/shadcn contro
 - Analytics → Dashboards, Analytics → Threat Center, and Kasten remain placeholders. The VBR Ransomware Detection workspace is implemented.
 - Disabled creation-menu entries are not implemented. Reusable profiles apply to the new VMware/Hyper-V builder; they do not modify existing jobs automatically.
 - API coverage and mutation support vary by platform and job type. A successful connection does not validate every operation.
+- Mass recovery is limited to VM Instant Recovery and entire-VM restore; it is not a cross-workload recovery orchestrator. Selected points must share a supported method.
+- Recovery uses both public and private VBR APIs. Private Web API compatibility can change between VBR releases; see the [validation scope](docs/releases/v1.2.0-validation.md). AD comparison against production and an embedded VMware console are not included.
 - Some legacy Veeam ONE client paths still contain explicit demo/report fixtures; confirm data provenance for the workflow you use.
 - Polling and collection intervals vary. The application is not a real-time event stream or a substitute for a restore test.
 
 ## Documentation and community
 
+- [v1.2.0 release notes](docs/releases/v1.2.0.md), [PR description](docs/releases/v1.2.0-pull-request.md), and [validation/publication checklist](docs/releases/v1.2.0-validation.md)
 - [v1.0.1 release notes](docs/releases/v1.0.1.md), [visual guide](docs/releases/v1.0.1-gallery.md), and [validation scope](docs/releases/v1.0.1-validation.md)
 - [Kiosk Builder and sharing](docs/labs.md) and [AI summary PDF export](docs/ai-summary-pdf.md)
 - [v1.0 release notes](docs/releases/v1.0.0.md) and [screenshot checklist](docs/releases/v1.0.0-screenshots.md)

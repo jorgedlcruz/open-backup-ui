@@ -87,16 +87,16 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       // Once headers arrive a large ZIP may take longer than the JSON timeout.
       const connectTimeout = new AbortController()
       const vmMigration = method === 'POST' && mutation && /^\/api\/v1\/restore\/instantRecovery\/(vSphere|hyperV)\/vm\/[a-f\d-]{36}\/migrate$/i.test(path)
-      const batchStart = options.backgroundRestore && method==='POST' && mutation &&
-        /^\/api\/v1\/restore\/(?:instantRecovery\/(?:vSphere|hyperV)\/vm|vmRestore\/(?:vSphere|hyperV|cloudDirector))$/.test(path)
-      const transferSignal = vmMigration || batchStart ? AbortSignal.timeout(20 * 60_000) : (iso || archive) ? AbortSignal.any([request.signal, connectTimeout.signal])
+      const restoreStart = options.backgroundRestore && method==='POST' && mutation &&
+        /^\/api\/v1\/(?:restore\/(?:instantRecovery\/(?:vSphere\/(?:vm|fcd)|hyperV\/vm)|vmRestore\/(?:vSphere|hyperV|cloudDirector)|flr)|dataIntegration\/publish)$/.test(path)
+      const transferSignal = vmMigration || restoreStart ? AbortSignal.timeout(20 * 60_000) : (iso || archive) ? AbortSignal.any([request.signal, connectTimeout.signal])
         : options.backgroundRestore||options.backgroundExplorerStart ? AbortSignal.timeout(mutation?120_000:60_000) : signal
       const timer = (archive||iso) ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
       const fetchOnce = () => {
         const headers = {Authorization:`Bearer ${token}`, Accept: iso?'application/vnd.efi.iso, application/octet-stream':archive?'application/octet-stream':'application/json',
           'x-api-version':'1.3-rev2', ...(body !== undefined ? {'Content-Type':'application/json'} : {})}
         const payload = body === undefined ? undefined : JSON.stringify(body)
-        return vmMigration || batchStart ? sendLongRestore(url,headers,payload,transferSignal)
+        return vmMigration || restoreStart ? sendLongRestore(url,headers,payload,transferSignal)
           : fetch(url,{method,redirect:'error',cache:'no-store',signal:transferSignal,headers,body:payload})
       }
       try {
@@ -137,7 +137,7 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       } finally { if (timer) clearTimeout(timer) }
     }
     const result = await run({ send, sourceKey, cacheKey, bearerOnly, getExplorer:()=>explorerConnection(configured ? source : undefined,
-      options.backgroundExplorerStart?AbortSignal.timeout(5*60_000):request.signal) })
+      options.backgroundExplorerStart||options.backgroundRestore?AbortSignal.timeout(5*60_000):request.signal) })
     return result instanceof Response ? result : NextResponse.json(result, { headers })
   } catch (error) {
     const failure = error instanceof VbrRecoveryError ? error : new VbrRecoveryError('The VBR response could not be processed.', 502)

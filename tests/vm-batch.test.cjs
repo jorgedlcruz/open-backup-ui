@@ -144,6 +144,143 @@ test('crash recovery can resume untouched VMs while an in-flight submission rema
   assert.deepEqual(f.writes().map(c=>c.opts.body.restorePointId),[id(12),id(13)])
   assert.deepEqual((await f.store.get(scope,b.batchId)).items.map(i=>i.status),['unknown','accepted','accepted'])
 })
+
+test('permanent native attempt ownership survives overlapping receipt leases and remains scoped to the account',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b),otherWorker=new RestoreBatches(f.directory)
+  // Model the stale-lock deletion race: both mutable-lease holders are admitted.
+  // Exclusive native attempt creation must still admit only one actual sender.
+  f.store.locked=otherWorker.locked=async(_file,work)=>work()
+  const expected={objectId:b.items[0].objectId,draft:b.items[0].draft}
+  const owners=await Promise.all([f.store,otherWorker].map(store=>store.beginAttempt(scope,b.batchId,started.runner,0,expected)))
+  assert.equal(owners.filter(Boolean).length,1)
+  const markers=fs.readdirSync(path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.attempts'))
+  assert.deepEqual(markers,['0.json'])
+  const marker=JSON.parse(fs.readFileSync(path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.attempts/0.json'),'utf8'))
+  assert.equal(marker.objectId,b.items[0].objectId)
+  assert.equal(marker.restorePointId,b.items[0].draft.restorePointId)
+  assert.match(marker.digest,/^[a-f0-9]{64}$/)
+  const otherScope={...scope,cacheKey:'c'.repeat(64)},separate=await otherWorker.create(otherScope,b)
+  assert.equal(await otherWorker.beginAttempt(otherScope,b.batchId,separate.runner,0,expected),true)
+  assert.equal(f.writes().length,0)
+})
+
+test('immutable batch identity rejects conflicting concurrent creates and tampered stale receipts',async t=>{
+  const f=fixture(t),b=f.batch,otherWorker=new RestoreBatches(f.directory),changed=structuredClone(b)
+  changed.items[0].draft.target.vmName='Different reviewed destination'
+  f.store.locked=otherWorker.locked=async(_file,work)=>work()
+  const attempts=await Promise.allSettled([f.store.create(scope,b),otherWorker.create(scope,changed)])
+  assert.equal(attempts.filter(result=>result.status==='fulfilled').length,1)
+  assert.match(attempts.find(result=>result.status==='rejected').reason.message,/different recovery request/)
+  const receiptPath=path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.json')
+  const record=JSON.parse(fs.readFileSync(receiptPath,'utf8')),expected={objectId:record.rows[0].item.objectId,draft:structuredClone(record.rows[0].draft)}
+  record.rows[0].draft.target.vmName='Another stale writer'
+  record.digest=require('node:crypto').createHash('sha256').update(JSON.stringify(record.rows.map(row=>({objectId:row.item.objectId,draft:row.draft})))).digest('hex')
+  fs.writeFileSync(receiptPath,JSON.stringify(record))
+  await assert.rejects(f.store.get(scope,b.batchId),/different recovery request/)
+  await assert.rejects(f.store.resume(scope,b.batchId),/different recovery request/)
+  await assert.rejects(f.store.beginAttempt(scope,b.batchId,record.runner.id,0,expected),/different recovery request/)
+  assert.equal(f.writes().length,0)
+  assert.equal(fs.existsSync(path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.attempts')),false)
+})
+
+test('stale queued receipts cannot replay already submitted VMs even with the original active runner',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b)
+  const receiptPath=path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.json')
+  const stale=fs.readFileSync(receiptPath,'utf8')
+  await f.run(started.runner)
+  assert.equal(f.writes().length,3)
+  // A late mutable writer can overwrite all three accepted rows with its queued snapshot.
+  fs.writeFileSync(receiptPath,stale)
+  assert.deepEqual((await f.store.get(scope,b.batchId)).items.map(i=>i.status),['unknown','unknown','unknown'])
+  await f.run(started.runner,new RestoreBatches(f.directory))
+  assert.equal(f.writes().length,3)
+  assert.deepEqual((await f.store.get(scope,b.batchId)).items.map(i=>i.status),['unknown','unknown','unknown'])
+  assert.equal((await f.store.resume(scope,b.batchId)).runner,undefined)
+})
+
+test('stale queued submissions remain unknown when their restore points later fail validation',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b)
+  const receiptPath=path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.json'),stale=fs.readFileSync(receiptPath,'utf8')
+  await f.run(started.runner)
+  fs.writeFileSync(receiptPath,stale)
+  const before=f.calls.length
+  for(const point of f.points.values())point.allowedOperations=[]
+  await f.run(started.runner,new RestoreBatches(f.directory))
+  assert.equal(f.calls.length,before)
+  assert.equal(f.writes().length,3)
+  assert.deepEqual((await f.store.get(scope,b.batchId)).items.map(item=>item.status),['unknown','unknown','unknown'])
+})
+
+test('a late preflight failure cannot replace another worker\'s accepted native result',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b)
+  let reads=0
+  const send=async(url,opts)=>{
+    const result=await f.send(url,opts)
+    if(url==='/api/v1/restorePoints/'+id(11)&&++reads===2){
+      const row=b.items[0]
+      assert.equal(await f.store.beginAttempt(scope,b.batchId,started.runner,0,{objectId:row.objectId,draft:row.draft}),true)
+      await f.send('/api/v1/restore/instantRecovery/vSphere/vm',{mutation:true,body:{restorePointId:id(11)}})
+      await f.store.update(scope,b.batchId,started.runner,r=>{r.rows[0].item.status='accepted';r.rows[0].item.sessionId=id(41)})
+      return {...result,allowedOperations:[]}
+    }
+    return result
+  }
+  await runVmBatch(f.store,scope,b.batchId,started.runner,send,async()=>{})
+  const result=await f.store.get(scope,b.batchId)
+  assert.deepEqual(result.items.map(item=>item.status),['accepted','accepted','accepted'])
+  assert.equal(result.items[0].sessionId,id(41))
+  assert.equal(f.writes().length,3)
+})
+
+test('a crash after reserving an attempt only permits never-attempted rows to resume',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b)
+  assert.equal(await f.store.beginAttempt(scope,b.batchId,started.runner,0,{objectId:b.items[0].objectId,draft:b.items[0].draft}),true)
+  // A stale queued row, rather than submitting, must still be fenced after restart.
+  await f.store.update(scope,b.batchId,started.runner,r=>{r.rows[0].item.status='queued'})
+  f.advance()
+  const resumed=await f.store.resume(scope,b.batchId)
+  assert.deepEqual(resumed.receipt.items.map(i=>i.status),['unknown','queued','queued'])
+  await f.run(resumed.runner)
+  assert.deepEqual(f.writes().map(c=>c.opts.body.restorePointId),[id(12),id(13)])
+})
+
+test('attempt ownership rejects stale payload identity and preserves an existing session acknowledgement',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b),row=b.items[0]
+  for(const expected of [
+    {objectId:id(99),draft:row.draft},
+    {objectId:row.objectId,draft:{...row.draft,target:{...row.draft.target,vmName:'Changed'}}},
+  ])await assert.rejects(f.store.beginAttempt(scope,b.batchId,started.runner,0,expected),/request changed/)
+  assert.equal(fs.existsSync(path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.attempts')),false)
+  await f.run(started.runner)
+  const receiptPath=path.join(f.directory,scope.sourceKey,scope.cacheKey,b.batchId+'.json'),saved=JSON.parse(fs.readFileSync(receiptPath,'utf8'))
+  saved.rows[0].item.status='notStarted'
+  fs.writeFileSync(receiptPath,JSON.stringify(saved))
+  const recovered=await f.store.get(scope,b.batchId)
+  assert.equal(recovered.items[0].status,'accepted')
+  assert.equal(recovered.items[0].sessionId,id(41))
+  assert.equal((await f.store.resume(scope,b.batchId)).runner,undefined)
+  assert.equal(f.writes().length,3)
+})
+
+test('legacy accepted receipts retain their acknowledgement and acquire non-replayable native attempts',async t=>{
+  const f=fixture(t),b=f.batch,started=await f.store.create(scope,b)
+  await f.run(started.runner)
+  const base=path.join(f.directory,scope.sourceKey,scope.cacheKey),receiptPath=path.join(base,b.batchId+'.json'),attempts=path.join(base,b.batchId+'.attempts')
+  // Only remove the fixture's individual new fence files to model a pre-upgrade receipt.
+  fs.unlinkSync(receiptPath+'.identity')
+  for(const name of fs.readdirSync(attempts))fs.unlinkSync(path.join(attempts,name))
+  fs.rmdirSync(attempts)
+  const next=new RestoreBatches(f.directory),legacy=await next.get(scope,b.batchId)
+  assert.deepEqual(legacy.items.map(item=>item.sessionId),[id(41),id(42),id(43)])
+  assert.deepEqual(fs.readdirSync(attempts).sort(),['0.json','1.json','2.json'])
+  const stale=JSON.parse(fs.readFileSync(receiptPath,'utf8'))
+  stale.runner={id:started.runner,until:Date.now()+240000}
+  for(const row of stale.rows){row.item.status='queued';delete row.item.sessionId}
+  fs.writeFileSync(receiptPath,JSON.stringify(stale))
+  await f.run(started.runner,next)
+  assert.equal(f.writes().length,3)
+  assert.ok((await next.get(scope,b.batchId)).items.every(item=>item.status==='unknown'))
+})
 test('an authorization or malware change between group review and individual submission prevents that native write',async t=>{
   const f=fixture(t),b=f.batch,reads=new Map()
   const send=async(url,opts)=>{

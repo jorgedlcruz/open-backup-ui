@@ -3,6 +3,7 @@ import {createHmac,randomUUID} from 'node:crypto'
 import {z} from 'zod'
 import type {RecoverySend} from '../server/vbr-recovery'
 import {sqlWorkflows,type SqlFlow,type SqlWorkflows} from '../server/sql-workflows'
+import {investigationSessionSchema,recordStatus} from '../investigation/model'
 import {VbrRecoveryError} from './error'
 import {sqlGrant,sqlGuid,sqlOpen,sqlScope,sqlSeal,sqlTicket,type SqlContext} from './sql-protocol'
 import {beginSqlCheck,cancelSqlAction,initSqlAction,mountedSqlAction,pollSqlCheck,requiredSqlChecks,sqlDatabaseSchema,
@@ -36,8 +37,27 @@ async function operations(send:RecoverySend,ctx:SqlContext,sid:string,store:SqlW
     operationKind:z.string().nullish(),name:z.string().nullish(),status:z.string().nullish(),operationStatus:z.string().nullish(),
     targetHost:z.string().nullish(),targetName:z.string().nullish()}))}).parse(await send('/private-api/v1/applicationItems/operations',
     {method:'POST',body:{explorerKinds:['Sql'],operationStatuses:states}}))
+  const matching=(jobId:string,workflowId:string)=>result.data.find(row=>row.explorerKind==='Sql' && row.id===jobId && row.permanentSessionId===workflowId)
+  const missing=[...new Set(known.filter(({job,workflowId})=>!matching(job.jobId,workflowId)).map(row=>row.workflowId))]
+  const sessionStates=new Map<string,string>()
+  // The native operations list omits completed jobs. Its permanent session still
+  // reports the outcome, shared by every database in that workflow. Read each
+  // locally recorded session once; absence alone never means success.
+  for(let offset=0;offset<missing.length;offset+=4) {
+    const batch=missing.slice(offset,offset+4)
+    const sessions=await Promise.allSettled(batch.map(id=>send('/api/v1/sessions/'+id)))
+    for(let index=0;index<sessions.length;index++) {
+      const response=sessions[index]
+      if(response.status==='rejected') {
+        if(response.reason instanceof VbrRecoveryError && [401,403].includes(response.reason.status))throw response.reason
+        continue
+      }
+      const parsed=investigationSessionSchema.safeParse(response.value)
+      if(parsed.success && parsed.data.id===batch[index])sessionStates.set(batch[index],recordStatus(parsed.data))
+    }
+  }
   return known.map(({job,workflowId,intent})=>{
-    const row=result.data.find(r=>r.explorerKind==='Sql' && r.id===job.jobId && r.permanentSessionId===workflowId)
+    const row=matching(job.jobId,workflowId)
     const allowedOperations:string[]=[]
     if(row?.operationStatus && states.includes(row.operationStatus)) {
       const instant=intent==='instant' && row.operationKind==='InstantRecovery'
@@ -50,7 +70,7 @@ async function operations(send:RecoverySend,ctx:SqlContext,sid:string,store:SqlW
       if(intent==='restore' && row.operationKind==='Restore' && !['Failed','Unavailable','Success'].includes(row.operationStatus))allowedOperations.push('stop')
     }
     return {...job,permanentSessionId:workflowId,key:sqlSeal(ctx,'job',{sessionId:sid,workflowId,jobId:job.jobId}),intent,name:row?.name||job.database.sourceDatabase,
-      state:row?.status,operationStatus:row?.operationStatus,targetHost:row?.targetHost,targetName:row?.targetName,allowedOperations}
+      state:row?.status,operationStatus:row?.operationStatus,sessionStatus:row?undefined:sessionStates.get(workflowId),targetHost:row?.targetHost,targetName:row?.targetName,allowedOperations}
   })
 }
 async function authorizeJobs(send:RecoverySend,ctx:SqlContext,sid:string,keys:string[],command:string,store:SqlWorkflows) {

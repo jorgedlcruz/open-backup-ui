@@ -1,4 +1,5 @@
 // Open Backup UI v1.2.0
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs')
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
@@ -306,6 +307,28 @@ test('migration receives the session even after the browser disconnects and the 
   assert.equal(result.status,200)
   assert.deepEqual(await result.json(),{id:sessionId})
   assert.equal(posts,1)
+})
+
+test('every tracked single-start endpoint outlives browser disconnect and the ordinary read deadline without replay',async t=>{
+  const http=require('node:http'),inbound=new AbortController(),readDeadline=new AbortController(),posts=[]
+  const endpoints=['restore/instantRecovery/vSphere/vm','restore/instantRecovery/hyperV/vm',
+    'restore/vmRestore/vSphere','restore/vmRestore/hyperV','restore/vmRestore/cloudDirector',
+    'restore/instantRecovery/vSphere/fcd','restore/flr','dataIntegration/publish']
+  const server=http.createServer((req,res)=>{
+    posts.push(req.url);assert.equal(req.method,'POST');inbound.abort();readDeadline.abort()
+    setTimeout(()=>{res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({id:sessionId}))},5)
+  })
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
+  t.after(()=>{server.closeAllConnections();server.close()})
+  const nativeTimeout=AbortSignal.timeout.bind(AbortSignal)
+  t.mock.method(AbortSignal,'timeout',ms=>ms===60000?readDeadline.signal:nativeTimeout(ms))
+  const {request,withVbrRecovery}=mockRecoveryTransport({protocol:'http',host:'127.0.0.1',port:server.address().port})
+  request.signal=inbound.signal
+  for(const endpoint of endpoints){
+    const reply=await withVbrRecovery(request,({send})=>send('/api/v1/'+endpoint,{method:'POST',body:{},mutation:true}),{backgroundRestore:true})
+    assert.equal(reply.status,200,endpoint);assert.deepEqual(await reply.json(),{id:sessionId})
+  }
+  assert.deepEqual(posts,endpoints.map(endpoint=>'/api/v1/'+endpoint))
 })
 
 test('the scoped binary endpoint sends the bearer only to VBR and streams the archive without reading it into memory', async () => {

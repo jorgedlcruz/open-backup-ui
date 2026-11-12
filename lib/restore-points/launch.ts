@@ -3,6 +3,8 @@ import { v4 as uuid } from 'uuid'
 import { isRestoreOperation, uncertainRestore, type RestoreOperation, type RestoreResult } from './workflow'
 import {explorerHandoffIO,resolveExplorerHandoff,type ExplorerHandoffIO,type ExplorerSelection,type ExplorerStage} from './explorer-handoff'
 import {recoveryPickerHref} from './recovery-selection'
+import {restoreHandoffIO,resolveRestoreHandoff,type RestoreHandoffIO} from './restore-handoff'
+import type {RestoreDraft} from './workflow'
 
 export const activeDirectoryOperation = 'BrowseActiveDirectory'
 export const sqlOperation = 'BrowseSql'
@@ -18,6 +20,7 @@ export type RestoreLaunch = {
   pointTime?: string
   phase: 'starting' | 'accepted' | 'rejected' | 'unknown'
   explorerTracked?:true
+  restoreTracked?:true
   explorerStage?:ExplorerStage
   explorerPoint?:Pick<ExplorerSelection,'restorePointId'|'backupId'|'backupObjectId'>
   sessionId?: string
@@ -37,6 +40,7 @@ function storedLaunches(): RestoreLaunch[] {
     return items.filter(value => value && uuidPattern.test(value.requestId) && /^[a-f0-9]{64}$/.test(value.sourceKey)
       && (isRestoreOperation(value.operation) || additionalOperations.some(op=>op===value.operation) || value.operation === activeDirectoryOperation || value.operation === sqlOperation) && typeof value.workload === 'string'
       && ['starting', 'accepted', 'rejected', 'unknown'].includes(value.phase)
+      && (value.restoreTracked===undefined||value.restoreTracked===true&&isRestoreOperation(value.operation)&&value.explorerTracked===undefined)
       && (value.explorerTracked===undefined||value.explorerTracked===true&&(value.operation===activeDirectoryOperation||value.operation===sqlOperation)
         && ['opening','polling','checking'].includes(value.explorerStage)
         && (value.explorerPoint==null || ['restorePointId','backupId','backupObjectId'].every(key=>uuidPattern.test(value.explorerPoint?.[key]))))
@@ -49,10 +53,10 @@ function storedLaunches(): RestoreLaunch[] {
 
 function remember(receipt: RestoreLaunch) {
   const stored=storedLaunches()
-  if(receipt.explorerTracked){
+  if(receipt.explorerTracked||receipt.restoreTracked){
     // A late response from a previous observation must not undo a definitive
     // result already recorded for this exact source-bound request.
-    const finished=[recent.get(receipt.requestId),...stored].find(r=>r?.explorerTracked&&r.requestId===receipt.requestId&&r.sourceKey===receipt.sourceKey&&
+    const finished=[recent.get(receipt.requestId),...stored].find(r=>(r?.explorerTracked||r?.restoreTracked)&&r.requestId===receipt.requestId&&r.sourceKey===receipt.sourceKey&&
       r.operation===receipt.operation&&(r.phase==='accepted'||r.phase==='rejected'))
     if(finished){recent.set(receipt.requestId,finished);return finished}
   }
@@ -83,7 +87,7 @@ export function beginRestoreLaunch<Draft extends Pick<RestoreLaunch, 'sourceKey'
 export function readRestoreLaunch(requestId: string) {
   const receipt = recent.get(requestId) ?? storedLaunches().find(item => item.requestId === requestId)
   // After a hard reload the request may already have reached VBR. Never replay it.
-  if (receipt?.phase === 'starting' && !receipt.explorerTracked && !inFlight.has(requestId)) return { ...receipt, phase: 'unknown' as const }
+  if (receipt?.phase === 'starting' && !receipt.explorerTracked && !receipt.restoreTracked && !inFlight.has(requestId)) return { ...receipt, phase: 'unknown' as const }
   // Previous Explorer versions recorded some browser transport errors as a rejection.
   // Their original requests have no server receipt, so they can only be investigated.
   if(receipt?.phase==='rejected'&&!receipt.explorerTracked&&(receipt.operation===activeDirectoryOperation||receipt.operation===sqlOperation)&&
@@ -106,6 +110,25 @@ export function recentRestoreLaunches(sourceKey:string,now=Date.now()):RestoreLa
 type TrackedExplorer=RestoreLaunch & {explorerTracked:true;operation:typeof activeDirectoryOperation|typeof sqlOperation}
 export function canCheckExplorerLaunch(receipt?:RestoreLaunch):receipt is TrackedExplorer{
   return !!receipt?.explorerTracked&&(receipt.operation===activeDirectoryOperation||receipt.operation===sqlOperation)&&(receipt.phase==='starting'||receipt.phase==='unknown')
+}
+
+type TrackedRestore=RestoreLaunch & {restoreTracked:true;operation:RestoreOperation}
+export function canCheckRestoreLaunch(receipt?:RestoreLaunch):receipt is TrackedRestore{
+  return !!receipt?.restoreTracked&&isRestoreOperation(receipt.operation)&&(receipt.phase==='starting'||receipt.phase==='unknown')
+}
+function trackRestore(receipt:TrackedRestore,draft:RestoreDraft|undefined,io:RestoreHandoffIO){
+  const result=Promise.resolve().then(()=>resolveRestoreHandoff(receipt,draft,io))
+    .then(outcome=>remember({...receipt,...outcome})).catch(error=>remember({...receipt,phase:'unknown',message:error instanceof Error?error.message:undefined}))
+  inFlight.set(receipt.requestId,result)
+  void result.finally(()=>inFlight.delete(receipt.requestId))
+  return result
+}
+export function beginTrackedRestoreLaunch(draft:RestoreDraft,workload:string,pointTime?:string,io=restoreHandoffIO){
+  const receipt:TrackedRestore={requestId:uuid(),createdAt:new Date().toISOString(),sourceKey:draft.sourceKey,operation:draft.operation,
+    workload,pointTime,phase:'starting',restoreTracked:true}
+  remember(receipt)
+  void trackRestore(receipt,draft,io)
+  return receipt
 }
 
 export function explorerRetryHref(receipt?:RestoreLaunch) {
@@ -144,22 +167,29 @@ export function beginExplorerLaunch(input:{sourceKey:string;operation:TrackedExp
   return receipt
 }
 
-export function observeRestoreLaunch(requestId:string,io=explorerHandoffIO){
+export function observeRestoreLaunch(requestId:string,io=explorerHandoffIO,restoreIo=restoreHandoffIO){
   const existing=inFlight.get(requestId)
   if(existing)return existing
   const receipt=readRestoreLaunch(requestId)
+  if(canCheckRestoreLaunch(receipt))return trackRestore(receipt,undefined,restoreIo)
   return canCheckExplorerLaunch(receipt)?trackExplorer(receipt,undefined,io):Promise.resolve(receipt)
 }
 
-export function recoveryPreparingHref(receipt:Pick<RestoreLaunch,'requestId'|'sourceKey'|'operation'>){
+export function recoveryPreparingHref(receipt:Pick<RestoreLaunch,'requestId'|'sourceKey'|'operation'|'restoreTracked'>){
   const query=new URLSearchParams({request:receipt.requestId,sourceKey:receipt.sourceKey})
   if(receipt.operation===activeDirectoryOperation||receipt.operation===sqlOperation)query.set('provider',receipt.operation===sqlOperation?'sql-explorer':'ad')
   if(isStorageOperation(receipt.operation))query.set('provider',receipt.operation)
+  if(receipt.restoreTracked)query.set('provider',receipt.operation)
   return '/vbr/recovery-center/preparing?'+query
 }
 export const isStorageOperation=(kind:unknown):kind is Exclude<AdditionalOperation,'agent-volumes'>=>additionalOperations.some(k=>k!=='agent-volumes'&&k===kind)
-export function observeAddressedLaunch(requestId:string,sourceKey?:string,provider?:string,io=explorerHandoffIO):Promise<RestoreLaunch|undefined> {
+export function observeAddressedLaunch(requestId:string,sourceKey?:string,provider?:string,io=explorerHandoffIO,restoreIo=restoreHandoffIO):Promise<RestoreLaunch|undefined> {
   const receipt=readRestoreLaunch(requestId)
+  if(provider&&isRestoreOperation(provider)){
+    if(!sourceKey||!uuidPattern.test(requestId)||!/^[a-f0-9]{64}$/.test(sourceKey)||receipt&&(receipt.sourceKey!==sourceKey||receipt.operation!==provider||!receipt.restoreTracked))return Promise.resolve(undefined)
+    if(!receipt)remember({requestId,sourceKey,operation:provider,workload:'',phase:'starting',restoreTracked:true})
+    return observeRestoreLaunch(requestId,io,restoreIo)
+  }
   if(isStorageOperation(provider)){
     if(!sourceKey||!uuidPattern.test(requestId)||!/^[a-f0-9]{64}$/.test(sourceKey)||receipt&&(receipt.sourceKey!==sourceKey||receipt.operation!==provider))return Promise.resolve(undefined)
     return (async()=>{
@@ -183,7 +213,7 @@ export function observeAddressedLaunch(requestId:string,sourceKey?:string,provid
   if(!receipt && uuidPattern.test(requestId) && sourceKey && /^[a-f0-9]{64}$/.test(sourceKey) && (provider==='ad'||provider==='sql-explorer')){
     remember({requestId,sourceKey,operation:provider==='ad'?activeDirectoryOperation:sqlOperation,workload:'',phase:'starting',explorerTracked:true,explorerStage:'checking'})
   }
-  return observeRestoreLaunch(requestId,io)
+  return observeRestoreLaunch(requestId,io,restoreIo)
 }
 export function findSessionLaunch(sourceKey: string, sessionId: string) {
   return [...recent.values(), ...storedLaunches()].find(receipt =>

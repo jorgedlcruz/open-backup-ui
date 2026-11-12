@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { activeDirectoryOperation, sqlOperation, isStorageOperation, canCheckExplorerLaunch, explorerRetryHref, observeAddressedLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { activeDirectoryOperation, sqlOperation, isStorageOperation, canCheckExplorerLaunch, canCheckRestoreLaunch, explorerRetryHref, observeAddressedLaunch, readRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import { recoveryCenterPath, sessionsPath, sessionHomeFor, sessionHref, type SessionHome } from '@/lib/navigation/recovery'
 import { useRecoveryPresentation } from './use-presentation'
 import { RecoverySignal } from './recovery-signal'
@@ -66,7 +66,7 @@ export function RecoveryHandoff({receipt, loading = false, home = recoveryCenter
           {!pending && receipt?.phase === 'unknown' && showDiagnostic && <p>{diagnostic(message)}</p>}
           {!pending && <div className={styles.handoffActions}>
             {retryHref && <Button asChild size="sm"><Link href={retryHref}>{t('Review and try again')}</Link></Button>}
-            {onCheck && (canCheckExplorerLaunch(receipt)||receipt?.phase==='unknown'&&isStorageOperation(receipt.operation)) && <Button type="button" size="sm" onClick={onCheck}>{t('Check status')}</Button>}
+            {onCheck && (canCheckExplorerLaunch(receipt)||canCheckRestoreLaunch(receipt)||receipt?.phase==='unknown'&&isStorageOperation(receipt.operation)) && <Button type="button" size="sm" onClick={onCheck}>{t('Check status')}</Button>}
             <Button asChild variant="outline" size="sm"><Link href={sessions}>{home === sessionsPath ? t('View sessions') : t('Recovery Center')}</Link></Button>
           </div>}
         </div>

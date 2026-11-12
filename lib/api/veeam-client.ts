@@ -59,7 +59,7 @@ import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLice
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
 import type {BatchInput,BatchReceipt} from '../restore-points/batch';
-import type { GuestDirectory, GuestRestoreChallenge, GuestRestoreCheck, GuestRestorePlan, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreResult } from '../restore-points/workflow';
+import type { GuestDirectory, GuestRestoreChallenge, GuestRestoreCheck, GuestRestorePlan, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreStartStatus } from '../restore-points/workflow';
 
 interface TokenResponse {
   access_token: string;
@@ -903,8 +903,11 @@ export class VeeamApiClient {
     return this.request(`/restore/inventory?${query}`, { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
   }
 
-  startRestore(draft: RestoreDraft): Promise<RestoreResult> {
-    return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify(draft) });
+  startRestore(draft: RestoreDraft,requestId:string): Promise<RestoreStartStatus> {
+    return this.request('/restore/start', { apiPrefix: '/api/vbr', method: 'POST', body: JSON.stringify({...draft,requestId}) });
+  }
+  getRestoreStart(sourceKey:string,requestId:string):Promise<RestoreStartStatus> {
+    return this.request('/restore/start?'+new URLSearchParams({sourceKey,requestId}), {apiPrefix:'/api/vbr'});
   }
   startRestoreBatch(input:BatchInput):Promise<BatchReceipt> {
     return this.request('/restore/batches',{apiPrefix:'/api/vbr',method:'POST',body:JSON.stringify(input)});

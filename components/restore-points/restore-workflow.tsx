@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { veeamApi } from '@/lib/api/veeam-client'
 import { isFlagged, type RestorePoint } from '@/lib/restore-points/model'
-import { beginRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
+import { beginTrackedRestoreLaunch, type RestoreLaunch } from '@/lib/restore-points/launch'
 import type { InventoryKind, RestoreDraft, RestoreInventoryItem, RestoreOperation, RestoreOptions, RestoreTarget } from '@/lib/restore-points/workflow'
 import { useRecoveryPresentation } from './use-presentation'
 import { TargetPicker } from './target-picker'
@@ -137,7 +137,7 @@ function RestoreForm({ point, flagged, options, operation, onBack, onLaunch,onDr
       ...(publish && { allowedIps: ipList, disks: allDisks ? undefined : disks }),
     }
     if(onDraft){onDraft(draft,server);return}
-    onLaunch(beginRestoreLaunch(draft, options.point.name || point.name || point.id, point.creationTime || undefined, value => veeamApi.startRestore(value)))
+    onLaunch(beginTrackedRestoreLaunch(draft, options.point.name || point.name || point.id, point.creationTime || undefined))
   }
 
   return <form className={styles.flow} onSubmit={submit}>

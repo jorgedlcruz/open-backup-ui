@@ -1,7 +1,7 @@
 // Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), vm = require('node:vm')
-const {randomUUID} = require('node:crypto'), assert = require('node:assert/strict'), {test} = require('node:test')
+const {createHash,randomUUID} = require('node:crypto'), assert = require('node:assert/strict'), {test} = require('node:test')
 const ts = require('typescript')
 const compile = file => ts.transpileModule(fs.readFileSync(file,'utf8'), {compilerOptions:{
   target:ts.ScriptTarget.ES2022, module:ts.ModuleKind.CommonJS, esModuleInterop:true,
@@ -11,12 +11,20 @@ const {MigrationOperations} = require('../lib/server/migration-operations.ts')
 const {VbrRecoveryError} = require('../lib/recovery/error.ts')
 const sourceKey = 'a'.repeat(64)
 const newBinding = () => ({sourceKey,mountId:randomUUID(),sessionId:randomUUID(),kind:'hyperV',requestId:randomUUID()})
-async function fixture(t) {
+async function fixture(t,Store=MigrationOperations) {
   const folder = await fs.promises.mkdtemp(path.join(os.tmpdir(),'vbr-migration-test-'))
   t.after(() => fs.promises.rm(folder,{recursive:true,force:true}))
   let now = Date.now()
-  const store = () => new MigrationOperations(folder,()=>now)
-  return {store, advance:ms=>{now+=ms}}
+  const store = () => new Store(folder,()=>now)
+  return {store,folder, advance:ms=>{now+=ms}}
+}
+
+function unlockedStore() {
+  const file=require.resolve('../lib/server/migration-operations.ts'),exports={}
+  vm.runInNewContext(compile(file),{exports,require:key=>key==='./file-lease'
+    ?{withFileLease:async(_file,_duration,work)=>work()}
+    :require(key.startsWith('.')?path.resolve(path.dirname(file),key):key),setTimeout})
+  return exports.MigrationOperations
 }
 
 test('two workers reserve one migration, survive observer reloads and never repeat an accepted request without a child ID',async t=>{
@@ -46,6 +54,63 @@ test('interrupted work becomes unknown durably and never replays using the same 
   assert.equal((await store().observe(binding)).state,'unknown')
   assert.equal((await store().submit(binding,{},()=>assert.fail(),()=>assert.fail())).state,'unknown')
   await assert.rejects(store().submit({...binding,requestId:randomUUID()},{},()=>assert.fail(),()=>assert.fail()),{status:409})
+})
+
+test('immutable mount generations fence native writes and exact-child retries even without advisory mutual exclusion',async t=>{
+  const {store}=await fixture(t,unlockedStore()),binding=newBinding(),scheduled=[],firstChild=randomUUID(),secondChild=randomUUID()
+  let calls=0
+  const submit=(request,child,canRetry)=>store().submit(request,{placement:'a'},fn=>scheduled.push({request,fn}),
+    async()=>{calls++;return {accepted:true,sessionId:child}},canRetry)
+  const race=await Promise.allSettled(Array.from({length:12},()=>submit({...binding,requestId:randomUUID()},firstChild)))
+  assert.equal(scheduled.length,1);assert.equal(calls,0)
+  assert.ok(race.some(value=>value.status==='fulfilled'))
+  for(const result of race)if(result.status==='rejected')assert.equal(result.reason.status,409)
+  await Promise.all([scheduled[0].fn(),scheduled[0].fn()])
+  assert.equal(calls,1,'duplicating the scheduled callback cannot repeat the native write')
+  assert.equal((await store().observe(scheduled[0].request)).sessionId,firstChild)
+  await submit({...binding,requestId:randomUUID()},secondChild,async()=>false)
+  assert.equal(scheduled.length,1,'a running/successful/unverified child cannot authorize a retry')
+  const retries=await Promise.allSettled(Array.from({length:12},()=>submit({...binding,requestId:randomUUID()},secondChild,
+    async child=>{assert.equal(child,firstChild);return true})))
+  assert.equal(scheduled.length,2)
+  assert.ok(retries.some(value=>value.status==='fulfilled'))
+  for(const result of retries)if(result.status==='rejected')assert.equal(result.reason.status,409)
+  await Promise.all([scheduled[1].fn(),scheduled[1].fn()])
+  assert.equal(calls,2)
+  assert.equal((await store().observe(scheduled[1].request)).sessionId,secondChild)
+  await submit({...binding,requestId:randomUUID()},secondChild,async child=>{assert.equal(child,secondChild);return false})
+  assert.equal(scheduled.length,2,'the current owner remains authoritative after concurrent retries')
+})
+
+test('competing settings for one migration request cannot replace the winning immutable attempt',async t=>{
+  const {store}=await fixture(t,unlockedStore()),binding=newBinding(),scheduled=[],native=[]
+  const outcomes=await Promise.allSettled(Array.from({length:10},(_,placement)=>store().submit(binding,{placement},
+    fn=>scheduled.push({placement,fn}),async()=>{native.push(placement);return {accepted:true,sessionId:null}})))
+  assert.equal(scheduled.length,1)
+  for(const result of outcomes)if(result.status==='rejected')assert.equal(result.reason.status,409)
+  await Promise.all([scheduled[0].fn(),scheduled[0].fn()])
+  assert.deepEqual(native,[scheduled[0].placement])
+  assert.equal((await store().observe(binding)).state,'accepted')
+})
+
+test('legacy accepted migration receipts remain authoritative until an exact failed child permits the first new generation',async t=>{
+  const {store,folder}=await fixture(t),binding=newBinding(),firstChild=randomUUID(),secondChild=randomUUID(),payload={placement:'a'}
+  const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex')
+  const file=path.join(folder,digest([binding.sourceKey,binding.requestId])+'.json')
+  const slot=path.join(folder,'mount-'+digest([binding.sourceKey,binding.kind,binding.sessionId,binding.mountId]))
+  const outcome={state:'accepted',sessionId:firstChild},legacy={binding,payloadHash:digest(payload),created:Date.now(),outcome}
+  await fs.promises.writeFile(file,JSON.stringify(legacy))
+  await fs.promises.writeFile(slot,binding.requestId)
+  assert.deepEqual(await store().observe(binding),outcome)
+  assert.deepEqual(await store().submit({...binding,requestId:randomUUID()},payload,()=>assert.fail(),()=>assert.fail(),async()=>false),outcome)
+  const retry={...binding,requestId:randomUUID()},scheduled=[]
+  await store().submit(retry,payload,fn=>scheduled.push(fn),async()=>({accepted:true,sessionId:secondChild}),
+    async child=>{assert.equal(child,firstChild);return true})
+  assert.equal(scheduled.length,1);await scheduled[0]()
+  assert.deepEqual(await store().observe(retry),{state:'accepted',sessionId:secondChild})
+  assert.deepEqual(await store().observe(binding),outcome,'the original receipt is not rewritten')
+  assert.deepEqual(await store().submit({...binding,requestId:randomUUID()},payload,()=>assert.fail(),()=>assert.fail(),
+    async child=>{assert.equal(child,secondChild);return false}),{state:'accepted',sessionId:secondChild})
 })
 
 test('preflight and explicit rejections remain retryable, ambiguous mutations never masquerade as rejection',async t=>{

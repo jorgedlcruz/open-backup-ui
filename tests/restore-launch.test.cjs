@@ -79,6 +79,65 @@ test('lost responses and mismatched sources remain unconfirmed, while explicit r
   }
 })
 
+test('single restore handoff recovers a lost response using only its exact durable status',async()=>{
+  const launch=newTab(),calls=[]
+  const draft={sourceKey,restorePointId:id,backupId:id,operation:'StartFlrRestore',mode:'OriginalLocation'}
+  const io={wait:async()=>{},send:async(address,input)=>{
+    calls.push(input?'start':'status')
+    assert.equal(address.sourceKey,sourceKey);assert.equal(address.operation,draft.operation)
+    if(input){assert.deepEqual(input,draft);throw new TypeError('Failed to fetch')}
+    return {...address,phase:calls.length===2?'starting':'accepted',sessionId:id,mountErrors:[{type:'Mount',message:'Partial mount'}]}
+  }}
+  const receipt=launch.beginTrackedRestoreLaunch(draft,'Computer',undefined,io)
+  const result=await launch.observeRestoreLaunch(receipt.requestId,undefined,io)
+  assert.equal(result.sessionId,id);assert.equal(result.mountErrors[0].message,'Partial mount')
+  assert.deepEqual(calls,['start','status','status'])
+  assert.match(launch.recoveryPreparingHref(receipt),/provider=StartFlrRestore/)
+  assert.doesNotMatch(global.sessionStorage.getItem('open-backup-ui.restore-launches'),/restorePointId|backupId|OriginalLocation/)
+})
+
+test('single restores survive hard reload without replay, and late transport errors cannot undo an accepted receipt',async()=>{
+  const original=newTab(),calls=[]
+  let lostResponse
+  const draft={sourceKey,restorePointId:id,backupId:id,operation:'StartViVMInstantRecovery',mode:'OriginalLocation'}
+  const request=original.beginTrackedRestoreLaunch(draft,'VM',undefined,{wait:async()=>{},send:async(address,input)=>{
+    calls.push(input?'start':'status')
+    if(input)return new Promise(resolve=>{lostResponse=resolve})
+    return {...address,phase:'unknown'}
+  }})
+  await Promise.resolve()
+  const refreshed=freshClient(),io={wait:async()=>{},send:async(address,input)=>{
+    assert.equal(input,undefined);calls.push('status');return {...address,phase:'accepted',sessionId:id}
+  }}
+  assert.equal(refreshed.readRestoreLaunch(request.requestId).phase,'starting')
+  const first=refreshed.observeRestoreLaunch(request.requestId,undefined,io),second=refreshed.observeRestoreLaunch(request.requestId,undefined,io)
+  assert.equal(first,second);assert.equal((await first).sessionId,id)
+  const old=original.observeRestoreLaunch(request.requestId)
+  lostResponse({});assert.equal((await old).phase,'accepted')
+  assert.equal(freshClient().readRestoreLaunch(request.requestId).sessionId,id)
+  assert.equal(calls.filter(value=>value==='start').length,1)
+  const empty=newTab()
+  const reopened=await empty.observeAddressedLaunch(request.requestId,sourceKey,draft.operation,undefined,io)
+  assert.equal(reopened.sessionId,id);assert.equal(reopened.restoreTracked,true)
+})
+
+test('single restore status rejects foreign bindings and only known preflight failures are retryable',async()=>{
+  const {resolveRestoreHandoff}=require('../lib/restore-points/restore-handoff.ts')
+  const address={sourceKey,requestId:id,operation:'StartEntireVmRestore'}
+  for(const wrong of [{sourceKey:'f'.repeat(64)},{requestId:'22222222-2222-4222-8222-222222222222'},{operation:'StartFlrRestore'},{sessionId:'invalid'}]){
+    const calls=[]
+    const outcome=await resolveRestoreHandoff(address,undefined,{wait:async()=>{},send:async(_address,draft)=>{
+      calls.push(draft);return {...address,phase:'accepted',sessionId:id,...wrong}
+    }})
+    assert.equal(outcome.phase,'unknown');assert.ok(calls.every(value=>value===undefined));assert.ok(calls.length<7)
+  }
+  const rejected=await resolveRestoreHandoff(address,{...address,restorePointId:id,backupId:id,mode:'OriginalLocation'},{wait:async()=>{},send:async(_address,draft)=>{
+    if(draft)throw Object.assign(new Error('Review malware status.'),{uncertain:false})
+    throw Object.assign(new Error('Not found'),{status:404})
+  }})
+  assert.deepEqual(rejected,{phase:'rejected',message:'Review malware status.'})
+})
+
 test('Recovery Center observes in-flight receipts only for this source and ages out old launches',async t=>{
   const launch=newTab(),windowBefore=global.window
   global.window=new EventTarget()

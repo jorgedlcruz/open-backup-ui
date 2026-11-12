@@ -1,13 +1,22 @@
 # Changelog
 
-## 1.2.0 (in development)
+## 1.2.0 (release candidate)
 
-- Start a VM restore from the selected calendar or table entry. Set the recovered VM name and destination together and review the settings before submission.
-- Start recoveries by goal in Recovery Center, then follow their progress in the recovery session. Sessions also lists mounted recoveries and their logs, including actions to migrate a recovered VM or stop publishing.
-- Browse guest files, Active Directory objects, and SQL databases inside the recovery session. The Active Directory toolbar groups Restore, Export and the recovery cart above the object grid.
-- Search and filter fields use the selected Glass theme's surface and foreground colors.
+- **Recovery Center:** goal-first recovery for machines, files and objects, application items, and disks/volumes; eligible-workload search and type filters; a recovery-only activity grid with pending, running, ready-for-action, attention and completed views.
+- **Restore-point selection:** a right-hand calendar with month/year selection, per-day restore times, automatic latest eligible point selection, exact-point entry from Protected Data, and older history loaded in batches of 200 per backup copy.
+- **VM recovery:** Instant VM Recovery and entire-VM restore with original/custom placement and explicit settings review. Mass recovery supports up to 32 VMs, separate points and names, common-method checks, preflight validation and durable per-VM results. Batch validation now resolves exact VM identities through backup-scoped object lists instead of a standalone lookup that returned 404 on valid selections.
+- **Guest files:** Windows/Linux folder trees, search, scoped carts, ZIP downloads, original-machine Keep/Overwrite with native validation and authentication, and correct Linux helper/original-host selection. The cart and review are inline; accepted operations return to browsing with one task-progress strip.
+- **Active Directory:** automatic Explorer handoff, a directory tree, distinct object-type icons, attribute inspection, search, selection-scoped Restore/Export and a searchable recovery cart. The unsupported direct production-comparison experiment is removed.
+- **SQL Server:** embedded server/instance/database browsing; latest and point-in-time recovery options, alternate targets, instant recovery, export and publishing, mounted-operation controls, and SQL staging-server settings. Actions stay above the database grid.
+- **NAS and object storage:** file/object trees, search, recovery carts, restore/copy workflows and destination browsing at a selected restore point. Copy operations use the correct restore-point mode and report asynchronous task progress without ending the browse session. Other whole-workload/instant/rollback options appear where the source supports them; per-item version history and all-time browsing are not included.
+- **Physical computers and disks:** eligible agent workloads join the common picker, with guest-file restore, supported disk tools and recovery media/token workflows. Windows volume recovery requires a connected, verified Windows recovery appliance. Disk-method availability follows VBR's capabilities; First Class Disk recovery is a specific vSphere method.
+- **Sessions and recovery maps:** global backup/restore activity with shared filters and origin-aware navigation. VM restore/migration maps display source and destination placement, reported proxies, moving transfer paths, progress and rate history retained for 12 hours after completion. Stop/Unmount/Stop publishing remain session-level actions; publication cleanup remains available after successful migration when VBR still reports a published VM.
+- **Caching and handoff reliability:** shared, source/principal-scoped recovery evidence, local workload search, background refresh while Recovery Center is open, explicit manual refresh and retained older pages. Explorer/batch/migration receipts distinguish pending, accepted, failed and unknown outcomes to reduce duplicate submissions.
+- **Appearance and release identity:** new OB restore/check SVG, original sidebar text, light/dark contrast, default Glass Ocean for new preferences, branded input surfaces, 200 rotating loading captions with a continuous spinner, connection health/version footer, and v1.2.0 source headers plus a tracked-file manifest.
+- **Localization:** recovery controls, status labels, guidance and known diagnostics extend the existing eleven language catalogs.
+- **Final QA fixes:** slow individual restore starts keep a durable acknowledgement across navigation/reload; completed SQL operations retain their permanent-session result; native attempt records protect starts, batch rows and migrations against duplicate dispatch after stale-lock races. The standalone archive now includes the kiosk viewer's launcher dependencies.
 
-See the [VM restore API map](docs/vm-restore-api.md) for the launch payloads and recovery lifecycle endpoints.
+[Full release notes](docs/releases/v1.2.0.md) · [PR description](docs/releases/v1.2.0-pull-request.md) · [Validation and publication checklist](docs/releases/v1.2.0-validation.md) · [Restore API map](docs/vm-restore-api.md)
 
 ## 1.0.1
 

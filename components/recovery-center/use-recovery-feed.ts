@@ -5,7 +5,7 @@ import {veeamApi} from '@/lib/api/veeam-client'
 import {ApplicationRequestError} from '@/lib/api/application-request'
 import type {loadRecoverySnapshot} from '@/lib/recovery-center/load'
 import type {RecoveryBatchSummary,ExplorerRequestRow} from '@/lib/recovery-center/model'
-import {canCheckExplorerLaunch,observeRestoreLaunch,recentRestoreLaunches,type RestoreLaunch} from '@/lib/restore-points/launch'
+import {canCheckExplorerLaunch,canCheckRestoreLaunch,observeRestoreLaunch,recentRestoreLaunches,type RestoreLaunch} from '@/lib/restore-points/launch'
 
 export type RecoveryFeedPage=Awaited<ReturnType<typeof loadRecoverySnapshot>>&{sourceName:string;sourceKey:string;batches:RecoveryBatchSummary[];explorerRequests?:ExplorerRequestRow[]}
 export function useRecoveryFeed(revision:number,expectedSource?:string) {
@@ -57,7 +57,7 @@ export function useRecoveryFeed(revision:number,expectedSource?:string) {
     const read=()=>setReceipts(recentRestoreLaunches(sourceKey))
     read();window.addEventListener('restore-launch-change',read)
     for(const launch of recentRestoreLaunches(sourceKey)){
-      if(!document.hidden&&canCheckExplorerLaunch(launch))void observeRestoreLaunch(launch.requestId)
+      if(!document.hidden&&(canCheckExplorerLaunch(launch)||canCheckRestoreLaunch(launch)))void observeRestoreLaunch(launch.requestId)
     }
     return ()=>window.removeEventListener('restore-launch-change',read)
   },[feed?.sourceKey,feed?.before])

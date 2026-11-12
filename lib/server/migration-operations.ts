@@ -32,7 +32,7 @@ export class MigrationOperations {
     try { return recordSchema.parse(JSON.parse(await fs.readFile(file, 'utf8'))) }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error }
   }
-  private async latest(slot: string, binding: Binding) {
+  private async legacyLatest(slot: string, binding: Binding) {
     let requestId: string
     try { requestId = await fs.readFile(slot,'utf8') }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error }
@@ -40,6 +40,34 @@ export class MigrationOperations {
     const record = await this.read(this.file({...binding, requestId}))
     if (!record || !matches(record.binding,{...binding,requestId})) throw new VbrRecoveryError('The previous migration request could not be verified.',503)
     return record
+  }
+  private async latest(slot: string, binding: Binding) {
+    let next = slot + '.attempt', last: Record | null = null
+    // Immutable links make the latest native attempt independent of an advisory
+    // lock or a mutable "last request" pointer. Never reclaim an interrupted link.
+    for (let count = 0; count < 256; count++) {
+      const claim = await this.read(next)
+      if (!claim) return {record:last || await this.legacyLatest(slot,binding), next}
+      if (!matches(claim.binding,{...binding,requestId:claim.binding.requestId}) || claim.outcome.state !== 'checking') {
+        throw new VbrRecoveryError('The previous migration request could not be verified.',503)
+      }
+      const saved = await this.read(this.file(claim.binding))
+      if (saved && (!matches(saved.binding,claim.binding) || saved.payloadHash !== claim.payloadHash || saved.created !== claim.created)) {
+        throw new VbrRecoveryError('The previous migration request could not be verified.',503)
+      }
+      last = saved || claim
+      next = slot + '.after-' + claim.binding.requestId + '.attempt'
+    }
+    throw new VbrRecoveryError('The migration request history could not be verified.',503)
+  }
+  private async publish(file: string, record: Record) {
+    const temp = file + '.' + randomUUID() + '.tmp'
+    await fs.mkdir(path.dirname(file),{recursive:true})
+    try {
+      await fs.writeFile(temp,JSON.stringify(recordSchema.parse(record)),{flag:'wx',mode:0o600})
+      try { await fs.link(temp,file); return true }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false; throw error }
+    } finally { await fs.unlink(temp).catch(() => {}) }
   }
   private async write(file: string, record: Record) {
     const temp = file + '.' + randomUUID() + '.tmp'
@@ -70,7 +98,7 @@ export class MigrationOperations {
     const saved = await this.read(file)
     if (saved) return existing(saved)
     const slot = path.join(this.directory, 'mount-' + digest([binding.sourceKey,binding.kind,binding.sessionId,binding.mountId]))
-    const lastObserved = await this.latest(slot,binding)
+    const {record:lastObserved} = await this.latest(slot,binding)
     const childId = lastObserved?.outcome.sessionId
     // The parent can still be Mounted minutes after a migration is accepted. Only VBR's
     // exact failed/canceled child makes a second submission on this mount safe.
@@ -80,21 +108,29 @@ export class MigrationOperations {
     const reserve = async (): Promise<MigrationOutcome> => {
       const previous = await this.read(file)
       if (previous) return existing(previous)
-      const last = await this.latest(slot,binding)
+      const {record:last,next} = await this.latest(slot,binding)
+      // A concurrent observer can see the claim before its request receipt is
+      // published. It observes the same reservation and never schedules it.
+      if (last && matches(last.binding,binding)) return existing(last)
       if (last?.outcome.state === 'accepted' && last.binding.requestId !== retryOf) {
         if (last.payloadHash !== payloadHash) throw new VbrRecoveryError('This mount already has an accepted migration. Check the migration session.',409)
-        await this.write(file, {...last,binding})
+        if (!await this.publish(file, {...last,binding})) return existing((await this.read(file))!)
         return last.outcome
       }
       if (last && ['checking','unknown'].includes(last.outcome.state)) {
         throw new VbrRecoveryError(this.current(last).state === 'checking' ? 'Another migration request for this mount is being checked.' : unknown,409)
       }
       const record: Record = {binding, payloadHash, created:this.now(), outcome:{state:'checking'}}
-      await this.write(file, record)
-      // The slot has a single writer under the lease. Both records exist before work is scheduled.
-      await fs.writeFile(slot,binding.requestId,{mode:0o600})
+      // Only the winner of this immutable generation may schedule work. The
+      // reusable lease improves contention but cannot authorize a second POST.
+      if (!await this.publish(next,record)) return reserve()
+      if (!await this.publish(file,record)) {
+        existing((await this.read(file))!)
+        throw new VbrRecoveryError('The migration request could not be reserved. Check Sessions before trying again.',409)
+      }
       const complete = async () => {
         if (this.now() - record.created >= checkingTimeout) return
+        if (!await this.publish(next+'.dispatch',record)) return
         let outcome: MigrationOutcome
         try {
           const result = await work()

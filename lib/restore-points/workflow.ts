@@ -78,6 +78,7 @@ export type RestoreDraft = {
   allowedIps?: string[]
 }
 export type RestoreResult = { id: string; sourceKey: string; state?: string; sessionType?: string; mountErrors?: {type: string; message: string}[] }
+export type RestoreStartStatus = {requestId:string;sourceKey:string;operation:RestoreOperation;phase:'starting'|'accepted'|'rejected'|'unknown';sessionId?:string;message?:string;mountErrors?:RestoreResult['mountErrors']}
 
 export type GuestFile = { name: string; displayName?: string; location?: string; type: 'Drive' | 'Folder' | 'File' | 'Link'; size?: number }
 export type GuestDirectory = {

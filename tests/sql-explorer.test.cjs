@@ -8,6 +8,7 @@ const {runSqlExplorer,sqlAfterClose,sqlExplorerSchema,sqlRequestSession}=require
 const {browsePage}=require('../lib/recovery/sql-protocol.ts')
 const {requiredSqlChecks}=require('../lib/recovery/sql-actions.ts')
 const {SqlWorkflows}=require('../lib/server/sql-workflows.ts')
+const {VbrRecoveryError}=require('../lib/recovery/error.ts')
 const {SqlBrowseCursor}=require('../lib/server/sql-browse-cursor.ts')
 const {sqlActionGroups,sqlWizardDefaults,sqlRecoverySelection,sqlTimeWindow}=require('../lib/restore-points/sql-action-presets.ts')
 const id=n=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0')
@@ -171,6 +172,53 @@ test('submitted work is scoped, durable and never repeats the native write; publ
   await f.run(mounted)
   assert.deepEqual(f.calls.at(-1).options.body,{sessions:[{permanentSessionId:workflowId,jobIds:[jobId]}]})
   assert.deepEqual(await f.run({...common,action:'operations'},{...ctx,principalKey:'c'.repeat(64)}),{jobs:[]})
+})
+
+test('SQL jobs leaving the active list retain the exact native session outcome without inventing database results',async t=>{
+  const f=fixture(t),ops='/private-api/v1/applicationItems/operations',sessionPath='/api/v1/sessions/'+workflowId
+  const second={...database,sourceDatabase:'Archive'}
+  await f.store.create(ctx,{id:workflowId,sessionId,intent:'restore',databases:[database,second],ranges:[null,null],
+    state:'submitted',created:Date.now(),checks:{},jobs:[{jobId,database},{jobId:id(8),database:second}]})
+  f.responses.set(ops,{data:[]})
+  for(const [state,result,expected] of [
+    ['Stopped',{result:'Success'},'Success'],['Stopped',{result:'Warning'},'Warning'],
+    ['Stopped',{result:'Failed'},'Failed'],['Stopped',{result:'Success',isCanceled:true},'Canceled'],
+    ['Stopped',{result:'None'},'Stopped'],['Working',{result:'None'},'Working'],
+  ]) {
+    f.responses.set(sessionPath,{id:workflowId,state,result})
+    const before=f.calls.length,{jobs}=await f.run({...common,action:'operations'})
+    assert.equal(f.calls.slice(before).filter(call=>call.p===sessionPath).length,1,'one lookup per permanent session, not per database')
+    for(const job of jobs){assert.equal(job.sessionStatus,expected);assert.equal(job.operationStatus,undefined);assert.deepEqual(job.allowedOperations,[])}
+    await assert.rejects(f.run({...common,action:'mounted',job:jobs[0].key,command:'stop'}),/unavailable/)
+  }
+  assert.ok(!f.calls.some(call=>call.options.mutation),'session fallback cannot authorize a write')
+  const count=f.calls.length
+  assert.deepEqual(await f.run({...common,action:'operations'},{...ctx,principalKey:'c'.repeat(64)}),{jobs:[]})
+  assert.equal(f.calls.length,count,'another principal cannot read this workflow history')
+})
+
+test('missing, malformed and mismatched SQL session evidence remains unknown; authorization errors propagate',async t=>{
+  const f=fixture(t),ops='/private-api/v1/applicationItems/operations',sessionPath='/api/v1/sessions/'+workflowId
+  await f.store.create(ctx,{id:workflowId,sessionId,intent:'export',databases:[database],ranges:[null],
+    state:'submitted',created:Date.now(),checks:{},jobs:[{jobId,database}]})
+  f.responses.set(ops,{data:[{id:jobId,permanentSessionId:id(99),explorerKind:'Sql',operationStatus:'Published'}]})
+  for(const response of [
+    {id:id(99),state:'Stopped',result:{result:'Success'}},{id:workflowId,result:'Success'},null,
+    ()=>{throw new VbrRecoveryError('No retained session',404)},()=>{throw new Error('Request timed out')},
+  ]) {
+    f.responses.set(sessionPath,response)
+    const {jobs:[job]}=await f.run({...common,action:'operations'})
+    assert.equal(job.sessionStatus,undefined);assert.equal(job.operationStatus,undefined);assert.deepEqual(job.allowedOperations,[])
+  }
+  assert.ok(!f.calls.some(call=>call.p.endsWith(id(99))),'never follow the foreign operation row')
+  for(const status of [401,403]) {
+    f.responses.set(sessionPath,()=>{throw new VbrRecoveryError('Access denied',status)})
+    await assert.rejects(f.run({...common,action:'operations'}),error=>error.status===status)
+  }
+  f.responses.set(ops,{data:[{id:jobId,permanentSessionId:workflowId,explorerKind:'Sql',operationStatus:'Exporting',status:'Running'}]})
+  const before=f.calls.length,{jobs:[active]}=await f.run({...common,action:'operations'})
+  assert.equal(active.operationStatus,'Exporting');assert.equal(active.sessionStatus,undefined)
+  assert.equal(f.calls.length,before+1,'active native jobs do not need historical session reads')
 })
 
 test('a fresh verification invalidates old proofs, permits the new complete pass, and never guesses a PIT range',async t=>{
