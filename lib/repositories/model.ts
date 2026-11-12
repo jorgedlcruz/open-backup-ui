@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { repositorySchema, jobSchema, type OperationJob } from '../operations/model'
 import { uuid, validId, type Evidence } from '../investigation/model'

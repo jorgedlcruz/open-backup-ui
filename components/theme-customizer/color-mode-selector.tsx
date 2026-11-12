@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { AppearanceOptions } from "./appearance-options"

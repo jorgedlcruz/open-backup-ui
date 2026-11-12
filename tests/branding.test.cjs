@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs')
 const ts = require('typescript')
@@ -14,6 +15,8 @@ test('existing saved appearance survives migration without inventing overrides',
   assert.deepEqual(themeOverrides(old), {})
 })
 test('missing and malformed preferences safely resolve to defaults', () => {
+  assert.equal(DEFAULT_THEME.preset, 'glass-ocean')
+  assert.equal(normalizeTheme({ preset: 'default' }).preset, 'default')
   for (const input of [undefined, null, 1, [], {}, { preset: 'missing', font: 'url(example)', radius: ';color:red', scale: 'huge', contentLayout: 'other' }]) {
     assert.deepEqual(normalizeTheme(input), DEFAULT_THEME)
   }

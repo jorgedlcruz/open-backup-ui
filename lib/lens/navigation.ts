@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /** One registry drives the sidebar, Lens tiles, routes, and landing preference. */
 export const lenses = [
   { id: 'overview', title: 'Overview', category: 'Estate health', description: 'Your protection picture, priorities, and next move.', href: '/vbr/lens/overview' },

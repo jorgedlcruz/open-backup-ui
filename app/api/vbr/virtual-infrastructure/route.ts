@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { NextRequest } from 'next/server'
 import { withVbrRead } from '@/lib/server/vbr-read'
 import { loadVirtualInventory } from '@/lib/virtual-infrastructure/load'

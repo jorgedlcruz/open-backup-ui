@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 export interface TriggeredAlarmItem {
     status: 'Resolved' | 'Information' | 'Warning' | 'Error';
     latitude?: number | null;

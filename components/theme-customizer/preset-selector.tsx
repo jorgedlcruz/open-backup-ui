@@ -1,6 +1,8 @@
 "use client";
+// Open Backup UI v1.2.0
 
-import { THEMES } from "@/lib/themes";
+import { DEFAULT_THEME, THEMES } from "@/lib/themes";
+import { useI18n } from "@/components/providers/i18n-provider";
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
 import { useThemeConfig } from "@/components/active-theme";
@@ -16,6 +18,7 @@ import {
 
 export function PresetSelector() {
     const { theme, setTheme } = useThemeConfig();
+    const { t } = useI18n();
 
     const handlePreset = (value: string) => {
         setTheme({ ...theme, preset: value });
@@ -45,7 +48,7 @@ export function PresetSelector() {
                             </span>
                             {theme.preset === preset.value && <span className={styles.selectedMark}><Check size={11} strokeWidth={3} /></span>}
                         </span>
-                        <span className={styles.name}>{preset.name.replace("Glass ", "")}</span>
+                        <span className={styles.name}>{preset.name.replace("Glass ", "")}{preset.value === DEFAULT_THEME.preset && ` · ${t("Default")}`}</span>
                         <span className={styles.description}>{preset.value === "glass-ocean" ? "Blue & cyan" : preset.value === "glass-forest" ? "Emerald & teal" : "Violet & rose"}</span>
                     </button>
                 ))}
@@ -66,7 +69,7 @@ export function PresetSelector() {
                                             style={{ backgroundColor: color }}></span>
                                     ))}
                                 </div>
-                                {theme.name}
+                                {theme.name}{theme.value === DEFAULT_THEME.preset && ` · ${t("Default")}`}
                             </div>
                         </SelectItem>
                     ))}

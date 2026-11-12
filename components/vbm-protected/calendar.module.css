@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .toolbar {display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 20px 18px;font-size:12px;}
 .toolbar strong {margin-right:auto;}
 .toolbar select {border:1px solid var(--border);padding:7px;background:var(--card);border-radius:5px;}

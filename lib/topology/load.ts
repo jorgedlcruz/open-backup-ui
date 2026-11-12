@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { buildTopology, type BackupMembership, type TopologySnapshot } from './model'
 

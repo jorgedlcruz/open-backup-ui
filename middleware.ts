@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { NextRequest, NextResponse } from 'next/server'
 import { configuredPublicOrigin, publicPathAllowed } from './lib/labs/sharing'
 

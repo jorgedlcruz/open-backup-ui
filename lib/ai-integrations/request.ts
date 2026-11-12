@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /** Bound local settings requests so the form always recovers from a stalled response. */
 export async function requestAiConfiguration(path: '' | '/check', signal: AbortSignal, body?: unknown, fetcher: typeof fetch = fetch, timeoutMs = path === '/check' ? 30000 : 15000) {
   const timeout = AbortSignal.timeout(timeoutMs)

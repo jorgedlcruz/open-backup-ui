@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 // Adapted from Tremor Raw BarList [v0.1.0]
 
 import React from "react"

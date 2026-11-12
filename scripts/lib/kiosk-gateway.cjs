@@ -1,17 +1,39 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const http = require('node:http')
 const https = require('node:https')
+const { BlockList, isIP } = require('node:net')
 const { publicPathAllowed } = require('../../lib/labs/public-paths.cjs')
 const privateHeaders = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex, nofollow, noarchive', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY' }
 const reply = (response, status, message) => { if (response.writableEnded) return; if (response.headersSent) return response.destroy(); response.writeHead(status, { ...privateHeaders, 'Content-Type': 'text/plain; charset=utf-8' }); response.end(message) }
 
-function createKioskServer({ appUrl, publicOrigin }) {
+function parseAllowedSubnet(cidr) {
+  if (cidr === undefined) return null
+  const invalid = () => new Error('KIOSK_ALLOWED_SUBNET must be one IPv4 or IPv6 CIDR, for example 192.168.1.0/24.')
+  if (typeof cidr !== 'string') throw invalid()
+  const [address, length, ...rest] = cidr.split('/')
+  const family = isIP(address), prefix = Number(length)
+  if (!family || address.includes('%') || rest.length || String(prefix) !== length || !Number.isInteger(prefix) || prefix < 0 || prefix > (family === 4 ? 32 : 128)) throw invalid()
+  const subnet = new BlockList()
+  subnet.addSubnet(address, prefix, family === 4 ? 'ipv4' : 'ipv6')
+  return subnet
+}
+
+function createKioskServer({ appUrl, publicOrigin, allowedSubnet }) {
   const target = new URL(appUrl), origin = new URL(publicOrigin)
   for (const url of [target, origin]) if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('Kiosk URLs must be HTTP(S) origins without credentials or paths.')
   if (target.origin === origin.origin) throw new Error('The kiosk listener and private app must have different origins or ports.')
+  const subnet = parseAllowedSubnet(allowedSubnet)
   const transport = target.protocol === 'https:' ? https : http
   const agent = new transport.Agent({ keepAlive: true, maxSockets: 32, maxFreeSockets: 8 })
   const server = http.createServer(async (request, response) => {
+    if (subnet) {
+      const peer = request.socket.remoteAddress, family = isIP(peer || '')
+      if (!family || !subnet.check(peer, family === 4 ? 'ipv4' : 'ipv6')) {
+        request.resume()
+        return reply(response, 403, 'Forbidden')
+      }
+    }
     const raw = request.url || '/', method = request.method || 'GET'
     // A fixed upstream destination and a narrow route list, never an open proxy.
     if (!raw.startsWith('/') || raw.startsWith('//') || /[\\\r\n]/.test(raw) || request.headers.host?.toLowerCase() !== origin.host.toLowerCase()) { request.resume(); return reply(response, 404, 'Not found') }

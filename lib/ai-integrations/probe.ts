@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { providers, modelId, type Check, type CredentialSource, type Model, type Provider } from './model'
 
 type Reply = Pick<Response, 'ok' | 'status' | 'json'>

@@ -1,4 +1,5 @@
 "use client";
+// Open Backup UI v1.2.0
 
 import { useThemeConfig } from "@/components/active-theme";
 import { Button } from "@/components/ui/button";

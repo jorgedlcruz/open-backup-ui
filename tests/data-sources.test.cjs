@@ -1,7 +1,9 @@
+// Open Backup UI v1.2.0
 const fs=require('node:fs'),ts=require('typescript'),vm=require('node:vm')
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText,filename)
 const {test}=require('node:test'),assert=require('node:assert/strict')
 const m=require('../lib/data-sources/model.ts'),p=require('../lib/data-sources/probe.ts')
+const {ConnectionChecks}=require('../lib/data-sources/connection-summary.ts')
 const now=Date.parse('2026-10-23T20:00:00Z'),reply=(status,data)=>({status,ok:status>=200 && status<300,json:async()=>data})
 const row=(patch={})=>({id:'source-a',type:'vbr',name:'Primary',url:'https://backup.test:9419',username:'admin',hasCredentials:true,managed:'saved',selected:false,health:{...m.unchecked('vbr'),connection:'reachable',authentication:'verified',api:'verified',checkedAt:new Date(now).toISOString(),latencyMs:0,...patch}})
 test('endpoints normalize case, default ports and trailing slash while preserving explicit ports',()=>{assert.equal(m.endpoint('https://BACKUP.test:443/').url,'https://backup.test');assert.equal(m.endpoint('http://backup.test:9419').port,9419);assert.equal(m.endpoint('https://[::1]:9419').host,'[::1]')})
@@ -23,6 +25,31 @@ test('HTTP 500 and transport failures remain distinct',async()=>{const h=await p
 test('HTML, unrelated JSON and unauthenticated successes do not assert verified authentication',async()=>{const invalid=await p.probe('vbr',async()=>reply(200,{ok:true}),true,()=>now),html=await p.probe('vb365',async()=>({status:200,json:async()=>{throw Error('HTML')}}),true,()=>now),publicRead=await p.probe('vb365',async()=>reply(200,{version:'8'}),false,()=>now);assert.equal(invalid.api,'unknown');assert.equal(html.connection,'reachable');assert.equal(publicRead.authentication,'unknown')})
 test('unsupported Kasten probes make no network requests',async()=>{const h=await p.probe('kasten',async()=>{throw Error('must not call')},false,()=>now);assert.equal(h.connection,'unchecked');assert.equal(h.apiVersion,null)})
 
+test('footer distinguishes verified, mixed, failed, unverified and empty inventories; expired evidence cannot keep OK',async()=>{
+  let clock=now
+  const cache=new ConnectionChecks(()=>clock)
+  function entry(key,patch={}) {return {key,check:async()=>({...row().health,checkedAt:new Date(clock).toISOString(),...patch})}}
+  const good=entry('good'), down=entry('down',{connection:'unreachable'}), unknown=entry('unknown',{authentication:'unknown'})
+  assert.equal((await cache.summary([])).status,'empty')
+  assert.equal((await cache.summary([good])).status,'ok')
+  assert.equal((await cache.summary([unknown])).status,'unverified')
+  assert.equal((await cache.summary([good,unknown,down])).status,'warning')
+  assert.equal((await cache.summary([down])).status,'error')
+  clock+=300001
+  assert.equal((await cache.summary([{key:'good',check:async()=>{throw Error('no check')}}])).status,'unverified')
+})
+
+test('concurrent and repeated footer reads share checks; the next bounded batch covers remaining sources',async()=>{
+  let calls=0, active=0, peak=0
+  const cache=new ConnectionChecks(()=>now),checks=Array.from({length:8},(_,index)=>({key:String(index),check:async()=>{
+    calls++;active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,5));active--;return row().health
+  }}))
+  const [first,other]=await Promise.all([cache.summary(checks),cache.summary(checks)])
+  assert.equal(first.pending,4);assert.equal(other.verified,4);assert.equal(calls,4);assert.equal(peak,4)
+  assert.equal((await cache.summary(checks)).status,'ok');assert.equal(calls,8)
+  await cache.summary(checks);assert.equal(calls,8)
+})
+
 function harness(options={}) {
   const records=new Map((options.sources || [{id:'source-a',platform:'vbr',host:'backup.test',port:9419,protocol:'https',name:'Primary',username:'admin',password:'stored-secret'},{id:'source-b',platform:'vbr',host:'other.test',port:9419,protocol:'https',username:'other',password:'other-secret'}]).map(source=>[source.id,{...source}]))
   const cookies=new Map(Object.entries(options.cookies || {veeam_source_id:'source-a',veeam_vbr_token_url:'https://backup.test:9419'})),saved=[],deleted=[],forgot=[],remembered=[],calls=[]
@@ -32,6 +59,8 @@ function harness(options={}) {
   class Response {constructor(body,init={}){this.body=body;this.status=init.status || 200;this.headers=init.headers}static json(body,init){return new Response(body,init)}}
   const dependencies={'node:crypto':{randomUUID:()=> '11111111-1111-4111-8111-111111111111'},'next/server':{NextResponse:Response},'next/headers':{cookies:async()=>jar},'./config-store':{configStore},'./token-manager':{tokenManager},'../utils/cookie-manager':{getChunkedCookie:(jar,key)=>jar.get(key)?.value,setChunkedCookie:async(jar,key,value)=>jar.set(key,value),deleteChunkedCookie:async(jar,key)=>jar.delete(key)},'../data-sources/model':m,'../data-sources/probe':p}
   dependencies['./request-origin']=require('../lib/server/request-origin.ts')
+  dependencies['./read-cache-scope']=require('../lib/server/read-cache-scope.ts')
+  dependencies['../data-sources/connection-summary']=require('../lib/data-sources/connection-summary.ts')
   const exports={},context={exports,require:key=>{if(!dependencies[key])throw Error(key);return dependencies[key]},URL,URLSearchParams,AbortSignal,Date,
     fetch:async(url,init)=>{calls.push({url:String(url),...init});return options.fetch ? options.fetch(url,init):reply(200,{access_token:'returned-secret-token',expires_in:900})}}
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(require.resolve('../lib/server/data-sources.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,context)
@@ -53,6 +82,25 @@ test('successful connection keeps stable source identity and only saves credenti
 test('saved-credential connection resolves credentials from the target source only',async()=>{const h=harness();await h.exports.mutateSource(h.request({}),'connect','source-b');assert.equal(h.calls[0].url,'https://other.test:9419/api/oauth2/token');assert.equal(h.calls[0].body.get('password'),'other-secret');assert.equal(h.saved.length,0);assert.equal(h.cookies.get('veeam_source_id'),'source-b')})
 test('source reads use each source origin/token and expose only allowlisted health metadata',async()=>{const h=harness({fetch:async()=>reply(200,{buildVersion:'13',name:'host',password:'response-secret'}),cache:{expiresAt:2000000000,authenticatedAt:1900000000,expiryReported:true,accessToken:'cached-secret'}}),result=await h.exports.readSources(h.request({},'?check=1'));assert.equal(result.status,200);assert.equal(h.calls.length,2);assert.ok(h.calls.every(call=>call.headers.Authorization===`Bearer token:${call.url.includes('other.test') ? 'source-b':'source-a'}`));assert.doesNotMatch(JSON.stringify(result),/response-secret|cached-secret|stored-secret/);assert.equal(result.headers['Cache-Control'],'private, no-store')})
 test('single-source check cannot broaden to another source or URL',async()=>{const h=harness({fetch:async()=>reply(200,{buildVersion:'13'})}),result=await h.exports.readSources(h.request({},'?check=1&id=source-b'));assert.equal(result.body.sources.length,1);assert.equal(h.calls.length,1);assert.ok(h.calls[0].url.startsWith('https://other.test'));assert.equal((await h.exports.readSources(h.request({},'?check=1&id=missing'))).status,404)})
+test('footer returns aggregate status only and reuses explicit verified reads without reauthenticating',async()=>{
+  const h=harness({fetch:async()=>reply(200,{buildVersion:'13',name:'private host'})})
+  await h.exports.readSources(h.request({},'?check=1'))
+  assert.equal(h.calls.length,2)
+  const overview=await h.exports.readConnectionSummary(h.request())
+  assert.equal(overview.status,200);assert.equal(overview.body.status,'ok');assert.equal(overview.body.verified,2)
+  assert.equal(overview.headers['Cache-Control'],'private, no-store')
+  assert.equal(h.calls.length,2)
+  assert.doesNotMatch(JSON.stringify(overview.body),/private host|backup\.test|admin|stored-secret|token|source-a|source-b/)
+})
+test('background checks only read configured endpoints and cannot assert access from saved credentials or a foreign token',async()=>{
+  const h=harness({cookies:{veeam_source_id:'source-a',veeam_vbr_token:'wrong-endpoint-token',veeam_vbr_token_url:'https://untrusted.test'},fetch:async()=>reply(401,{})})
+  const overview=await h.exports.readConnectionSummary(h.request())
+  assert.equal(overview.body.status,'unverified');assert.equal(h.calls.length,2)
+  assert.ok(h.calls.every(call=>(call.method || 'GET')==='GET' && !call.headers.Authorization && !call.url.includes('untrusted')))
+  const legacy=harness({sources:[],cookies:{veeam_vbr_token:'legacy',veeam_vbr_token_url:'https://untrusted.test'}})
+  const missing=await legacy.exports.readConnectionSummary(legacy.request());assert.equal(missing.body.status,'unverified');assert.equal(missing.body.total,1)
+  assert.equal(legacy.calls.length,0)
+})
 test('source checks are bounded to four concurrent network reads and retain failures',async()=>{let active=0,peak=0;const h=harness({sources:Array.from({length:9},(_,i)=>({id:`s-${i}`,platform:'vbr',host:`h${i}.test`,port:9419,protocol:'https',username:'a',password:'secret'})),fetch:async url=>{active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,5));active--;if(String(url).includes('h2.test'))throw Error('offline');return reply(200,{buildVersion:'13'})}}),result=await h.exports.readSources(h.request({},'?check=1'));assert.equal(result.body.sources.length,9);assert.equal(peak,4);assert.equal(result.body.sources[2].health.connection,'unreachable')})
 test('ONE read can renew saved authentication without changing browser selection or saved data',async()=>{const h=harness({sources:[{id:'one-a',platform:'one',host:'one.test',port:1239,protocol:'https',username:'a',password:'secret'}],cookies:{},fetch:async(_,init)=>init.method==='POST' ? reply(200,{access_token:'one-token',expires_in:900}):reply(200,{items:[]})}),result=await h.exports.readSources(h.request({},'?check=1'));assert.equal(result.body.sources[0].health.authentication,'verified');assert.equal(h.cookies.size,0);assert.equal(h.saved.length,0);assert.equal(h.calls[1].headers.Authorization,'Bearer one-token')})
 test('a concurrent endpoint edit cannot commit an authentication token to the changed source',async()=>{let h;h=harness({fetch:async()=>{h.records.set('source-a',{...h.records.get('source-a'),host:'moved.test',password:undefined});return reply(200,{access_token:'old-origin-token',expires_in:900})}});const result=await h.exports.mutateSource(h.request({}),'connect','source-a');assert.equal(result.status,409);assert.equal(h.remembered.length,0);assert.equal(h.saved.length,0)})

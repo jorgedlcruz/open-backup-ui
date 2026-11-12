@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { aggregate, categoryFor, groupRows, metricOperation, type Dataset, type RecordRow, type Widget } from './model'
 
 export type Series = { id: string; key: string; name: string; metric: string; value: number | null; colorIndex: number }

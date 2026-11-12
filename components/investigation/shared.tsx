@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 import { Trans, useI18n } from "@/components/providers/i18n-provider"
 import { investigationAttempt, investigationDiagnostic, investigationDuration, investigationLabel, investigationRate } from '@/lib/investigation/presentation'
 import type { Session } from '@/lib/investigation/model'
@@ -71,9 +72,9 @@ export function useRefresh() {
   useEffect(() => { const timer = setInterval(() => { if (!document.hidden) setRevision(n => n + 1) }, 60000); return () => clearInterval(timer) }, [])
   return { revision, refresh: () => setRevision(n => n + 1) }
 }
-export function LogViewer({ logs, title, id }: { logs: Logs; title: string; id: string }) {
+export function LogViewer({ logs, title, id, newestFirst = false }: { logs: Logs; title: string; id: string; newestFirst?: boolean }) {
   const { t, formatNumber, date, notice } = useInvestigationPresentation()
-  const [query, setQuery] = useState(''), [filter, setFilter] = useState('all'), [order, setOrder] = useState('oldest'), [page, setPage] = useState(0)
+  const [query, setQuery] = useState(''), [filter, setFilter] = useState('all'), [order, setOrder] = useState(newestFirst ? 'newest' : 'oldest'), [page, setPage] = useState(0)
   const rows = logs.data.filter(row => (filter === 'all' || (filter === 'issues' ? ['Failed', 'Warning'].includes(row.status || '') : row.status === filter)) &&
     [row.title, row.description, ...(row.additionalInfo || []).flatMap(info => [info.field, info.data])].join(' ').toLowerCase().includes(query.toLowerCase()))
     .map((row, index) => ({ ...row, key: index })).sort((a, b) => {
@@ -91,7 +92,7 @@ export function LogViewer({ logs, title, id }: { logs: Logs; title: string; id: 
     const link = document.createElement('a'); link.href = url; link.download = `vbr-${id}-logs.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   if (!logs.available) return <Notice>{logs.error ? notice(logs.error) : t('Logs unavailable for this session.')} <Trans>{"Use Refresh to try again."}</Trans></Notice>
-  return <div>
+  return <div className={styles.logViewer}>
     <div className={styles.logSummary}><span>{t('{count} records loaded · {issues} errors / warnings', { count: formatNumber(logs.data.length), issues: formatNumber(issues) })}</span><Button variant="outline" size="sm" onClick={download} disabled={!rows.length}><ArrowDownToLine size={14} /><Trans>{"Export filtered log"}</Trans></Button></div>
     {!logs.complete && <Notice>{logs.total == null ? t('Partial log: {count} records loaded; total not reported. Counts and export cover loaded records only.', { count: formatNumber(logs.data.length) }) : t('Partial log: showing {count} of {total} records. Counts and export cover loaded records only.', { count: formatNumber(logs.data.length), total: formatNumber(logs.total) })}</Notice>}
     <FilterWorkspace label="Grid filters" search={<><SearchBox label="Search log messages" value={query} onChange={v => { setQuery(v); setPage(0) }} /></>} onClear={()=>{setQuery('');setFilter('all');setPage(0)}} filters={<FilterFields><FilterSelect label={"Log severity"} value={filter} onValueChange={e => { setFilter(e); setPage(0) }}><option value="all"><Trans>{"All severities"}</Trans></option><option value="issues"><Trans>{"Errors & warnings"}</Trans></option><option value="Failed"><Trans>{"Failed"}</Trans></option><option value="Warning"><Trans>{"Warning"}</Trans></option><option value="Succeeded"><Trans>{"Succeeded"}</Trans></option><option value="None"><Trans>{"No status"}</Trans></option></FilterSelect></FilterFields>} actions={<><GridViewMenu><select aria-label={t("Log order")} value={order} onChange={e => { setOrder(e.target.value); setPage(0) }}><option value="oldest"><Trans>{"Oldest first"}</Trans></option><option value="newest"><Trans>{"Newest first"}</Trans></option></select></GridViewMenu></>}>

@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { RepositoryList } from "@/components/repositories/repository-list"
 
 export const metadata = {

@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { applicationRequest } from '../api/application-request'
 import type { SearchPlatform, SearchResponse, SearchScope } from './model'
 

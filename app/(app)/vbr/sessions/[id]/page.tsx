@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 
 import { useParams } from 'next/navigation'
 import { SessionPage } from '@/components/investigation/session-investigation'

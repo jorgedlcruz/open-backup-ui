@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.2.0
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LockKeyhole, Maximize, Minimize, RefreshCw } from 'lucide-react'

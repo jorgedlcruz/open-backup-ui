@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { applicationRequest } from '../api/application-request'
 import { capacityRepositories, isProtectionSession, jobStatus, repositoryRisk, utilization, type OperationsSnapshot } from '../operations/model'
 import { rowsFrom, repositoryName, type Snapshot as ProtectedSnapshot } from '../protected-data/model'

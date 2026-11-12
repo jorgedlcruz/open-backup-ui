@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 export type EntityKind = 'workload' | 'job' | 'repository'
 export type Health = 'attention' | 'healthy' | 'unknown'
 

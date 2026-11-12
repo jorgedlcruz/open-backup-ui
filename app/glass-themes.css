@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 /* Glass uses the Operations layout and typography. Only appearance changes;
    result, health, and RPO colors retain their shared meaning. */
 [data-theme-preset="glass-ocean"] {
@@ -114,6 +115,7 @@
     --accent-foreground: var(--foreground);
     --border: var(--glass-line);
     --input: var(--glass-control-line);
+    --field-background: color-mix(in srgb, var(--glass-ink) 7%, var(--glass-surface));
     --ring: var(--glass-accent);
     --sidebar: var(--glass-navigation);
     --sidebar-foreground: var(--glass-muted-ink);
@@ -160,6 +162,9 @@
 /* Overlays need their own opaque surface; stacked transparency obscures text. */
 [data-theme-preset^="glass-"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"], [data-slot="sidebar"][data-mobile="true"]) {
     background: var(--popover);
+}
+[data-theme-preset^="glass-"] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]) {
+    background-color: var(--field-background);
 }
 [data-theme-preset^="glass-"] :is(select, input, textarea, [data-slot="select-trigger"]) {
     color-scheme: light;

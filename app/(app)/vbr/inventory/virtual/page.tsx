@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { VirtualOperations } from '@/components/virtual-infrastructure/virtual-operations'
 import { getRequestI18n } from '@/lib/i18n/server'
 

@@ -1,6 +1,9 @@
+// Open Backup UI v1.2.0
+import { AppStatusFooter } from '@/components/app-status-footer'
+
 export default function K10Page() {
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex min-h-svh flex-col">
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
           <h1 className="text-4xl font-bold tracking-tight mb-4">Kasten K10</h1>
@@ -12,6 +15,7 @@ export default function K10Page() {
           </div>
         </div>
       </div>
+      <AppStatusFooter />
     </div>
   )
 }

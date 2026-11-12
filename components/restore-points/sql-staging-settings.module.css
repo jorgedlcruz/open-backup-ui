@@ -1,0 +1,64 @@
+/* Open Backup UI v1.2.0 */
+.panel {
+  container-type:inline-size;
+  min-width:0;
+  border:1px solid var(--border);
+  border-radius:.75rem;
+  background:color-mix(in srgb,var(--card) 56%,transparent);
+  color:var(--foreground);
+  overflow:hidden;
+}
+.header,.symbol,.instanceRow,.toggle,.footer,.check,.status,.feedback,.chooserHeading,.chooser li button {
+  display:flex;
+  align-items:center;
+}
+.header {gap:.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border)}
+.symbol {flex:none;justify-content:center;width:2.65rem;height:2.65rem;color:var(--primary);border:1px solid color-mix(in srgb,var(--primary) 35%,transparent);border-radius:.6rem;background:color-mix(in srgb,var(--primary) 9%,transparent)}
+.header h3 {font-weight:650;font-size:1.05rem;line-height:1.35}
+.header p,.status {font-size:.8rem;color:var(--muted-foreground)}
+.header p {margin:.15rem 0 0}
+.form {min-width:0}
+.toggle {gap:.65rem;min-height:2.8rem;width:fit-content;margin:.35rem 1.2rem 0;font-size:.89rem;font-weight:600;cursor:pointer}
+.toggle input {appearance:none;flex:none;position:relative;width:2.15rem;height:1.25rem;border:1px solid var(--border);border-radius:1rem;background:var(--muted)}
+.toggle input::after {position:absolute;content:'';inset-block-start:.15rem;inset-inline-start:.16rem;width:.8rem;height:.8rem;border-radius:50%;background:var(--muted-foreground)}
+.toggle input:checked {background:var(--primary);border-color:var(--primary)}
+.toggle input:checked::after {inset-inline-start:auto;inset-inline-end:.16rem;background:var(--primary-foreground)}
+.panel input:focus-visible,.panel button:focus-visible,.panel select:focus-visible {outline:2px solid var(--ring);outline-offset:2px}
+.connection,.account {padding:0;margin:0;min-width:0;border:0}
+.connection {padding:.45rem 1.2rem 1.2rem}
+.connection:disabled :is(label,legend) {color:var(--muted-foreground)}
+.instance {max-width:38rem}
+.instance>label,.account>label,.account legend,.check {font-size:.81rem}
+.instance>label,.account>label:not(.check) {display:grid;gap:.3rem;font-weight:550}
+.instanceRow {gap:.5rem;margin-top:.3rem}
+.instanceRow input {flex:1;color:var(--foreground);font-weight:400}
+.accounts {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;margin-top:1.15rem}
+.account {display:grid;align-content:start;gap:.7rem}
+.account legend {width:100%;margin-bottom:.65rem;padding-bottom:.4rem;font-weight:650;border-bottom:1px solid var(--border)}
+.account legend svg {display:inline-block;margin-inline-end:.45rem;vertical-align:text-bottom;color:var(--primary)}
+.account input,.account select {font-weight:400}
+.account select {width:100%;min-width:0;height:2.25rem;border:1px solid var(--input);border-radius:.4rem;padding:0 .6rem;background:var(--card);color:var(--foreground)}
+.check {gap:.45rem;cursor:pointer}
+.check input {width:1rem;height:1rem;accent-color:var(--primary)}
+.footer {min-height:3rem;flex-wrap:wrap;gap:.5rem;border-top:1px solid var(--border);padding:.65rem 1.2rem;background:color-mix(in srgb,var(--muted) 14%,transparent)}
+.footer>.status {margin-inline-end:auto}
+.status {gap:.45rem;overflow-wrap:anywhere}
+.panel>.status,.panel>.feedback {margin:.8rem 1.2rem}
+.feedback {justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem;font-size:.82rem;color:var(--destructive);overflow-wrap:anywhere}
+.chooser {margin-top:.5rem;border:1px solid var(--border);border-radius:.5rem;background:var(--card);padding:.5rem .7rem}
+.chooserHeading {justify-content:space-between;gap:.5rem;font-size:.82rem}
+.chooser ul {list-style:none;margin:.35rem 0 0;padding:0;max-height:12rem;overflow:auto}
+.chooser li+li {border-top:1px solid var(--border)}
+.chooser li button {width:100%;gap:.5rem;min-height:2.15rem;text-align:start;font-size:.8rem;overflow-wrap:anywhere;cursor:pointer}
+.chooser li button:hover,.chooser li svg {color:var(--primary)}
+.chooser .status {margin:.35rem 0}
+@container (max-width:36rem) {
+  .accounts {grid-template-columns:minmax(0,1fr)}
+  .header,.footer {padding:.75rem .85rem}
+  .toggle {margin-inline:.85rem}
+  .connection {padding:.45rem .85rem 1rem}
+}
+@media(forced-colors:active) {
+  .toggle input {appearance:auto;width:auto;height:auto}
+  .toggle input::after {display:none}
+}

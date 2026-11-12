@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { MessageValues } from '../i18n/model'
 import { enumLabel } from '../i18n/presentation'
 import type { Activity } from './model'

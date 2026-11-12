@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { type Alarm, type Detail, type Evidence, type Filters, type HistoryDay, type Snapshot, type Template, dateMs, id, normalizeAlarm, number, object, startTime, text } from './model'

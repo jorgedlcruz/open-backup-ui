@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { Metadata } from 'next'
 import { JobsConsole } from '@/components/vbm-jobs/jobs-console'
 export const dynamic='force-dynamic'

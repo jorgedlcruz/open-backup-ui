@@ -1,0 +1,250 @@
+// Open Backup UI v1.2.0
+const fs=require('node:fs'),ts=require('typescript'),assert=require('node:assert/strict'),{test}=require('node:test')
+require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,f)
+const {pickerPage}=require('../lib/recovery/picker-catalog.ts'),{bulkKind,recoveryKinds}=require('../lib/restore-points/recovery-picker.ts')
+const id=n=>'11111111-1111-4111-8111-'+String(n).padStart(12,'0')
+const backup=id(1),copy=id(2),vm=id(3),directory=id(4),row=(backupId,objectId,sql,ad)=>({backupId,objectId,name:objectId===vm?'Data':'Directory',platformName:'VMware',itemIconType:'Vm',
+ operations:[{operation:'ExploreForMsSql',enabled:sql},{operation:'ExploreForMsAd',enabled:ad},{operation:'EntireVmRestoreToVi',enabled:true}]})
+function api(deny=false){
+  const calls=[]
+  const privateSend=async p=>{const u=new URL(p,'https://unit.invalid');calls.push(u.pathname)
+    if(u.pathname.endsWith('/permissions'))return {permissions:['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsAd',...(deny?[]:['StartExplorerForMsSql'])]}
+    const data=u.pathname==='/private-api/v1/backups'?[backup,copy].map(i=>({id:i,name:i,platformName:'VMware'})):u.pathname.includes(backup)?[row(backup,vm,true,false),row(backup,directory,false,true)]:[row(copy,vm,false,false),{...row(copy,id(9),true,true),itemIconType:'WindowsAgentMachine'}]
+    return {data,pagination:{total:data.length,skip:0}}}
+  const read=async p=>{const u=new URL(p,'https://unit.invalid');assert.equal(u.pathname,'/api/v1/backupObjects/'+vm+'/restorePoints')
+    const data=[{id:id(7),backupId:backup,creationTime:'2026-11-01T00:00:00Z',allowedOperations:['StartEntireVmRestore']},{id:id(8),backupId:copy,creationTime:'2026-11-02T00:00:00Z',allowedOperations:[]}]
+    return {data,pagination:{total:data.length,skip:0}}}
+  return {calls,privateSend,read}
+}
+test('picker filters exact native object and backup capability, point operation and membership',async()=>{
+  const {read,privateSend,calls}=api(),run=input=>pickerPage(read,privateSend,'operator-one',{offset:0,limit:1,...input})
+  assert.deepEqual((await run({kind:'sql',view:'objects'})).data.map(v=>v.objectId),[vm])
+  assert.deepEqual((await run({kind:'active-directory',view:'objects'})).data.map(v=>v.objectId),[directory])
+  const list=await run({kind:'entire-vm',view:'objects',offset:1});assert.equal(list.total,2);assert.equal(list.data.length,1)
+  assert.equal(calls.filter(p=>p.endsWith('/permissions')).length,1)
+  assert.deepEqual((await run({kind:'sql',view:'points',objectId:vm})).data.map(p=>[p.id,p.applications[0].kind]),[[id(7),'sql']])
+  assert.deepEqual((await run({kind:'entire-vm',view:'points',objectId:vm})).data.map(p=>p.id),[id(7)])
+  await assert.rejects(run({kind:'sql',view:'points',objectId:vm,backupId:copy}),/unavailable/)
+  assert.equal((await run({kind:'sql',view:'points',objectId:vm,restorePointId:id(8)})).total,0)
+  const restricted=api(true);assert.equal((await pickerPage(read,restricted.privateSend,'operator-two',{kind:'sql',view:'objects',offset:0,limit:5})).total,0)
+})
+test('batch selection only applies to virtual machine and instant VM recovery',()=>{
+  assert.deepEqual(recoveryKinds.filter(bulkKind),['instant-vm','entire-vm'])
+})
+
+test('volume tools require actual native rights and a proven point for this machine in a shared backup',async()=>{
+  const host=id(401),sibling=id(402),point=id(403),other=id(404),shared=id(405)
+  const rows=[host,sibling].map((objectId,i)=>({objectId,id:i?other:point,backupId:shared,platformName:'WindowsPhysical',name:'PC-'+i,itemIconType:'WindowsAgentMachine',operations:[]}))
+  const publicRead=async path=>{
+    const data=path.includes('/restorePoints')?[point,other].map(id=>({id,backupId:shared,platformName:'WindowsPhysical'})):rows.map(o=>({id:o.objectId,platformName:o.platformName,name:o.name}))
+    return {data,pagination:{total:data.length,skip:0}}
+  }
+  const grants=['ViewBackupObjects','ViewRestorePoints','PerformVolumeRestore','ViewAgentsRecoveryAppliances']
+  const privateSend=async path=>{
+    if(path.includes('permissions'))return {permissions:grants}
+    const data=path.includes('/objects')?rows:[{id:shared,name:'Computer backup',platformName:'WindowsPhysical',objectsCount:2}]
+    return {data,pagination:{total:data.length,skip:0}}
+  }
+  const get=(view,extra={})=>pickerPage(publicRead,privateSend,'physical-volume-rights',{view,kind:'agent-volumes',offset:0,limit:10,refresh:true,...extra})
+  assert.equal((await get('objects')).total,0)
+  grants.push('DiskManagement')
+  assert.equal((await get('objects')).total,2)
+  assert.deepEqual((await get('points',{objectId:host})).data.map(p=>p.id),[point])
+  assert.equal((await get('points',{objectId:host,restorePointId:other})).total,0)
+  grants.splice(grants.indexOf('DiskManagement'),1)
+  rows[0].operations=[{operation:'CreateRecoveryToken',enabled:true}]
+  grants.push('CreateComputerRecoveryToken','ViewBackups')
+  assert.equal((await get('objects')).total,0,'token cannot grant access to the sibling chain')
+  rows[0].childBackupId=id(406)
+  assert.equal((await get('objects')).total,1)
+})
+
+test('goals expose only supported methods and retain VM results when storage inventory is unavailable',async()=>{
+  const {read,privateSend}=api()
+  const page=await pickerPage(read,privateSend,'goal-summary',{kind:'machines',view:'goals',limit:50,offset:0})
+  assert.deepEqual(page.data.map(g=>[g.goal,g.kinds,g.count]),[['machines',['entire-vm'],2],['apps',['sql','active-directory'],2]])
+  assert.deepEqual(page.data[0].workloadTypes,['vm'])
+  assert.equal(page.complete,false)
+})
+
+test('a shared goal uses the union for its calendar and the exact copy and point for its next method',async()=>{
+  const {eligibleMethods}=require('../lib/restore-points/recovery-picker.ts')
+  const {privateSend}=api()
+  const native=async(path,options)=>{
+    const page=await privateSend(path,options)
+    if(path.includes('/objects?'))page.data=page.data.map(r=>({...r,operations:r.backupId===copy?[{operation:'InstantRecoveryToVi',enabled:true}]:r.operations}))
+    return page
+  }
+  const items=[
+    {id:id(70),backupId:backup,allowedOperations:['StartEntireVmRestore','StartViVMInstantRecovery']},
+    {id:id(71),backupId:copy,allowedOperations:['StartEntireVmRestore','StartViVMInstantRecovery']},
+    {id:id(72),backupId:copy,allowedOperations:['StartEntireVmRestore']},
+  ]
+  const read=async url=>{
+    if(!url.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints'))throw Error('inventory unavailable')
+    return {data:items,pagination:{skip:0,total:items.length}}
+  }
+  const get=view=>pickerPage(read,native,'shared-vm-goal',{kind:'machines',view,objectId:vm,limit:50,offset:0})
+  const object=(await get('objects')).data[0],points=(await get('points')).data
+  assert.deepEqual(points.map(p=>p.id),[id(70),id(71)])
+  assert.deepEqual(points.map(p=>eligibleMethods(object,p,'machines')),[['entire-vm'],['instant-vm']])
+  assert.equal(eligibleMethods(object,{...points[0],backupId:id(999)},'machines').length,0)
+})
+test('public-only Agent recovery uses exact backup and point operations; operating system follows verified agent platform',async()=>{
+  const {findPoint}=require('../lib/recovery/options.ts')
+  const data={id:id(71),name:'Agent',backupId:backup,platformName:'LinuxPhysical',type:'Full',creationTime:'2026-11-09T23:00:00Z',
+    guestOsFamily:null,allowedOperations:['StartFlrRestore','StartViVMInstantRecovery','StartDiskPublish']}
+  const read=async url=>{
+    if(url.startsWith('/api/v1/backupObjects?'))return {data:[{id:vm,name:'Agent',type:'Computer',platformName:'LinuxPhysical',backupId:backup}],pagination:{total:1,skip:0}}
+    if(url.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints?'))return {data:[data],pagination:{total:1,skip:0}}
+    if(url==='/api/v1/restorePoints/'+data.id)return data
+    throw Error('unexpected '+url)
+  }
+  const page=await pickerPage(read,undefined,'physical-with-public-auth',{kind:'guest-files',view:'objects',offset:0,limit:10})
+  assert.equal(page.data[0].workloadType,'physical')
+  assert.deepEqual(page.data[0].copies[0].kinds.sort(),['guest-files','instant-vm','publish-disks'])
+  assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,'Linux')
+  data.platformName='WindowsPhysical';assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,'Windows')
+  data.platformName='VMware';assert.equal((await findPoint(read,data.id,backup)).guestOsFamily,null)
+})
+test('calendar and paging share native eligibility, copy identity, local midnight and DST folds',async()=>{
+  const {privateSend}=api()
+  const restore=(n,time,b=backup,ops=['StartEntireVmRestore'])=>({id:id(n),backupId:b,creationTime:time,allowedOperations:ops})
+  const input=[restore(11,'2026-11-01T05:30:00Z'),restore(12,'2026-11-01T06:30:00Z'),
+    restore(13,'2026-11-01T03:58:00Z'),restore(14,'2026-11-01T06:30:00Z',copy),
+    restore(15,'invalid date'),restore(16,null),restore(17,'2023-04-14T00:30:00Z'),restore(18,'2026-11-02T12:00:00Z',backup,[])]
+  const read=async path=>{assert.ok(path.startsWith('/api/v1/backupObjects/'+vm+'/restorePoints?'));return {data:input,pagination:{total:input.length,skip:0}}}
+  const get=(args={})=>pickerPage(read,privateSend,'calendar-time-and-scope',{kind:'entire-vm',objectId:vm,view:'points',limit:1,offset:0,
+    calendarZone:'America/New_York',calendarIndex:true,...args})
+  const main=await get()
+  assert.deepEqual(Object.fromEntries(main.calendarDays.map(d=>[d.day,d.count])),{'2026-11-01':3,'2026-10-31':1,'2023-04-13':1,undated:2})
+  assert.equal(main.calendarDay,'2026-11-01');assert.equal(main.total,3)
+  assert.deepEqual((await get({calendarDay:'2026-11-01',offset:1,limit:2})).data.map(p=>[p.id,p.backupId]),[[id(14),copy],[id(11),backup]])
+  assert.deepEqual((await get({calendarDay:'undated',limit:3})).data.map(p=>p.id),[id(15),id(16)])
+  assert.equal((await get({calendarDay:'2023-04-13'})).data[0].id,id(17))
+  const sql=await get({kind:'sql',calendarDay:'2026-11-01',limit:5})
+  assert.deepEqual(sql.data.map(p=>[p.id,p.applications]),[id(12),id(11)].map(i=>[i,[{kind:'sql',objectId:vm}]]))
+  assert.equal(sql.calendarDays.find(d=>d.day==='2026-11-01').count,2)
+  assert.equal(sql.calendarDays.find(d=>d.day==='2026-11-02').count,1)
+  assert.deepEqual((await get({backupId:copy})).calendarDays,[{day:'2026-11-01',count:1}])
+})
+test('bearer-only application selection is empty without enumerating any guesses',async()=>{
+  const result=await pickerPage(()=>{throw Error('unexpected read')},undefined,'public',{view:'objects',kind:'sql',limit:40,offset:0})
+  assert.equal(result.total,0);assert.equal(result.notices.length,1)
+})
+test('duplicate VM identities keep their distinguishing path or stable ID even on a pinned page',async()=>{
+  const objects=[1,2,3,4].map(n=>id(n+20))
+  const send=async url=>{
+    if(url.includes('/permissions'))return {permissions:['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsAd']}
+    const data=url.includes('/objects')?objects.map(o=>({...row(backup,o,false,true),name:'Twin'})):[{id:backup,name:'Backup',platformName:'VMware'}]
+    return {data,pagination:{total:data.length,skip:0}}
+  }
+  const read=async url=>{
+    const i=objects.indexOf(url.split('/').pop())
+    assert.ok(i>=0);return {id:objects[i],name:'Twin',path:i<2?['vc.example\\vm-folder\\Twin','standalone.example\\Twin'][i]:null}
+  }
+  const get=(input={})=>pickerPage(read,send,'duplicate-names',{kind:'active-directory',view:'objects',offset:0,limit:40,...input})
+  const page=await get()
+  assert.deepEqual(page.data.map(v=>v.distinguishingLocation),['vc.example / vm-folder','standalone.example',objects[2].slice(-8),objects[3].slice(-8)])
+  assert.equal((await get({objectId:objects[1]})).data[0].distinguishingLocation,'standalone.example')
+  assert.equal((await get({query:'vm-folder'})).data[0].objectId,objects[0])
+})
+test('name collisions respect inventory manager and destination folder across sibling VMs',()=>{
+  const {sameRecoveryDestination}=require('../lib/restore-points/destination-collision.ts')
+  const target={platform:'VSphere',manager:'vc01',folder:'folder-a',name:'vm-restore'}
+  assert.equal(sameRecoveryDestination(target,{...target,folder:'folder-b'}),false)
+  assert.equal(sameRecoveryDestination(target,{...target,manager:'vc02'}),false)
+  assert.equal(sameRecoveryDestination(target,{...target,name:'VM-restore ',folder:'FOLDER-A'}),true)
+  assert.equal(sameRecoveryDestination(target,{...target,folder:''}),true)
+})
+test('private capabilities recover after a transient zero; incomplete lists expire and cannot resurrect old SQL grants',async()=>{
+  const capability=row(backup,vm,true,false),permissions=['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsSql']
+  let mode='transient',attempts=0
+  const send=async url=>{
+    if(url==='/private-api/v1/backups/objects')throw Object.assign(Error('Flat view is unavailable'),{status:404})
+    if(url.includes('/permissions'))return {permissions}
+    let data
+    if(url.includes('/objects')){
+      attempts++
+      data=mode==='missing'||mode==='transient'&&attempts===1?[]:[{...capability,operations:mode==='revoked'?[]:capability.operations}]
+    }else data=[{id:backup,name:'Parent',platformName:'VMware',objectsCount:1}]
+    return {data,pagination:{skip:0,total:data.length}}
+  }
+  const read=async url=>{
+    assert.ok(url.startsWith('/api/v1/backups/'+backup+'/objects?'))
+    return {data:[{id:vm,name:'Data',type:'VM',backupId:copy}],pagination:{skip:0,total:1}}
+  }
+  const get=(refresh=false)=>pickerPage(read,send,'flaky-private',{kind:'sql',view:'objects',offset:0,limit:5,refresh})
+  const first=await get();assert.equal(first.data[0].objectId,vm);assert.equal(first.complete,true);assert.equal(attempts,2)
+  mode='missing';const missing=await get(true)
+  assert.equal(missing.total,0);assert.equal(missing.complete,false);assert.ok(missing.notices.length);assert.equal(attempts,6)
+  mode='revoked'
+  const held=await get();assert.deepEqual(held,missing);assert.equal(attempts,6,'verified partial results are reused briefly with their warning')
+  const [denied,concurrent]=await Promise.all([get(true),get(true)])
+  assert.deepEqual(denied,concurrent);assert.equal(denied.complete,true);assert.equal(denied.total,0);assert.equal(attempts,7)
+})
+test('workload index pins the authorized ordering, uses only visible name or path for search and revokes expired or denied continuations',async()=>{
+  const count=205,list=Array.from({length:count},(_,i)=>({...row(backup,id(800+i),false,false),
+    name:'Server-'+String(i).padStart(3,'0'),path:'dc01/floor-'+(i%3)+'/Server-'+String(i).padStart(3,'0')}))
+  let nativeReads=0,deny=false
+  const send=async url=>{
+    const u=new URL(url,'https://unit.invalid')
+    if(u.pathname.endsWith('/permissions'))return {permissions:deny?[]:['ViewBackupObjects','ViewRestorePoints']}
+    nativeReads++
+    const data=u.pathname.endsWith('/objects')?list:[{id:backup,name:'Hidden job alias',platformName:'VMware',objectsCount:count}]
+    const skip=Number(u.searchParams.get('skip')),limit=Number(u.searchParams.get('limit'))
+    return {data:data.slice(skip,skip+limit),pagination:{total:data.length,skip}}
+  }
+  const read=async()=>{throw Error('No public inventory')}
+  const get=(args={},identity='index-source-A/operator-A')=>pickerPage(read,send,identity,{view:'index',kind:'entire-vm',offset:0,limit:200,...args})
+  const page=await get(),snapshotId=page.snapshotId
+  assert.equal(page.total,count);assert.equal(page.data.length,200);assert.ok(snapshotId)
+  const reads=nativeReads
+  await assert.rejects(get({offset:200,snapshotId},'index-source-A/operator-B'),e=>e.status===409)
+  await assert.rejects(get({offset:200,snapshotId},'index-source-B/operator-A'),e=>e.status===409)
+  await assert.rejects(get({offset:200,snapshotId,kind:'instant-vm'}),e=>e.status===409)
+  await assert.rejects(get({offset:200}),e=>e.status===409)
+  const end=await get({offset:200,snapshotId})
+  assert.equal(end.snapshotId,snapshotId);assert.equal(end.data.length,5);assert.equal(end.data[0].name,'Server-200')
+  assert.equal(nativeReads,reads,'continuations never enumerate VBR again')
+  for(const q of ['Hidden job alias','VMware',list[0].objectId,backup])assert.equal((await get({view:'objects',query:q})).total,0)
+  assert.equal((await get({view:'objects',query:'Floor-2'})).total,68)
+  assert.equal((await get({view:'objects',query:'SERVER-204'})).data[0].displayPath,'dc01/floor-0/Server-204')
+  const now=Date.now
+  try{
+    Date.now=()=>now()+120_001
+    await assert.rejects(get({offset:200,snapshotId}),e=>e.status===409)
+  }finally{Date.now=now}
+  deny=true
+  await assert.rejects(get({refresh:true}),e=>e.status===403)
+  await assert.rejects(get({offset:200,snapshotId}),e=>e.status===409)
+  await assert.rejects(get(),e=>e.status===403)
+})
+test('the native flat index eliminates verified per-backup reads and falls back for a mismatched member',async()=>{
+  const calls=[]
+  const b1=row(backup,vm,true,false),b2=row(copy,directory,false,true)
+  const headers=[backup,copy].map(id=>({id,name:'Job',platformName:'VMware',objectsCount:1}))
+  const page=(data,skip=0)=>({data,pagination:{skip,total:data.length,count:data.length,limit:200}})
+  const send=async(url,options)=>{
+    calls.push(url)
+    if(url.includes('/permissions'))return {permissions:['ViewBackupObjects','ViewRestorePoints','ViewTasks','StartExplorerForMsSql','StartExplorerForMsAd']}
+    if(url==='/private-api/v1/backups/objects'){
+      assert.deepEqual(options,{method:'POST',body:{skip:0,limit:200}})
+      return page([b1,{...b2,objectId:id(990),name:'Unrelated'},row(id(999),id(991),true,false)])
+    }
+    if(url.includes('/'+copy+'/objects?'))return page([b2])
+    if(url.startsWith('/private-api/v1/backups?'))return page(headers)
+    assert.fail('Unexpected native read '+url)
+  }
+  const read=async url=>{
+    const parent=url.includes(backup)?backup:copy,o=parent===backup?b1:b2
+    return page([{id:o.objectId,backupId:parent,platformName:'VMware',type:'VM',name:o.name,path:'dc1/'+o.name}])
+  }
+  const args={view:'index',kind:'apps',limit:200,offset:0}
+  const result=await pickerPage(read,send,'verified-flat-scope',args)
+  assert.equal(result.complete,true);assert.equal(result.total,2)
+  assert.deepEqual(result.data.map(item=>item.objectId),[vm,directory])
+  assert.equal(calls.filter(p=>p.includes('/'+backup+'/objects?')).length,0)
+  assert.equal(calls.filter(p=>p.includes('/'+copy+'/objects?')).length,1)
+  assert.equal(calls.filter(p=>p==='/private-api/v1/backups/objects').length,1)
+})

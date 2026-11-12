@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
@@ -44,6 +45,30 @@ test('archive verification detects corrupted content and rejects unsafe entry pa
   corrupt[30 + Buffer.byteLength(entries[0].name)] ^= 1
   assert.throws(() => verifyZip(corrupt, entries), /integrity/)
   assert.throws(() => buildZip([{ name: '../outside', content: Buffer.alloc(0) }]), /Unsafe archive path/)
+})
+
+test('standalone release copies the kiosk launcher and its complete local dependency chain', t => {
+  const { root } = fixture(t)
+  const repository = path.resolve(__dirname, '..')
+  const workflow = fs.readFileSync(path.join(repository, '.github/workflows/release.yml'), 'utf8')
+  const copies = [...workflow.matchAll(/^\s*cp ([\w./-]+) "\$OUTDIR\/([\w./-]*\/)"\s*$/gm)]
+  for (const [, source, destination] of copies) {
+    const target = path.join(root, destination, path.basename(source))
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.copyFileSync(path.join(repository, source), target)
+  }
+  function checkLocalDependencies(relative, visited = new Set()) {
+    if (visited.has(relative)) return
+    visited.add(relative)
+    const absolute = path.join(root, relative)
+    assert.ok(fs.existsSync(absolute), `standalone release is missing ${relative}`)
+    for (const [, dependency] of fs.readFileSync(absolute, 'utf8').matchAll(/require\(['"](\.[^'"]+)['"]\)/g)) {
+      checkLocalDependencies(path.relative(root, path.resolve(path.dirname(absolute), dependency)), visited)
+    }
+  }
+  checkLocalDependencies('scripts/kiosk-server.cjs')
+  const { createKioskServer } = require(path.join(root, 'scripts/lib/kiosk-gateway.cjs'))
+  assert.equal(typeof createKioskServer, 'function')
 })
 
 test('GitHub release Markdown resolves images and documents against the release tag', t => {

@@ -1,6 +1,9 @@
+// Open Backup UI v1.2.0
 import { lenses } from '../lens/navigation'
 
 export const navigationLabels: Record<string,string> = {
+  '/vbr/activity':'Sessions',
+  '/vbr/recovery-center':'Recovery Center',
   '/administration/settings':'Settings',
   '/vbr/lens':'Protection Lens', '/vbr/topology':'Protection Topology', '/vbr/threat-center':'Ransomware Detection',
   '/vbr/jobs':'Jobs & Policies', '/vbr/jobs/profiles':'Policy Profiles', '/vbr/policies':'Policy Profiles', '/vbr/protected-data':'Protected Data',
@@ -20,6 +23,8 @@ export type Breadcrumb = { label:string; href?:string }
 type Section = 'vbr'|'vbm'|'analytics'|'administration'|'vro'|'k10'
 const defaults:Record<Section,string>={vbr:'Veeam Backup & Replication',vbm:'Veeam Backup for Microsoft 365',analytics:'Veeam ONE',administration:'Administration',vro:'Veeam Recovery Orchestrator',k10:'Kasten K10'}
 const detailLabels:Record<string,string>={
+  '/vbr/activity':'Session Investigation',
+  '/vbr/recovery-center':'Recovery session',
   '/vbr/jobs':'Job Investigation','/vbr/protected-data':'Restore Points',
   '/vbr/infrastructure/repositories':'Repository Details','/vbr/infrastructure/proxies':'Proxy Details','/vbr/infrastructure/managed-servers':'Server Details',
   '/vbr/inventory/protection-groups':'Protection Group Details','/vbr/inventory/unstructured':'Source Details',
@@ -37,6 +42,9 @@ export function breadcrumbsForPath(pathname:string,sectionNames:Partial<Record<S
   if(lens)return [...trail,parent('/vbr/lens'),{label:lens.title}]
   if(path.startsWith('/vbr/workloads/'))return [...trail,parent('/vbr/protected-data'),{label:'Workload Inspection'}]
   if(path.startsWith('/vbr/sessions/'))return [...trail,parent('/vbr/jobs'),{label:'Session Investigation'}]
+  if(path==='/vbr/activity/preparing')return [...trail,parent('/vbr/activity'),{label:'Start restore'}]
+  if(path==='/vbr/recovery-center/preparing')return [...trail,parent('/vbr/recovery-center'),{label:'Start restore'}]
+  if(path.startsWith('/vbr/recovery-center/batches/'))return [...trail,parent('/vbr/recovery-center'),{label:'VM recovery group'}]
   if(path==='/vbr/jobs/profiles' || path==='/vbr/policies')return [...trail,parent('/vbr/jobs'),{label:navigationLabels['/vbr/jobs/profiles']}]
   if(path.startsWith('/analytics/reports/saved-'))return [...trail,parent('/analytics/saved-reports'),{label:'Report Workspace'}]
   if(path.startsWith('/vbr/jobs/create')) {

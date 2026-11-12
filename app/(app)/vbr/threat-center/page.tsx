@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { RansomwareOperations } from '@/components/ransomware/ransomware-operations'
 import { getRequestI18n } from '@/lib/i18n/server'
 

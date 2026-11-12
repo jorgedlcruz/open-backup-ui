@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 // API Route for Veeam Sessions
 // This route proxies requests to the Veeam API for session data
 

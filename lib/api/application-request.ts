@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 export class ApplicationRequestError extends Error {
   constructor(message: string, public kind: 'access' | 'network' | 'response', public status = 0) {
     super(message)
@@ -29,11 +30,12 @@ export async function applicationRequest<T>(path: string, init: RequestInit = {}
     }
     throw new ApplicationRequestError(`The application returned an unexpected response (HTTP ${response.status}). Please retry.`, 'response', response.status)
   }
-  let data: T & { error?: unknown }
+  let data: T & { error?: unknown; uncertain?: boolean }
   try { data = await response.json() }
   catch { throw new ApplicationRequestError('The application returned an unreadable response. Please retry.', 'response', response.status) }
   if (!response.ok) {
-    throw new ApplicationRequestError(typeof data?.error === 'string' ? data.error : `Application request failed (HTTP ${response.status}).`, 'response', response.status)
+    throw Object.assign(new ApplicationRequestError(typeof data?.error === 'string' ? data.error : `Application request failed (HTTP ${response.status}).`, 'response', response.status),
+      data?.uncertain===true?{uncertain:true}:{})
   }
   return data
 }

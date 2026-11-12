@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), path = require('node:path'), ts = require('typescript')
 const { test } = require('node:test'), assert = require('node:assert/strict')

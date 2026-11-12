@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 export interface VeeamOneReportTemplate {
     reportTemplateId: number;
     name: string;

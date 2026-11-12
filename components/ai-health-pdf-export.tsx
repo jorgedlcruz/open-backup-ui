@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.2.0
 
 import { useRef, useState } from 'react'
 import { Download, FileDown, Loader2, ShieldCheck } from 'lucide-react'

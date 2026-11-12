@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { ProtectedDataOperations } from '@/components/protected-data/protected-data-operations'
 import { getRequestI18n } from '@/lib/i18n/server'
 

@@ -1,0 +1,16 @@
+/* Open Backup UI v1.2.0 */
+.art {
+  display: block;
+  flex: none;
+  width: var(--recovery-art-size, 48px);
+  height: var(--recovery-art-size, 48px);
+  fill: none;
+  stroke: color-mix(in srgb, currentColor 70%, var(--foreground, CanvasText));
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (forced-colors: active) {
+  .art { stroke: ButtonText; }
+}

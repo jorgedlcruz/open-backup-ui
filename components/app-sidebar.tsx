@@ -1,9 +1,10 @@
 "use client"
+// Open Backup UI v1.2.0
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
+import { OpenBackupLogo } from "@/components/brand/open-backup-logo"
 import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles, Network, Aperture, Menu, X, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import styles from "./mobile-navigation.module.css"
@@ -26,7 +27,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, RotateCcw } from "lucide-react"
 import { defaultSectionNames, useSectionNames } from "@/lib/context/section-names-context"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { lenses, lensForPath } from "@/lib/lens/navigation"
@@ -96,6 +97,8 @@ const vbrItems = [
       },
     ]
   },
+  { title: navigationLabels["/vbr/recovery-center"], href: "/vbr/recovery-center", icon: RotateCcw },
+  { title: navigationLabels["/vbr/activity"], href: "/vbr/activity", icon: Activity },
 ]
 
 // VBM Group - Veeam Backup for M365
@@ -270,7 +273,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname()
   const { t } = useI18n()
-  const { toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar()
+  const { toggleSidebar, isMobile, openMobile, setOpenMobile, state } = useSidebar()
   const mobileTrigger = React.useRef<HTMLButtonElement>(null)
   const mobileNavigationId = React.useId()
   const { sectionNames } = useSectionNames()
@@ -310,7 +313,7 @@ export function AppSidebar({
         onClick={() => setOpenMobile(!openMobile)}>
         {openMobile ? <X size={20} /> : <Menu size={20} />}<span>{t("Menu")}</span>
       </Button>
-      <div className={styles.brand}><Image src="/logo.webp" alt="" width={24} height={24} /><span>Open Backup UI</span></div>
+      <div className={styles.brand}><OpenBackupLogo /></div>
     </div>
     <Sidebar collapsible="icon" {...props} id={mobileNavigationId} className={[styles.navigation, props.className].filter(Boolean).join(" ")}
       role={isMobile ? "navigation" : undefined} aria-label={isMobile ? t("Main navigation") : undefined}
@@ -321,24 +324,17 @@ export function AppSidebar({
       <SidebarHeader className="hidden md:flex">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex-1"
+            <button
+              type="button"
+              className={styles.brandButton}
+              data-compact={state === "collapsed"}
+              aria-label={`Open Backup UI · ${t("Toggle Sidebar")}`}
+              aria-expanded={state === "expanded"}
+              title="Open Backup UI"
               onClick={toggleSidebar}
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Image
-                  src="/logo.webp"
-                  alt="Open Backup UI"
-                  width={24}
-                  height={24}
-                  className="size-4"
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Open Backup UI</span>
-              </div>
-            </SidebarMenuButton>
+              <OpenBackupLogo compact={state === "collapsed"} />
+            </button>
             <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground" />
           </SidebarMenuItem>
         </SidebarMenu>
@@ -420,6 +416,7 @@ export function AppSidebar({
 
                   // Standard Item
                   const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
+                    : item.href === '/vbr/activity' || item.href === '/vbr/recovery-center' ? pathname === item.href || pathname.startsWith(item.href + '/')
                     : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
                   return (
                     <SidebarMenuItem key={item.title}>

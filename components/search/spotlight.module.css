@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .trigger { width:100%; display:flex; align-items:center; gap:11px; padding:10px 13px; border:1px solid var(--border); border-radius:10px; color:var(--muted-foreground); background:color-mix(in srgb,var(--popover) 85%,transparent); font-size:13px; text-align:left; box-shadow:0 1px 3px #00000008; cursor:pointer; transition:border-color .15s,background .15s; }
 .trigger:hover { border-color:color-mix(in srgb,var(--primary) 45%,var(--border)); background:var(--popover); color:var(--foreground); }
 .trigger span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

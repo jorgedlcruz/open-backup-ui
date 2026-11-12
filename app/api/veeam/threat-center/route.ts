@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { NextResponse } from 'next/server';
 import { VeeamApiClient } from '@/lib/api/veeam-client';
 import { cookies } from 'next/headers';

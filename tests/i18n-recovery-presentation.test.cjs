@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs')
 const path = require('node:path')
@@ -43,6 +44,31 @@ test('recovery capacity, age and date formatting use the selected locale and pre
   assert.equal(recoveryDate(t, 'invalid', 'es'), t('Unknown'))
   const timestamp = Date.parse('2026-10-27T10:15:00Z')
   assert.equal(recoveryDate(t, timestamp, 'es'), new Intl.DateTimeFormat('es', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(timestamp))
+})
+
+test('Explorer startup and destination browsing diagnostics translate without rewriting upstream messages', () => {
+  const keys = [
+    'Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.',
+    'Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.',
+    'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.',
+    'This destination browser is unavailable. Open the folder browser again.',
+    'Choose a folder within the selected destination.',
+    'The operation could not be saved in this browser. Free browser storage and try again.',
+    'This request is already being checked. Open Operations to review its status.',
+    'Too many operations are still open. Review Operations before starting another.',
+    'Check the operation status before submitting the same files again.',
+    'Choose the required restore point in Recovery Center to restore an older version.',
+  ]
+  for (const locale of ['de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pt-BR', 'ru', 'zh-CN']) {
+    const messages = require(`../lib/i18n/messages/${locale}.json`)
+    const localized = (key, values) => translate(messages, key, values)
+    for (const key of keys) {
+      assert.notEqual(messages[key], key, `${locale}: ${key}`)
+      assert.equal(recoveryDiagnostic(localized, key, locale), messages[key])
+    }
+    const provider = 'VBR error 1705: target folder is unavailable.'
+    assert.equal(recoveryDiagnostic(localized, provider, locale), provider)
+  }
 })
 
 test('repository detail and recovery explorer, calendar and table register all static UI copy', () => {

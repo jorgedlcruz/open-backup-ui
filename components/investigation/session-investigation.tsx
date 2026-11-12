@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 
 import { Trans } from '@/components/providers/i18n-provider'
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -21,10 +22,10 @@ import { useRouter } from 'next/navigation'
 import styles from './investigation.module.css'
 import { useInvestigationPresentation,Empty,Loading,LogViewer,Notice,Pager,Panel,SearchBox,Status,useEvidence,useRefresh } from './shared'
 
-function TaskDetails({ sessionId, taskId, refresh }: { sessionId: string; taskId: string; refresh: number }) {
+export function TaskDetails({ sessionId, taskId, refresh, sourceKey }: { sessionId: string; taskId: string; refresh: number; sourceKey?: string }) {
   const { t, date, label, rate, notice, duration, bytes } = useInvestigationPresentation()
   const [revision, setRevision] = useState(0)
-  const load = useCallback((signal: AbortSignal) => veeamApi.getTaskInvestigation(sessionId, taskId, signal), [sessionId, taskId])
+  const load = useCallback((signal: AbortSignal) => veeamApi.getTaskInvestigation(sessionId, taskId, signal, sourceKey), [sessionId, taskId, sourceKey])
   const { data, error, loading } = useEvidence(load, revision + refresh)
   return <>
     <DialogHeader className={styles.drawerHeader}><DialogTitle>{data?.task.name || t("Workload investigation")}</DialogTitle><DialogDescription>{t('Task {id} · Results and processing events reported by VBR.', { id: taskId })}</DialogDescription></DialogHeader>
@@ -41,7 +42,7 @@ function TaskDetails({ sessionId, taskId, refresh }: { sessionId: string; taskId
   </>
 }
 
-function Workloads({ evidence, onInspect }: { evidence: Evidence; onInspect: (task: Task) => void }) {
+export function Workloads({ evidence, onInspect }: { evidence: Pick<Evidence, 'tasks'>; onInspect: (task: Task) => void }) {
   const { t, formatNumber, date, label, rate, notice, duration, bytes } = useInvestigationPresentation()
   const [filter, setFilter] = useState('all'), [query, setQuery] = useState(''), [page, setPage] = useState(0)
   const { tasks } = evidence

@@ -1,0 +1,27 @@
+/* Open Backup UI v1.2.0 */
+.signal { width: 100%; min-width: 0; color: var(--foreground); text-align: start; }
+.signal[data-session] { padding: .9rem 1.15rem; }
+.row { display: flex; align-items: center; gap: .7rem; }
+.copy { display: grid; min-width: 0; gap: .16rem; }
+.status { font-size: .88rem; line-height: 1.38; font-weight: 600; }
+.caption { min-height: 1.1em; font-size: .78rem; line-height: 1.4; color: var(--muted-foreground); }
+.indicator {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--primary);
+  border-radius: 50%;
+}
+/* This small, conventional loading indicator always spins, including before hydration. */
+.spinning {
+  animation: recoverySignalRotate .9s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.signal[data-hidden] .spinning { animation-play-state: paused; }
+.signal[data-compact] .status { font-size: .8rem; }
+.signal[data-compact] .row { gap: .5rem; }
+.signal[data-compact] .indicator svg { width: 1.15rem; height: 1.15rem; }
+@keyframes recoverySignalRotate { to { transform: rotate(1turn); } }

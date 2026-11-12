@@ -1,4 +1,9 @@
+// Open Backup UI v1.2.0
 export interface RestorePoint {
+  recoveryKinds?: import('./recovery-picker').RecoveryKind[];
+  // Membership established by VBR's object-scoped restore-point collection.
+  verifiedObjectId?: string | null;
+  applications?: {kind:'activeDirectory'|'sql'; objectId:string}[];
   id: string; backupId: string; name?: string | null; creationTime?: string | null;
   type?: string | null; platformName?: string | null; backupFileId?: string | null;
   malwareStatus?: string | null; allowedOperations?: string[] | null; gfsPeriods?: string[] | null;
@@ -13,7 +18,7 @@ export interface BackupEvidence {
   id: string; name?: string | null; jobId?: string | null; repositoryId?: string | null; repositoryName?: string | null;
 }
 export interface RestorePointSnapshot {
-  sourceName: string; fetchedAt: string; objectId?: string; backupId?: string;
+  sourceName: string; sourceKey?: string; fetchedAt: string; objectId?: string; backupId?: string;
   subject: { id: string; name?: string | null; platformName?: string | null; type?: string | null; size?: number | null } | null;
   data: RestorePoint[]; pointsComplete: boolean; backups: BackupEvidence[]; files: BackupFile[];
   filesComplete: boolean; repositories: { id: string; name?: string | null; isOnline?: boolean | null }[]; warnings: string[];

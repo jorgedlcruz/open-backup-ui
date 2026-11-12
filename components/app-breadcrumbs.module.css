@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .trail { width:100%; max-width:1800px; margin-inline:auto; padding:24px 32px 0; color:var(--muted-foreground); font-size:var(--breadcrumb-font-size,.75rem); line-height:1.5; font-weight:400; letter-spacing:normal; text-transform:none; }
 .trail ol { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; list-style:none; margin:0; padding:0; }
 .trail li { display:inline-flex; align-items:center; gap:8px; min-width:0; overflow-wrap:anywhere; }

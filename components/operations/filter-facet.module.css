@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .group { border-bottom:1px solid var(--border); min-width:0; }
 .group:last-child { border-bottom:0; }
 .group > summary { list-style:none; display:flex; gap:8px; align-items:center; cursor:pointer; padding:14px 0; font-size:12px; font-weight:600; color:var(--foreground); }
@@ -18,6 +19,6 @@
 .option > small { font-size:10px; color:var(--muted-foreground); font-variant-numeric:tabular-nums; }
 .option input { width:13px; height:13px; flex-shrink:0; accent-color:var(--primary); }
 .search { display:flex; gap:7px; align-items:center; margin-bottom:8px; color:var(--muted-foreground); }
-.search input { background:var(--background); color:var(--foreground); width:100%; min-width:0; border:1px solid var(--border); padding:7px 8px; border-radius:5px; font-size:11px; }
+.search input { background:var(--field-background, var(--background)); color:var(--foreground); width:100%; min-width:0; border:1px solid var(--border); padding:7px 8px; border-radius:5px; font-size:11px; }
 .empty { padding:10px; color:var(--muted-foreground); font-size:11px; }
 @media(prefers-reduced-motion:reduce) { .group > summary > svg {transition:none;} }

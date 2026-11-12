@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .labs,.settingsCard,.chooser{--labs-bg:var(--background);--labs-surface:var(--card);--labs-ink:var(--foreground);--labs-muted:var(--muted-foreground);--labs-line:var(--border);--labs-accent:var(--primary);--labs-soft:var(--muted);color:var(--foreground);font-family:var(--text-family,var(--font-geist-sans)),sans-serif}
 .labs{background:var(--labs-bg);margin:0;min-width:0;border:1px solid var(--labs-line);border-radius:24px;overflow:hidden;font-size:13px}
 .labs button,.chooser button,.settingsCard button{cursor:pointer;transition:background .18s,box-shadow .18s,transform .18s}.labs button:disabled,.chooser button:disabled{opacity:.35;cursor:not-allowed}.labs button:focus-visible,.labs input:focus-visible,.labs select:focus-visible,.chooser button:focus-visible{outline:2px solid var(--labs-accent);outline-offset:3px}.labs input,.labs select{min-width:0;color:var(--labs-ink)}

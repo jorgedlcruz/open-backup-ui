@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 // Veeam Backup & Replication API Types
 
 // Job Types

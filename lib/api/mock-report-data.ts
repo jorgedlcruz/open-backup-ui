@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 
 export const MOCK_PROTECTED_VMS_SUMMARY = {
     "columns": [

@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { enumLabel, type Translator } from '@/lib/i18n/presentation'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 import { knownSize } from '@/lib/restore-points/model'
@@ -30,6 +31,14 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
   const days = value.match(/^(\d+) days$/)
   if (days) return t('{count} days', { count: new Intl.NumberFormat(locale).format(Number(days[1])) })
   switch (value) {
+    case 'agent-volumes': return t('Restore volumes')
+    case 'nas-files': return t('Restore files and folders')
+    case 'object-files': return t('Restore objects')
+    case 'nas-entire': return t('Restore entire file share')
+    case 'object-entire': return t('Restore entire object storage')
+    case 'nas-rollback': return t('Roll back file share')
+    case 'object-rollback': return t('Roll back object storage')
+    case 'nas-instant': return t('Instant file share recovery')
     case 'StartViVMInstantRecovery': return t('VMware Instant Recovery')
     case 'StartHvVMInstantRecovery': return t('Hyper-V Instant Recovery')
     case 'StartEntireVmRestore': return t('Entire VM restore')
@@ -37,6 +46,8 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
     case 'StartEntireVmRestoreHyperV': return t('Hyper-V VM restore')
     case 'StartFCDInstantRecovery': return t('First Class Disk recovery')
     case 'StartFlrRestore': return t('Guest file restore')
+    case 'BrowseActiveDirectory': return t('Microsoft Active Directory')
+    case 'BrowseSql': return t('Microsoft SQL Server')
     case 'StartDiskPublish': return t('Publish disks')
     case 'Increment': case 'Incremental': return t('Incremental')
     case 'Full': return t('Full')
@@ -89,6 +100,98 @@ export function recoveryLabel(t: Translator, value: string, locale = 'en'): stri
 /** Known collector diagnostics only. Unknown provider messages are never rewritten. */
 export function recoveryDiagnostic(t: Translator, value: string, locale = 'en'): string {
   switch (value) {
+    case 'The workload list expired. Refresh it to continue.': return t('The workload list expired. Refresh it to continue.')
+    case 'VBR returned a different task.': return t('VBR could not verify this recovery request.')
+    case 'VBR returned a different target.': return t('VBR could not verify this recovery request.')
+    case 'VBR returned a different disk layout.': return t('VBR could not verify this recovery request.')
+    case 'Invalid computer recovery request.': return t('Check the recovery settings.')
+    case 'Invalid recovery media request.': return t('Check the recovery settings.')
+    case 'Invalid recovery request.': return t('Check the recovery settings.')
+    case 'Select a restore point.': return t('Select a restore point')
+    case 'Explorer was not started. Open Backup UI could not finish preparing this request. Review the selected restore point and try again.':
+    case 'Explorer was not started because Open Backup UI could not save the recovery request. Check that its data folder is writable, then review the selected restore point and try again.':
+    case 'Open Backup UI could not save the VBR response. Check the recovery status before submitting another request.':
+    case 'This destination browser is unavailable. Open the folder browser again.':
+    case 'Choose a folder within the selected destination.':
+    case 'The operation could not be saved in this browser. Free browser storage and try again.':
+    case 'This request is already being checked. Open Operations to review its status.':
+    case 'Too many operations are still open. Review Operations before starting another.':
+    case 'Check the operation status before submitting the same files again.':
+    case 'Choose the required restore point in Recovery Center to restore an older version.':
+    case 'This recovery form is out of date. Refresh Recovery Center before starting.':
+    case 'Too many recovery preparations are open.':
+    case 'This recovery point is unavailable for this computer.':
+    case 'VBR flagged this restore point for malware. Reopen the workflow and review its current status.':
+    case 'Confirm recovery access for the selected backup.':
+    case 'Recovery media is unavailable for this computer.':
+    case 'This preparation expired. Open the selected restore point again.':
+    case 'Recovery media is not ready.':
+    case 'Volume recovery is unavailable.':
+    case 'Choose a connected, verified recovery appliance.':
+    case 'This disk layout is no longer available.':
+    case 'Confirm the target computer and disk mapping.':
+    case 'The disk layout changed. Review the mapping again.':
+    case 'This layout has already been submitted.':
+    case 'Choose a source and destination disk from this layout.':
+    case 'VBR no longer allows this restore operation.':
+    case 'Select a destination from the connected VBR source.':
+    case 'Review the file share access permissions.':
+    case 'Rollback uses the original location.':
+    case 'Confirm the overwrite before continuing.':
+    case 'Select files or folders to restore.':
+    case 'This request already belongs to a different recovery.':
+    case 'VBR did not return recovery media.':
+    case 'Check the recovery settings.':
+    case 'VBR could not confirm the operation. Check Sessions before trying again.':
+    case 'This mounted recovery is no longer available.':
+    case 'Select a single item version.':
+    case 'Application recovery requires a private server encryption key.':
+    case 'VBR could not list mount hosts for this restore point.':
+    case 'The selected Linux mount host is no longer available for this restore point.':
+    case 'VBR could not verify the original Linux host.':
+    case 'Choose saved Linux SSH credentials for the original host and try again.':
+    case 'Select a Linux mount host.':
+    case 'Review the selected Linux mount host and credentials.':
+    case 'Choose a saved credential compatible with this guest.':
+    case 'VBR could not verify the guest restore destination.':
+    case 'The target path requirement changed. Review the restore destination again.':
+    case 'VBR could not validate the target guest credentials.':
+    case 'Choose one recovery method for the batch.':
+    case 'Choose one restore point per virtual machine.':
+    case 'Confirm the original VM location before starting this recovery.':
+    case 'VBR returned a different restore-point page.':
+    case 'The restore point no longer belongs to this virtual machine and backup.':
+    case 'Select a current virtual machine on the same VBR platform.':
+    case 'The selected recovery is unavailable for this VM platform.':
+    case 'Two selected VMs would use the same destination name. Rename one of them or change its destination.':
+    case 'Another VM failed validation. This VM was not submitted.':
+    case 'VBR could not verify this recovery request.':
+    case 'VBR submission could not be confirmed. Check Sessions before starting another recovery.':
+    case 'The server stopped before this VM was submitted.':
+    case 'This batch is being updated. Refresh its status.':
+    case 'Recovery batch not found.':
+    case 'This batch ID already belongs to a different recovery request.':
+    case 'This recovery worker is no longer active.':
+    case 'Invalid recovery batch.':
+    case 'Review the selected VMs and restore settings.':
+    case 'Some restore points could not be associated with a virtual machine. Open the workload to select its restore point.':
+    case 'Application recovery requires a configured VBR web console connection.':
+    case 'Some backups could not be checked. Only verified recovery options are shown.':
+    case 'The restore-point list is partial.':
+    case 'Some requested VMs or restore points are unavailable. Review the selection.':
+    case 'VBR could not check the recovery options for this source.':
+    case 'This VM is unavailable for the selected recovery.':
+    case 'Compression applies only to a SQL backup file.':
+    case 'This SQL browse page expired. Refresh the page.':
+    case 'Reopen the SQL browse page.':
+    case 'VBR returned a different SQL browse view. Refresh the page.':
+    case 'VBR returned an unreadable SQL browse item.':
+    case 'VBR returned a database for a different SQL instance. Refresh the page.':
+    case 'VBR returned files for a different database. Refresh the page.':
+    case 'VBR returned an incomplete SQL browse page. Refresh the page.':
+    case 'VBR returned an invalid SQL browse page.':
+    case 'Use distinct database names on the target instance.':
+      return t(value)
     case 'Restore-point evidence could not be loaded.': return t('Restore-point evidence could not be loaded.')
     case 'Select a valid backup object or backup ID.': return t('Select a valid backup object or backup ID.')
     case 'Select a valid repository ID.': return t('Select a valid repository ID.')

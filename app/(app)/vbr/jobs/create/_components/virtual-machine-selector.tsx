@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 
 import { useI18n } from '@/components/providers/i18n-provider'
 import { useState, useEffect } from "react"

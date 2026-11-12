@@ -1,3 +1,4 @@
+/* Open Backup UI v1.2.0 */
 .trigger { gap:7px; white-space:nowrap; }
 .trigger > svg:first-child { color:var(--ops-accent); }
 .triggerLabel { color:var(--muted-foreground); font-weight:400; }

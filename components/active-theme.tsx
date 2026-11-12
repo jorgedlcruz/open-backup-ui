@@ -1,4 +1,5 @@
 "use client";
+// Open Backup UI v1.2.0
 
 import { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
 import { normalizeTheme, themeOverrides, THEME_COOKIES, ThemeType } from "@/lib/themes";

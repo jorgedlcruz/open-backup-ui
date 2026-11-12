@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { validId } from '../investigation/model'
 import { jobSchema, sessionSchema, repositorySchema, organizationSchema, usageSchema, protectedSchema, licensedSchema, licenseSchema, healthSchema, versionSchema, kinds, type Evidence, type Snapshot, type Kind } from './model'

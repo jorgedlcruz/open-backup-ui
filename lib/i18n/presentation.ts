@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { MessageValues } from './model'
 
 export type Translator = (source: string, values?: MessageValues) => string

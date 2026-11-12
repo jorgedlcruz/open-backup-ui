@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.2.0
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { veeamApi } from '@/lib/api/veeam-client'

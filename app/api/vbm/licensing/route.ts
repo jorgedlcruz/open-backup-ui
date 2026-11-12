@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { NextRequest } from 'next/server'
 import { readLicensing } from '@/lib/server/licensing'
 export const dynamic='force-dynamic'

@@ -1,0 +1,138 @@
+/* Open Backup UI v1.2.0 */
+.dialog{width:min(94vw,57rem)!important;max-width:57rem!important;max-height:90dvh;overflow-y:auto;align-content:start}
+.body{display:grid;gap:.85rem;min-width:0}
+.dialog:has(.picker){width:min(96vw,70rem)!important;max-width:70rem!important}
+.calendarPane{min-width:0;container-type:inline-size;display:grid;gap:.65rem;align-content:start;align-self:stretch;border-inline-start:1px solid var(--border);padding-inline-start:1rem}
+.restorePointHeading{display:flex;align-items:center;min-height:2rem}
+.workloadRow{display:flex;gap:.25rem;align-items:stretch;min-width:0}
+.workloadHeading{display:flex;align-items:center;justify-content:space-between;gap:.35rem .65rem;flex-wrap:wrap;min-height:2rem}
+.workloadHeading>div{display:flex;align-items:center;flex-wrap:wrap;min-height:2rem}
+.workloadHeading h3,.workloadHeading small{display:inline-block}
+.workloadHeading small{margin-inline-start:.42rem}
+.typeFilter{position:relative;display:inline-flex;align-items:center;max-width:100%;margin-inline-start:auto;color:var(--foreground)}
+.typeFilter>svg{position:absolute;pointer-events:none;color:var(--muted-foreground)}
+.typeFilter>svg:first-child{inset-inline-start:.5rem}.typeFilter>svg:last-child{inset-inline-end:.45rem}
+.typeFilter select{appearance:none;max-width:100%;min-height:2rem;padding:.2rem 1.55rem .2rem 1.85rem;padding-inline:1.85rem 1.55rem;border:1px solid var(--border);border-radius:.45rem;font-size:.8rem;color:var(--foreground);background:var(--field-background,var(--card));cursor:pointer}
+.typeFilter select:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+@supports(field-sizing:content){.typeFilter select{field-sizing:content}}
+.search:focus-within{outline:2px solid var(--ring);outline-offset:1px}
+.search input:focus{outline:none;box-shadow:none}
+@media(forced-colors:active){.typeFilter select{appearance:auto;padding-inline:.35rem}.typeFilter>svg{display:none}}
+.workloadRow>button:first-child{flex:1;min-width:0}
+.workloadRow[data-focused=true]>button:first-child{box-shadow:inset 3px 0 0 var(--primary)}
+.workloadRow>button.removeWorkload{flex:none;padding:.45rem;color:var(--muted-foreground)}
+.offPage{display:grid;gap:.25rem;font-size:.78rem}
+.vmList button{display:flex;align-items:center;gap:.65rem;border:1px solid var(--border);background:color-mix(in srgb,var(--card) 80%,transparent);color:var(--foreground);text-align:start;border-radius:.5rem;padding:.75rem;cursor:pointer;min-width:0}
+.vmList button:hover,.vmList button[aria-pressed=true]{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,var(--card))}
+.vmList button span{flex:1;min-width:0;overflow-wrap:anywhere}.vmList svg,.rowHead strong svg{flex:none;color:var(--primary)}
+.picker{display:grid;grid-template-columns:minmax(13rem,.8fr) minmax(0,1.8fr);gap:1rem;align-items:start}
+.picker[data-calendar=false]{grid-template-columns:minmax(0,1fr)}
+.listPane,.selected,.batchFields{min-width:0;display:grid;gap:.65rem;align-content:start}
+.body h3{margin:0;font-size:.95rem;font-weight:650}
+.search,.field input,.field select{border:1px solid var(--border);border-radius:.4rem;background:var(--field-background,var(--card));color:var(--foreground);min-width:0;max-width:100%;padding:.46rem .6rem}
+.search{display:flex;align-items:center;gap:.45rem}.search input{min-width:0;width:100%;background:transparent;color:inherit}
+.vmList{display:grid;gap:.28rem;max-height:42vh;overflow:auto}.vmList button{padding:.5rem .55rem}.vmList strong,.vmList small{display:block}.vmList small,.notice,.chosen p,.chosen small{font-size:.76rem;color:var(--muted-foreground);overflow-wrap:anywhere}
+.chosen{min-width:0;border:1px solid var(--border);border-radius:.55rem;padding:.65rem .75rem;display:grid;gap:.43rem}
+.chosen[data-active=true]{border-color:color-mix(in srgb,var(--primary) 62%,var(--border))}
+.selected:has(.chosen:nth-of-type(4)){max-height:18rem;overflow:auto;padding-inline-end:.25rem}
+.rowHead,.rowHead strong,.actions,.pager,.flags label{display:flex;align-items:center;gap:.5rem}
+.rowHead{justify-content:space-between}.rowHead strong{overflow-wrap:anywhere;font-size:.85rem}.rowHead button{cursor:pointer}
+.field{display:grid;gap:.32rem;font-size:.8rem;min-width:0}.field select,.field input{width:100%}
+.link{width:fit-content;color:var(--primary);font-size:.78rem;text-decoration:underline;cursor:pointer}
+.grid,.batchItems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}
+.batchFields{border:0;margin:0;padding:0}.flags{display:grid;gap:.4rem;font-size:.8rem}.flags input{accent-color:var(--primary)}
+.warning{font-size:.8rem;color:var(--ops-warning,var(--foreground));overflow-wrap:anywhere}
+.actions,.pager{justify-content:flex-end;flex-wrap:wrap}.actions{padding-top:.6rem;border-top:1px solid var(--border)}.actions>button:first-child,.pager>span{margin-inline-end:auto}
+.reviewFacts{display:grid;gap:.25rem;font-size:.78rem;margin:.3rem 0}.reviewFacts div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:.45rem;align-items:start}.reviewFacts dt{color:var(--muted-foreground)}.reviewFacts dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:680px){.picker,.grid,.batchItems{grid-template-columns:minmax(0,1fr)}.vmList{max-height:11rem}.dialog{padding:1rem!important}.selected{border-top:1px solid var(--border);padding-top:.65rem}.calendarPane{border-inline-start:0;padding-inline-start:0;border-block-start:1px solid var(--border);padding-block-start:.85rem}}
+
+.dialog:has(.methodChooser) {
+  grid-template-rows: auto minmax(0,1fr);
+  align-content: stretch;
+  gap: 1.25rem;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.methodHeader {
+  text-align: start;
+  padding-inline-end: 2rem;
+  gap: .35rem;
+}
+.dialog .methodHeader [data-slot=dialog-title] {font-size: clamp(1.35rem,2vw,1.65rem); line-height: 1.2; letter-spacing: -.025em;}
+.methodHeader p {line-height: 1.45;}
+.dialog:has(.methodChooser) > .body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  margin: -4px;
+}
+.methodChooser {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 1.3rem 1rem;
+}
+.methodGroup {
+  --method-accent: var(--primary);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: .55rem;
+  min-width: 0;
+}
+.methodGroup[data-group=machines] {grid-column: 1 / -1;}
+.methodGroup[data-group=files] {--method-accent: color-mix(in srgb,var(--primary) 53%,#62a5ed);}
+.methodGroup[data-group=apps] {--method-accent: color-mix(in srgb,var(--primary) 22%,#a08bf4);}
+.groupHeading {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .25rem .75rem;}
+.methodGroup .groupHeading h3 {font-size: .9rem; line-height: 1.4; font-weight: 650;}
+.batchHint {display: inline-flex; align-items: center; gap: .34rem; color: color-mix(in srgb,var(--muted-foreground) 75%,var(--foreground)); font-size: .75rem;}
+.methodList {display: grid; gap: .43rem; grid-auto-rows: 1fr;}
+.methodGroup[data-group=machines] .methodList {grid-template-columns: repeat(2,minmax(0,1fr));gap: 1rem;}
+.methodCard {
+  --recovery-art-size: 44px;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .7rem;
+  width: 100%;
+  padding: .62rem .8rem;
+  text-align: start;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  background: color-mix(in srgb,var(--card) 80%,transparent);
+  cursor: pointer;
+  transition: background-color .15s,border-color .15s;
+}
+.methodGroup[data-group=machines] .methodCard {
+  --recovery-art-size: 57px;
+  padding: .85rem;
+  border-color: color-mix(in srgb,var(--method-accent) 24%,var(--border));
+  background: linear-gradient(105deg,color-mix(in srgb,var(--method-accent) 9%,var(--card)),color-mix(in srgb,var(--card) 88%,transparent));
+}
+.artTile {display: grid; place-items: center; color: var(--method-accent);}
+.methodChooser>.methodCard {--method-accent:var(--primary);--recovery-art-size:42px;min-height:5rem;}
+.methodCard[data-goal=apps] {--method-accent:color-mix(in srgb,var(--primary) 35%,#a08bf4);}
+.methodCard[data-goal=files],.methodCard[data-goal=disks] {--method-accent:color-mix(in srgb,var(--primary) 58%,#62a5ed);}
+.methodCopy {display: grid; gap: .16rem; min-width: 0; overflow-wrap: anywhere;}
+.methodCopy strong {font-size: .9rem; line-height: 1.28; font-weight: 650;}
+.methodGroup[data-group=machines] .methodCopy strong {font-size: 1rem;}
+.methodCopy > span {font-size: .795rem; line-height: 1.38; color: color-mix(in srgb,var(--muted-foreground) 75%,var(--foreground));}
+.cardArrow {color: var(--muted-foreground); transition: transform .15s;}
+.methodCard:is(:hover,:focus-visible) {border-color: var(--primary); background: color-mix(in srgb,var(--primary) 11%,var(--card));}
+.methodCard:is(:hover,:focus-visible) .cardArrow {color: var(--primary); transform: translateX(2px);}
+.methodCard:focus-visible {outline: 2px solid var(--ring); outline-offset: 2px;}
+.cardArrow:dir(rtl) {rotate: 180deg;}
+@media(max-width:680px) {
+  .dialog:has(.methodChooser) {gap: .95rem; max-height: 92dvh;}
+  .methodChooser,.methodGroup[data-group=machines] .methodList {grid-template-columns: minmax(0,1fr); gap: .85rem;}
+  .methodGroup[data-group=machines] .methodList {gap: .43rem;}
+  .methodGroup[data-group=machines] .methodCard {--recovery-art-size: 48px; padding: .65rem .8rem;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .methodCard,.cardArrow {transition: none;}
+  .methodCard:is(:hover,:focus-visible) .cardArrow {transform: none;}
+}
+@media(forced-colors:active) {
+  .methodCard {border-color: ButtonText;}
+  .methodCard:focus-visible {outline-color: Highlight;}
+}

@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 // API Route for Veeam Backup Jobs
 // This route proxies requests to the Veeam API to avoid CORS issues
 

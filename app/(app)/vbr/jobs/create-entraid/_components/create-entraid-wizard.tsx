@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 
 import { useState } from "react"
 import { useI18n } from "@/components/providers/i18n-provider"

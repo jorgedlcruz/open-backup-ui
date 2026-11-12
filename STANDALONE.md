@@ -1,6 +1,6 @@
 # Run the standalone release
 
-The `open-backup-ui-v1.0.0-standalone.zip` artifact contains the production build, its runtime dependencies, public images, and documentation. GitHub Actions builds it on **Ubuntu Linux x64 with Node.js 20**. Its bundled native dependencies make it a Linux release; for Windows, macOS, or another architecture, use the source ZIP and install/build on that platform.
+The `open-backup-ui-v1.2.0-standalone.zip` artifact contains the production build, its runtime dependencies, public images, and documentation. GitHub Actions builds it on **Ubuntu Linux x64 with Node.js 20**. Its bundled native dependencies make it a Linux release; for Windows, macOS, or another architecture, use the source ZIP and install/build on that platform.
 
 Extract the entire archive and open a terminal inside the extracted application directory. Keep `server.js`, `node_modules`, `.next`, `public`, `scripts`, and `lib` together. The standalone archive is already built; it does not require `npm ci` or `npm run build`.
 
@@ -32,8 +32,12 @@ Open `https://localhost:3443/connect`. The first run creates an installation-spe
 
 Run either the HTTP server or the HTTPS launcher for an instance. The HTTPS launcher starts and manages its own internal HTTP server.
 
+## Optional read-only kiosk listener
+
+The archive includes the separate kiosk gateway. Configure `KIOSK_PUBLIC_ORIGIN`, `KIOSK_APP_URL`, and the listener address as described in the [Kiosk Builder sharing guide](docs/labs.md#sharing-with-other-machines-on-your-lan), then run `node scripts/kiosk-server.cjs` in a second process. This listener serves shared views; the main application must also be running.
+
 ## Upgrades and source files
 
 Keep runtime `data/` and the instance's encryption key when upgrading. Neither archive includes an existing installation's credentials or runtime state. Follow the [persistence and upgrade guide](docs/deployment.md#persistent-storage-and-upgrades).
 
-To develop, rebuild, or run on another platform, use `open-backup-ui-v1.0.0.zip`, the source archive, and follow [README](README.md). Both archives include the [release notes](docs/releases/v1.0.0.md) and [screenshot gallery](docs/releases/v1.0.0-gallery.md).
+To develop, rebuild, or run on another platform, use `open-backup-ui-v1.2.0.zip`, the source archive, and follow [README](README.md). Both archives include the [v1.2.0 release notes](docs/releases/v1.2.0.md), deployment guides, and the existing [Operations screenshot gallery](docs/releases/v1.0.0-gallery.md).

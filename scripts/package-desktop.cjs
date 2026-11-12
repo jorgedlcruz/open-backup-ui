@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Package an already prepared Git bundle for offline GitHub Desktop import.
 // This builder never mutates Git repositories or copies local runtime state.

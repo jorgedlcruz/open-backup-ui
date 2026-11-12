@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 const fs = require('node:fs');
 const ts = require('typescript');
 require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
@@ -8,8 +9,63 @@ const assert = require('node:assert/strict');
 const { enrichPoints, fileAccounting, formatBytes, knownSize, recoveryReadiness } = require('../lib/restore-points/model.ts');
 const { loadRestorePoints } = require('../lib/restore-points/load.ts');
 const { TopologyRequestError } = require('../lib/topology/load.ts');
+const { readObjectRestorePoints } = require('../lib/restore-points/cached-collection.ts');
+
+test('object calendars and recovery pickers share scoped reads and isolate enrichment, retries and refreshes', async () => {
+  const scope = 'operator/source/1.3-rev2', rows = [{ id: 'a', backupId: 'b1' }, { id: 'b', backupId: 'b2' }];
+  let calls = 0, state = 'complete';
+  async function read(path) {
+    calls++;
+    if (state === 'denied') throw new TopologyRequestError('Denied', 403);
+    const backup = new URL(path, 'https://vbr.invalid').searchParams.get('backupIdFilter');
+    const data = backup ? rows.filter(p => p.backupId === backup) : rows;
+    return { data, pagination: { total: state === 'partial' ? 50 : data.length } };
+  }
+  const get = (options, identity = scope) => readObjectRestorePoints(read, identity, 'object', options);
+  const [picker, calendar] = await Promise.all([get(), get({ backupId: 'b1' })]);
+  assert.equal(calls, 1);
+  assert.equal(picker.data.length, 2);
+  assert.deepEqual(calendar.data, [rows[0]]);
+  calendar.data[0].applications = [{ kind: 'sql' }];
+  assert.equal((await get()).data[0].applications, undefined);
+  await get({}, 'another-principal');
+  assert.equal(calls, 2);
+  state = 'denied';
+  await assert.rejects(get({ refresh: true }), e => e.status === 403);
+  await assert.rejects(get(), e => e.status === 403);
+  state = 'partial';
+  assert.equal((await get()).complete, false);
+  state = 'complete';
+  assert.equal((await get()).complete, true);
+});
 
 const now = Date.parse('2026-10-17T12:00:00Z');
+const {completeVmMembership}=require('../lib/restore-points/load.ts');
+test('public backup-scoped VM lookup verifies the object and backup pair regardless of a per-machine chain ID',async()=>{
+  const id=n=>'15030305-827a-4588-9855-'+String(n).padStart(12,'0');
+  const backup=id(1),otherBackup=id(2),first=id(3),second=id(4),a=id(5),b=id(6);
+  const prepare=()=>({backupId:backup,data:[first,second].map(value=>({id:value,backupId:backup,allowedOperations:['StartEntireVmRestore']})),warnings:[]});
+  const native=(data,total=data.length)=>({data,pagination:{total,skip:0}});
+  let mode='complete';const paths=[];
+  const read=async text=>{
+    const url=new URL(text,'https://vbr.invalid');paths.push(url);
+    if(url.pathname==='/api/v1/backups/'+backup+'/objects')return native([a,b].map(x=>({id:x,type:'VM',backupId:otherBackup})),mode==='incomplete'?100:2);
+    assert.equal(url.searchParams.get('backupIdFilter'),backup);
+    if(url.pathname==='/api/v1/backupObjects/'+a+'/restorePoints')return native([{id:first,backupId:backup}]);
+    assert.equal(url.pathname,'/api/v1/backupObjects/'+b+'/restorePoints');
+    if(mode==='denied')throw new TopologyRequestError('Denied',403);
+    if(mode==='expired')throw new TopologyRequestError('Expired',401);
+    return native([{id:second,backupId:backup},{id:first,backupId:mode==='conflict'?backup:otherBackup}]);
+  };
+  const ok=prepare();await completeVmMembership(read,ok);assert.deepEqual(ok.data.map(p=>p.verifiedObjectId),[a,b]);
+  mode='conflict';const conflict=prepare();await completeVmMembership(read,conflict);assert.deepEqual(conflict.data.map(p=>p.verifiedObjectId),[null,b]);
+  for(mode of ['incomplete','denied']){
+    const partial=prepare();const checked=await completeVmMembership(read,partial);
+    assert.ok(checked.every(p=>p.verifiedObjectId===undefined));
+  }
+  mode='expired';await assert.rejects(completeVmMembership(read,prepare()),e=>e.status===401);
+  const scoped={...prepare(),objectId:a};await completeVmMembership(()=>assert.fail('Object scope is already authoritative'),scoped)
+});
 const point = (id, extra = {}) => ({ id, backupId: 'b1', creationTime: '2026-10-17T10:00:00Z', ...extra });
 const file = (extra = {}) => ({ id: 'f1', backupId: 'b1', name: 'shared.vbk', backupSize: 100, dataSize: 400, objectIds: ['o1', 'o2'], restorePointIds: ['p1', 'p2'], ...extra });
 const snapshot = (data, files = [], extra = {}) => ({ sourceName: 'test', fetchedAt: new Date(now).toISOString(), subject: null, data, pointsComplete: true, filesComplete: true, files, backups: [], repositories: [], warnings: [], ...extra });

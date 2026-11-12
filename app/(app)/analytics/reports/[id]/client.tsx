@@ -1,4 +1,5 @@
 "use client"
+// Open Backup UI v1.2.0
 
 import { DynamicReportView } from "@/components/analytics/dynamic-report-view"
 

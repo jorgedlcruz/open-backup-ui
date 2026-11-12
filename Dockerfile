@@ -1,3 +1,4 @@
+# Open Backup UI v1.2.0
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app

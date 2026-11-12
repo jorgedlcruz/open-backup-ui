@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import fs from 'fs';
 import path from 'path';
 import { encrypt, decrypt, ENCRYPTION_KEY, LEGACY_DEFAULT_KEY } from './encryption';
@@ -79,7 +80,7 @@ migrateLegacyPasswords();
 // --- Export ---
 
 export const configStore = {
-    getAll(): VBRSource[] {
+    getAll(strict = false): VBRSource[] {
         if (!fs.existsSync(CONFIG_FILE)) {
             return [];
         }
@@ -96,6 +97,7 @@ export const configStore = {
             });
         } catch (e) {
             console.error('Failed to read config store:', e);
+            if (strict) throw new Error('Data-source configuration is unreadable.');
             return [];
         }
     },

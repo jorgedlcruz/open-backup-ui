@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 export type Field = {
   key: string; label: string; type: 'text' | 'number' | 'date'
   unit?: 'bytes' | 'percent' | 'seconds' | 'gb' | 'days' | 'gb-day'

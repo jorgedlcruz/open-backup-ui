@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { z } from 'zod'
 import { collection,type Reader,VbmRequestError } from '../vbm-dashboard/load'
 import { vbrSchema,vbmSchema,userSchema,type Snapshot } from './model'

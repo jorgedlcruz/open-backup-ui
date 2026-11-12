@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 // Protection semantics stay fixed across themes and platforms, independent of chart accents.
 export const protectionColors:Record<string,string>={
   'Within threshold':'#0073e6', 'Outside threshold':'#d95319',

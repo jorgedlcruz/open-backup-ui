@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { ServerOperations } from '@/components/managed-servers/server-operations'
 
 export const metadata = { title: 'Managed Servers', description: 'Managed-server availability, updates, and assigned roles.' }

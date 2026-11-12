@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getChunkedCookie } from '@/lib/utils/cookie-manager'

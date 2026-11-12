@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { MessageValues } from '../i18n/model'
 import { vbrError } from '../i18n/vbr-errors'
 type Translator = (source: string, values?: MessageValues) => string

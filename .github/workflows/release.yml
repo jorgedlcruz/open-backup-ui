@@ -1,3 +1,4 @@
+# Open Backup UI v1.2.0
 name: Release
 
 on:
@@ -26,7 +27,9 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run version:files -- --check
+          npm run build
 
       - name: Prepare release notes
         id: notes
@@ -64,6 +67,12 @@ jobs:
           mkdir -p "$OUTDIR/scripts" "$OUTDIR/lib/server"
           cp scripts/https-server.cjs "$OUTDIR/scripts/"
           cp lib/server/tls-runtime.cjs "$OUTDIR/lib/server/"
+
+          # The separate read-only kiosk listener is not a Next.js route and is not traced automatically.
+          mkdir -p "$OUTDIR/scripts/lib" "$OUTDIR/lib/labs"
+          cp scripts/kiosk-server.cjs "$OUTDIR/scripts/"
+          cp scripts/lib/kiosk-gateway.cjs "$OUTDIR/scripts/lib/"
+          cp lib/labs/public-paths.cjs "$OUTDIR/lib/labs/"
 
           # Include the complete guides and screenshot gallery alongside both release archives.
           cp -R docs "$OUTDIR/docs"

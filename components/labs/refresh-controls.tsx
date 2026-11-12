@@ -1,4 +1,5 @@
 'use client'
+// Open Backup UI v1.2.0
 
 import type { Board } from '@/lib/labs/model'
 import { useI18n } from '@/components/providers/i18n-provider'

@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { OperationRepository } from '../operations/model'
 import { utilization } from '../operations/model'
 import { DAY, type Observation } from './model'

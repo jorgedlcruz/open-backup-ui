@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import {cookies} from 'next/headers'
 import {LensPreferences} from '@/components/lens/lens-preferences'
 import {defaultLens,lensCookie} from '@/lib/lens/navigation'

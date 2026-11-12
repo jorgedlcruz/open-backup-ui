@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',

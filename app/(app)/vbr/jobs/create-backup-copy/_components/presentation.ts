@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import type { Translator } from '@/lib/i18n/presentation'
 import { vbrError } from '@/lib/i18n/vbr-errors'
 

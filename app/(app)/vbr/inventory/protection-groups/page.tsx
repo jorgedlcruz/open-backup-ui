@@ -1,3 +1,4 @@
+// Open Backup UI v1.2.0
 import { ProtectionOperations } from '@/components/protection-groups/protection-operations'
 
 export const metadata = { title: 'Protection Groups' }
