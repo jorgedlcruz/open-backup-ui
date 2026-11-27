@@ -1,7 +1,8 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import type { VbrReader } from '../server/vbr-read'
-import { revisionForBuild, validId, uuid, type Evidence } from '../investigation/model'
+import { type LegacyReadRevision, revisionForBuild, validId, uuid, type Evidence } from '../investigation/model'
 import { TopologyRequestError } from '../topology/load'
 import { readOperationsCollection } from '../operations/load'
 import { fileSchema, summarizeFiles, type File } from '../repositories/model'
@@ -9,7 +10,7 @@ import { objectSchema, backupSchema, backupKey, type Snapshot, type Latest, type
 
 export async function loadProtectedData(raw:VbrReader,sourceName:string,includeTimes=false,now=new Date(),accounting=true):Promise<Snapshot> {
   const warnings:string[]=[]
-  let revision:'1.3-rev1'|'1.3-rev2'='1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try{revision=revisionForBuild(z.object({buildVersion:z.string()}).parse(await raw('/api/v1/serverInfo')).buildVersion)}
   catch(e){if(e instanceof TopologyRequestError && e.status===401)throw e;warnings.push('Server version unavailable. Using API 1.3-rev1.')}
   const read=(path:string)=>raw(path,revision)
@@ -91,7 +92,8 @@ export async function loadProtectedData(raw:VbrReader,sourceName:string,includeT
 // Enrich the existing copy inventory without reloading membership or backup files.
 export async function loadProtectedRecoveryTimes(raw:VbrReader,snapshot:Snapshot,now=new Date()):Promise<Snapshot> {
   const warnings=[...snapshot.warnings],objects={data:snapshot.data},backupLinks=snapshot.backupLinks || {},latest:Record<string,Latest>={}
-  const read=(path:string)=>raw(path,snapshot.apiRevision==='1.3-rev2' ? '1.3-rev2':'1.3-rev1')
+  const revision=snapshot.apiRevision==='1.3-rev0' || snapshot.apiRevision==='1.3-rev2' ? snapshot.apiRevision:'1.3-rev1'
+  const read=(path:string)=>raw(path,revision)
   const timeLimit=100
   let timeIndex=0
   async function optional<T>(label:string,work:Promise<Evidence<T>>):Promise<Evidence<T>> {
@@ -114,7 +116,7 @@ export async function loadProtectedRecoveryTimes(raw:VbrReader,snapshot:Snapshot
         let reason:string|undefined
         if(value.data.length>1)reason='The source did not honor the latest-point limit.'
         else if(point?.backupId!==undefined && point.backupId!==parentId)reason='The returned restore point belongs to a different backup. Its time cannot describe this copy.'
-        else if(point?.platformName && point.platformName!==object.platformName)reason='The returned platform does not match this object.'
+        else if(point?.platformName && normalizeVbrPlatform(point.platformName)!==normalizeVbrPlatform(object.platformName))reason='The returned platform does not match this object.'
         else if(point && (!Number.isFinite(stamp) || stamp>now.getTime()))reason='The returned creation time is invalid or in the future.'
         if(reason)return {data:[{state:'unavailable',creationTime:null,reason} as Latest],available:true,complete:false}
         const item:Latest=point ? {state:'verified',creationTime:point.creationTime!}:{state:'empty',creationTime:null}

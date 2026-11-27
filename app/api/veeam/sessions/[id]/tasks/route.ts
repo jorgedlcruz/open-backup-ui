@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
@@ -48,7 +49,7 @@ export async function GET(
             ? `/api/v1/sessions/${id}/taskSessions?${queryString}`
             : `/api/v1/sessions/${id}/taskSessions`;
 
-        const response = await fetch(`${baseUrl}${endpoint}`, {
+        const response = await fetchVbrCompatible(`${baseUrl}${endpoint}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

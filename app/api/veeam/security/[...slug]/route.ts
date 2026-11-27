@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../lib/vbr/compatible-fetch'
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -52,7 +53,7 @@ async function proxyRequest(request: NextRequest, { params }: { params: { slug: 
             }
         }
 
-        const response = await fetch(fullUrl, {
+        const response = await fetchVbrCompatible(fullUrl, {
             method: request.method,
             headers: {
                 'Authorization': authHeader,

@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const endpoint = `/api/v1/credentials/${id}`;
         const fullUrl = `${API_BASE_URL}${endpoint}`;
 
-        const response = await fetch(fullUrl, {
+        const response = await fetchVbrCompatible(fullUrl, {
             method: 'GET',
             headers: {
                 'Authorization': authHeader,

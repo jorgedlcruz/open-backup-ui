@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { AdEntry } from './ad-client'
 
 export type DirectoryIconKind = 'domain' | 'folder' | 'unit' | 'user' | 'group' | 'computer' | 'contact' | 'serviceAccount' | 'principal' | 'policy' | 'policyFolder' | 'dns' | 'configuration' | 'dfs' | 'printer' | 'server' | 'site' | 'subnet' | 'object'

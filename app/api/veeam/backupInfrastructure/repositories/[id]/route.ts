@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_BASE_URL = process.env.VEEAM_API_URL;
@@ -18,7 +19,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const url = `${API_BASE_URL}/api/v1/backupInfrastructure/repositories/${id}`;
 
     try {
-        const response = await fetch(url, {
+        const response = await fetchVbrCompatible(url, {
             method: 'DELETE',
             headers: {
                 'Authorization': authHeader,

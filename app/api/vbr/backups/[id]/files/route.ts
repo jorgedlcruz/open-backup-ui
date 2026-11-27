@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
@@ -44,7 +45,7 @@ export async function GET(
         const { id } = await params;
         const fullUrl = `${baseUrl}/api/v1/backups/${id}/backupFiles?limit=500`;
 
-        let response = await fetch(fullUrl, {
+        let response = await fetchVbrCompatible(fullUrl, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -59,7 +60,7 @@ export async function GET(
             console.log(`[BackupFiles ${id}] 401 received, refreshing token...`);
             const newToken = await tokenManager.refreshToken(sourceId);
             if (newToken) {
-                response = await fetch(fullUrl, {
+                response = await fetchVbrCompatible(fullUrl, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${newToken}`,

@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans } from '@/components/providers/i18n-provider'
 import { useCallback } from 'react'
@@ -18,7 +18,7 @@ export function RoleDialog({ role, snapshot, onClose }: { role: RoleRow; snapsho
   return <Dialog open onOpenChange={open => { if (!open) onClose() }}><DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto ph-no-capture"><DialogHeader><DialogTitle>{role.name || role.id}</DialogTitle><DialogDescription>{role.description || 'No role description reported.'}</DialogDescription></DialogHeader>
     {loading ? <Loading>Reading role permissions and scope…</Loading> : error || !data ? <div role="alert" className={styles.callout}>{error || 'Role details are unavailable.'}</div> : <>
       <dl className={styles.detailFacts}><div><dt>Role kind</dt><dd>{roleKind(data.role)}</dd></div><div><dt>Explicit assignments</dt><dd>{assigned.users.length}{!assigned.complete && ' or more'} users/groups</dd></div><div><dt>Role ID</dt><dd>{data.role.id}</dd></div><div><dt>Source</dt><dd>{snapshot.sourceName}</dd></div></dl>
-      <div className={styles.assignmentList}><h3>Assigned users & groups</h3>{assigned.users.map(user => <span key={user.id}>{user.name || user.id}</span>)}{!assigned.users.length && <p className={styles.hint}>{assigned.complete ? 'No explicit assignments in the returned inventory.' : 'Assignments are unknown because account evidence is incomplete.'}</p>}<Button variant="outline" size="sm" asChild><Link href={`/administration/identity/users?role=${role.id}`}>Investigate assigned accounts</Link></Button></div>
+      <div className={styles.assignmentList}><h3>Assigned users & groups</h3>{assigned.users.map(user => <span key={user.id}>{user.name || user.id}</span>)}{!assigned.users.length && <p className={styles.hint}>{assigned.complete ? 'No explicit assignments in the returned inventory.' : 'Assignments are unknown because account evidence is incomplete.'}</p>}<Button variant="outline" size="sm" asChild><Link href={`/settings/identity/users?role=${role.id}`}>Investigate assigned accounts</Link></Button></div>
       <h3 className={styles.sectionTitle}>Permission inventory</h3>{data.permissions.error && <p className={styles.callout}>{data.permissions.error}</p>}<PermissionList permissions={data.permissions.data} complete={data.permissions.complete} name="identity-role" />
       <h3 className={styles.sectionTitle}>Access scopes</h3>{data.scopes.error && <p className={styles.callout}>{data.scopes.error}</p>}{data.role.isBuiltIn === true ? <p className={styles.hint}>This is a built-in role. The custom-role scope resource does not apply.</p> : <div className={styles.scopes}>{data.scopes.data.map(scope => <article key={scope.name}><h4>{scope.name}</h4><strong>{scope.value}</strong><p>{scope.detail}</p></article>)}</div>}
       <p className={styles.hint}>Scope entries are summarized. Permission names alone do not prove access to every workload; VBR evaluates role scopes and group membership.</p>

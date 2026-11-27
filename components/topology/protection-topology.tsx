@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { usePlanningFormat } from '@/components/forecast/localized-format'
 
@@ -141,7 +141,7 @@ export function ProtectionTopology() {
   function chooseIssue(value: TopologyIssue) { setIssue(value); resetSelection() }
   return <div className={cn(ops.console, 'topology-page')}>
     <header className={ops.header}><div><h1><Trans>{"Protection Topology"}</Trans></h1><p>{localText("Trace workloads through their backup jobs and repositories. Investigate the evidence behind every connection.")}</p></div><div className={ops.headerActions}>{snapshot && <span className={ops.source}><span className={ops.dot}/>{snapshot.sourceName}</span>}<Button variant="outline" size="sm" onClick={refresh} disabled={loading}><RefreshCw size={14} className={loading ? 'animate-spin' : ''}/>{localText("Refresh data")}</Button></div></header>
-    {error && <Notice error>{localText(error)} <Link href="/administration/data-sources" className={ops.textLink}><Trans>{"Data Sources"}</Trans></Link></Notice>}
+    {error && <Notice error>{localText(error)} <Link href="/settings/data-sources" className={ops.textLink}><Trans>{"Data Sources"}</Trans></Link></Notice>}
     {!!snapshot?.warnings.length && <details className={ops.warnings}><summary>{localText("{count} data coverage {value}", { count: number(snapshot.warnings.length), value: snapshot.warnings.length === 1 ? localText("notice") : localText("notices") })}</summary><ul>{snapshot.warnings.map(warning => <li key={warning}>{evidenceText(localText, warning)}</li>)}</ul></details>}
     <div className={ops.metrics}>{kinds.map(entityKind => {
       const Icon = icons[entityKind]

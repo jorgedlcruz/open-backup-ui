@@ -1,0 +1,80 @@
+/* Open Backup UI v1.3.0 */
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: start;
+  font-size: .8rem;
+}
+.table th, .table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: baseline;
+  text-align: start;
+}
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: .72rem;
+  font-weight: 550;
+}
+.table th:first-child { width: min(12rem, 25%); }
+.table th:last-child { width: min(8rem, 25%); }
+.table tr:last-child td { border-bottom: 0; }
+.time {
+  color: var(--muted-foreground);
+  font-size: .74rem;
+  font-variant-numeric: tabular-nums;
+}
+.disclosure summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  list-style: none;
+  cursor: pointer;
+}
+.disclosure summary::-webkit-details-marker { display: none; }
+.disclosure summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.disclosure summary svg {
+  align-self: flex-start;
+  flex: none;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+}
+.disclosure[open] summary svg { transform: rotate(90deg); }
+.summaryText {
+  min-width: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.summaryText strong { font-weight: 550; }
+.disclosure:not([open]) .summaryText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plain { padding-inline-start: 20px; }
+.item, .disclosure dt { color: var(--muted-foreground); }
+.disclosure dl {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 2px 20px;
+  font-size: .76rem;
+}
+.disclosure dl > div {
+  display: grid;
+  grid-template-columns: minmax(4rem, max-content) minmax(0, 1fr);
+  gap: 8px;
+}
+.disclosure dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .table th, .table td { padding: 8px; }
+  .disclosure dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}

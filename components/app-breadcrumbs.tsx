@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -17,6 +17,6 @@ export function AppBreadcrumbs() {
   if(!items.length)return null
   return <nav className={styles.trail} aria-label={t('Breadcrumb')}><ol>{items.map((item,index)=><li key={`${index}-${item.label}`}>
     {index>0 && <span className={styles.separator} aria-hidden="true">/</span>}
-    {item.href ? <Link href={item.href}>{label(item.label,index)}</Link>:<span aria-current={index===items.length-1 ? 'page':undefined}>{label(item.label,index)}</span>}
+    {item.href ? <Link href={item.href}>{label(item.label,index)}</Link>:<span aria-current={index===items.length-1 ? 'page':undefined}>{label(item.label,index)}{item.reference && ` · ${item.reference}`}</span>}
   </li>)}</ol></nav>
 }

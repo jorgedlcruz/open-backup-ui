@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useVbmPresentation } from '@/components/vbm-jobs/presentation'
 
@@ -21,11 +21,12 @@ import { veeamApi } from '@/lib/api/veeam-client'
 import { time,validId } from '@/lib/investigation/model'
 import { cn } from '@/lib/utils'
 import { content,contentTypes,copyKind,filterPoints,name,objectType,opaqueId,pointKey,pointState,type Point } from '@/lib/vbm-protected/model'
-import { ArrowLeft,ArrowUpRight,CalendarDays,Grid2X2,RefreshCw } from 'lucide-react'
+import { ArrowLeft,ArrowUpRight,CalendarDays,Cloud,Globe,Grid2X2,Mail,RefreshCw,Users } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Calendar } from './calendar'
 import { Badge,Fact,ObjectFacts } from './shared'
+import recoveryStyles from './recovery-entry.module.css'
 const initial={query:'',content:[] as string[],repository:'all',kind:'all',state:'all'}
 export function RestorePoints() {
   const {t}=useVbmPresentation()
@@ -55,7 +56,23 @@ function Investigation({type,id,label}:{type:string;id:string;label:string}) {
 <p className={ops.panelFoot}>{t("{matching} matching / {loaded} loaded records · {deleted} deleted · {unknown} unknown deletion states · {invalid} invalid or future retained timestamps. A listed point is backup evidence, not a completed restore validation.",{matching:formatNumber(rows.length),loaded:formatNumber(data.points.data.length),deleted:formatNumber(data.summary.deleted),unknown:formatNumber(data.summary.unknownDeletion),invalid:formatNumber(data.summary.invalidDates)})}</p>
 </FilterWorkspace></Panel>
     {data.object && <details className={ops.warnings} style={{marginTop:20}}><summary><Trans>{"Object details and protected components"}</Trans></summary><ObjectFacts object={data.object}/></details>}
-    <Dialog open={!!selected} onOpenChange={open=>{if(!open)setSelected(null)}}><DialogContent className={shared.dialog}>{selected && <><DialogHeader><DialogTitle><Trans>{"Restore-point details"}</Trans></DialogTitle><DialogDescription>{date(selected.backupTime)} · {localLabel(copyKind(selected))}</DialogDescription></DialogHeader><dl className={shared.facts}><Fact label={t("State")}><Badge value={pointState(selected)}/></Fact><Fact label={t("Content")}>{content(selected).join(' · ') || t("Not reported")}</Fact><Fact label={t("Organization")}>{localLookup(data.organizations.data,selected.organizationId)}</Fact><Fact label={t("Repository")}>{localLookup(data.repositories.data,selected.repositoryId)}</Fact><Fact label={t("Job")}>{localLookup(data.jobs.data,selected.jobId)}</Fact><Fact label={t("Retrieved")}>{selected.isRetrieved===true ? t("Yes"):selected.isRetrieved===false ? t("No"):t("Not reported")}</Fact><Fact label={t("Immutability expires")}>{date(selected.immutabilityExpiresOn)}</Fact><Fact label={t("Size")}><Trans>{"Not reported"}</Trans></Fact><Fact label={t("Restore-point ID")}>{selected.id}</Fact><Fact label={t("Retrieval ID")}>{selected.retrievalId || t("Not reported")}</Fact><Fact label={t("Version tags")}>{t("Record: {record} · Objects: {objects}",{record:selected.eTag ?? t("Not reported"),objects:selected.objectsEtag ?? t("Not reported")})}</Fact></dl>{validId(selected.jobId || '') && <Button asChild variant="outline"><Link href={`/vbm/jobs/${encodeURIComponent(selected.jobId!)}/sessions`}><Trans>{"Investigate job"}</Trans><ArrowUpRight size={14}/></Link></Button>}</>}</DialogContent></Dialog>
+    <Dialog open={!!selected} onOpenChange={open=>{if(!open)setSelected(null)}}><DialogContent className={shared.dialog}>{selected && <><DialogHeader><DialogTitle><Trans>{"Restore-point details"}</Trans></DialogTitle><DialogDescription>{date(selected.backupTime)} · {localLabel(copyKind(selected))}</DialogDescription></DialogHeader><dl className={shared.facts}><Fact label={t("State")}><Badge value={pointState(selected)}/></Fact><Fact label={t("Content")}>{content(selected).join(' · ') || t("Not reported")}</Fact><Fact label={t("Organization")}>{localLookup(data.organizations.data,selected.organizationId)}</Fact><Fact label={t("Repository")}>{localLookup(data.repositories.data,selected.repositoryId)}</Fact><Fact label={t("Job")}>{localLookup(data.jobs.data,selected.jobId)}</Fact><Fact label={t("Retrieved")}>{selected.isRetrieved===true ? t("Yes"):selected.isRetrieved===false ? t("No"):t("Not reported")}</Fact><Fact label={t("Immutability expires")}>{date(selected.immutabilityExpiresOn)}</Fact><Fact label={t("Size")}><Trans>{"Not reported"}</Trans></Fact><Fact label={t("Restore-point ID")}>{selected.id}</Fact><Fact label={t("Retrieval ID")}>{selected.retrievalId || t("Not reported")}</Fact><Fact label={t("Version tags")}>{t("Record: {record} · Objects: {objects}",{record:selected.eTag ?? t("Not reported"),objects:selected.objectsEtag ?? t("Not reported")})}</Fact></dl><RecoveryOptions point={selected} type={type} id={id} hasObject={!!data.object}/>{validId(selected.jobId || '') && <Button asChild variant="outline"><Link href={`/vbm/jobs/${encodeURIComponent(selected.jobId!)}/sessions`}><Trans>{"Investigate job"}</Trans><ArrowUpRight size={14}/></Link></Button>}</>}</DialogContent></Dialog>
     <footer className={ops.footer}><span><Trans>{"Snapshot"}</Trans> {date(data.fetchedAt)} · {data.sourceName}</span><span><Trans>{"Times shown in your local time zone"}</Trans></span></footer>
   </div>
+}
+
+function RecoveryOptions({point,type,id,hasObject}:{point:Point;type:string;id:string;hasObject:boolean}) {
+  const {t}=useVbmPresentation()
+  const backupTime=time(point.backupTime)
+  const workloads=content(point)
+  if(!hasObject || point.isDeleted!==false || backupTime===null || backupTime>Date.now() || !workloads.length)return null
+  const icons={Exchange:Mail,OneDrive:Cloud,SharePoint:Globe,Teams:Users}
+  return <section className={recoveryStyles.recovery} aria-label={t('Recover from this point')}>
+    <h3>{t('Recover from this point')}</h3>
+    <div className={recoveryStyles.actions}>{workloads.map(workload=>{
+      const Icon=icons[workload]
+      const query=new URLSearchParams({type,objectId:id,pointId:point.id,workload})
+      return <Button asChild key={workload} size="sm" variant="outline"><Link href={`/vbm/recovery-center?${query}`}><Icon size={15}/>{workload}<ArrowUpRight size={13}/></Link></Button>
+    })}</div>
+  </section>
 }

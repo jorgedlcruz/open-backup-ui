@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans } from '@/components/providers/i18n-provider'
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -70,7 +70,7 @@ export function LicensingConsole({hasVBR,hasVB365}:{hasVBR:boolean;hasVB365:bool
 <p className={ops.panelFoot}>Consumer rows are not summed into entitlement totals. Fractional instances and capacity use different accounting. Older backups and zero consumption are review filters, not proof that a license can be reclaimed. Revocation always requires confirmation and remains subject to the source’s eligibility rules.</p>
 </FilterWorkspace></Panel>
     </>}
-    <footer className={ops.footer}><div>{sources.map(data=><p key={data.platform}><span className={ops.dot}/>{data.platform==='vbr' ? 'VBR':'Microsoft 365'} snapshot {snapshotDate(data.fetchedAt)} · {data.sourceName}</p>)}</div><Link className={ops.textLink} href="/administration/data-sources"><Trans>{"Data Sources"}</Trans><ArrowUpRight size={12}/></Link></footer>
+    <footer className={ops.footer}><div>{sources.map(data=><p key={data.platform}><span className={ops.dot}/>{data.platform==='vbr' ? 'VBR':'Microsoft 365'} snapshot {snapshotDate(data.fetchedAt)} · {data.sourceName}</p>)}</div><Link className={ops.textLink} href="/settings/data-sources"><Trans>{"Data Sources"}</Trans><ArrowUpRight size={12}/></Link></footer>
     <RevokeDialog row={revoke} sourceName={sources.find(data=>data.platform===revoke?.platform)?.sourceName} onClose={()=>setRevoke(null)} onRefresh={refresh}/>
   </div>
 }

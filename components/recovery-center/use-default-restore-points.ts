@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {useEffect,useRef,type Dispatch,type SetStateAction} from 'react'
 import {applyDefaultPoint,suggestedOperation,type RecoverySelection} from '@/lib/restore-points/default-point'
 import {isRecoveryKind,type PickerPage,type PickerScope} from '@/lib/restore-points/recovery-picker'

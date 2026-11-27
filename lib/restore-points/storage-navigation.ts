@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {storageEntry,type StorageItem} from './unstructured-workspace'
 
 export type StorageCrumb={path:string;label:string}

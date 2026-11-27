@@ -1,8 +1,10 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useI18n } from '@/components/providers/i18n-provider'
 import { builderDiagnostic } from '@/components/job-builder/diagnostics'
+import { nativeJobNames, supportedJob, type NativeJobType } from '@/lib/job-builder/native-job-types'
+import { applicationRequest } from '@/lib/api/application-request'
 import { FilterFields,GridColumnChoice,GridViewMenu } from '@/components/operations/filter-fields'
 import { FilterWorkspace } from '@/components/operations/filter-workspace'
 
@@ -56,8 +58,22 @@ interface BackupJobsTableProps {
   onRefresh?: () => void
 }
 
+function NativeJobLinks({types}:{types:NativeJobType[]}){
+  const {t}=useI18n()
+  return types.map(type=><DropdownMenuItem key={type} asChild><Link href={'/vbr/jobs/native?type='+type}>{t(nativeJobNames[type])}</Link></DropdownMenuItem>)
+}
+
 export function BackupJobsTable({ data, loading = false, error, onRefresh }: BackupJobsTableProps) {
   const { t, formatNumber, formatDate } = useI18n()
+  const [rev3,setRev3]=React.useState(false)
+  React.useEffect(()=>{
+    const controller=new AbortController()
+    if(loading || error){setRev3(false);return}
+    applicationRequest<{revision:string}>('/api/vbr/job-builder/rev3?capabilities=true',{signal:controller.signal})
+      .then(value=>{if(!controller.signal.aborted)setRev3(value.revision==='1.3-rev3')})
+      .catch(()=>{if(!controller.signal.aborted)setRev3(false)})
+    return ()=>controller.abort()
+  },[loading,error])
   const [sorting, setSorting] = React.useState<SortingState>([{id:'lastRun',desc:true}])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -206,6 +222,7 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{t("Actions")}</DropdownMenuLabel>
               <DropdownMenuItem asChild><Link href={`/vbr/jobs/${job.id}`}>{t("Investigate job")}</Link></DropdownMenuItem>
+              {rev3&&supportedJob(job.type)&&<DropdownMenuItem asChild><Link href={`/vbr/jobs/native?type=${job.type}&id=${encodeURIComponent(job.id)}`}>{t('Edit job')}</Link></DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleAction('start')}>{t("Start")}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleAction('stop')}>{t("Stop")}</DropdownMenuItem>
@@ -218,7 +235,7 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
         )
       },
     },
-  ], [onRefresh,t,formatDate,formatNumber]);
+  ], [onRefresh,t,formatDate,formatNumber,rev3]);
 
   const table = useReactTable({
     data,
@@ -323,6 +340,7 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
                               <span className="ml-2">Microsoft Hyper-V</span>
                             </Link>
                           </DropdownMenuItem>
+                          {rev3&&<NativeJobLinks types={['RedHatOpenStackBackupJob','VirtuozzoBackupJob']}/>}
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>
@@ -331,10 +349,12 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
                       <Monitor className="mr-2 h-4 w-4 text-orange-500" />{t("Windows computer...")}</DropdownMenuItem>
                     <DropdownMenuItem disabled>
                       <Terminal className="mr-2 h-4 w-4 text-yellow-500" />{t("Linux computer...")}</DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Laptop className="mr-2 h-4 w-4 text-gray-500" />{t("Mac computer...")}</DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <Terminal className="mr-2 h-4 w-4 text-green-800" />{t("Unix computer...")}</DropdownMenuItem>
+                    {rev3?<DropdownMenuSub><DropdownMenuSubTrigger><Laptop className="mr-2 h-4 w-4"/>{t("Mac computer...")}</DropdownMenuSubTrigger>
+                      <DropdownMenuPortal><DropdownMenuSubContent><NativeJobLinks types={['MacAgentBackupServerPolicy','MacAgentBackupWorkstationPolicy']}/></DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>:
+                      <DropdownMenuItem disabled><Laptop className="mr-2 h-4 w-4 text-gray-500" />{t("Mac computer...")}</DropdownMenuItem>}
+                    {rev3?<DropdownMenuSub><DropdownMenuSubTrigger><Terminal className="mr-2 h-4 w-4"/>{t("Unix computer...")}</DropdownMenuSubTrigger>
+                      <DropdownMenuPortal><DropdownMenuSubContent><NativeJobLinks types={['UnixAgentBackup','UnixAgentBackupServerPolicy']}/></DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>:
+                      <DropdownMenuItem disabled><Terminal className="mr-2 h-4 w-4 text-green-800" />{t("Unix computer...")}</DropdownMenuItem>}
 
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger>
@@ -438,8 +458,9 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem disabled><Server className="mr-2 h-4 w-4 text-blue-500" /> VMware vSphere</DropdownMenuItem>
-                    <DropdownMenuItem disabled><RefreshCw className="mr-2 h-4 w-4 text-green-500" /> Universal CDP</DropdownMenuItem>
+                    {rev3?<NativeJobLinks types={['VSphereCdpPolicy','WindowsUniversalCdpPolicy','LinuxUniversalCdpPolicy']}/>:<>
+                      <DropdownMenuItem disabled><Server className="mr-2 h-4 w-4 text-blue-500" /> VMware vSphere</DropdownMenuItem>
+                      <DropdownMenuItem disabled><RefreshCw className="mr-2 h-4 w-4 text-green-500" /> Universal CDP</DropdownMenuItem></>}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
@@ -461,7 +482,7 @@ export function BackupJobsTable({ data, loading = false, error, onRefresh }: Bac
                     <DropdownMenuItem asChild>
                       <Link href="/vbr/jobs/create-backup-copy" className="cursor-pointer">{t("Image-level backup")}</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled>{t("Storage copy")}</DropdownMenuItem>
+                    {rev3?<NativeJobLinks types={['StorageCopy']}/>:<DropdownMenuItem disabled>{t("Storage copy")}</DropdownMenuItem>}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>

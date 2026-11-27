@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const fs=require('node:fs'),ts=require('typescript'),os=require('node:os'),path=require('node:path');
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText,filename);
 const {test}=require('node:test'),assert=require('node:assert/strict');
@@ -44,6 +44,25 @@ for(const platform of ['VSphere','HyperV'])for(const mode of ['manual','daily','
 test('contracts reject legacy proxy and daily schedule keys',()=>{
   const payload=compileJob(draft());payload.storage.backupProxies={automaticSelection:true};assert.throws(()=>contract(payload,schemas.BackupJobSpec),/autoSelectEnabled|automaticSelection/);
   const wrong=compileJob(draft());wrong.schedule.daily={isEnabled:true,type:'Everyday',times:['22:00']};assert.throws(()=>contract(wrong,schemas.BackupJobSpec),/unknown field/);
+});
+test('VBR 13 revisions preserve synthetic fulls, guest processing and Hyper-V proxy settings',()=>{
+  const input=draft('HyperV');
+  input.guest={...input.guest,applicationAware:true,indexing:true,credentialId:uid(3)};
+  for(const rev of ['1.3-rev0','1.3-rev1','1.3-rev2','1.3-rev3']){
+    const payload=compileJob(input,rev);
+    const first=rev==='1.3-rev0',old=first||rev==='1.3-rev1';
+    const settings=payload.storage.advancedSettings;
+    const key=old?'synthenticFulls':'syntheticFulls';
+    assert.equal(Object.hasOwn(settings,old?'syntheticFulls':'synthenticFulls'),false);
+    assert.deepEqual(settings[key].weekly.days,[first?'saturday':'Saturday']);
+    assert.equal(payload.storage.backupProxies.proxyType,first?'onHost':'OnHost');
+    assert.equal(payload.schedule.daily.days[0],first?'monday':'Monday');
+    const app=payload.guestProcessing.appAwareProcessing.appSettings[0];
+    assert.equal(app.vss,first?'requireSuccess':'RequireSuccess');
+    assert.equal(app.transactionLogs,first?'copyOnly':'CopyOnly');
+    const index=payload.guestProcessing.guestFSIndexing.indexingSettings[0];
+    assert.equal(index.WindowsIndexing.guestFSIndexingMode,first?'indexAll':'IndexAll');
+  }
 });
 test('platform-specific selected proxies and automatic off-host proxies have valid contracts',()=>{
   for(const platform of ['VSphere','HyperV'])for(const proxyMode of ['auto','selected']){const value={...draft(platform),proxyMode,proxyIds:[uid(5)]},payload=compileJob(value);contract(payload,schemas[platform==='VSphere'?'BackupJobSpec':'HyperVBackupJobSpec']);const proxy=platform==='VSphere'?payload.storage.backupProxies:payload.storage.backupProxies.offHostSettings;assert.equal(proxy.autoSelectEnabled,proxyMode==='auto');assert.deepEqual(proxy.proxyIds,proxyMode==='auto'?[]:[uid(5)]);}

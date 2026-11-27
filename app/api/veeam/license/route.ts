@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
         }
 
-        let response = await fetch(`${baseUrl}/api/v1/license`, {
+        let response = await fetchVbrCompatible(`${baseUrl}/api/v1/license`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
             console.log('[License] 401 received, refreshing token...');
             const newToken = await tokenManager.refreshToken(sourceId);
             if (newToken) {
-                response = await fetch(`${baseUrl}/api/v1/license`, {
+                response = await fetchVbrCompatible(`${baseUrl}/api/v1/license`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${newToken}`,

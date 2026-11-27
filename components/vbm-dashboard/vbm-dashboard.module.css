@@ -1,10 +1,11 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .page { min-width:0; }
 .metric { text-align:left; cursor:pointer; }
 .range,.controls > label:not(:first-child) { display:flex; flex-direction:column; gap:5px; color:var(--muted-foreground); font-size:var(--ops-caption,10px); min-width:0; }
 .range select,.controls select { background:var(--card); color:var(--foreground); border:1px solid var(--border); border-radius:5px; padding:7px 9px; height:34px; font-size:var(--ops-small,11px); max-width:240px; }
 .context { display:flex; flex-wrap:wrap; align-items:center; gap:12px 25px; padding:14px 18px; border:1px solid var(--border); background:var(--card); border-radius:var(--ops-panel-radius,10px); margin-bottom:22px; color:var(--muted-foreground); font-size:var(--ops-small,11px); }
-.context > span { display:flex; align-items:center; gap:8px; }
+.context > a:hover { text-decoration:underline; }
+.context > a, .context > span { display:flex; align-items:center; gap:8px; }
 .context strong { color:var(--foreground); font-weight:500; }
 .tabs { display:flex; flex-wrap:wrap; gap:25px; margin-bottom:20px; border-bottom:1px solid var(--border); }
 .tabs button { display:flex; align-items:center; gap:8px; padding-bottom:14px; margin-bottom:-1px; border-bottom:2px solid transparent; color:var(--muted-foreground); cursor:pointer; font-size:var(--ops-small,12px); }

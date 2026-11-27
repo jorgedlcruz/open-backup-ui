@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import { backupSchema as objectBase, backupKey } from '../virtual-infrastructure/model'
 import { backupSchema as baseBackupSchema, type Consumption } from '../repositories/model'
@@ -11,7 +12,7 @@ export const objectSchema=objectBase.extend({
   backupId:text.transform(v=>v?.toLowerCase()), platformId:text, hostId:text, fileServerId:text,
   jobId:text, jobName:text, repositoryId:text, repositoryName:text,
 })
-export const backupSchema=baseBackupSchema.extend({platformName:text})
+export const backupSchema=baseBackupSchema.extend({platformName:text.transform(normalizeVbrPlatform)})
 export type Backup=z.infer<typeof backupSchema>
 export { backupKey }
 export type ObjectRecord=z.infer<typeof objectSchema>
@@ -32,7 +33,9 @@ export function rowsFrom(data:Snapshot):Row[] {
   const objects=[...new Map(data.data.map(o=>[backupKey(o),o])).values()]
   const copies=new Map<string,number>(),backups=new Map(data.backups.data.map(b=>[b.id,b]))
   for(const o of objects)copies.set(o.id,(copies.get(o.id)||0)+1)
-  return objects.map(object=>{
+  return objects.map(source=>{
+    const platformName=normalizeVbrPlatform(source.platformName)
+    const object=platformName===source.platformName ? source : {...source,platformName}
     const points=knownSize(object.restorePointsCount),size=knownSize(object.size),key=backupKey(object)
     return {object,key,name:object.name || object.id,backup:backups.get(data.backupLinks?.[key] || object.backupId || '') || null,copies:copies.get(object.id)!,
       coverage:points===null ? 'Count not reported':points===0 ? 'No restore points':'Restore points available',
@@ -63,7 +66,7 @@ export function issueMatch(row:Row,issue:Issue) {
     issue==='unknown' ? row.points===null || row.run==='Not reported':issue==='sizeUnknown' ? row.size===null:row.copies>1)
 }
 export function matches(row:Row,f:Filters,hours=24,now=Date.now()) {
-  if(f.platforms.length && !f.platforms.includes(row.object.platformName || 'Not reported') ||
+  if(f.platforms.length && !f.platforms.some(p=>normalizeVbrPlatform(p)===(row.object.platformName || 'Not reported')) ||
     f.types.length && !f.types.includes(row.object.type || 'Not reported') ||
     f.repository!=='all' && (repositoryId(row)||'unknown')!==f.repository ||
     f.coverage!=='all' && row.coverage!==f.coverage || f.run!=='all' && row.run!==f.run || !issueMatch(row,f.issue) ||

@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {NextRequest,NextResponse} from 'next/server'
 import {z} from 'zod'
 import {withVbrRead} from '@/lib/server/vbr-read'

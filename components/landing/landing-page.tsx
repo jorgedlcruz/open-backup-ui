@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useI18n } from "@/components/providers/i18n-provider"
 
@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { isTelemetryDisabled, enableTelemetry, disableTelemetry, STORAGE_KEY, TELEMETRY_PREFERENCE_EVENT } from "@/lib/telemetry"
 import { toast } from "sonner"
+import { sourceMessage } from '@/lib/data-sources/presentation'
 import { applicationRequest, ApplicationRequestError } from '@/lib/api/application-request'
 
 const platformIcons: Record<PlatformType, React.ReactNode> = {
@@ -64,6 +65,8 @@ const defaultPorts: Record<PlatformType, string> = {
     one: "1239",
     kasten: "443"
 }
+
+const addPlatforms = (Object.keys(platformInfo) as PlatformType[]).filter(type => type !== 'one')
 
 export function LandingPage() {
     const { t } = useI18n()
@@ -114,17 +117,15 @@ export function LandingPage() {
     })
     const [showPassword, setShowPassword] = useState(false)
 
-    // Auto-select first available platform when switching to add mode
-    useEffect(() => {
-        if (viewMode === "add") {
-            const available = (Object.keys(platformInfo) as PlatformType[])
-                .find(type => !dataSources.some(ds => ds.type === type))
+    const configuredPlatforms = new Set<PlatformType>(dataSources.map(source => source.type === 'one' ? 'veeam-one' : source.type))
+    const firstAvailable = addPlatforms.find(type => !configuredPlatforms.has(type))
+    const canAddSource = !isLoading && !loadError && !configuredPlatforms.has(newSourceType)
 
-            if (available) {
-                setNewSourceType(available)
-            }
-        }
-    }, [viewMode, dataSources])
+    function openAddForm() {
+        if (!firstAvailable || isLoading || loadError) return
+        setNewSourceType(firstAvailable)
+        setViewMode("add")
+    }
 
     // Update port when platform type changes
     useEffect(() => {
@@ -132,7 +133,7 @@ export function LandingPage() {
     }, [newSourceType])
 
     const handleAddSource = () => {
-        if (!newSourceHostname.trim()) return
+        if (!canAddSource || !newSourceHostname.trim()) return
 
         // Construct full URL
         const hostname = newSourceHostname.trim()
@@ -369,7 +370,8 @@ export function LandingPage() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setViewMode("add")}
+                                    onClick={openAddForm}
+                                    disabled={!firstAvailable || isLoading || !!loadError}
                                     className="shrink-0"
                                 >
                                     <Plus className="h-4 w-4 mr-1" />{t("Add")}</Button>
@@ -377,7 +379,7 @@ export function LandingPage() {
                         </div>
 
                         {(loadError || connectionError) && <div role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
-                            <p>{loadError || connectionError}</p>
+                            <p>{sourceMessage(t, loadError || connectionError || '')}</p>
                             <div className="mt-2 flex flex-wrap gap-2">
                                 <Button variant="outline" size="sm" disabled={isLoading} onClick={() => { setConnectionError(null); void reloadSources() }}>{t("Retry")}</Button>
                                 <Button variant="outline" size="sm" onClick={() => {
@@ -471,7 +473,7 @@ export function LandingPage() {
                                 {/* Empty State - Add Source */}
                                 {dataSources.length === 0 && !isLoading && !loadError && (
                                     <button
-                                        onClick={() => setViewMode("add")}
+                                        onClick={openAddForm}
                                         className={cn(
                                             "w-full p-6 rounded-xl border-2 border-dashed transition-all",
                                             "flex flex-col items-center justify-center gap-2",
@@ -533,10 +535,8 @@ export function LandingPage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {(Object.keys(platformInfo) as PlatformType[])
-                                                .filter(type => type !== 'one') // Exclude alias
-                                                .map((type) => {
-                                                    const isConfigured = dataSources.some(ds => ds.type === type || (type === 'veeam-one' && ds.type === 'one'))
+                                            {addPlatforms.map((type) => {
+                                                    const isConfigured = configuredPlatforms.has(type)
                                                     return (
                                                         <SelectItem key={type} value={type} disabled={isConfigured}>
                                                             <div className="flex items-center gap-2">
@@ -616,7 +616,7 @@ export function LandingPage() {
 
                             <Button
                                 onClick={handleAddSource}
-                                disabled={!newSourceHostname.trim()}
+                                disabled={!canAddSource || !newSourceHostname.trim()}
                                 className="w-full h-12 bg-[#00b336] hover:bg-[#00a030] text-lg font-medium"
                             >{t("Add Source")}</Button>
                         </div>
@@ -706,7 +706,7 @@ export function LandingPage() {
                         {authState.error && (
                             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2 text-destructive text-sm">
                                 <XCircle className="h-4 w-4" />
-                                {authState.error}
+                                {sourceMessage(t, authState.error)}
                             </div>
                         )}
 

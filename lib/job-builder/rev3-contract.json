@@ -1,0 +1,5153 @@
+{
+  "apiRevision": "1.3-rev3",
+  "sha256": "f539b478e6076dd0d9ba1fd93b43089470350e6af3ce10e94ed06d7b2ac64a66",
+  "jobs": {
+    "RedHatOpenStackBackupJob": {
+      "create": "RedHatOpenStackBackupJob_create",
+      "edit": "RedHatOpenStackBackupJob_edit"
+    },
+    "VirtuozzoBackupJob": {
+      "create": "VirtuozzoBackupJob_create",
+      "edit": "VirtuozzoBackupJob_edit"
+    },
+    "UnixAgentBackup": {
+      "create": "UnixAgentBackup_create",
+      "edit": "UnixAgentBackup_edit"
+    },
+    "UnixAgentBackupServerPolicy": {
+      "create": "UnixAgentBackupServerPolicy_create",
+      "edit": "UnixAgentBackupServerPolicy_edit"
+    },
+    "MacAgentBackupServerPolicy": {
+      "create": "MacAgentBackupServerPolicy_create",
+      "edit": "MacAgentBackupServerPolicy_edit"
+    },
+    "MacAgentBackupWorkstationPolicy": {
+      "create": "MacAgentBackupWorkstationPolicy_create",
+      "edit": "MacAgentBackupWorkstationPolicy_edit"
+    },
+    "VSphereCdpPolicy": {
+      "create": "VSphereCdpPolicy_create",
+      "edit": "VSphereCdpPolicy_edit"
+    },
+    "WindowsUniversalCdpPolicy": {
+      "create": "WindowsUniversalCdpPolicy_create",
+      "edit": "WindowsUniversalCdpPolicy_edit"
+    },
+    "LinuxUniversalCdpPolicy": {
+      "create": "LinuxUniversalCdpPolicy_create",
+      "edit": "LinuxUniversalCdpPolicy_edit"
+    },
+    "StorageCopy": {
+      "create": "StorageCopy_create",
+      "edit": "StorageCopy_edit"
+    }
+  },
+  "definitions": {
+    "RedHatOpenStackBackupJob_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "RedHatOpenStackBackupJob",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "objects": {
+          "$ref": "#/$defs/PluginPlatformBackupJobObjectsModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/PluginPlatformBackupJobStorageModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/PluginPlatformBackupJobAdvancedSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "objects",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "EJobType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VSphereBackup",
+        "HyperVBackup",
+        "VSphereReplica",
+        "CloudDirectorBackup",
+        "EntraIDTenantBackup",
+        "EntraIDAuditLogBackup",
+        "FileBackupCopy",
+        "LegacyBackupCopy",
+        "BackupCopy",
+        "WindowsAgentBackup",
+        "LinuxAgentBackup",
+        "FileBackup",
+        "ObjectStorageBackup",
+        "EntraIDTenantBackupCopy",
+        "SureBackupContentScan",
+        "CloudBackupAzure",
+        "CloudBackupAWS",
+        "CloudBackupGoogle",
+        "WindowsAgentBackupWorkstationPolicy",
+        "LinuxAgentBackupWorkstationPolicy",
+        "WindowsAgentBackupServerPolicy",
+        "LinuxAgentBackupServerPolicy",
+        "UnixAgentBackupServerPolicy",
+        "MacAgentBackupServerPolicy",
+        "MacAgentBackupWorkstationPolicy",
+        "NutanixAHVBackupJob",
+        "ProxmoxBackupJob",
+        "IrisBackup",
+        "VSphereCdpPolicy",
+        "WindowsUniversalCdpPolicy",
+        "LinuxUniversalCdpPolicy",
+        "WindowsAgentBackupFailoverCluster",
+        "HpeVmeBackupJob",
+        "XenBackupJob",
+        "OVirtKvmBackupJob",
+        "ScaleComputingBackupJob",
+        "SangforHciBackupJob",
+        "KubeVirtBackupJob",
+        "OpenNebulaBackupJob",
+        "Platform9BackupJob",
+        "VergeIoBackupJob",
+        "StorageCopy",
+        "UnixAgentBackup",
+        "StorageSnapshot",
+        "RedHatOpenStackBackupJob",
+        "VirtuozzoBackupJob",
+        "MacAgentBackup"
+      ]
+    },
+    "PluginPlatformBackupJobObjectsModel": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        }
+      },
+      "required": [
+        "includes"
+      ],
+      "additionalProperties": false
+    },
+    "InventoryObjectModel": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/InventoryObjectModel_VSphere"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_CloudDirector"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_HyperV"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Agent"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Nutanix"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Proxmox"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_HpeVme"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_ScaleComputing"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_OVirtKvm"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Platform9"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Verge"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Xen"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_KubeVirt"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_SangforHci"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_VcfAutomation"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_RedHatOpenStack"
+        },
+        {
+          "$ref": "#/$defs/InventoryObjectModel_Virtuozzo"
+        }
+      ]
+    },
+    "InventoryObjectModel_VSphere": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "VSphere",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EVmwareInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "urn": {
+          "type": "string"
+        },
+        "powerState": {
+          "$ref": "#/$defs/EPowerState"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommonMetaInfo"
+          }
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "hostName"
+      ],
+      "additionalProperties": false
+    },
+    "EInventoryPlatformType": {
+      "type": "string",
+      "enum": [
+        "VSphere",
+        "HyperV",
+        "CloudDirector",
+        "Agent",
+        "Nutanix",
+        "Proxmox",
+        "HpeVme",
+        "ScaleComputing",
+        "OVirtKvm",
+        "Platform9",
+        "Verge",
+        "Xen",
+        "KubeVirt",
+        "SangforHci",
+        "VcfAutomation",
+        "RedHatOpenStack",
+        "Virtuozzo"
+      ]
+    },
+    "ResourceTagValueModel": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "resourceTagDefinitionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "key": {
+          "type": "string",
+          "maxLength": 127
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 127
+        },
+        "isSystem": {
+          "type": "boolean"
+        },
+        "isMultivalue": {
+          "type": "boolean"
+        },
+        "isInheritable": {
+          "type": "boolean"
+        },
+        "source": {
+          "$ref": "#/$defs/EResourceTagSource"
+        }
+      },
+      "required": [
+        "id",
+        "resourceTagDefinitionId",
+        "key",
+        "value",
+        "isSystem",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "EResourceTagSource": {
+      "type": "string",
+      "enum": [
+        "Direct",
+        "InheritFromParent",
+        "PropagatedFromJob",
+        "PropagatedFromToken"
+      ]
+    },
+    "EVmwareInventoryType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VirtualMachine",
+        "vCenterServer",
+        "Datacenter",
+        "Cluster",
+        "Host",
+        "ResourcePool",
+        "Folder",
+        "Datastore",
+        "DatastoreCluster",
+        "StoragePolicy",
+        "Template",
+        "ComputeResource",
+        "VirtualApp",
+        "Tag",
+        "Category",
+        "Multitag",
+        "Network",
+        "DVSNetwork",
+        "Disk",
+        "SharedDisk",
+        "StandardSwitch",
+        "DistributedSwitch"
+      ]
+    },
+    "EPowerState": {
+      "type": "string",
+      "enum": [
+        "PoweredOff",
+        "PoweredOn",
+        "Suspended"
+      ]
+    },
+    "CommonMetaInfo": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ObjectAclInfo": {
+      "type": "object",
+      "properties": {
+        "isAllowed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isAllowed"
+      ],
+      "additionalProperties": false
+    },
+    "InventoryObjectModel_CloudDirector": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "CloudDirector",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ECloudDirectorInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "urn": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommonMetaInfo"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "hostName"
+      ],
+      "additionalProperties": false
+    },
+    "ECloudDirectorInventoryType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VirtualMachine",
+        "CloudDirectorServer",
+        "Organization",
+        "OrganizationVDC",
+        "vApp",
+        "StoragePolicy",
+        "Network",
+        "vCenter",
+        "VmTemplate",
+        "Datastore"
+      ]
+    },
+    "InventoryObjectModel_HyperV": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "HyperV",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EHyperVInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "urn": {
+          "type": "string"
+        },
+        "parentObjectId": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommonMetaInfo"
+          }
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "hostName",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EHyperVInventoryType": {
+      "type": "string",
+      "enum": [
+        "VMGroup",
+        "ManagementGroup",
+        "HostGroup",
+        "Scvmm",
+        "Cluster",
+        "Host",
+        "VirtualMachine",
+        "Network",
+        "Volume",
+        "CSV",
+        "Tag",
+        "ClusterVolume"
+      ]
+    },
+    "InventoryObjectModel_Agent": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Agent",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EAgentInventoryObjectType"
+        },
+        "path": {
+          "type": "string"
+        },
+        "parentObjectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protectionGroupId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protectionGroupType": {
+          "$ref": "#/$defs/EProtectionGroupType"
+        },
+        "cloudMachinesType": {
+          "$ref": "#/$defs/ECloudMachinesType"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        }
+      },
+      "required": [
+        "platform",
+        "id",
+        "name",
+        "type",
+        "protectionGroupId"
+      ],
+      "additionalProperties": false
+    },
+    "EAgentInventoryObjectType": {
+      "type": "string",
+      "enum": [
+        "ProtectionGroup",
+        "WindowsComputer",
+        "LinuxComputer",
+        "WindowsCluster",
+        "Container",
+        "Group",
+        "OrganizationUnit",
+        "Domain",
+        "Custom",
+        "MacComputer",
+        "UnixComputer",
+        "IbmAixComputer",
+        "SolarisIntelComputer",
+        "SolarisSparcComputer",
+        "LinuxPpcComputer"
+      ]
+    },
+    "EProtectionGroupType": {
+      "type": "string",
+      "enum": [
+        "ManuallyAdded",
+        "Unmanaged",
+        "IndividualComputers",
+        "ADObjects",
+        "CSVFile",
+        "PreInstalledAgents",
+        "CloudMachines",
+        "MongoDB",
+        "Iris"
+      ]
+    },
+    "ECloudMachinesType": {
+      "type": "string",
+      "enum": [
+        "Amazon",
+        "Azure"
+      ]
+    },
+    "InventoryObjectModel_Nutanix": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Nutanix",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ENutanixInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "prismCentralId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "ENutanixInventoryType": {
+      "type": "string",
+      "enum": [
+        "PrismCentral",
+        "Category",
+        "Cluster",
+        "VirtualMachine"
+      ]
+    },
+    "InventoryObjectModel_Proxmox": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Proxmox",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EProxmoxInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EProxmoxInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "Node",
+        "Pool",
+        "VirtualMachine"
+      ]
+    },
+    "InventoryObjectModel_HpeVme": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "HpeVme",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EHpeVmeInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "morpheusId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EHpeVmeInventoryType": {
+      "type": "string",
+      "enum": [
+        "Morpheus",
+        "Cluster",
+        "VirtualMachine",
+        "VmTag",
+        "Tenant"
+      ]
+    },
+    "InventoryObjectModel_ScaleComputing": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "ScaleComputing",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EScaleComputingInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EScaleComputingInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "VirtualMachineTag",
+        "VirtualMachine"
+      ]
+    },
+    "InventoryObjectModel_OVirtKvm": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "OVirtKvm",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EOVirtKvmInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EOVirtKvmInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "VirtualMachine",
+        "VmTag",
+        "DataCenter",
+        "SubCluster"
+      ]
+    },
+    "InventoryObjectModel_Platform9": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Platform9",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EPlatform9InventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EPlatform9InventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "VirtualMachine",
+        "VmTag",
+        "DataCenter",
+        "SubCluster"
+      ]
+    },
+    "InventoryObjectModel_Verge": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Verge",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EVergeInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EVergeInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "VirtualMachine",
+        "VmTag",
+        "DataCenter",
+        "SubCluster"
+      ]
+    },
+    "InventoryObjectModel_Xen": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Xen",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EXenInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EXenInventoryType": {
+      "type": "string",
+      "enum": [
+        "Pool",
+        "VirtualMachineTag",
+        "VirtualMachine"
+      ]
+    },
+    "InventoryObjectModel_KubeVirt": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "KubeVirt",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EKubeVirtInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EKubeVirtInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "Namespace",
+        "VirtualMachine",
+        "Label"
+      ]
+    },
+    "InventoryObjectModel_SangforHci": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "SangforHci",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ESangforHciInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "hostId": {
+          "type": "string"
+        },
+        "platformId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "ESangforHciInventoryType": {
+      "type": "string",
+      "enum": [
+        "Cluster",
+        "VmTag",
+        "VirtualMachine",
+        "SangforCloudPlatform",
+        "VmGroup"
+      ]
+    },
+    "InventoryObjectModel_VcfAutomation": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "VcfAutomation",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EVcfAutomationInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "urn": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommonMetaInfo"
+          }
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "urn"
+      ],
+      "additionalProperties": false
+    },
+    "EVcfAutomationInventoryType": {
+      "type": "string",
+      "enum": [
+        "Unknown",
+        "VcfAutomationServer",
+        "Organization",
+        "Project",
+        "Namespace",
+        "VirtualMachine",
+        "StoragePolicy",
+        "Datastore",
+        "Subnet",
+        "SubnetSet"
+      ]
+    },
+    "InventoryObjectModel_RedHatOpenStack": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "RedHatOpenStack",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ERedHatOpenStackInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "domainId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "regionId": {
+          "type": "string"
+        },
+        "availabilityZoneId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "ERedHatOpenStackInventoryType": {
+      "type": "string",
+      "enum": [
+        "OpenStack",
+        "Domain",
+        "Project",
+        "Tag",
+        "VirtualMachine",
+        "Region",
+        "AvailabilityZone",
+        "Network",
+        "StorageContainer",
+        "Flavor",
+        "SecurityGroup",
+        "Host"
+      ]
+    },
+    "InventoryObjectModel_Virtuozzo": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "const": "Virtuozzo",
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EVirtuozzoInventoryType"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "clusterId": {
+          "type": "string"
+        },
+        "domainId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "regionId": {
+          "type": "string"
+        },
+        "availabilityZoneId": {
+          "type": "string"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "parentReferences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "platform",
+        "name",
+        "type",
+        "objectId"
+      ],
+      "additionalProperties": false
+    },
+    "EVirtuozzoInventoryType": {
+      "type": "string",
+      "enum": [
+        "OpenStack",
+        "Domain",
+        "Project",
+        "Tag",
+        "VirtualMachine",
+        "Region",
+        "AvailabilityZone",
+        "Network",
+        "StorageContainer",
+        "Flavor",
+        "SecurityGroup",
+        "Host"
+      ]
+    },
+    "PluginPlatformBackupJobStorageModel": {
+      "type": "object",
+      "properties": {
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retentionPolicy": {
+          "$ref": "#/$defs/BackupJobRetentionPolicySettingsModel"
+        },
+        "gfsPolicy": {
+          "$ref": "#/$defs/GFSPolicySettingsModel"
+        },
+        "activeFull": {
+          "$ref": "#/$defs/ActiveFullSettingsModel"
+        },
+        "syntheticFull": {
+          "$ref": "#/$defs/SyntheticFullSettingsModel"
+        },
+        "healthCheck": {
+          "$ref": "#/$defs/BackupHealthCheckSettingsModels"
+        }
+      },
+      "required": [
+        "backupRepositoryId",
+        "retentionPolicy"
+      ],
+      "additionalProperties": false
+    },
+    "BackupJobRetentionPolicySettingsModel": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ERetentionPolicyType"
+        },
+        "quantity": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "quantity",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "ERetentionPolicyType": {
+      "type": "string",
+      "enum": [
+        "RestorePoints",
+        "Days"
+      ]
+    },
+    "GFSPolicySettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/GFSPolicySettingsWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/GFSPolicySettingsMonthlyModel"
+        },
+        "yearly": {
+          "$ref": "#/$defs/GFSPolicySettingsYearlyModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "GFSPolicySettingsWeeklyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfWeeks": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/$defs/EDayOfWeek"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EDayOfWeek": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "GFSPolicySettingsMonthlyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfMonths": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/$defs/ESennightOfMonth"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "ESennightOfMonth": {
+      "type": "string",
+      "enum": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Fifth",
+        "Last"
+      ]
+    },
+    "GFSPolicySettingsYearlyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "keepForNumberOfYears": {
+          "type": "integer"
+        },
+        "desiredTime": {
+          "$ref": "#/$defs/EMonth"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EMonth": {
+      "type": "string",
+      "enum": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    },
+    "ActiveFullSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleMonthlyModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "AdvancedStorageScheduleWeeklyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "days": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/EDayOfWeek"
+          }
+        },
+        "localTime": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "AdvancedStorageScheduleMonthlyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "dayOfWeek": {
+          "$ref": "#/$defs/EDayOfWeek"
+        },
+        "dayNumberInMonth": {
+          "$ref": "#/$defs/EDayNumberInMonth"
+        },
+        "dayOfMonth": {
+          "type": "integer"
+        },
+        "months": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/EMonth"
+          }
+        },
+        "localTime": {
+          "type": "string"
+        },
+        "isLastDayOfMonth": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EDayNumberInMonth": {
+      "type": "string",
+      "enum": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth",
+        "Last",
+        "OnDay"
+      ]
+    },
+    "SyntheticFullSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleMonthlyModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "BackupHealthCheckSettingsModels": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleMonthlyModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "PluginPlatformBackupJobAdvancedSettingsModel": {
+      "type": "object",
+      "properties": {
+        "compression": {
+          "$ref": "#/$defs/ECompressionLevel"
+        },
+        "blockSize": {
+          "$ref": "#/$defs/EStorageOptimization"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ECompressionLevel": {
+      "type": "string",
+      "enum": [
+        "Auto",
+        "None",
+        "DedupFriendly",
+        "Optimal",
+        "High",
+        "Extreme"
+      ]
+    },
+    "EStorageOptimization": {
+      "type": "string",
+      "enum": [
+        "256KB",
+        "512KB",
+        "1MB",
+        "4MB",
+        "8MB"
+      ]
+    },
+    "BackupScheduleModel": {
+      "type": "object",
+      "properties": {
+        "runAutomatically": {
+          "type": "boolean"
+        },
+        "daily": {
+          "$ref": "#/$defs/ScheduleDailyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/ScheduleMonthlyModel"
+        },
+        "periodically": {
+          "$ref": "#/$defs/SchedulePeriodicallyModel"
+        },
+        "continuously": {
+          "$ref": "#/$defs/ScheduleBackupWindowModel"
+        },
+        "afterThisJob": {
+          "$ref": "#/$defs/ScheduleAfterThisJobModel"
+        },
+        "retry": {
+          "$ref": "#/$defs/ScheduleRetryModel"
+        },
+        "backupWindow": {
+          "$ref": "#/$defs/ScheduleBackupWindowModel"
+        }
+      },
+      "required": [
+        "runAutomatically"
+      ],
+      "additionalProperties": false
+    },
+    "ScheduleDailyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "localTime": {
+          "type": "string"
+        },
+        "dailyKind": {
+          "$ref": "#/$defs/EDailyKinds"
+        },
+        "days": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/EDayOfWeek"
+          }
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EDailyKinds": {
+      "type": "string",
+      "enum": [
+        "Everyday",
+        "WeekDays",
+        "SelectedDays"
+      ]
+    },
+    "ScheduleMonthlyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "localTime": {
+          "type": "string"
+        },
+        "dayOfWeek": {
+          "$ref": "#/$defs/EDayOfWeek"
+        },
+        "dayNumberInMonth": {
+          "$ref": "#/$defs/EDayNumberInMonth"
+        },
+        "dayOfMonth": {
+          "type": "integer"
+        },
+        "months": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/EMonth"
+          }
+        },
+        "isLastDayOfMonth": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "SchedulePeriodicallyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "periodicallyKind": {
+          "$ref": "#/$defs/EPeriodicallyKinds"
+        },
+        "frequency": {
+          "type": "integer"
+        },
+        "backupWindow": {
+          "$ref": "#/$defs/BackupWindowSettingModel"
+        },
+        "startTimeWithinAnHour": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EPeriodicallyKinds": {
+      "type": "string",
+      "enum": [
+        "Hours",
+        "Minutes",
+        "Seconds",
+        "Days"
+      ]
+    },
+    "BackupWindowSettingModel": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BackupWindowDayHoursModel"
+          }
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "additionalProperties": false
+    },
+    "BackupWindowDayHoursModel": {
+      "type": "object",
+      "properties": {
+        "day": {
+          "$ref": "#/$defs/EDayOfWeek"
+        },
+        "hours": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "day",
+        "hours"
+      ],
+      "additionalProperties": false
+    },
+    "ScheduleBackupWindowModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "backupWindow": {
+          "$ref": "#/$defs/BackupWindowSettingModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "ScheduleAfterThisJobModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "jobName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "ScheduleRetryModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "retryCount": {
+          "type": "integer"
+        },
+        "awaitMinutes": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RedHatOpenStackBackupJob_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "RedHatOpenStackBackupJob",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "objects": {
+          "$ref": "#/$defs/PluginPlatformBackupJobObjectsModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/PluginPlatformBackupJobStorageModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/PluginPlatformBackupJobAdvancedSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "objects",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "VirtuozzoBackupJob_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "VirtuozzoBackupJob",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "objects": {
+          "$ref": "#/$defs/PluginPlatformBackupJobObjectsModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/PluginPlatformBackupJobStorageModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/PluginPlatformBackupJobAdvancedSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "objects",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "VirtuozzoBackupJob_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "VirtuozzoBackupJob",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "objects": {
+          "$ref": "#/$defs/PluginPlatformBackupJobObjectsModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/PluginPlatformBackupJobStorageModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/PluginPlatformBackupJobAdvancedSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "objects",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "UnixAgentBackup_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "UnixAgentBackup",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isHighPriority": {
+          "type": "boolean"
+        },
+        "agentType": {
+          "$ref": "#/$defs/EJobAgentType"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EUnixBackupJobMode"
+        },
+        "files": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupJobStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UnixAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "computers",
+        "backupMode"
+      ],
+      "additionalProperties": false
+    },
+    "EJobAgentType": {
+      "type": "string",
+      "enum": [
+        "Workstation",
+        "Server",
+        "FailoverCluster"
+      ]
+    },
+    "AgentObjectModel": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "$ref": "#/$defs/EInventoryPlatformType"
+        },
+        "size": {
+          "type": "string"
+        },
+        "resourceTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceTagValueModel"
+          }
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EAgentInventoryObjectType"
+        },
+        "path": {
+          "type": "string"
+        },
+        "parentObjectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protectionGroupId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protectionGroupType": {
+          "$ref": "#/$defs/EProtectionGroupType"
+        },
+        "cloudMachinesType": {
+          "$ref": "#/$defs/ECloudMachinesType"
+        },
+        "aclInfo": {
+          "$ref": "#/$defs/ObjectAclInfo"
+        }
+      },
+      "required": [
+        "platform",
+        "id",
+        "name",
+        "type",
+        "protectionGroupId"
+      ],
+      "additionalProperties": false
+    },
+    "EUnixBackupJobMode": {
+      "type": "string",
+      "enum": [
+        "EntireMachine",
+        "Custom"
+      ]
+    },
+    "LinuxAgentBackupJobFilesModel": {
+      "type": "object",
+      "properties": {
+        "customFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesAdvancedSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LinuxAgentBackupJobFilesAdvancedSettingsModel": {
+      "type": "object",
+      "properties": {
+        "inclusionMask": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FileBackupJobMaskModel"
+          }
+        },
+        "exclusionMask": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FileBackupJobMaskModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "FileBackupJobMaskModel": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/EFileBackupMaskType"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "EFileBackupMaskType": {
+      "type": "string",
+      "enum": [
+        "Legacy",
+        "Path",
+        "Wildcard"
+      ]
+    },
+    "AgentBackupJobStorageModel": {
+      "type": "object",
+      "properties": {
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceBackupId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retentionPolicy": {
+          "$ref": "#/$defs/BackupJobRetentionPolicySettingsModel"
+        },
+        "gfsPolicy": {
+          "$ref": "#/$defs/GFSPolicySettingsModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/AgentBackupJobAdvancedSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AgentBackupJobAdvancedSettingsModel": {
+      "type": "object",
+      "properties": {
+        "syntheticFulls": {
+          "$ref": "#/$defs/SyntheticFullSettingsModel"
+        },
+        "activeFulls": {
+          "$ref": "#/$defs/ActiveFullSettingsModel"
+        },
+        "backupHealth": {
+          "$ref": "#/$defs/BackupHealthCheckSettingsModels"
+        },
+        "fullBackupMaintenance": {
+          "$ref": "#/$defs/FullBackupMaintenanceModel"
+        },
+        "storageData": {
+          "$ref": "#/$defs/AgentBackupStorageSettingsModel"
+        },
+        "notifications": {
+          "$ref": "#/$defs/AgentNotificationSettingsModel"
+        },
+        "storageIntegration": {
+          "$ref": "#/$defs/AgentPrimaryStorageIntegrationSettingsModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/JobScriptsSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FullBackupMaintenanceModel": {
+      "type": "object",
+      "properties": {
+        "removeData": {
+          "$ref": "#/$defs/FullBackupMaintenanceRemoveDataModel"
+        },
+        "defragmentAndCompact": {
+          "$ref": "#/$defs/FullBackupMaintenanceDefragmentAndCompactModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FullBackupMaintenanceRemoveDataModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "afterDays": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "FullBackupMaintenanceDefragmentAndCompactModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleMonthlyModel"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupStorageSettingsModel": {
+      "type": "object",
+      "properties": {
+        "compressionLevel": {
+          "$ref": "#/$defs/ECompressionLevel"
+        },
+        "storageOptimization": {
+          "$ref": "#/$defs/EStorageOptimization"
+        },
+        "encryption": {
+          "$ref": "#/$defs/BackupStorageSettingsEncryptionModel"
+        },
+        "inlineDataDedupEnabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackupStorageSettingsEncryptionModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "encryptionType": {
+          "$ref": "#/$defs/EEncryptionType"
+        },
+        "encryptionPasswordId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "encryptionPasswordUniqueId": {
+          "type": "string"
+        },
+        "kmsServerId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EEncryptionType": {
+      "type": "string",
+      "enum": [
+        "ByUserPassword",
+        "ByKms"
+      ]
+    },
+    "AgentNotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "sendSNMPNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "$ref": "#/$defs/EmailNotificationWithDailySummarySettingsModel"
+        },
+        "backupMonitoring": {
+          "$ref": "#/$defs/AgentBackupMonitoringSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EmailNotificationWithDailySummarySettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "recipients": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "notificationType": {
+          "$ref": "#/$defs/EEmailNotificationType"
+        },
+        "customNotificationSettings": {
+          "$ref": "#/$defs/EmailCustomNotificationType"
+        },
+        "sendDailySummary": {
+          "type": "boolean"
+        },
+        "dailySummaryLocalTime": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EEmailNotificationType": {
+      "type": "string",
+      "enum": [
+        "UseGlobalNotificationSettings",
+        "UseCustomNotificationSettings"
+      ]
+    },
+    "EmailCustomNotificationType": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "notifyOnSuccess": {
+          "type": "boolean"
+        },
+        "notifyOnWarning": {
+          "type": "boolean"
+        },
+        "notifyOnError": {
+          "type": "boolean"
+        },
+        "SuppressNotificationUntilLastRetry": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AgentBackupMonitoringSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "quantity": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "AgentPrimaryStorageIntegrationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "offHostBackupProxies": {
+          "$ref": "#/$defs/BackupProxiesSettingsModel"
+        },
+        "failoverToOnHostAgent": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "BackupProxiesSettingsModel": {
+      "type": "object",
+      "properties": {
+        "autoSelectEnabled": {
+          "type": "boolean"
+        },
+        "proxyIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "autoSelectEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "JobScriptsSettingsModel": {
+      "type": "object",
+      "properties": {
+        "preCommand": {
+          "$ref": "#/$defs/ScriptCommand"
+        },
+        "postCommand": {
+          "$ref": "#/$defs/ScriptCommand"
+        },
+        "periodicityType": {
+          "$ref": "#/$defs/EScriptPeriodicityType"
+        },
+        "runScriptEvery": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "dayOfWeek": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/EDayOfWeek"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ScriptCommand": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EScriptPeriodicityType": {
+      "type": "string",
+      "enum": [
+        "Days",
+        "BackupSessions"
+      ]
+    },
+    "UnixAgentBackupJobGuestProcessingModel": {
+      "type": "object",
+      "properties": {
+        "appAwareProcessing": {
+          "$ref": "#/$defs/UnixAgentBackupApplicationAwareProcessingModel"
+        },
+        "guestFSIndexing": {
+          "$ref": "#/$defs/AgentGuestFileSystemIndexingModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UnixAgentBackupApplicationAwareProcessingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "appSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnixAgentBackupApplicationSettingsModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "UnixAgentBackupApplicationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "machineObject": {
+          "$ref": "#/$defs/AgentObjectModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/UnixAgentBackupScriptSettingsModel"
+        }
+      },
+      "required": [
+        "machineObject"
+      ],
+      "additionalProperties": false
+    },
+    "UnixAgentBackupScriptSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isExecutionEnabled": {
+          "type": "boolean"
+        },
+        "jobScripts": {
+          "$ref": "#/$defs/BackupJobScriptModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackupJobScriptModel": {
+      "type": "object",
+      "properties": {
+        "preJobScript": {
+          "type": "string"
+        },
+        "postJobScript": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AgentGuestFileSystemIndexingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "indexingSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentBackupIndexingSettingsModel"
+          }
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupIndexingSettingsModel": {
+      "type": "object",
+      "properties": {
+        "machineObject": {
+          "$ref": "#/$defs/AgentObjectModel"
+        },
+        "indexing": {
+          "$ref": "#/$defs/AgentBackupObjectIndexingModel"
+        }
+      },
+      "required": [
+        "machineObject"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupObjectIndexingModel": {
+      "type": "object",
+      "properties": {
+        "guestFSIndexingMode": {
+          "$ref": "#/$defs/EGuestFSIndexingMode"
+        },
+        "indexingList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "guestFSIndexingMode"
+      ],
+      "additionalProperties": false
+    },
+    "EGuestFSIndexingMode": {
+      "type": "string",
+      "enum": [
+        "Disable",
+        "IndexAll",
+        "IndexAllExcept",
+        "IndexOnly"
+      ]
+    },
+    "UnixAgentBackup_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "UnixAgentBackup",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isHighPriority": {
+          "type": "boolean"
+        },
+        "agentType": {
+          "$ref": "#/$defs/EJobAgentType"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EUnixBackupJobMode"
+        },
+        "files": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupJobStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UnixAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "computers",
+        "backupMode"
+      ],
+      "additionalProperties": false
+    },
+    "UnixAgentBackupServerPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "UnixAgentBackupServerPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EUnixBackupJobMode"
+        },
+        "files": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UnixAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupPolicyStorageModel": {
+      "type": "object",
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/AgentBackupPolicyDestinationModel"
+        },
+        "retentionPolicy": {
+          "$ref": "#/$defs/BackupJobRetentionPolicySettingsModel"
+        },
+        "gfsPolicy": {
+          "$ref": "#/$defs/GFSPolicySettingsModel"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/AgentBackupPolicyAdvancedSettingsModel"
+        }
+      },
+      "required": [
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupPolicyDestinationModel": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AgentBackupPolicyDestinationModel_LocalStorage"
+        },
+        {
+          "$ref": "#/$defs/AgentBackupPolicyDestinationModel_SharedFolder"
+        },
+        {
+          "$ref": "#/$defs/AgentBackupPolicyDestinationModel_BackupRepository"
+        },
+        {
+          "$ref": "#/$defs/AgentBackupPolicyDestinationModel_CloudConnectRepository"
+        }
+      ]
+    },
+    "AgentBackupPolicyDestinationModel_LocalStorage": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "backupCache": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageBackupCacheModel"
+        },
+        "destinationType": {
+          "const": "LocalStorage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "destinationType"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupPolicyStorageBackupCacheModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "$ref": "#/$defs/EBackupCacheSelectionType"
+        },
+        "localPath": {
+          "type": "string"
+        },
+        "sizeLimit": {
+          "type": "integer"
+        },
+        "sizeUnit": {
+          "$ref": "#/$defs/EBackupCacheSizeUnit"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EBackupCacheSelectionType": {
+      "type": "string",
+      "enum": [
+        "Automatic",
+        "Manual"
+      ]
+    },
+    "EBackupCacheSizeUnit": {
+      "type": "string",
+      "enum": [
+        "GB",
+        "TB"
+      ]
+    },
+    "EAgentBackupPolicyDestinationType": {
+      "type": "string",
+      "enum": [
+        "LocalStorage",
+        "SharedFolder",
+        "BackupRepository",
+        "CloudConnectRepository"
+      ]
+    },
+    "AgentBackupPolicyDestinationModel_SharedFolder": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "networkShareType": {
+          "$ref": "#/$defs/ESharedFolderType"
+        },
+        "useNetworkCredentials": {
+          "type": "boolean"
+        },
+        "networkCredentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "backupCache": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageBackupCacheModel"
+        },
+        "destinationType": {
+          "const": "SharedFolder",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "destinationType"
+      ],
+      "additionalProperties": false
+    },
+    "ESharedFolderType": {
+      "type": "string",
+      "enum": [
+        "SMB",
+        "NFS"
+      ]
+    },
+    "AgentBackupPolicyDestinationModel_BackupRepository": {
+      "type": "object",
+      "properties": {
+        "backupServerName": {
+          "type": "string"
+        },
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "backupCache": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageBackupCacheModel"
+        },
+        "destinationType": {
+          "const": "BackupRepository",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backupServerName",
+        "backupRepositoryId",
+        "destinationType"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupPolicyDestinationModel_CloudConnectRepository": {
+      "type": "object",
+      "properties": {
+        "backupRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "backupCache": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageBackupCacheModel"
+        },
+        "destinationType": {
+          "const": "CloudConnectRepository",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backupRepositoryId",
+        "destinationType"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBackupPolicyAdvancedSettingsModel": {
+      "type": "object",
+      "properties": {
+        "syntheticFulls": {
+          "$ref": "#/$defs/SyntheticFullSettingsModel"
+        },
+        "activeFulls": {
+          "$ref": "#/$defs/ActiveFullSettingsModel"
+        },
+        "backupHealth": {
+          "$ref": "#/$defs/BackupPolicyHealthCheckSettingsModels"
+        },
+        "fullBackupMaintenance": {
+          "$ref": "#/$defs/FullBackupMaintenanceModel"
+        },
+        "storageData": {
+          "$ref": "#/$defs/AgentBackupStorageSettingsModel"
+        },
+        "notifications": {
+          "$ref": "#/$defs/AgentNotificationSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackupPolicyHealthCheckSettingsModels": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "weekly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleWeeklyModel"
+        },
+        "monthly": {
+          "$ref": "#/$defs/AdvancedStorageScheduleMonthlyModel"
+        },
+        "isFullHealthCheckEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "UnixAgentBackupServerPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "UnixAgentBackupServerPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EUnixBackupJobMode"
+        },
+        "files": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UnixAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "MacAgentBackupServerPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "MacAgentBackupServerPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EMacBackupJobMode"
+        },
+        "includeUsbDrives": {
+          "type": "boolean"
+        },
+        "files": {
+          "$ref": "#/$defs/MacAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/MacAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "EMacBackupJobMode": {
+      "type": "string",
+      "enum": [
+        "UserData",
+        "Custom"
+      ]
+    },
+    "MacAgentBackupJobFilesModel": {
+      "type": "object",
+      "properties": {
+        "personalFiles": {
+          "$ref": "#/$defs/MacAgentBackupJobPersonalFilesSettingsModel"
+        },
+        "customFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/LinuxAgentBackupJobFilesAdvancedSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupJobPersonalFilesSettingsModel": {
+      "type": "object",
+      "properties": {
+        "backupPersonalFiles": {
+          "type": "boolean"
+        },
+        "includes": {
+          "$ref": "#/$defs/MacAgentBackupJobPersonalFilesInclusionModel"
+        },
+        "excludes": {
+          "$ref": "#/$defs/MacAgentBackupJobPersonalFilesExclusionModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupJobPersonalFilesInclusionModel": {
+      "type": "object",
+      "properties": {
+        "desktop": {
+          "type": "boolean"
+        },
+        "documents": {
+          "type": "boolean"
+        },
+        "downloads": {
+          "type": "boolean"
+        },
+        "movies": {
+          "type": "boolean"
+        },
+        "music": {
+          "type": "boolean"
+        },
+        "pictures": {
+          "type": "boolean"
+        },
+        "sharedPublic": {
+          "type": "boolean"
+        },
+        "applications": {
+          "type": "boolean"
+        },
+        "library": {
+          "type": "boolean"
+        },
+        "other": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupJobPersonalFilesExclusionModel": {
+      "type": "object",
+      "properties": {
+        "networkStorages": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupJobGuestProcessingModel": {
+      "type": "object",
+      "properties": {
+        "appAwareProcessing": {
+          "$ref": "#/$defs/MacAgentBackupApplicationAwareProcessingModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupApplicationAwareProcessingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "appSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MacAgentBackupApplicationSettingsModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupApplicationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "machineObject": {
+          "$ref": "#/$defs/AgentObjectModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/MacAgentBackupScriptSettingsModel"
+        }
+      },
+      "required": [
+        "machineObject"
+      ],
+      "additionalProperties": false
+    },
+    "MacAgentBackupScriptSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isExecutionEnabled": {
+          "type": "boolean"
+        },
+        "jobScripts": {
+          "$ref": "#/$defs/BackupJobScriptModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "MacAgentBackupServerPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "MacAgentBackupServerPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EMacBackupJobMode"
+        },
+        "includeUsbDrives": {
+          "type": "boolean"
+        },
+        "files": {
+          "$ref": "#/$defs/MacAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/MacAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "MacAgentBackupWorkstationPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "MacAgentBackupWorkstationPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EMacBackupJobMode"
+        },
+        "includeUsbDrives": {
+          "type": "boolean"
+        },
+        "files": {
+          "$ref": "#/$defs/MacAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/MacAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModelDaily"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "BackupScheduleModelDaily": {
+      "type": "object",
+      "properties": {
+        "runAutomatically": {
+          "type": "boolean"
+        },
+        "daily": {
+          "$ref": "#/$defs/ScheduleDailyModel"
+        }
+      },
+      "required": [
+        "runAutomatically"
+      ],
+      "additionalProperties": false
+    },
+    "MacAgentBackupWorkstationPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "MacAgentBackupWorkstationPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "computers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "backupMode": {
+          "$ref": "#/$defs/EMacBackupJobMode"
+        },
+        "includeUsbDrives": {
+          "type": "boolean"
+        },
+        "files": {
+          "$ref": "#/$defs/MacAgentBackupJobFilesModel"
+        },
+        "storage": {
+          "$ref": "#/$defs/AgentBackupPolicyStorageModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/MacAgentBackupJobGuestProcessingModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupScheduleModelDaily"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "backupMode",
+        "storage"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "VSphereCdpPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "virtualMachines": {
+          "$ref": "#/$defs/VSphereCdpPolicyVirtualMachinesSpec"
+        },
+        "destination": {
+          "$ref": "#/$defs/VSphereReplicaJobDestinationModel"
+        },
+        "network": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereReplicaJobNetworkMappingModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/VSphereCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "virtualMachines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpPolicyVirtualMachinesSpec": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        },
+        "excludes": {
+          "$ref": "#/$defs/VSphereReplicaJobExclusionsSpec"
+        }
+      },
+      "required": [
+        "includes"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereReplicaJobExclusionsSpec": {
+      "type": "object",
+      "properties": {
+        "vms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VmwareObjectDiskModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "VmwareObjectDiskModel": {
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "disksToProcess": {
+          "$ref": "#/$defs/EVmwareDisksTypeToProcess"
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "removeFromVMConfiguration": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "disksToProcess",
+        "vmObject"
+      ],
+      "additionalProperties": false
+    },
+    "EVmwareDisksTypeToProcess": {
+      "type": "string",
+      "enum": [
+        "AllDisks",
+        "SystemOnly",
+        "SelectedDisks"
+      ]
+    },
+    "VSphereReplicaJobDestinationModel": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "resourcePool": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "folder": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "datastore": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "mappingRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereReplicaJobDestinationMappingModel"
+          }
+        }
+      },
+      "required": [
+        "host"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereReplicaJobDestinationMappingModel": {
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "configurationFilesDatastoreMapping": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "diskFilesMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereReplicaJobDestinationFilesMappingModel"
+          }
+        }
+      },
+      "required": [
+        "vmObject",
+        "configurationFilesDatastoreMapping"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereReplicaJobDestinationFilesMappingModel": {
+      "type": "object",
+      "properties": {
+        "diskName": {
+          "type": "string"
+        },
+        "datastore": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "diskType": {
+          "$ref": "#/$defs/EDiskCreationMode"
+        }
+      },
+      "required": [
+        "diskName",
+        "datastore",
+        "diskType"
+      ],
+      "additionalProperties": false
+    },
+    "EDiskCreationMode": {
+      "type": "string",
+      "enum": [
+        "Source",
+        "Thick",
+        "Thin",
+        "ThickEagerZeroed"
+      ]
+    },
+    "VSphereReplicaJobNetworkMappingModel": {
+      "type": "object",
+      "properties": {
+        "sourceNetwork": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "targetNetwork": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        }
+      },
+      "required": [
+        "sourceNetwork",
+        "targetNetwork"
+      ],
+      "additionalProperties": false
+    },
+    "ReplicaJobReIpRulesModel": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReplicaJobReIpRuleModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReplicaJobReIpRuleModel": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "ruleType": {
+          "$ref": "#/$defs/ENetworkRuleType"
+        },
+        "ipv4": {
+          "$ref": "#/$defs/IPv4NetworkRuleModel"
+        },
+        "ipv6": {
+          "$ref": "#/$defs/IPv6NetworkRuleModel"
+        }
+      },
+      "required": [
+        "ruleType"
+      ],
+      "additionalProperties": false
+    },
+    "ENetworkRuleType": {
+      "type": "string",
+      "enum": [
+        "IPv4",
+        "IPv6"
+      ]
+    },
+    "IPv4NetworkRuleModel": {
+      "type": "object",
+      "properties": {
+        "sourceIPAddress": {
+          "type": "string"
+        },
+        "sourceSubnetMask": {
+          "type": "string"
+        },
+        "targetIPAddress": {
+          "type": "string"
+        },
+        "targetSubnetMask": {
+          "type": "string"
+        },
+        "targetDefaultGateway": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferredDNSServer": {
+          "type": "string"
+        },
+        "alternateDNSServer": {
+          "type": "string"
+        },
+        "preferredWINSServer": {
+          "type": "string"
+        },
+        "alternateWINSServer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceIPAddress",
+        "sourceSubnetMask",
+        "targetIPAddress",
+        "targetSubnetMask"
+      ],
+      "additionalProperties": false
+    },
+    "IPv6NetworkRuleModel": {
+      "type": "object",
+      "properties": {
+        "sourceIPv6Address": {
+          "type": "string"
+        },
+        "sourceSubnetPrefixLength": {
+          "type": "integer"
+        },
+        "targetIPv6Address": {
+          "type": "string"
+        },
+        "targetSubnetPrefixLength": {
+          "type": "integer"
+        },
+        "targetDefaultGateway": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "preferredDNSServer": {
+          "type": "string"
+        },
+        "alternateDNSServer": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceIPv6Address",
+        "sourceSubnetPrefixLength",
+        "targetIPv6Address",
+        "targetSubnetPrefixLength"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereReplicaSeedingModel": {
+      "type": "object",
+      "properties": {
+        "initialSeeding": {
+          "$ref": "#/$defs/InitialSeedingModel"
+        },
+        "replicaMapping": {
+          "$ref": "#/$defs/ReplicaMappingModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InitialSeedingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "repositoryId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "ReplicaMappingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "mappingRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReplicaMappingRuleModel"
+          }
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "ReplicaMappingRuleModel": {
+      "type": "object",
+      "properties": {
+        "originalVM": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "replicaVM": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        }
+      },
+      "required": [
+        "originalVM",
+        "replicaVM"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpPolicySettingsModel": {
+      "type": "object",
+      "properties": {
+        "sourceProxies": {
+          "$ref": "#/$defs/BackupProxiesSettingsModel"
+        },
+        "targetProxies": {
+          "$ref": "#/$defs/BackupProxiesSettingsModel"
+        },
+        "replicaSuffix": {
+          "type": "string"
+        },
+        "advancedSettings": {
+          "$ref": "#/$defs/CdpPolicyAdvancedSettingsModel"
+        }
+      },
+      "required": [
+        "sourceProxies",
+        "targetProxies"
+      ],
+      "additionalProperties": false
+    },
+    "CdpPolicyAdvancedSettingsModel": {
+      "type": "object",
+      "properties": {
+        "notifications": {
+          "$ref": "#/$defs/CdpPolicyNotificationSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CdpPolicyNotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "sendSNMPNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "$ref": "#/$defs/EmailNotificationSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EmailNotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "recipients": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "notificationType": {
+          "$ref": "#/$defs/EEmailNotificationType"
+        },
+        "customNotificationSettings": {
+          "$ref": "#/$defs/EmailCustomNotificationType"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "CdpPolicyScheduleModel": {
+      "type": "object",
+      "properties": {
+        "rpoOptions": {
+          "$ref": "#/$defs/CdpPolicyRpoOptionsModel"
+        },
+        "shortTermRetention": {
+          "$ref": "#/$defs/CdpPolicyShortTermRetentionModel"
+        },
+        "longTermRetention": {
+          "$ref": "#/$defs/CdpPolicyLongTermRetentionModel"
+        }
+      },
+      "required": [
+        "rpoOptions",
+        "shortTermRetention",
+        "longTermRetention"
+      ],
+      "additionalProperties": false
+    },
+    "CdpPolicyRpoOptionsModel": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/ECdpRpoPeriodType"
+        },
+        "schedule": {
+          "$ref": "#/$defs/BackupWindowSettingModel"
+        },
+        "hourlyOffset": {
+          "type": "integer"
+        },
+        "warningReport": {
+          "$ref": "#/$defs/CdpPolicyRpoExceedReportModel"
+        },
+        "failedReport": {
+          "$ref": "#/$defs/CdpPolicyRpoExceedReportModel"
+        }
+      },
+      "required": [
+        "period",
+        "kind",
+        "schedule"
+      ],
+      "additionalProperties": false
+    },
+    "ECdpRpoPeriodType": {
+      "type": "string",
+      "enum": [
+        "Seconds",
+        "Minutes"
+      ]
+    },
+    "CdpPolicyRpoExceedReportModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "period": {
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/ECdpRpoPeriodType"
+        }
+      },
+      "required": [
+        "isEnabled",
+        "period",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "CdpPolicyShortTermRetentionModel": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/ECdpRetentionPeriodType"
+        }
+      },
+      "required": [
+        "period",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "ECdpRetentionPeriodType": {
+      "type": "string",
+      "enum": [
+        "Minutes",
+        "Hours"
+      ]
+    },
+    "CdpPolicyLongTermRetentionModel": {
+      "type": "object",
+      "properties": {
+        "periodHours": {
+          "type": "integer"
+        },
+        "keepIntervalDays": {
+          "type": "integer"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpScheduleWindowModel"
+        },
+        "hourlyOffset": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "periodHours",
+        "keepIntervalDays",
+        "schedule"
+      ],
+      "additionalProperties": false
+    },
+    "CdpScheduleWindowModel": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CdpScheduleWindowDayHoursModel"
+          }
+        }
+      },
+      "required": [
+        "days"
+      ],
+      "additionalProperties": false
+    },
+    "CdpScheduleWindowDayHoursModel": {
+      "type": "object",
+      "properties": {
+        "day": {
+          "$ref": "#/$defs/EDayOfWeek"
+        },
+        "hours": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "day",
+        "hours"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpGuestProcessingModel": {
+      "type": "object",
+      "properties": {
+        "appAwareProcessing": {
+          "$ref": "#/$defs/VSphereCdpApplicationAwareProcessingModel"
+        },
+        "guestInteractionProxies": {
+          "$ref": "#/$defs/GuestInteractionProxiesSettingsModel"
+        },
+        "guestCredentials": {
+          "$ref": "#/$defs/GuestOsCredentialsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "VSphereCdpApplicationAwareProcessingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "appSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CdpApplicationSettingsModel"
+          }
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "CdpApplicationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "general": {
+          "$ref": "#/$defs/CdpGeneralSettingsModel"
+        },
+        "sql": {
+          "$ref": "#/$defs/CdpSQLSettingsModel"
+        },
+        "oracle": {
+          "$ref": "#/$defs/CdpOracleSettingsModel"
+        },
+        "postgreSQL": {
+          "$ref": "#/$defs/CdpPostgreSQLSettingsModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/BackupScriptSettingsModel"
+        }
+      },
+      "required": [
+        "vmObject",
+        "general"
+      ],
+      "additionalProperties": false
+    },
+    "CdpGeneralSettingsModel": {
+      "type": "object",
+      "properties": {
+        "applicationSettings": {
+          "$ref": "#/$defs/EApplicationSettingsVSS"
+        },
+        "transactionLogs": {
+          "$ref": "#/$defs/ETransactionLogsSettings"
+        },
+        "usePersistentGuestAgent": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "applicationSettings",
+        "transactionLogs"
+      ],
+      "additionalProperties": false
+    },
+    "EApplicationSettingsVSS": {
+      "type": "string",
+      "enum": [
+        "RequireSuccess",
+        "IgnoreFailures",
+        "Disabled"
+      ]
+    },
+    "ETransactionLogsSettings": {
+      "type": "string",
+      "enum": [
+        "Process",
+        "CopyOnly"
+      ]
+    },
+    "CdpSQLSettingsModel": {
+      "type": "object",
+      "properties": {
+        "useGuestCredentials": {
+          "type": "boolean"
+        },
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "useSqlAuthentication": {
+          "type": "boolean"
+        },
+        "logsProcessing": {
+          "$ref": "#/$defs/ECdpSQLLogsProcessing"
+        }
+      },
+      "required": [
+        "useGuestCredentials"
+      ],
+      "additionalProperties": false
+    },
+    "ECdpSQLLogsProcessing": {
+      "type": "string",
+      "enum": [
+        "Truncate",
+        "NeverTruncate"
+      ]
+    },
+    "CdpOracleSettingsModel": {
+      "type": "object",
+      "properties": {
+        "useGuestCredentials": {
+          "type": "boolean"
+        },
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "archiveLogs": {
+          "$ref": "#/$defs/EBackupOracleLogsSettings"
+        },
+        "deleteHoursCount": {
+          "type": "integer"
+        },
+        "deleteGBsCount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "archiveLogs",
+        "useGuestCredentials"
+      ],
+      "additionalProperties": false
+    },
+    "EBackupOracleLogsSettings": {
+      "type": "string",
+      "enum": [
+        "Preserve",
+        "DeleteExpiredHours",
+        "DeleteExpiredGBs"
+      ]
+    },
+    "CdpPostgreSQLSettingsModel": {
+      "type": "object",
+      "properties": {
+        "useGuestCredentials": {
+          "type": "boolean"
+        },
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "userConnectionType": {
+          "$ref": "#/$defs/EPostgreSQLUserConnectionType"
+        }
+      },
+      "required": [
+        "useGuestCredentials"
+      ],
+      "additionalProperties": false
+    },
+    "EPostgreSQLUserConnectionType": {
+      "type": "string",
+      "enum": [
+        "Credentials",
+        "PasswordFile",
+        "Peer"
+      ]
+    },
+    "BackupScriptSettingsModel": {
+      "type": "object",
+      "properties": {
+        "scriptProcessingMode": {
+          "$ref": "#/$defs/EBackupScriptProcessingMode"
+        },
+        "windowsScripts": {
+          "$ref": "#/$defs/BackupWindowsScriptModel"
+        },
+        "linuxScripts": {
+          "$ref": "#/$defs/BackupLinuxScriptModel"
+        }
+      },
+      "required": [
+        "scriptProcessingMode"
+      ],
+      "additionalProperties": false
+    },
+    "EBackupScriptProcessingMode": {
+      "type": "string",
+      "enum": [
+        "DisableExec",
+        "IgnoreExecFailures",
+        "RequireSuccess"
+      ]
+    },
+    "BackupWindowsScriptModel": {
+      "type": "object",
+      "properties": {
+        "preFreezeScript": {
+          "type": "string"
+        },
+        "postThawScript": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BackupLinuxScriptModel": {
+      "type": "object",
+      "properties": {
+        "preFreezeScript": {
+          "type": "string"
+        },
+        "postThawScript": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GuestInteractionProxiesSettingsModel": {
+      "type": "object",
+      "properties": {
+        "autoSelectEnabled": {
+          "type": "boolean"
+        },
+        "proxyIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "autoSelectEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "GuestOsCredentialsModel": {
+      "type": "object",
+      "properties": {
+        "useAgentManagementCredentials": {
+          "type": "boolean"
+        },
+        "credentials": {
+          "$ref": "#/$defs/SpecifiedGuestOsCredentialsModel"
+        },
+        "credentialsPerMachine": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/GuestOsCredentialsPerMachineModel"
+          }
+        }
+      },
+      "required": [
+        "useAgentManagementCredentials"
+      ],
+      "additionalProperties": false
+    },
+    "SpecifiedGuestOsCredentialsModel": {
+      "type": "object",
+      "properties": {
+        "credentialsId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "credentialsType": {
+          "$ref": "#/$defs/ECredentialsType"
+        }
+      },
+      "required": [
+        "credentialsId",
+        "credentialsType"
+      ],
+      "additionalProperties": false
+    },
+    "ECredentialsType": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Linux",
+        "ManagedService",
+        "KubeVirt"
+      ]
+    },
+    "GuestOsCredentialsPerMachineModel": {
+      "type": "object",
+      "properties": {
+        "credentials": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/SpecifiedGuestOsCredentialsModel"
+          }
+        },
+        "vmObject": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "default": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "vmObject"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "VSphereCdpPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "virtualMachines": {
+          "$ref": "#/$defs/VSphereCdpPolicyVirtualMachinesModel"
+        },
+        "destination": {
+          "$ref": "#/$defs/VSphereReplicaJobDestinationModel"
+        },
+        "network": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereReplicaJobNetworkMappingModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/VSphereCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "virtualMachines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereCdpPolicyVirtualMachinesModel": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        },
+        "excludes": {
+          "$ref": "#/$defs/VSphereReplicaJobExclusionsModel"
+        }
+      },
+      "required": [
+        "includes"
+      ],
+      "additionalProperties": false
+    },
+    "VSphereReplicaJobExclusionsModel": {
+      "type": "object",
+      "properties": {
+        "vms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryObjectModel"
+          }
+        },
+        "disks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VmwareObjectDiskModel"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "WindowsUniversalCdpPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "WindowsUniversalCdpPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "machines": {
+          "$ref": "#/$defs/UniversalCdpPolicyMachinesModel"
+        },
+        "destination": {
+          "$ref": "#/$defs/UniversalCdpPolicyDestinationModel"
+        },
+        "networkMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UniversalCdpNetworkMappingRuleModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UniversalCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "machines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "UniversalCdpPolicyMachinesModel": {
+      "type": "object",
+      "properties": {
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        },
+        "excludes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentObjectModel"
+          }
+        }
+      },
+      "required": [
+        "includes"
+      ],
+      "additionalProperties": false
+    },
+    "UniversalCdpPolicyDestinationModel": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/UniversalCdpPolicyDestinationModel_VSphere"
+        }
+      ]
+    },
+    "UniversalCdpPolicyDestinationModel_VSphere": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "VSphere",
+          "type": "string"
+        },
+        "host": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "resourcePool": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "folder": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "datastore": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "mappingRules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereUniversalCdpDestinationMappingRuleModel"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "host"
+      ],
+      "additionalProperties": false
+    },
+    "EUniversalCdpDestinationType": {
+      "type": "string",
+      "enum": [
+        "VSphere"
+      ]
+    },
+    "VSphereUniversalCdpDestinationMappingRuleModel": {
+      "type": "object",
+      "properties": {
+        "vmObject": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "resourcePool": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "folder": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "configurationFilesDatastoreMapping": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        },
+        "diskFilesMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VSphereReplicaJobDestinationFilesMappingModel"
+          }
+        }
+      },
+      "required": [
+        "vmObject"
+      ],
+      "additionalProperties": false
+    },
+    "UniversalCdpNetworkMappingRuleModel": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/UniversalCdpNetworkMappingSourceModel"
+        },
+        "targetNetwork": {
+          "$ref": "#/$defs/InventoryObjectModel"
+        }
+      },
+      "required": [
+        "targetNetwork"
+      ],
+      "additionalProperties": false
+    },
+    "UniversalCdpNetworkMappingSourceModel": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/UniversalCdpNetworkMappingSourceModel_DiscoveredComputer"
+        },
+        {
+          "$ref": "#/$defs/UniversalCdpNetworkMappingSourceModel_PhysicalAdapter"
+        }
+      ]
+    },
+    "UniversalCdpNetworkMappingSourceModel_DiscoveredComputer": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "DiscoveredComputer",
+          "type": "string"
+        },
+        "machine": {
+          "$ref": "#/$defs/AgentObjectModel"
+        }
+      },
+      "required": [
+        "type",
+        "machine"
+      ],
+      "additionalProperties": false
+    },
+    "EUniversalCdpNetworkMappingSourceType": {
+      "type": "string",
+      "enum": [
+        "DiscoveredComputer",
+        "PhysicalAdapter"
+      ]
+    },
+    "UniversalCdpNetworkMappingSourceModel_PhysicalAdapter": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "PhysicalAdapter",
+          "type": "string"
+        },
+        "biosUuid": {
+          "type": "string"
+        },
+        "macAddress": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "macAddress"
+      ],
+      "additionalProperties": false
+    },
+    "UniversalCdpGuestProcessingModel": {
+      "type": "object",
+      "properties": {
+        "appAwareProcessing": {
+          "$ref": "#/$defs/UniversalCdpApplicationAwareProcessingModel"
+        },
+        "guestInteractionProxies": {
+          "$ref": "#/$defs/GuestInteractionProxiesSettingsModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UniversalCdpApplicationAwareProcessingModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "appSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CdpApplicationSettingsModel"
+          }
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "WindowsUniversalCdpPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "WindowsUniversalCdpPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "machines": {
+          "$ref": "#/$defs/UniversalCdpPolicyMachinesModel"
+        },
+        "destination": {
+          "$ref": "#/$defs/UniversalCdpPolicyDestinationModel"
+        },
+        "networkMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UniversalCdpNetworkMappingRuleModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UniversalCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "machines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "LinuxUniversalCdpPolicy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "LinuxUniversalCdpPolicy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "machines": {
+          "$ref": "#/$defs/UniversalCdpPolicyMachinesModel"
+        },
+        "destination": {
+          "$ref": "#/$defs/UniversalCdpPolicyDestinationModel"
+        },
+        "networkMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UniversalCdpNetworkMappingRuleModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UniversalCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "description",
+        "machines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "LinuxUniversalCdpPolicy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "LinuxUniversalCdpPolicy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "machines": {
+          "$ref": "#/$defs/UniversalCdpPolicyMachinesModel"
+        },
+        "destination": {
+          "$ref": "#/$defs/UniversalCdpPolicyDestinationModel"
+        },
+        "networkMapping": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UniversalCdpNetworkMappingRuleModel"
+          }
+        },
+        "reIp": {
+          "$ref": "#/$defs/ReplicaJobReIpRulesModel"
+        },
+        "seeding": {
+          "$ref": "#/$defs/VSphereReplicaSeedingModel"
+        },
+        "policySettings": {
+          "$ref": "#/$defs/VSphereCdpPolicySettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/CdpPolicyScheduleModel"
+        },
+        "guestProcessing": {
+          "$ref": "#/$defs/UniversalCdpGuestProcessingModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "description",
+        "machines",
+        "destination"
+      ],
+      "additionalProperties": false
+    },
+    "StorageCopy_create": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 125
+        },
+        "type": {
+          "const": "StorageCopy",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "storageMappings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/StorageCopyMappingModel"
+          }
+        },
+        "maintenance": {
+          "$ref": "#/$defs/StorageCopyMaintenanceSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/StorageCopyJobScheduleModel"
+        },
+        "notifications": {
+          "$ref": "#/$defs/StorageCopyJobNotificationSettingsModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/JobScriptsSettingsModel"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "storageMappings"
+      ],
+      "additionalProperties": false
+    },
+    "StorageCopyMappingModel": {
+      "type": "object",
+      "properties": {
+        "sourceRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetRepositoryId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "sourceRepositoryId",
+        "targetRepositoryId"
+      ],
+      "additionalProperties": false
+    },
+    "StorageCopyMaintenanceSettingsModel": {
+      "type": "object",
+      "properties": {
+        "healthCheckEnabled": {
+          "type": "boolean"
+        },
+        "keepSecondaryCopiesEnabled": {
+          "type": "boolean"
+        },
+        "keepSecondaryCopiesForDays": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "StorageCopyJobScheduleModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "backupWindow": {
+          "$ref": "#/$defs/BackupWindowSettingModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StorageCopyJobNotificationSettingsModel": {
+      "type": "object",
+      "properties": {
+        "sendSNMPNotifications": {
+          "type": "boolean"
+        },
+        "emailNotifications": {
+          "$ref": "#/$defs/EmailNotificationSettingsBackupCopyModel"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EmailNotificationSettingsBackupCopyModel": {
+      "type": "object",
+      "properties": {
+        "isEnabled": {
+          "type": "boolean"
+        },
+        "recipients": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "dailyReportSummarylocalTime": {
+          "type": "string"
+        },
+        "notificationType": {
+          "$ref": "#/$defs/EEmailNotificationType"
+        },
+        "customNotificationSettings": {
+          "$ref": "#/$defs/EmailCustomNotificationType"
+        },
+        "notificationsSchedule": {
+          "$ref": "#/$defs/EEmailNotificationSchedule"
+        }
+      },
+      "required": [
+        "isEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "EEmailNotificationSchedule": {
+      "type": "string",
+      "enum": [
+        "Immediate",
+        "Daily"
+      ]
+    },
+    "StorageCopy_edit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "const": "StorageCopy",
+          "type": "string"
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "storageMappings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/StorageCopyMappingModel"
+          }
+        },
+        "maintenance": {
+          "$ref": "#/$defs/StorageCopyMaintenanceSettingsModel"
+        },
+        "schedule": {
+          "$ref": "#/$defs/StorageCopyJobScheduleModel"
+        },
+        "notifications": {
+          "$ref": "#/$defs/StorageCopyJobNotificationSettingsModel"
+        },
+        "scripts": {
+          "$ref": "#/$defs/JobScriptsSettingsModel"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "type",
+        "storageMappings"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

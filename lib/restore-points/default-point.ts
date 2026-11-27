@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {pointTime,type RestorePoint} from './model'
 import {eligibleMethods,pointOperations,type PickedVm,type PickerScope,type RecoveryKind,type RecoveryObject,type RecoverySeed} from './recovery-picker'
 

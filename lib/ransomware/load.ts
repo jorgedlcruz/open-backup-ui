@@ -1,15 +1,15 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import type { VbrReader } from '../server/vbr-read'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
-import { investigationSessionSchema, taskSchema, revisionForBuild, type Evidence, type Task } from '../investigation/model'
+import { investigationSessionSchema, taskSchema, type LegacyReadRevision, revisionForBuild, type Evidence, type Task } from '../investigation/model'
 import { knownSize } from '../restore-points/model'
 import { eventSchema, settingsSchema, analyzeTasks, type Snapshot, type Indicator, type TaskCoverage } from './model'
 
 export async function loadRansomware(raw: VbrReader, sourceName: string, now = new Date()): Promise<Snapshot> {
   const warnings: string[] = []
-  let revision: '1.3-rev1' | '1.3-rev2' = '1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try { revision = revisionForBuild(z.object({ buildVersion: z.string() }).parse(await raw('/api/v1/serverInfo')).buildVersion) }
   catch (error) {
     if (error instanceof TopologyRequestError && error.status === 401) throw error

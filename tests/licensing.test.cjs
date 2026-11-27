@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs=require('node:fs'),ts=require('typescript'),vm=require('node:vm')
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText,filename)
 const {test}=require('node:test'),assert=require('node:assert/strict')
@@ -51,12 +52,21 @@ test('reports validate date ranges and only generate the retained HTML/PDF forma
 // Exercise source selection, HTTP semantics and token refresh with fake sources. No live license changes.
 function harness(options={}) {
   class Response {constructor(body,init={}){this.body=body;this.status=init.status || 200;this.headers=init.headers}static json(body,init){return new Response(body,init)}}
-  const calls=[],sources=[{id:'vbr-selected',platform:'vbr',protocol:'https',host:'vbr-selected.test',port:9419},{id:'vbm-selected',platform:'vb365',protocol:'https',host:'vbm-selected.test',port:4443}];let refreshes=0
-  const exports={},dependencies={'next/server':{NextResponse:Response},'next/headers':{cookies:async()=>({get:key=>options.noSelection ? undefined:{value:options.sourceId || (key==='veeam_source_id' ? 'vbr-selected':'vbm-selected')}})},'./config-store':{configStore:{getById:id=>sources.find(source=>source.id===id),getAll:()=>sources}},'./token-manager':{tokenManager:{getToken:async id=>`token:${id}`,refreshToken:async id=>{refreshes++;return `refreshed:${id}`}}},'./vb365-helper':{getVB365Config:async()=>null,refreshVB365Token:async()=>null},'../utils/cookie-manager':{getChunkedCookie:()=>null},'../vbm-dashboard/load':{VbmRequestError},'../licensing/load':load,'../licensing/actions':actions}
+  const calls=[],sources=options.sources || [{id:'vbr-selected',platform:'vbr',protocol:'https',host:'vbr-selected.test',port:9419},{id:'vbm-selected',platform:'vb365',protocol:'https',host:'vbm-selected.test',port:4443}];let refreshes=0
+  const values={...(!options.noSelection && {veeam_source_id:options.sourceId || 'vbr-selected',veeam_vb365_source_id:options.sourceId || 'vbm-selected'}),...options.cookies}
+  const jar={get:key=>values[key]===undefined ? undefined : {value:values[key]}}
+  const exports={},dependencies={
+    '../vbr/compatible-fetch': {fetchVbrCompatible: (...args) => context.fetch(...args)},
+    'next/server':{NextResponse:Response},'next/headers':{cookies:async()=>jar},
+    './config-store':{configStore:{getById:id=>sources.find(source=>source.id===id),getAll:()=>sources.filter(source=>!source.id.startsWith('env-'))}},
+    './token-manager':{tokenManager:{getToken:async id=>options.noManagedToken ? null : `token:${id}`,refreshToken:async id=>{refreshes++;return `refreshed:${id}`}}},
+    '../utils/cookie-manager':require('../lib/utils/cookie-manager.ts'),'../data-sources/model':require('../lib/data-sources/model.ts'),
+    './request-origin':require('../lib/server/request-origin.ts'),'../vbm-dashboard/load':{VbmRequestError},'../licensing/load':load,'../licensing/actions':actions,
+  }
   const context={exports,require:key=>{if(!dependencies[key])throw Error(key);return dependencies[key]},process:{env:{VEEAM_API_URL:'https://wrong-vbr.test',VBM_API_URL:'https://wrong-vbm.test'}},URL,AbortController,setTimeout,clearTimeout,TextDecoder,
     fetch:async(url,init)=>{calls.push({url:String(url),...init});return options.fetch ? options.fetch(url,init):{ok:true,status:204}}}
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(require.resolve('../lib/server/licensing.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,context)
-  const request={headers:new Headers({origin:options.origin || 'http://localhost:3000',authorization:'Bearer client-token'}),nextUrl:new URL('http://localhost:3000/api/licensing'),signal:new AbortController().signal}
+  const request={headers:new Headers({origin:options.origin || 'http://localhost:3000',...(!options.noBearer && {authorization:'Bearer client-token'}),...options.headers}),nextUrl:new URL('http://localhost:3000/api/licensing'),signal:new AbortController().signal}
   return {exports,request,calls,refreshes:()=>refreshes}
 }
 test('VBR revocations bind the selected source and server token with private no-store responses',async()=>{const h=harness(),result=await h.exports.mutateLicensing(h.request,'vbr','revoke',{kind:'instances',id:id(1)});assert.equal(result.status,200);assert.equal(result.body.accepted,true);assert.equal(h.calls[0].url,`https://vbr-selected.test:9419/api/v1/license/instances/${id(1)}/revoke`);assert.equal(h.calls[0].headers.Authorization,'Bearer token:vbr-selected');assert.equal(h.calls[0].headers['x-api-version'],'1.3-rev1');assert.equal(h.calls[0].redirect,'error');assert.equal(result.headers['Cache-Control'],'private, no-store')})
@@ -68,3 +78,69 @@ test('VBR read negotiates legacy revision only on a rejected GET',async()=>{cons
 test('report response validation prevents error pages being downloaded as PDF',async()=>{const bad=harness({fetch:async()=>({ok:true,status:200,arrayBuffer:async()=>new TextEncoder().encode('<html>Error</html>').buffer})}),result=await bad.exports.mutateLicensing(bad.request,'vbm','report',{startTime:past,endTime:now.toISOString()});assert.equal(result.status,502);assert.match(result.body.error,/PDF/);const good=harness({fetch:async()=>({ok:true,status:200,arrayBuffer:async()=>new TextEncoder().encode('%PDF-1.7\nreport').buffer})}),pdf=await good.exports.mutateLicensing(good.request,'vbm','report',{startTime:past,endTime:now.toISOString()});assert.equal(pdf.headers['Content-Type'],'application/pdf');assert.equal(pdf.headers['Cache-Control'],'private, no-store')})
 test('VBR report remains an HTML attachment from the selected source',async()=>{const h=harness({fetch:async()=>({ok:true,status:200,text:async()=> '<!DOCTYPE html><html><body>Usage</body></html>'})}),result=await h.exports.mutateLicensing(h.request,'vbr','report',{});assert.equal(result.status,200);assert.match(result.headers['Content-Disposition'],/attachment/);assert.match(result.body,/Usage/);assert.deepEqual(JSON.parse(h.calls[0].body),{reportFormat:'html'})})
 test('report errors retain safe source codes without exposing messages or stack traces',async()=>{for(const code of ['ProxyOffline','secret source credentials']){const h=harness({fetch:async()=>({ok:false,status:500,json:async()=>({errorCode:code,message:'secret source credentials',stackTrace:'private stack trace'})})}),result=await h.exports.mutateLicensing(h.request,'vbm','report',{startTime:past,endTime:future});assert.equal(result.status,502);assert.doesNotMatch(result.body.error,/secret source credentials|private stack trace/);if(code==='ProxyOffline')assert.match(result.body.error,/ProxyOffline/)}})
+
+const sourceRow=(id,platform,host)=>({id,platform,protocol:'https',host,port:platform==='vbr'?9419:4443})
+const summaryResponse=async url=>({ok:true,status:200,json:async()=>url.pathname==='/api/v1/license' ? vbr()
+  : url.pathname==='/v8/License' ? vbm() : url.pathname==='/v8/License/AutoUpdate' ? {isEnabled:false} : page([])})
+
+test('a legacy platform session follows its configured URL and its chunked token instead of the first saved account',async()=>{
+  for(const [kind,platform] of [['vbr','vbr'],['vb365','vbm']]){
+    const source=sourceRow('target',kind,'active.test'),key='veeam_'+kind+'_token'
+    const sources=[sourceRow('other',kind,'first.test'),source]
+    const cookies={[key]:'legacy-',[key+'.1']:'token',[key+'_url']:`https://active.test:${source.port}/`}
+    const h=harness({noSelection:true,noBearer:true,sources,cookies,fetch:summaryResponse})
+    const result=await h.exports.readLicensing(h.request,platform)
+    assert.equal(result.status,200);assert.equal(result.body.sourceName,'active.test')
+    assert.ok(h.calls.length>0);assert.ok(h.calls.every(call=>new URL(call.url).hostname==='active.test' && call.headers.Authorization==='Bearer legacy-token'))
+  }
+})
+test('an explicit saved selection can use a matching browser credential when no managed session is available',async()=>{
+  for(const [kind,platform] of [['vbr','vbr'],['vb365','vbm']]){
+    const source=sourceRow('target',kind,'active.test'),key='veeam_'+kind+'_token'
+    const h=harness({sourceId:source.id,noManagedToken:true,noBearer:true,sources:[source],cookies:{[key]:'mine',[key+'_url']:`https://active.test:${source.port}`},fetch:summaryResponse})
+    assert.equal((await h.exports.readLicensing(h.request,platform)).status,200)
+    assert.ok(h.calls.every(call=>call.headers.Authorization==='Bearer mine'))
+  }
+})
+test('environment-only platforms reuse their managed connection without relying on page authentication',async()=>{
+  for(const [kind,platform] of [['vbr','vbr'],['vb365','vbm']]){
+    const source=sourceRow('env-'+kind,kind,'environment.test')
+    const h=harness({noSelection:true,noBearer:true,sources:[source],fetch:summaryResponse})
+    assert.equal((await h.exports.readLicensing(h.request,platform)).status,200)
+    assert.ok(h.calls.length>0);assert.ok(h.calls.every(call=>new URL(call.url).hostname==='environment.test' && call.headers.Authorization==='Bearer token:'+source.id))
+  }
+})
+test('unmatched or invalid token URLs never forward credentials to another configured or browser-provided destination',async()=>{
+  const source=sourceRow('target','vbr','active.test')
+  for(const noSelection of [true,false])for(const url of ['https://other.test:9419','https://user@active.test:9419','bad']){
+    const h=harness({noSelection,sourceId:source.id,noManagedToken:true,sources:[source],cookies:{veeam_vbr_token:'mine',veeam_vbr_token_url:url},fetch:summaryResponse})
+    assert.equal((await h.exports.readLicensing(h.request,'vbr')).status,401);assert.equal(h.calls.length,0)
+  }
+})
+test('a rejected browser session never retries using a stored account',async()=>{
+  const source=sourceRow('target','vbr','active.test')
+  const h=harness({noSelection:true,sources:[source],cookies:{veeam_vbr_token:'expired',veeam_vbr_token_url:'https://active.test:9419'},fetch:async()=>({ok:false,status:401})})
+  assert.equal((await h.exports.readLicensing(h.request,'vbr')).status,401);assert.equal(h.refreshes(),0);assert.equal(h.calls.length,1)
+})
+test('an unbound browser bearer is limited to that platform’s environment endpoint',async()=>{
+  for(const [kind,platform] of [['vbr','vbr'],['vb365','vbm']]){
+    const environment=sourceRow('env-'+kind,kind,'environment.test'),saved=sourceRow('saved',kind,'saved.test')
+    const missing=harness({sourceId:saved.id,noManagedToken:true,sources:[saved,environment],fetch:summaryResponse})
+    assert.equal((await missing.exports.readLicensing(missing.request,platform)).status,401)
+    assert.equal(missing.calls.length,0)
+    const urlHint=harness({sourceId:saved.id,noManagedToken:true,sources:[saved],cookies:{['veeam_'+kind+'_token_url']:`https://saved.test:${saved.port}`},fetch:summaryResponse})
+    assert.equal((await urlHint.exports.readLicensing(urlHint.request,platform)).status,401);assert.equal(urlHint.calls.length,0)
+    const env=harness({noSelection:true,noManagedToken:true,sources:[environment],fetch:summaryResponse})
+    assert.equal((await env.exports.readLicensing(env.request,platform)).status,200)
+    assert.ok(env.calls.every(call=>call.headers.Authorization==='Bearer client-token'))
+    const stale=harness({noSelection:true,noManagedToken:true,sources:[environment],cookies:{['veeam_'+kind+'_token_url']:`https://saved.test:${saved.port}`},fetch:summaryResponse})
+    assert.equal((await stale.exports.readLicensing(stale.request,platform)).status,401);assert.equal(stale.calls.length,0)
+  }
+})
+test('loopback licensing actions accept the matching application Host when Next normalizes the hostname',async()=>{
+  const h=harness({origin:'http://127.0.0.1:3124',headers:{host:'127.0.0.1:3124','sec-fetch-site':'same-origin'}})
+  assert.equal((await h.exports.mutateLicensing(h.request,'vbr','revoke',{kind:'capacity',id:id(1)})).status,200)
+  const cross=harness({headers:{'sec-fetch-site':'cross-site'}})
+  assert.equal((await cross.exports.mutateLicensing(cross.request,'vbr','revoke',{kind:'capacity',id:id(1)})).status,403)
+  assert.equal(cross.calls.length,0)
+})

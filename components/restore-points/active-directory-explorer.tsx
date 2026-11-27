@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { ChevronRight, FileOutput, FolderTree, Info, ListPlus, RefreshCw, RotateCcw, Search, X } from 'lucide-react'

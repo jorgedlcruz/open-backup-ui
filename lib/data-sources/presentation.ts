@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { MessageValues } from '@/lib/i18n/model'
 
 type Translate = (source: string, values?: MessageValues) => string
@@ -29,6 +29,7 @@ export const sourceMessages = [
   'The source did not return an authentication token.',
   'Enter a valid platform, display name and server URL.',
   'This platform and endpoint are already configured.',
+  'Only one Veeam Backup & Replication server can be configured.',
   'This source is managed by environment configuration. Update it on the server.',
   'Enter a valid display name and server URL.',
   'Provide both a username and password, or use the saved credentials.',

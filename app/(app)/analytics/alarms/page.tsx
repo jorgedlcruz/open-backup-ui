@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { AlarmsConsole } from '@/components/one-alarms/alarms-console'
 import { emptyFilters, filtersSchema } from '@/lib/one-alarms/model'
 export const dynamic = 'force-dynamic'

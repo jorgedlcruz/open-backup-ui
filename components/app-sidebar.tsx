@@ -1,11 +1,11 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { OpenBackupLogo } from "@/components/brand/open-backup-logo"
-import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles, Network, Aperture, Menu, X, Settings } from "lucide-react"
+import { BookOpen, ChevronDown, Briefcase, Server, Shield, ShieldCheck, LayoutDashboard, Database, FileKey, Palette, Blocks, UserRoundCog, Building2, Bell, FileText, Star, ShieldAlert, Activity, Sparkles, Network, Aperture, Menu, X, Settings, ArrowLeft, ArrowDownCircle, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import styles from "./mobile-navigation.module.css"
 import {
@@ -32,6 +32,8 @@ import { defaultSectionNames, useSectionNames } from "@/lib/context/section-name
 import { useI18n } from "@/components/providers/i18n-provider"
 import { lenses, lensForPath } from "@/lib/lens/navigation"
 import { navigationLabels } from "@/lib/navigation/breadcrumbs"
+import type { Platform } from "@/lib/data-sources/model"
+import { isSettingsPath, settingsReturnPath } from "@/lib/navigation/settings"
 import { isProtectedDataPath } from "@/lib/protected-data/navigation"
 
 // VBR Group with subpages
@@ -138,6 +140,7 @@ const vbmItems = [
       },
     ]
   },
+  { title: navigationLabels["/vbm/recovery-center"], href: "/vbm/recovery-center", icon: RotateCcw },
 ]
 
 // VRO Group - Veeam Recovery Orchestrator
@@ -207,68 +210,56 @@ const documentationItems = [
   },
 ]
 
-// Administration Group
-const adminItems = [
-  {
-    title: "Settings",
-    href: "/administration/settings",
-    icon: Settings,
-  },
-  {
-    title: navigationLabels["/administration/licensing"],
-    href: "/administration/licensing",
-    icon: FileKey,
-  },
-  {
-    title: navigationLabels["/administration/data-sources"],
-    href: "/administration/data-sources",
-    icon: Blocks,
-  },
-  {
-    title: navigationLabels["/administration/branding"],
-    href: "/administration/branding",
-    icon: Palette,
-  },
-  {
-    title: navigationLabels["/administration/ai-settings"],
-    href: "/administration/ai-settings",
-    icon: Sparkles,
-  },
-  {
-    title: navigationLabels["/administration/telemetry"],
-    href: "/administration/telemetry",
-    icon: Activity,
-  },
-  {
-    title: "Identity",
-    icon: UserRoundCog,
-    items: [
-      {
-        title: navigationLabels["/administration/identity/users"],
-        href: "/administration/identity/users",
-      },
-      {
-        title: navigationLabels["/administration/identity/roles"],
-        href: "/administration/identity/roles",
-      },
-    ]
-  },
+const settingsItems = [
+  { title: "General", href: "/settings", icon: Settings },
+  { title: "Data Sources", href: "/settings/data-sources", icon: Blocks },
+  { title: "Licensing", href: "/settings/licensing", icon: FileKey },
+  { title: "Branding", href: "/settings/branding", icon: Palette },
+  { title: "AI Integrations", href: "/settings/ai-settings", icon: Sparkles },
+  { title: "Telemetry", href: "/settings/telemetry", icon: Activity },
+  { title: "Updates", href: "/settings/updates", icon: ArrowDownCircle },
 ]
+const identityItems = [
+  { title: "Users", href: "/settings/identity/users", icon: Users },
+  { title: "Roles", href: "/settings/identity/roles", icon: UserRoundCog },
+]
+
+function SettingsMenuGroup({ label, items, pathname }: { label: string; items: typeof settingsItems; pathname: string }) {
+  const { t } = useI18n()
+  return <SidebarGroup>
+    <SidebarGroupLabel>{label}</SidebarGroupLabel>
+    <SidebarGroupContent>
+      <SidebarMenu>
+        {items.map(item => <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
+            <Link href={item.href} aria-label={t(item.title)} aria-current={pathname === item.href ? "page" : undefined}>
+              <item.icon /><span>{t(item.title)}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>)}
+      </SidebarMenu>
+    </SidebarGroupContent>
+  </SidebarGroup>
+}
+
+function WorkspaceGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return <SidebarGroup role="group" aria-label={label}>
+    <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
+      <span className="truncate group-data-[collapsible=icon]:hidden">{label}</span>
+      <span aria-hidden="true" className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
+    </SidebarGroupLabel>
+    <SidebarGroupContent>{children}</SidebarGroupContent>
+  </SidebarGroup>
+}
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   labsEnabled?: boolean
-  vbrConfigured?: boolean
-  vb365Configured?: boolean
-  vroConfigured?: boolean
-  veeamOneConfigured?: boolean
+  configuredPlatforms: readonly Platform[]
 }
 
 export function AppSidebar({
   labsEnabled = false,
-  vbrConfigured = true,
-  vb365Configured = true,
-  vroConfigured = true,
-  veeamOneConfigured = true,
+  configuredPlatforms,
   ...props
 }: AppSidebarProps) {
   const pathname = usePathname()
@@ -297,12 +288,32 @@ export function AppSidebar({
     }
   }
 
-  // Filter admin items based on what's configured
-  // Identity only shows when VBR is configured (uses VBR credentials API)
-  const filteredAdminItems = adminItems.filter(item => {
-    if (item.title === "Identity") return vbrConfigured
-    return true
-  })
+  const inSettings = isSettingsPath(pathname)
+  const [exitHref, setExitHref] = React.useState("/dashboard")
+  const lastWorkspace = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    const storageKey = "open-backup-ui.settings-return"
+    if (inSettings) {
+      let previous = lastWorkspace.current
+      try { previous ??= sessionStorage.getItem(storageKey) } catch { /* Storage can be disabled. */ }
+      setExitHref(settingsReturnPath(previous))
+      return
+    }
+    function rememberWorkspace() {
+      const { pathname, search, hash } = window.location
+      const href = settingsReturnPath(pathname + search + hash)
+      lastWorkspace.current = href
+      try { sessionStorage.setItem(storageKey, href) } catch { /* The in-memory path still works. */ }
+    }
+    // Capture the current query and fragment when entering from any in-app link.
+    function rememberBeforeNavigation(event: MouseEvent) {
+      const link = event.target instanceof Element ? event.target.closest("a[href]") : null
+      if (link instanceof HTMLAnchorElement && link.origin === location.origin && isSettingsPath(link.pathname)) rememberWorkspace()
+    }
+    rememberWorkspace()
+    document.addEventListener("click", rememberBeforeNavigation, true)
+    return () => document.removeEventListener("click", rememberBeforeNavigation, true)
+  }, [inSettings, pathname])
 
   return (
     <>
@@ -315,6 +326,9 @@ export function AppSidebar({
       </Button>
       <div className={styles.brand}><OpenBackupLogo /></div>
     </div>
+    {isMobile && !openMobile && !inSettings && (
+      <Link className={styles.mobileSettings} href="/settings" aria-label={t("Settings")} title={t("Settings")}><Settings size={20} /></Link>
+    )}
     <Sidebar collapsible="icon" {...props} id={mobileNavigationId} className={[styles.navigation, props.className].filter(Boolean).join(" ")}
       role={isMobile ? "navigation" : undefined} aria-label={isMobile ? t("Main navigation") : undefined}
       onKeyDown={closeMobileMenu}
@@ -339,327 +353,230 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+      {inSettings && <SidebarHeader className="shrink-0 border-b border-sidebar-border">
+        <SidebarMenu><SidebarMenuItem>
+          <SidebarMenuButton asChild tooltip={t("Exit settings")}>
+            <Link href={exitHref} prefetch={false} aria-label={t("Exit settings")}><ArrowLeft /><span>{t("Exit settings")}</span></Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem></SidebarMenu>
+      </SidebarHeader>}
       <SidebarContent>
+        {inSettings ? <>
+          <SettingsMenuGroup label={sectionNames.administration === defaultSectionNames.administration ? t("Settings") : sectionNames.administration} items={settingsItems} pathname={pathname} />
+          {configuredPlatforms.includes("vbr") && <SettingsMenuGroup label={t("Identity")} items={identityItems} pathname={pathname} />}
+        </> : <>
         {labsEnabled && <SidebarGroup><SidebarGroupContent><SidebarMenu><SidebarMenuItem><SidebarMenuButton asChild isActive={pathname === '/labs'} tooltip={t('Kiosk Builder')}><Link href="/labs"><Sparkles size={16} /><span>{t('Kiosk Builder')}</span></Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu></SidebarGroupContent></SidebarGroup>}
+        {configuredPlatforms.length === 0 && <SidebarGroup>
+          <SidebarMenu><SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={t("Data Sources")}>
+              <Link href="/settings/data-sources" aria-label={t("Data Sources")}><Blocks /><span>{t("Data Sources")}</span></Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem></SidebarMenu>
+        </SidebarGroup>}
         {/* Veeam Backup & Replication Group */}
-        <SidebarGroup>
-          <div className="flex min-w-0 items-center justify-between gap-2 pr-2">
-            <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-              <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('vbr')}</span>
-              <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-            </SidebarGroupLabel>
-            {!vbrConfigured && (
-              <SidebarMenuBadge className="static shrink-0 whitespace-nowrap translate-x-0 opacity-70 border border-slate-400 text-slate-500 bg-transparent h-5 min-w-0 px-1.5 w-auto">
-                {t("Missing")}
-              </SidebarMenuBadge>
-            )}
-          </div>
-          {vbrConfigured && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
+        {configuredPlatforms.includes("vbr") && <WorkspaceGroup label={sectionLabel('vbr')}>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div className="relative flex items-center">
+                <SidebarMenuButton asChild isActive={!!activeLens || pathname === '/vbr/lens'} tooltip={t("Protection Lens")} className="pr-8 group-data-[collapsible=icon]:pr-2">
+                  <Link href="/vbr/lens" prefetch={false}><Aperture className="h-4 w-4"/><span>{t("Protection Lens")}</span></Link>
+                </SidebarMenuButton>
+                <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={t(lensOpen ? 'Collapse {section}' : 'Expand {section}', { section: t('Protection Lens') })} aria-expanded={lensOpen} aria-controls="sidebar-protection-lens" onClick={() => setLensOpen(!lensOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${lensOpen ? '' : '-rotate-90'}`}/></button>
+              </div>
+              {lensOpen && <SidebarMenuSub id="sidebar-protection-lens">{lenses.map(lens => <SidebarMenuSubItem key={lens.id}><SidebarMenuSubButton asChild isActive={activeLens === lens.id}><Link href={lens.href} aria-current={activeLens === lens.id ? 'page' : undefined}>{t(lens.title)}</Link></SidebarMenuSubButton></SidebarMenuSubItem>)}</SidebarMenuSub>}
+            </SidebarMenuItem>
+            {vbrItems.map((item) => {
+              if (item.href === '/vbr/jobs') {
+                const profilesActive = pathname === '/vbr/jobs/profiles'
+                return <SidebarMenuItem key={item.title}>
                   <div className="relative flex items-center">
-                    <SidebarMenuButton asChild isActive={!!activeLens || pathname === '/vbr/lens'} tooltip={t("Protection Lens")} className="pr-8 group-data-[collapsible=icon]:pr-2">
-                      <Link href="/vbr/lens" prefetch={false}><Aperture className="h-4 w-4"/><span>{t("Protection Lens")}</span></Link>
+                    <SidebarMenuButton asChild isActive={jobsActive} tooltip={t(item.title)} className="pr-8 group-data-[collapsible=icon]:pr-2">
+                      <Link href={item.href} aria-current={jobsActive ? pathname === item.href ? 'page' : 'location' : undefined}><Briefcase className="h-4 w-4"/><span>{t(item.title)}</span></Link>
                     </SidebarMenuButton>
-                    <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={t(lensOpen ? 'Collapse {section}' : 'Expand {section}', { section: t('Protection Lens') })} aria-expanded={lensOpen} aria-controls="sidebar-protection-lens" onClick={() => setLensOpen(!lensOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${lensOpen ? '' : '-rotate-90'}`}/></button>
+                    <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={t(jobsOpen ? 'Collapse {section}' : 'Expand {section}', { section: t('Jobs & Policies') })} aria-expanded={jobsOpen} aria-controls="sidebar-jobs-policies" onClick={() => setJobsOpen(!jobsOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${jobsOpen ? '' : '-rotate-90'}`}/></button>
                   </div>
-                  {lensOpen && <SidebarMenuSub id="sidebar-protection-lens">{lenses.map(lens => <SidebarMenuSubItem key={lens.id}><SidebarMenuSubButton asChild isActive={activeLens === lens.id}><Link href={lens.href} aria-current={activeLens === lens.id ? 'page' : undefined}>{t(lens.title)}</Link></SidebarMenuSubButton></SidebarMenuSubItem>)}</SidebarMenuSub>}
+                  {jobsOpen && <SidebarMenuSub id="sidebar-jobs-policies"><SidebarMenuSubItem><SidebarMenuSubButton asChild isActive={profilesActive}><Link href="/vbr/jobs/profiles" aria-current={profilesActive ? 'page' : undefined}>{t(navigationLabels['/vbr/jobs/profiles'])}</Link></SidebarMenuSubButton></SidebarMenuSubItem></SidebarMenuSub>}
                 </SidebarMenuItem>
-                {vbrItems.map((item) => {
-                  if (item.href === '/vbr/jobs') {
-                    const profilesActive = pathname === '/vbr/jobs/profiles'
-                    return <SidebarMenuItem key={item.title}>
-                      <div className="relative flex items-center">
-                        <SidebarMenuButton asChild isActive={jobsActive} tooltip={t(item.title)} className="pr-8 group-data-[collapsible=icon]:pr-2">
-                          <Link href={item.href} aria-current={jobsActive ? pathname === item.href ? 'page' : 'location' : undefined}><Briefcase className="h-4 w-4"/><span>{t(item.title)}</span></Link>
-                        </SidebarMenuButton>
-                        <button type="button" className="absolute right-1 rounded p-1 text-sidebar-foreground hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden" aria-label={t(jobsOpen ? 'Collapse {section}' : 'Expand {section}', { section: t('Jobs & Policies') })} aria-expanded={jobsOpen} aria-controls="sidebar-jobs-policies" onClick={() => setJobsOpen(!jobsOpen)}><ChevronDown className={`h-4 w-4 transition-transform ${jobsOpen ? '' : '-rotate-90'}`}/></button>
-                      </div>
-                      {jobsOpen && <SidebarMenuSub id="sidebar-jobs-policies"><SidebarMenuSubItem><SidebarMenuSubButton asChild isActive={profilesActive}><Link href="/vbr/jobs/profiles" aria-current={profilesActive ? 'page' : undefined}>{t(navigationLabels['/vbr/jobs/profiles'])}</Link></SidebarMenuSubButton></SidebarMenuSubItem></SidebarMenuSub>}
-                    </SidebarMenuItem>
-                  }
-                  // Determine if this item is a sub-menu (like Inventory)
-                  const isSubMenu = !!item.items
-                  // Determine state for this item
-                  const isOpen = item.title === "Inventory" ? inventoryOpen : item.title === "Backup Infrastructure" ? infrastructureOpen : false
-                  const setOpen = item.title === "Inventory" ? setInventoryOpen : item.title === "Backup Infrastructure" ? setInfrastructureOpen : () => { }
+              }
+              // Determine if this item is a sub-menu (like Inventory)
+              const isSubMenu = !!item.items
+              // Determine state for this item
+              const isOpen = item.title === "Inventory" ? inventoryOpen : item.title === "Backup Infrastructure" ? infrastructureOpen : false
+              const setOpen = item.title === "Inventory" ? setInventoryOpen : item.title === "Backup Infrastructure" ? setInfrastructureOpen : () => { }
 
-                  if (isSubMenu && item.items) {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          onClick={() => setOpen(!isOpen)}
-                          tooltip={t(item.title)}
-                          isActive={item.items.some(sub => pathname === sub.href)}
-                        >
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{t(item.title)}</span>
-                          <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
-                        </SidebarMenuButton>
-                        {isOpen && (
-                          <SidebarMenuSub>
-                            {item.items.map((subItem) => (
-                              <SidebarMenuSubItem key={subItem.href}>
-                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                  <Link href={subItem.href}>
-                                    <span>{t(subItem.title)}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        )}
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Standard Item
-                  const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
-                    : item.href === '/vbr/activity' || item.href === '/vbr/recovery-center' ? pathname === item.href || pathname.startsWith(item.href + '/')
-                    : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.title)}>
-                        <Link href={item.href!} aria-current={isActive ? pathname === item.href ? 'page' : 'location' : undefined}>
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{t(item.title)}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Veeam Backup for M365 Group */}
-        <SidebarGroup>
-          <div className="flex min-w-0 items-center justify-between gap-2 pr-2">
-            <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-              <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('vbm')}</span>
-              <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-            </SidebarGroupLabel>
-            {!vb365Configured && (
-              <SidebarMenuBadge className="static shrink-0 whitespace-nowrap translate-x-0 opacity-70 border border-slate-400 text-slate-500 bg-transparent h-5 min-w-0 px-1.5 w-auto">
-                {t("Missing")}
-              </SidebarMenuBadge>
-            )}
-          </div>
-          {vb365Configured && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vbmItems.map((item) => {
-                  // Collapsible Item with children
-                  if (item.items && item.items.length > 0) {
-                    const isItemActive = pathname.startsWith(item.href || "")
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <Collapsible defaultOpen={isItemActive} className="group/collapsible">
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton tooltip={t(item.title)}>
-                              {item.icon && <item.icon className="h-4 w-4" />}
-                              <span>{t(item.title)}</span>
-                              <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          {item.items && (
-                            <CollapsibleContent>
-                              <SidebarMenuSub>
-                                {item.items.map((subItem) => (
-                                  <SidebarMenuSubItem key={subItem.title}>
-                                    <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
-                                      <Link href={subItem.href}>{t(subItem.title)}</Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          )}
-                        </Collapsible>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Standard Item
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
-                        <Link href={item.href}>
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{t(item.title)}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Veeam Recovery Orchestrator Group */}
-        <SidebarGroup>
-          <div className="flex min-w-0 items-center justify-between gap-2 pr-2">
-            <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-              <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('vro')}</span>
-              <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-            </SidebarGroupLabel>
-            {!vroConfigured && (
-              <SidebarMenuBadge className="static shrink-0 whitespace-nowrap translate-x-0 opacity-70 border border-slate-400 text-slate-500 bg-transparent h-5 min-w-0 px-1.5 w-auto">
-                {t("Missing")}
-              </SidebarMenuBadge>
-            )}
-          </div>
-          {vroConfigured && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {vroItems.map((item) => (
+              if (isSubMenu && item.items) {
+                return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
-                      <Link href={item.href}>
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        <span>{t(item.title)}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Analytics Group */}
-        <SidebarGroup>
-          <div className="flex min-w-0 items-center justify-between gap-2 pr-2">
-            <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-              <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('analytics')}</span>
-              <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-            </SidebarGroupLabel>
-            {!veeamOneConfigured && (
-              <SidebarMenuBadge className="static shrink-0 whitespace-nowrap translate-x-0 opacity-70 border border-slate-400 text-slate-500 bg-transparent h-5 min-w-0 px-1.5 w-auto">
-                {t("Missing")}
-              </SidebarMenuBadge>
-            )}
-          </div>
-          {veeamOneConfigured && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {analyticsItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
-                      <Link href={item.href}>
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        <span>{t(item.title)}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        {/* Kasten K10 Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-            <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('k10')}</span>
-            <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {k10Items.map((item) => (
-                <SidebarMenuItem key={item.title} className="flex min-w-0 items-center gap-1 pr-1">
-                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)} className="min-w-0 flex-1">
-                    <Link href={item.href}>
+                    <SidebarMenuButton
+                      onClick={() => setOpen(!isOpen)}
+                      tooltip={t(item.title)}
+                      isActive={item.items.some(sub => pathname === sub.href)}
+                    >
                       {item.icon && <item.icon className="h-4 w-4" />}
-                      <span className="truncate">{t(item.title)}</span>
+                      <span>{t(item.title)}</span>
+                      <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`} />
+                    </SidebarMenuButton>
+                    {isOpen && (
+                      <SidebarMenuSub>
+                        {item.items.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.href}>
+                            <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                              <Link href={subItem.href}>
+                                <span>{t(subItem.title)}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                  </SidebarMenuItem>
+                )
+              }
+
+              // Standard Item
+              const isActive = item.href === '/vbr/protected-data' ? isProtectedDataPath(pathname)
+                : item.href === '/vbr/activity' || item.href === '/vbr/recovery-center' ? pathname === item.href || pathname.startsWith(item.href + '/')
+                : item.href === '/vbr/jobs' ? pathname === item.href || pathname.startsWith('/vbr/jobs/') || pathname.startsWith('/vbr/sessions/') : pathname === item.href
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.title)}>
+                    <Link href={item.href!} aria-current={isActive ? pathname === item.href ? 'page' : 'location' : undefined}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
+                      <span>{t(item.title)}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {item.badge && (
-                    <SidebarMenuBadge className="static shrink-0 whitespace-nowrap opacity-50">
-                      {t(item.badge)}
-                    </SidebarMenuBadge>
-                  )}
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              )
+            })}
+          </SidebarMenu>
+        </WorkspaceGroup>}
 
-        {/* Administration Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-            <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('administration')}</span>
-            <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredAdminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  {item.items ? (
-                    <Collapsible defaultOpen className="group/collapsible">
+        {/* Veeam Backup for M365 Group */}
+        {configuredPlatforms.includes("vb365") && <WorkspaceGroup label={sectionLabel('vbm')}>
+          <SidebarMenu>
+            {vbmItems.map((item) => {
+              // Collapsible Item with children
+              if (item.items && item.items.length > 0) {
+                const isItemActive = pathname.startsWith(item.href || "")
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <Collapsible defaultOpen={isItemActive} className="group/collapsible">
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton tooltip={t(item.title)}>
                           {item.icon && <item.icon className="h-4 w-4" />}
                           <span>{t(item.title)}</span>
-                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.href} size="md">
-                                <Link href={subItem.href}>
-                                  <span>{t(subItem.title)}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
+                      {item.items && (
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.items.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton asChild isActive={pathname === subItem.href}>
+                                  <Link href={subItem.href}>{t(subItem.title)}</Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      )}
                     </Collapsible>
-                  ) : (
-                    <>
-                      <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
-                        <Link href={item.href}>
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          <span>{t(item.title)}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  </SidebarMenuItem>
+                )
+              }
 
-        {/* Documentation Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="min-w-0 shrink group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:mt-0">
-            <span className="truncate group-data-[collapsible=icon]:hidden">{sectionLabel('documentation')}</span>
-            <span className="hidden group-data-[collapsible=icon]:block font-bold">&mdash;</span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {documentationItems.map((item) => (
+              // Standard Item
+              return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.href} target="_blank" rel="noopener noreferrer">
-                      <BookOpen className="h-4 w-4" />
+                  <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
+                    <Link href={item.href}>
+                      {item.icon && <item.icon className="h-4 w-4" />}
                       <span>{t(item.title)}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              )
+            })}
+          </SidebarMenu>
+        </WorkspaceGroup>}
+
+        {/* Veeam Recovery Orchestrator Group */}
+        {configuredPlatforms.includes("vro") && <WorkspaceGroup label={sectionLabel('vro')}>
+          <SidebarMenu>
+            {vroItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
+                  <Link href={item.href}>
+                    {item.icon && <item.icon className="h-4 w-4" />}
+                    <span>{t(item.title)}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </WorkspaceGroup>}
+
+        {/* Analytics Group */}
+        {configuredPlatforms.includes("one") && <WorkspaceGroup label={sectionLabel('analytics')}>
+          <SidebarMenu>
+            {analyticsItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)}>
+                  <Link href={item.href}>
+                    {item.icon && <item.icon className="h-4 w-4" />}
+                    <span>{t(item.title)}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </WorkspaceGroup>}
+
+        {/* Kasten K10 Group */}
+        {configuredPlatforms.includes("kasten") && <WorkspaceGroup label={sectionLabel('k10')}>
+          <SidebarMenu>
+            {k10Items.map((item) => (
+              <SidebarMenuItem key={item.title} className="flex min-w-0 items-center gap-1 pr-1">
+                <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={t(item.title)} className="min-w-0 flex-1">
+                  <Link href={item.href}>
+                    {item.icon && <item.icon className="h-4 w-4" />}
+                    <span className="truncate">{t(item.title)}</span>
+                  </Link>
+                </SidebarMenuButton>
+                {item.badge && (
+                  <SidebarMenuBadge className="static shrink-0 whitespace-nowrap opacity-50">
+                    {t(item.badge)}
+                  </SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </WorkspaceGroup>}
+
+        {/* Documentation Group */}
+        <WorkspaceGroup label={sectionLabel('documentation')}>
+          <SidebarMenu>
+            {documentationItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <a href={item.href} target="_blank" rel="noopener noreferrer">
+                    <BookOpen className="h-4 w-4" />
+                    <span>{t(item.title)}</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </WorkspaceGroup>
+        </>}
       </SidebarContent>
-      <SidebarFooter className="border-t border-border p-4 group-data-[collapsible=icon]:p-2">
+      <SidebarFooter className="shrink-0 border-t border-border">
+        {!inSettings && (!isMobile || openMobile) && <SidebarMenu><SidebarMenuItem>
+          <SidebarMenuButton asChild tooltip={t("Settings")}>
+            <Link href="/settings" aria-label={t("Settings")}><Settings /><span>{t("Settings")}</span></Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem></SidebarMenu>}
         <div className="flex justify-center text-sm text-muted-foreground">
           <span className="group-data-[collapsible=icon]:hidden">{t("Crafted with")} </span>
           <span className="text-red-500">❤️</span>

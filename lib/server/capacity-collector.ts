@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../vbr/compatible-fetch'
 import {promises as fs} from 'node:fs'
 import path from 'node:path'
 import {randomUUID} from 'node:crypto'
@@ -49,7 +50,7 @@ export async function collectCapacitySource(source:VBRSource) {
       const read=async(endpoint:string)=>{
         const target=new URL(endpoint,destination)
         if(target.origin!==destination.origin||target.pathname!=='/api/v1/backupInfrastructure/repositories/states')throw new Error('Unsupported collector request.')
-        const send=()=>{checkSource();return fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json','x-api-version':'1.3-rev1'},cache:'no-store',redirect:'error',signal:controller.signal})}
+        const send=()=>{checkSource();return fetchVbrCompatible(target,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json','x-api-version':'1.3-rev1'},cache:'no-store',redirect:'error',signal:controller.signal})}
         let response=await send()
         if(response.status===401){token=await tokenManager.refreshToken(source.id);if(token)response=await send()}
         if(!response.ok)throw new Error(response.status===401?'VBR authentication failed. Review the saved source credentials.':response.status===403?'The source account cannot read repository capacity.':'VBR repository capacity could not be read. The collector will retry on its next schedule.')

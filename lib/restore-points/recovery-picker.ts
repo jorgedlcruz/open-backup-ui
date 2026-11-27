@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type {RestoreOperation} from './workflow'
 import type {RestorePoint} from './model'
 

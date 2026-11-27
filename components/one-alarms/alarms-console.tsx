@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans , useI18n } from '@/components/providers/i18n-provider'
 import { FilterGroup,FilterSelect } from '@/components/operations/filter-facet'
@@ -48,7 +48,9 @@ export function AlarmsConsole({initialFilters}:{initialFilters:Filters}) {
   const exportRows=(tab==='history' ? data?.history.data || []:rows).map(row=>({...row,key:undefined,revision:undefined,description:plainText(row.description)}))
   const issueCount=(issue:Filters['issue'])=>all.filter(row=>matchAlarm(row,{...filters,issue},now)).length
   return <div className={cn(ops.console,styles.console,'ph-no-capture')}>
-    <header className={ops.header}><div><h1><Trans>{"Alarms Overview"}</Trans></h1><p>Prioritize issues, investigate affected objects, and trace alarm activity.</p></div><div className={ops.headerActions}><div className={styles.source}><span>{data?.sourceName || 'Veeam ONE source'}</span><small>{data ? `Read ${date(data.fetchedAt)}`:'Awaiting evidence'}</small></div><Button variant="outline" size="sm" disabled={loading} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin':''}/><Trans>{"Refresh"}</Trans></Button></div></header>
+    <header className={ops.header}><div><h1><Trans>{"Alarms Overview"}</Trans></h1><p>Prioritize issues, investigate affected objects, and trace alarm activity.</p></div>
+      <div className={ops.headerActions}><div className={styles.source}><span>{data?.sourceName || 'Veeam ONE source'}</span><small>{data ? `Read ${date(data.fetchedAt)}`:'Awaiting evidence'}</small></div>
+        <Button variant="outline" size="sm" disabled={loading} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin':''}/><Trans>{"Refresh"}</Trans></Button></div></header>
 
     {error && <div className={ops.notice} role="alert"><TriangleAlert size={18}/><div>{error}{data && <p>Previously loaded evidence remains visible. Resolution is disabled until refreshed.</p>}</div><Link href="/connect">Connect source</Link></div>}
     {!data ? loading ? <Loading>Reading current alarms and retained history…</Loading>:<div className={ops.empty}>Alarm evidence is unavailable. Connect a Veeam ONE source and refresh.</div>:<>

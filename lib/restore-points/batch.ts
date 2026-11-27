@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type {RestoreDraft} from './workflow'
 
 export const vmBatchOperations=['StartViVMInstantRecovery','StartHvVMInstantRecovery','StartEntireVmRestore','StartEntireVmRestoreHyperV','StartEntireVmRestoreCloudDirector'] as const

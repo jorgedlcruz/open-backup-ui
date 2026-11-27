@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const test=require('node:test'), assert=require('node:assert/strict'), ts=require('typescript')
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path'), vm=require('node:vm')
 const {createRequire}=require('node:module')
@@ -15,6 +15,7 @@ function harness(options={}) {
   const exports={}, measures=[], sources=new Map([[source.id,{...source}]]), timers=[],sweeps=[]
   const {readCacheScope}=require('../lib/server/read-cache-scope.ts')
   const dependencies={
+    '../vbr/compatible-fetch': {fetchVbrCompatible: options.fetch},
     './capacity-collector':{configuredScope:s=>{const destination=new URL(s.protocol+'://'+s.host+':'+s.port);return {destination,scope:readCacheScope(destination.href,'',s)}}},
     './config-store':{configStore:{getById:id=>sources.get(id),getAll:()=>[...sources.values()]}},
     './token-manager':{tokenManager:{getToken:async()=>'in-memory',refreshToken:async()=>'refreshed'}},

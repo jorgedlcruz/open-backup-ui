@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useI18n } from '@/components/providers/i18n-provider'
 import { useState, type FormEvent } from 'react'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { platforms, endpoint, type Platform, type Row, type Snapshot } from '@/lib/data-sources/model'
+import { notifyJobSourceChanged } from '@/lib/job-builder/source-change'
 import { sourceMessage } from '@/lib/data-sources/presentation'
 import shared from '@/components/vbm-dashboard/vbm-dashboard.module.css'
 import styles from './sources.module.css'
@@ -25,10 +26,11 @@ function validatedEndpoint(value: string) {
   try { return endpoint(value).url }
   catch { throw Error('Use an HTTP or HTTPS server URL with a port and no path, credentials or query string.') }
 }
-export function SourceActionDialog({ action, onClose, onComplete }: { action: Action; onClose: () => void; onComplete: () => void }) {
+export function SourceActionDialog({ action, vbrConfigured, onClose, onComplete }: { action: Action; vbrConfigured: boolean; onClose: () => void; onComplete: () => void }) {
   const { t } = useI18n()
   const row = 'row' in action ? action.row : null, router = useRouter()
-  const [pending, setPending] = useState(false), [error, setError] = useState<string | null>(null), [type, setType] = useState<Platform>(row?.type || 'vbr'), [port, setPort] = useState('9419'), [saved, setSaved] = useState(!!row?.hasCredentials), [show, setShow] = useState(false)
+  const initialType = row?.type ?? (vbrConfigured ? 'vb365' : 'vbr')
+  const [pending, setPending] = useState(false), [error, setError] = useState<string | null>(null), [type, setType] = useState<Platform>(initialType), [port, setPort] = useState(String(platforms[initialType].port)), [saved, setSaved] = useState(!!row?.hasCredentials), [show, setShow] = useState(false)
   const title = action.type === 'connect' ? t('Connect to {name}', { name: row?.name || '' }) : t(action.type === 'add' ? 'Add Data Source' : action.type === 'edit' ? 'Edit Data Source' : action.type === 'remove' ? 'Remove Data Source' : 'Disconnect session')
   const descriptions = {
     add: 'Save a platform endpoint, then connect using your credentials.',
@@ -43,6 +45,7 @@ export function SourceActionDialog({ action, onClose, onComplete }: { action: Ac
     const form = new FormData(event.currentTarget)
     try {
       if (action.type === 'add') {
+        if (type === 'vbr' && vbrConfigured) throw Error('Only one Veeam Backup & Replication server can be configured.')
         const host = String(form.get('host') || '').trim(), value = Number(port)
         if (!host || /[\s/@?#]/.test(host) || !Number.isInteger(value) || value < 1 || value > 65535) throw Error('Enter a hostname or IP address and a port between 1 and 65535.')
         const hostname = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host
@@ -54,6 +57,10 @@ export function SourceActionDialog({ action, onClose, onComplete }: { action: Ac
         if (action.type === 'disconnect') await sourceRequest(`${path}/disconnect`, 'POST')
         if (action.type === 'connect') await sourceRequest(`${path}/connect`, 'POST', saved ? {} : { username: String(form.get('username') || ''), password: String(form.get('password') || '') })
       }
+      if (row?.type === 'vbr' && (action.type === 'connect' || row.selected && (
+        action.type === 'disconnect' || action.type === 'remove' ||
+        action.type === 'edit' && validatedEndpoint(String(form.get('url'))) !== row.url
+      ))) notifyJobSourceChanged()
       toast.success(t(action.type === 'add' ? 'Data source saved' : action.type === 'edit' ? 'Data source updated' : action.type === 'remove' ? 'Data source removed' : action.type === 'disconnect' ? 'Browser session disconnected' : 'Data source connected'))
       onComplete(); onClose(); router.refresh()
     } catch (error) { setError(error instanceof Error ? error.message : 'Action failed.') } finally { setPending(false) }
@@ -61,7 +68,7 @@ export function SourceActionDialog({ action, onClose, onComplete }: { action: Ac
   return <Dialog open onOpenChange={open => { if (!open && !pending) onClose() }}><DialogContent><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{t(descriptions[action.type])}</DialogDescription></DialogHeader>
     <form className={styles.form} onSubmit={submit}>
       {row && <div className={styles.target}><strong>{row.name}</strong><span>{platforms[row.type].name}</span><span>{row.url}</span></div>}
-      {action.type === 'add' && <><label>{t('Platform')}<select aria-label={t('Data source platform')} value={type} disabled={pending} onChange={event => { const value = event.target.value as Platform; setType(value); setPort(String(platforms[value].port)) }}>{Object.entries(platforms).map(([key, value]) => <option key={key} value={key}>{value.name}</option>)}</select></label><div className={styles.address}><label>{t('Server Address')}<Input name="host" placeholder="backup.example.com" autoComplete="off" required disabled={pending} /></label><label>{t('Port')}<Input aria-label={t('Server port')} type="number" min={1} max={65535} value={port} onChange={event => setPort(event.target.value)} disabled={pending} required /></label></div><p className={styles.hint}>{t('New connections use HTTPS.')}</p></>}
+      {action.type === 'add' && <><label>{t('Platform')}<select aria-label={t('Data source platform')} value={type} disabled={pending} onChange={event => { const value = event.target.value as Platform; setType(value); setPort(String(platforms[value].port)) }}>{Object.entries(platforms).map(([key, value]) => <option key={key} value={key} disabled={key === 'vbr' && vbrConfigured}>{value.name}{key === 'vbr' && vbrConfigured && ` (${t('Configured')})`}</option>)}</select></label><div className={styles.address}><label>{t('Server Address')}<Input name="host" placeholder="backup.example.com" autoComplete="off" required disabled={pending} /></label><label>{t('Port')}<Input aria-label={t('Server port')} type="number" min={1} max={65535} value={port} onChange={event => setPort(event.target.value)} disabled={pending} required /></label></div><p className={styles.hint}>{t('New connections use HTTPS.')}</p></>}
       {action.type === 'edit' && <label>{t('API URL')}<Input name="url" defaultValue={row?.url} required disabled={pending} /></label>}
       {(action.type === 'edit' || action.type === 'add') && <label>{t('Display Name')}<Input name="name" defaultValue={action.type === 'edit' ? row?.name : ''} maxLength={200} placeholder={t('Optional friendly name')} disabled={pending} /></label>}
       {action.type === 'connect' && <>
@@ -70,7 +77,7 @@ export function SourceActionDialog({ action, onClose, onComplete }: { action: Ac
         {row?.managed === 'environment' && !row.hasCredentials && <p>{t('Set this source’s username and password in the server environment before connecting.')}</p>}
       </>}
       {error && <p role="alert" className={styles.error}>{sourceMessage(t, error)}</p>}
-      <div className={shared.actions}><Button type="button" variant="outline" disabled={pending} onClick={onClose}>{t('Cancel')}</Button><Button type="submit" variant={action.type === 'remove' ? 'destructive' : 'default'} disabled={pending || (action.type === 'connect' && row?.managed === 'environment' && !row.hasCredentials)}>{t(pending ? 'Working…' : action.type === 'add' ? 'Add Source' : action.type === 'edit' ? 'Save Changes' : action.type === 'remove' ? 'Remove' : action.type === 'disconnect' ? 'Disconnect' : 'Connect')}</Button></div>
+      <div className={shared.actions}><Button type="button" variant="outline" disabled={pending} onClick={onClose}>{t('Cancel')}</Button><Button type="submit" variant={action.type === 'remove' ? 'destructive' : 'default'} disabled={pending || (action.type === 'add' && type === 'vbr' && vbrConfigured) || (action.type === 'connect' && row?.managed === 'environment' && !row.hasCredentials)}>{t(pending ? 'Working…' : action.type === 'add' ? 'Add Source' : action.type === 'edit' ? 'Save Changes' : action.type === 'remove' ? 'Remove' : action.type === 'disconnect' ? 'Disconnect' : 'Connect')}</Button></div>
     </form>
   </DialogContent></Dialog>
 }

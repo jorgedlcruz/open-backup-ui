@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), ts = require('typescript'), vm = require('node:vm'), assert = require('node:assert/strict'), { test } = require('node:test')
 const compile = file => ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText
@@ -126,11 +126,13 @@ test('public route enforces passwords before reading, ignores query overrides, a
 test('public reader uses only bound saved credentials and GET; caches without accepting source changes', async () => {
   const store = require('../lib/server/kiosk-shares.ts'), original = { id: 'synthetic-source', protocol: 'https', host: 'synthetic.invalid', port: 9419, username: 'reader', password: 'never-export' }
   let source = { ...original, platform: 'vbr' }, calls = 0, requested
+  const fixtureFetch = async (url, options) => { calls++; requested = { url: url.href, options }; return { ok: true, json: async () => ({}) } }
   const h = load('lib/server/kiosk-reader.ts', {
+    '../vbr/compatible-fetch': {fetchVbrCompatible: fixtureFetch},
     './config-store': { configStore: { getById: id => { assert.equal(id, original.id); return source } } },
     './token-manager': { tokenManager: { getToken: async id => { assert.equal(id, original.id); return 'private-token' } } },
     '../operations/load': { loadOperations: async read => { await read('/api/v1/jobs'); return { sourceName: '', fetchedAt: '', warnings: [], jobs: { data: [{ id: 'id', name: 'Visible job', status: 'Working' }], available: true, complete: true } } } },
-  }, { fetch: async (url, options) => { calls++; requested = { url: url.href, options }; return { ok: true, json: async () => ({}) } } })
+  }, { fetch: fixtureFetch })
   const record = { id: 'a'.repeat(43), sourceId: original.id, sourceBinding: store.sourceBinding(original), revision: 'v1', updatedAt: '', theme: {}, mode: 'dark', board: { ...model.emptyBoard(), widgets: [fixture('jobs', 'grid')] } }
   const result = await h.readPublicKiosk(record)
   assert.equal(calls, 1); assert.equal(requested.options.method, 'GET'); assert.equal(requested.options.redirect, 'error'); assert.equal(requested.url, 'https://synthetic.invalid:9419/api/v1/jobs')

@@ -1,9 +1,10 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Record the release that contains each tracked project file, including binary assets.
+// Record the release that contains each project file, including binary assets.
 const fs = require('node:fs')
 const path = require('node:path')
 const { execFileSync } = require('node:child_process')
+const { isSourcePackageFile } = require('./package-source.cjs')
 
 const configFiles = new Set(['Dockerfile', '.dockerignore', '.gitignore', '.gitattributes', '.env.example'])
 const manifestPath = 'docs/file-versions.json'
@@ -26,8 +27,15 @@ function stampSource(text, header) {
 
 function updateVersions(root, version, checkOnly) {
   if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)*$/.test(version)) throw new Error('Invalid package version')
-  const indexed = execFileSync('git', ['-c', 'safe.directory=' + root.replaceAll('\\','/'), 'ls-files', '-z', '--cached'], {cwd:root})
-  const files = [...new Set(indexed.toString('utf8').split('\0').filter(Boolean))].sort()
+  function gitFiles(...args) {
+    return execFileSync('git', ['-c', 'safe.directory=' + root.replaceAll('\\','/'), 'ls-files', '-z', ...args],
+      {cwd:root, encoding:'utf8'}).split('\0').filter(Boolean)
+  }
+  // Account for working-tree moves and new shipping files before staging a release.
+  const tracked = gitFiles('--cached').filter(file => fs.lstatSync(path.join(root, file), {throwIfNoEntry:false}))
+  const added = gitFiles('--others', '--exclude-standard').filter(file => isSourcePackageFile(file) &&
+    fs.lstatSync(path.join(root, file), {throwIfNoEntry:false})?.isFile())
+  const files = [...new Set([manifestPath, ...tracked, ...added])].sort()
   const stale = []
   let sources = 0
   for (const file of files) {
@@ -49,7 +57,7 @@ function updateVersions(root, version, checkOnly) {
     if (checkOnly) stale.push(manifestPath)
     else fs.writeFileSync(destination, manifest)
   }
-  if (stale.length) throw new Error('Run npm run version:files after staging file additions or removals. Out of date: ' + stale.slice(0,5).join(', '))
+  if (stale.length) throw new Error('Run npm run version:files to update release headers and the manifest. Out of date: ' + stale.slice(0,5).join(', '))
   return {files:files.length, sources}
 }
 
@@ -57,7 +65,7 @@ if (require.main === module) {
   const root = path.resolve(__dirname, '..')
   const {version} = require('../package.json')
   const counts = updateVersions(root, version, process.argv.includes('--check'))
-  console.log(`Open Backup UI v${version}: ${counts.sources} source headers, ${counts.files} tracked files.`)
+  console.log(`Open Backup UI v${version}: ${counts.sources} source headers, ${counts.files} release files.`)
 }
 
-module.exports = {sourceHeader, stampSource}
+module.exports = {sourceHeader, stampSource, updateVersions}

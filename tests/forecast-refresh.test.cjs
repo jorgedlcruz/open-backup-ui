@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs')
 const path = require('node:path')
@@ -43,6 +43,7 @@ function harness(options = {}) {
     observations: [], historyAvailable: false,
   })
   const dependencies = {
+    '../vbr/compatible-fetch': {fetchVbrCompatible: (...args) => context.fetch(...args)},
     './config-store': { configStore: {
       getAll: () => [...records.values()].filter(item => !item.id.startsWith('env-')),
       getById: id => records.get(id),

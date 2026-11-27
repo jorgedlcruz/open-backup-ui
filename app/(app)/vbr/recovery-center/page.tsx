@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {RecoveryCenterWorkspace} from '@/components/recovery-center/recovery-center-workspace'
 import {getRequestI18n} from '@/lib/i18n/server'
 

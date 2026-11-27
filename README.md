@@ -2,14 +2,24 @@
 
 **A community operations and recovery console for Veeam environments.**
 
-See protection health, investigate failures, plan storage, and recover data from one interface. **v1.2.0 introduces Recovery Center**: choose a recovery goal, select a workload and restore point, review the destination, and follow the operation in its own workspace. Browse files, Active Directory objects, and SQL databases inside the recovery session.
+See protection health, investigate failures, plan storage and recover data from one interface. **v1.3.0 brings Recovery Center to Microsoft 365.** Open a backup, preview an email or document, then follow the selected item through its restore.
 
-[What's new in v1.2.0](docs/releases/v1.2.0.md) · [Validation and release checklist](docs/releases/v1.2.0-validation.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
+[What's new in v1.3.0](docs/releases/v1.3.0.md) · [Changelog](CHANGELOG.md) · [Deployment](docs/deployment.md) · [Contributing](CONTRIBUTING.md)
 
 > [!IMPORTANT]
 > This is an independent, community-maintained project, not an official or vendor-supported product. It is provided as-is, without support obligations or SLAs. Test in a lab and review access controls before connecting production systems. Vendor names are used for identification only.
 
-## What's new in v1.2.0
+## What's new in v1.3.0
+
+- **Microsoft 365 Recovery Center** lets you browse Exchange, OneDrive, SharePoint and Teams at a selected restore point, review the recovery cart and track each restore.
+- **Preview before restoring.** Read an Exchange message, open a PDF, inspect an image or view a text file directly in the backup. [Supported preview formats and limits](docs/releases/v1.3.0.md#what-you-can-preview)
+- **See what happened.** The session timeline shows Veeam events, Open Backup UI activity records previews and downloads, and Restores gives you the item-level outcome for the destination.
+- **VBR v13.2 readiness.** A server that confirms REST API revision `1.3-rev3` enables additional inventory searches and job editors. Earlier v13 API revisions retain their supported workflows.
+- **Entra ID and Settings** add tenant inventory, a dedicated Settings area and notifications for new stable releases.
+
+![Jorge’s OneDrive membership card PNG open in the Microsoft 365 backup preview](docs/releases/images/v1.3.0/file-preview.png)
+
+## VBR Recovery Center from v1.2.0
 
 - **Recovery Center:** start with **Entire workload**, **Files, folders and objects**, **Application items**, or **Disks and volumes**. The picker shows eligible workloads and methods for the connected VBR source, with workload search and type filters.
 - **A restore-point calendar:** select a workload on the left and inspect its calendar and restore times on the right. The latest eligible point is selected automatically; month/year navigation and **Load more** make older recovery history accessible.
@@ -86,7 +96,8 @@ Browse the [visual guide](docs/releases/v1.0.0-gallery.md) for 43 application sc
 The dashboard combines job health, session history, backup evidence, and repository capacity. Dedicated Operations views cover:
 
 - **Backup Jobs:** schedules, sessions, per-workload errors, and existing job actions.
-- **Protected Objects:** users, groups, sites, and teams; HexMap, restore points, reported sizes, and review filters.
+- **Protected Objects:** users, groups, sites and teams, with a named HexMap, restore points, reported sizes, review filters and entry to Recovery Center.
+- **Recovery Center:** point-in-time browsing, in-browser preview, an item-level cart, restore outcomes and an expandable session history.
 - **Organizations:** job health, backup evidence, storage usage, and organization details.
 - **Repositories:** disk/cache and object-storage measurements, retention, immutability settings, and job relationships.
 - **Proxies:** availability, component updates, and concurrent-task configuration where reported.
@@ -105,9 +116,9 @@ Open global search with **Ctrl/Cmd+K** to find VBR and Microsoft 365 workloads, 
 
 Shared grids use expandable filter groups in a left rail, **Clear all** next to **Filters**, column controls, and sorting where applicable. The phone menu opens above the page content.
 
-Administration includes **Licensing**, **Data Sources**, **Branding & Appearance**, **AI Integrations**, **Telemetry**, and **Identity**. Review usage and expiration, connection/authentication status, API versions, user/role permissions, and local diagnostics. Appearance settings include light/dark mode, fonts, colors, density, radius, layout, sidebar mode, and section names.
+**Settings** includes Licensing, Data Sources, Branding & Appearance, AI Integrations, Telemetry, Identity and Updates. Review usage and expiration, connections, permissions, local diagnostics and release notes. Appearance settings control the theme, fonts, colors, density and layout.
 
-**Administration → Settings** adds language selection with automatic browser detection and bundled JSON translations, plus HTTPS certificate status and replacement for the optional managed HTTPS listener. English, Spanish, German, Russian, French, Brazilian Portuguese, Simplified Chinese, Japanese, Italian, Korean, and Hindi are included. See [translation coverage and contribution instructions](docs/i18n.md) and [HTTPS setup](docs/https.md).
+**Settings** includes language selection with automatic browser detection and bundled JSON translations, plus HTTPS certificate status and replacement for the optional managed HTTPS listener. English, Spanish, German, Russian, French, Brazilian Portuguese, Simplified Chinese, Japanese, Italian, Korean, and Hindi are included. See [translation coverage and contribution instructions](docs/i18n.md) and [HTTPS setup](docs/https.md).
 
 Optional AI health summaries support OpenAI, Google Gemini, and Anthropic. Generating a summary sends selected environment context to the configured provider; normal monitoring does not require AI.
 
@@ -144,13 +155,13 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000/connect](http://localhost:3000/connect), add a data source, connect, and continue to the dashboard. Manage sources later in **Administration → Data Sources**. The interface currently supports one configured source per platform type.
+Open [http://localhost:3000/connect](http://localhost:3000/connect), add a data source, connect, and continue to the dashboard. Manage sources later in **Settings → Data Sources**. This release supports one configured VBR server.
 
 Run `npm ci` after cloning or extracting the source on a new machine; dependencies are not included in the download. Ordinary `npm install` is also supported. Neither command needs `--legacy-peer-deps` or `--force`.
 
 The release source ZIP includes the application, tests, documentation, release screenshots, and connection-page images. It excludes installed dependencies, generated builds, local credentials, and runtime `data/`. Configure your own connections after extracting it; keep your existing instance's `data/` and encryption key when upgrading.
 
-To create the source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.2.0.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
+To create the source package locally, run `npm run package:source`. It writes `artifacts/open-backup-ui-v1.3.0.zip` and a matching SHA-256 checksum file. Packaging uses only Node.js built-ins and can run before dependency installation.
 
 The separate Linux standalone release includes the production build and runtime dependencies. Follow [standalone startup instructions](STANDALONE.md) to run it directly; use the source ZIP to install and build on Windows, macOS, or another architecture.
 
@@ -166,7 +177,7 @@ The separate Linux standalone release includes the production build and runtime 
 | `npm test` | Complete automated regression suite |
 | `npm run typecheck` | Standalone TypeScript check |
 | `npm run lint` | ESLint |
-| `npm run version:files` | Synchronize source headers and the tracked-file version manifest with `package.json` |
+| `npm run version:files` | Synchronize source headers and the release file manifest with `package.json` |
 | `npm run test:forecast` | Forecast, retention/storage investigation, and collector tests |
 | `npm run test:job-builder` | Job/profile models, native API contract, and submission safeguards |
 
@@ -176,7 +187,7 @@ Additional `test:*` commands in `package.json` cover each platform and workspace
 
 | Platform | Current integration |
 | --- | --- |
-| **VBR** | Public `/api/v1` with `1.3-rev1` and selected `1.3-rev2` readers/actions. Explorer, recovery and unstructured-data workflows also use authenticated `/private-api/v1` Web API routes. See the [Recovery Center workflow guide](docs/recovery-center-workflows.md). |
+| **VBR** | Public `/api/v1` negotiates `1.3-rev0` through `1.3-rev3`. Additional inventory and job actions require a confirmed compatible revision. Explorer, recovery and unstructured-data workflows also use authenticated `/private-api/v1` Web API routes. See the [Recovery Center workflow guide](docs/recovery-center-workflows.md). |
 | **Microsoft 365 backup** | `/v8` resource routes; stored-source authentication currently uses `/v7/Token`. |
 | **Veeam ONE** | `/api/v2.3` reporting and alarm routes. |
 | **Recovery Orchestrator** | `/api/v7.21/Plans`. |
@@ -234,6 +245,7 @@ Built with Next.js 15, React 19, TypeScript, Tailwind CSS 4, Radix/shadcn contro
 
 ## Documentation and community
 
+- [v1.3.0 release notes and preview guide](docs/releases/v1.3.0.md)
 - [v1.2.0 release notes](docs/releases/v1.2.0.md), [PR description](docs/releases/v1.2.0-pull-request.md), and [validation/publication checklist](docs/releases/v1.2.0-validation.md)
 - [v1.0.1 release notes](docs/releases/v1.0.1.md), [visual guide](docs/releases/v1.0.1-gallery.md), and [validation scope](docs/releases/v1.0.1-validation.md)
 - [Kiosk Builder and sharing](docs/labs.md) and [AI summary PDF export](docs/ai-summary-pdf.md)

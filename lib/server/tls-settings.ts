@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { timingSafeEqual } from 'node:crypto'
 import { applicationOrigin } from './request-origin'
 

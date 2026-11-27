@@ -1,5 +1,5 @@
 "use server"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { revalidatePath } from "next/cache"
 import { veeamApi } from "@/lib/api/veeam-client"
@@ -7,8 +7,8 @@ import { veeamApi } from "@/lib/api/veeam-client"
 export async function deleteUserAction(id: string) {
     try {
         await veeamApi.deleteUser(id)
-        revalidatePath("/administration/identity")
-        revalidatePath("/administration/identity/users")
+        revalidatePath("/settings/identity")
+        revalidatePath("/settings/identity/users")
         return { success: true }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to delete user"
@@ -31,7 +31,7 @@ export async function resetMFAAction(id: string) {
 export async function toggleServiceAccountAction(id: string, isServiceAccount: boolean) {
     try {
         await veeamApi.changeServiceAccountMode(id, isServiceAccount)
-        revalidatePath("/administration/identity/users")
+        revalidatePath("/settings/identity/users")
         return { success: true }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to update service account status"
@@ -43,7 +43,7 @@ export async function toggleServiceAccountAction(id: string, isServiceAccount: b
 export async function updateMFAAction(enabled: boolean) {
     try {
         await veeamApi.updateSecuritySettings({ mfaEnabled: enabled })
-        revalidatePath("/administration/identity/users")
+        revalidatePath("/settings/identity/users")
         return { success: true }
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to update MFA settings"

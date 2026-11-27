@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const fs = require('node:fs');
 const ts = require('typescript');
 require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
@@ -37,7 +37,8 @@ function source(overrides = {}) {
 }
 
 test('only published rev2 builds enable extended session reads', () => {
-  for (const build of [null, 'unknown', '13.1', '13.1.0.411-preview', '13.0.1.9999', '13.1.0.410', '12.3.1.9999']) assert.equal(revisionForBuild(build), '1.3-rev1');
+  assert.equal(revisionForBuild('13.0.0.4967'), '1.3-rev0');
+  for (const build of [null, 'unknown', '13.1', '13.0.1.180', '13.1.0.411-preview', '13.0.1.9999', '13.1.0.410', '12.3.1.9999']) assert.equal(revisionForBuild(build), '1.3-rev1');
   for (const build of ['13.1.0.411', '13.1.0.500', '13.2.0.1', '14.0.0.1']) assert.equal(revisionForBuild(build), '1.3-rev2');
 });
 test('missing results never imply success or an active task; null progress is supported', () => {

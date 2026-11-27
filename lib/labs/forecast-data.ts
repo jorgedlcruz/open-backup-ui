@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { capacityTrend, DAY, GB, dayStart, policyLabel, projectBackup, repositoryBackups, uniqueFiles, type ForecastSnapshot } from '../forecast/model'
 import { hygieneAnalysis, retentionAnalysis, retentionCategories } from '../forecast/investigation'
 import { fieldsFor } from './catalog'

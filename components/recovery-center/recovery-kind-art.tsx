@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { ReactNode } from 'react'
 import type { RecoveryKind } from '@/lib/restore-points/recovery-picker'
 import styles from './recovery-kind-art.module.css'

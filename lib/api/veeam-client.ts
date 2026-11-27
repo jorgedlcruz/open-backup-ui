@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 // Veeam Backup & Replication API Client
 // This client now uses Next.js API routes to avoid CORS issues
 import { applicationRequest, ApplicationRequestError } from './application-request';
@@ -58,6 +58,7 @@ import {
 import { VBMJob, VBMJobsResponse, VBMJobSession, VBMJobSessionsResponse, VBMLicense, VBMHealth, VBMServiceInstance, VBMOrganization, VBMOrganizationsResponse, VBMUsedRepositoriesResponse, VBMUsedRepository, VBMProtectedUser, VBMProtectedUsersResponse, VBMProtectedGroup, VBMProtectedGroupsResponse, VBMProtectedSite, VBMProtectedSitesResponse, VBMProtectedTeam, VBMProtectedTeamsResponse, VBMRestorePoint, VBMRestorePointsResponse, VBMBackupRepository, VBMBackupRepositoriesResponse, VB365LicensedUser, VB365LicensedUsersResponse, VB365Proxy, VB365ProxiesResponse, VB365Repository, VB365RepositoriesResponse } from '@/lib/types/vbm';
 import { AuthDebouncer, RateLimiter } from '@/lib/utils/rate-limiter';
 import { applicationApiUrl } from './application-url';
+import type { Platform, Snapshot } from '../licensing/model';
 import type {BatchInput,BatchReceipt} from '../restore-points/batch';
 import type { GuestDirectory, GuestRestoreChallenge, GuestRestoreCheck, GuestRestorePlan, GuestRestoreRequest, GuestSearch, GuestTask, InventoryKind, RestoreDraft, RestoreInventoryPage, RestoreOperation, RestoreOptions, RestorePlatform, RestoreStartStatus } from '../restore-points/workflow';
 
@@ -303,6 +304,11 @@ export class VeeamApiClient {
 
   async getVirtualInventory(signal?: AbortSignal): Promise<import('@/lib/virtual-infrastructure/model').VirtualSnapshot> {
     return this.request('/virtual-infrastructure', { apiPrefix: '/api/vbr', signal, cache: 'no-store' });
+  }
+
+  async searchVirtualInventory(platform:import('@/lib/virtual-infrastructure/model').GlobalInventoryPlatform, name:string, skip:number, signal:AbortSignal):Promise<import('@/lib/virtual-infrastructure/model').InventoryLookupPage> {
+    const query = new URLSearchParams({platform,name,skip:String(skip)});
+    return this.request('/virtual-infrastructure?' + query, {apiPrefix:'/api/vbr',signal,cache:'no-store'});
   }
 
   async getUnstructuredInventory(signal?: AbortSignal): Promise<import('@/lib/unstructured-data/model').Snapshot> {
@@ -723,62 +729,51 @@ export class VeeamApiClient {
     }
   }
 
-  async getLicensing(platform: import('@/lib/licensing/model').Platform, signal?: AbortSignal): Promise<import('@/lib/licensing/model').Snapshot> {
-    return platform === 'vbr' ? this.request('/licensing', { apiPrefix: '/api/vbr', signal, cache: 'no-store' }) : this.requestVBM('/licensing', { signal, cache: 'no-store' });
+  // Licensing resolves the selected product connection on the server. Forward an
+  // existing browser session for that product when available, without signing in again.
+  private licensingHeaders(platform: Platform): Headers {
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    const token = platform === 'vbr' ? this.token : this.vbmToken;
+    const expiry = platform === 'vbr' ? this.tokenExpiry : this.vbmTokenExpiry;
+    if (token && expiry && expiry.getTime() > Date.now()) headers.set('Authorization', 'Bearer ' + token);
+    return headers;
+  }
+
+  async getLicensing(platform: Platform, signal?: AbortSignal): Promise<Snapshot> {
+    return applicationRequest<Snapshot>(`/api/${platform}/licensing`, { headers: this.licensingHeaders(platform), signal });
   }
 
   async revokeLicenseSocket(hostId: string): Promise<void> {
-    await this.request(`/license/sockets/${encodeURIComponent(hostId)}/revoke`, { method: 'POST' });
+    await applicationRequest(`/api/veeam/license/sockets/${encodeURIComponent(hostId)}/revoke`, { method: 'POST', headers: this.licensingHeaders('vbr') });
   }
 
   async revokeLicenseInstance(instanceId: string): Promise<void> {
-    try {
-      await this.request(`/license/instances/${instanceId}/revoke`, {
-        method: 'POST'
-      });
-    } catch (error) {
-      console.error(`Error revoking license instance ${instanceId}:`, error);
-      throw error;
-    }
+    await applicationRequest(`/api/veeam/license/instances/${encodeURIComponent(instanceId)}/revoke`, { method: 'POST', headers: this.licensingHeaders('vbr') });
   }
 
   async revokeLicenseCapacity(instanceId: string): Promise<void> {
-    try {
-      await this.request(`/license/capacity/${instanceId}/revoke`, {
-        method: 'POST'
-      });
-    } catch (error) {
-      console.error(`Error revoking license capacity ${instanceId}:`, error);
-      throw error;
+    await applicationRequest(`/api/veeam/license/capacity/${encodeURIComponent(instanceId)}/revoke`, { method: 'POST', headers: this.licensingHeaders('vbr') });
+  }
+
+  private async licenseReport(platform: Platform, body: Record<string, string>): Promise<Response> {
+    const vbr = platform === 'vbr';
+    const response = await fetch(vbr ? '/api/veeam/license/createReport' : '/api/vbm/Reports/LicenseOverview', {
+      method: 'POST', headers: this.licensingHeaders(platform), body: JSON.stringify(body),
+      credentials: 'same-origin', redirect: 'error', cache: 'no-store',
+    });
+    if (!response.ok) {
+      const failure = await response.json().catch(() => null);
+      throw new Error(typeof failure?.error === 'string' ? failure.error : `License report failed (HTTP ${response.status}).`);
     }
+    const mime = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
+    if (mime !== (vbr ? 'text/html' : 'application/pdf') || !/^attachment\b/i.test(response.headers.get('content-disposition') || '')) {
+      throw new Error('The application did not return a license report.');
+    }
+    return response;
   }
 
   async createLicenseReport(): Promise<string> {
-    try {
-      // The API returns the report HTML directly when reportFormat is html
-      // We use application/octet-stream as verified by curl
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await this.request<any>('/license/createReport', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/octet-stream'
-        },
-        body: JSON.stringify({ reportFormat: 'html' })
-      });
-
-      // If the response is an object (unexpectedly parsed as JSON or empty), check if it has error or content
-      if (typeof response === 'object') {
-        if (response.error) return response.error; // In case our request() wrapped it
-        // If it's an empty object, it might be 204 or failed parse.
-        // We can't recover easily if request() swallowed the text.
-        // But let's stringify it just in case it is the JSON report mistakenly returned.
-        return JSON.stringify(response);
-      }
-      return response;
-    } catch (error) {
-      console.error('Error creating license report:', error);
-      throw error;
-    }
+    return (await this.licenseReport('vbr', { reportFormat: 'html' })).text();
   }
 
   async getMalwareEvents(options?: {
@@ -1743,53 +1738,11 @@ export class VeeamApiClient {
   }
 
   async revokeVB365License(userId: string): Promise<void> {
-    try {
-      const token = this.vbmToken;
-      const response = await fetch(`/api/vbm/LicensedUsers/${encodeURIComponent(userId)}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to revoke license: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Error revoking VB365 license:', error);
-      throw error;
-    }
+    await applicationRequest(`/api/vbm/LicensedUsers/${encodeURIComponent(userId)}`, { method: 'DELETE', headers: this.licensingHeaders('vbm') });
   }
 
   async generateVB365LicenseReport(startTime: string, endTime: string): Promise<Blob> {
-    try {
-      const token = this.vbmToken;
-      const response = await fetch('/api/vbm/Reports/LicenseOverview', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          startTime,
-          endTime,
-          format: 'PDF',
-          timezone: 'UTC'
-        })
-      });
-
-      if (!response.ok) {
-        const failure = await response.json().catch(() => null);
-        throw new Error(typeof failure?.error === 'string' ? failure.error : `Failed to generate report: ${response.status}`);
-      }
-
-      return await response.blob();
-    } catch (error) {
-      console.error('Error generating VB365 license report:', error);
-      throw error;
-    }
+    return (await this.licenseReport('vbm', { startTime, endTime, format: 'PDF', timezone: 'UTC' })).blob();
   }
 
   async getVB365Proxies(options?: { limit?: number; offset?: number }): Promise<VB365Proxy[]> {

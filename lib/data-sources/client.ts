@@ -1,11 +1,11 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { DataSource, PlatformType } from '../context/data-sources-context'
 import { applicationRequest } from '../api/application-request'
 
 const platforms = new Set(['vbr', 'vb365', 'vro', 'veeam-one', 'one', 'kasten'])
 export function clientSources(value: unknown, cached = false): DataSource[] {
   if (!Array.isArray(value)) throw new Error('The application did not return a data-source inventory. Please retry.')
-  return value.map(row => {
+  const rows = value.map(row => {
     if (!row || typeof row.id !== 'string' || typeof row.name !== 'string' || typeof row.url !== 'string' || !platforms.has(row.type)) {
       throw new Error('The application returned an invalid data source. Please retry.')
     }
@@ -17,6 +17,10 @@ export function clientSources(value: unknown, cached = false): DataSource[] {
       ...(!cached && (row.managed === 'saved' || row.managed === 'environment') ? { managed: row.managed as 'saved' | 'environment' } : {}),
     }
   })
+  if (!cached) return rows
+  // Browser caches from older releases may contain more than one saved VBR.
+  const primary = rows.find(row => row.type === 'vbr')
+  return rows.filter(row => row.type !== 'vbr' || row === primary)
 }
 
 export async function loadClientSources(signal?: AbortSignal): Promise<DataSource[]> {

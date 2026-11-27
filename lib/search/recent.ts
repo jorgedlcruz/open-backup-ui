@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { SearchKind, SearchResult } from './model'
 
 export type RecentResult = Pick<SearchResult, 'key' | 'name' | 'type'>

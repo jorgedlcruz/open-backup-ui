@@ -1,6 +1,7 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Check, Globe2, KeyRound, Loader2, LockKeyhole, RefreshCw, ShieldCheck, Upload } from 'lucide-react'
 import { useI18n } from '@/components/providers/i18n-provider'
@@ -26,11 +27,20 @@ type TlsStatus = {
 
 export function SettingsConsole() {
     const { t } = useI18n()
+    const query = useSearchParams()
+    const requested = query.get('tab')
+    const tab = requested === 'https' || requested === 'labs' ? requested : 'language'
+    function chooseTab(value: string) {
+        const url = new URL(window.location.href)
+        if (value === 'language') url.searchParams.delete('tab')
+        else url.searchParams.set('tab', value)
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash)
+    }
     return <div className={cn(ops.console, styles.page)}>
         <header className={ops.header}>
             <div><h1>{t('Application settings')}</h1><p>{t('Choose your language and manage secure access to this console.')}</p></div>
         </header>
-        <Tabs defaultValue="language">
+        <Tabs value={tab} onValueChange={chooseTab}>
             <TabsList aria-label={t('Application settings')} className={styles.tabs}>
                 <TabsTrigger value="language"><Globe2 size={15} />{t('Language & region')}</TabsTrigger>
                 <TabsTrigger value="https"><LockKeyhole size={15} />{t('HTTPS & certificates')}</TabsTrigger>

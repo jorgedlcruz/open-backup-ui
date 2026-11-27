@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .trigger,.count,.header,.title,.iconButton,.listTools,.footer,.toolbar,.navigation,.operationBar,.operationState { display:flex; align-items:center; }
 .workspace { display:grid; gap:.8rem; min-width:0; }
 .workspace [hidden] { display:none; }

@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import { jobSchema, type Collection } from '../operations/model'
 
@@ -14,13 +15,13 @@ const result = z.object({ result: text, message: text, isCanceled: z.boolean().n
 export const progressSchema = z.object({ duration: text, processingRate: text, bottleneck: text, processedSize: number, readSize: number, transferredSize: number, progressPercent: number }).nullish()
 export const investigationSessionSchema = z.object({
   id, jobId: reference, name: text, sessionType: text, creationTime: text, endTime,
-  state: text, result, progress: progressSchema, progressPercent: number, initiatedBy: text, platformName: text, algorithm: text,
+  state: text, result, progress: progressSchema, progressPercent: number, initiatedBy: text, platformName: text.transform(normalizeVbrPlatform), algorithm: text,
   originalSessionId: reference, parentSessionId: reference, relatedSessionId: reference, resourceId: reference, resourceReference: text,
   retryInfo: z.object({ isRecheckRetry: z.boolean().nullish(), retryNumber: z.number().int().positive().nullish() }).nullish(),
 })
 export const taskSchema = z.object({
   id, sessionId: reference, type: text, sessionType: text, name: text, creationTime: text, endTime,
-  state: text, result, progress: progressSchema, platformType: text, algorithm: text, repositoryId: reference,
+  state: text, result, progress: progressSchema, platformType: text.transform(normalizeVbrPlatform), algorithm: text, repositoryId: reference,
   restorePointId: reference, scanState: text, scanResult: text, scanType: text, antivirusName: text,
 })
 export const logSchema = z.object({
@@ -47,10 +48,13 @@ export type SessionInvestigation = {
 }
 export type TaskInvestigation = { task: Task; logs: Logs; fetchedAt: string; apiRevision: string; warnings: string[] }
 
-export function revisionForBuild(build: unknown): '1.3-rev1' | '1.3-rev2' {
+export type LegacyReadRevision = '1.3-rev0' | '1.3-rev1' | '1.3-rev2'
+export function revisionForBuild(build: unknown): LegacyReadRevision {
   // Veeam's published release boundary for 1.3-rev2; unknown/pre-release builds stay on rev1.
   if (typeof build !== 'string' || !/^\d+\.\d+\.\d+\.\d+$/.test(build)) return '1.3-rev1'
   const parts = build.split('.').map(Number), minimum = [13, 1, 0, 411]
+  // The first v13 release (13.0.0.4967) only supports 1.3-rev0.
+  if (parts[0] === 13 && parts[1] === 0 && parts[2] === 0) return '1.3-rev0'
   for (let i = 0; i < minimum.length; i++) {
     if (parts[i] > minimum[i]) return '1.3-rev2'
     if (parts[i] < minimum[i]) return '1.3-rev1'

@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../lib/vbr/compatible-fetch'
 // API Route for Veeam Managed Servers
 // This route proxies requests to the Veeam API for managed servers data
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
         const endpoint = queryString ? `/api/v1/backupInfrastructure/managedServers?${queryString}` : '/api/v1/backupInfrastructure/managedServers';
         const fullUrl = `${baseUrl}${endpoint}`;
 
-        let response = await fetch(fullUrl, {
+        let response = await fetchVbrCompatible(fullUrl, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
             console.log('[ManagedServers] 401 received, refreshing token...');
             const newToken = await tokenManager.refreshToken(sourceId);
             if (newToken) {
-                response = await fetch(fullUrl, {
+                response = await fetchVbrCompatible(fullUrl, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${newToken}`,

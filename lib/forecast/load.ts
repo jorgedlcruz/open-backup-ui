@@ -1,8 +1,8 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
-import { revisionForBuild } from '../investigation/model'
+import { type LegacyReadRevision, revisionForBuild } from '../investigation/model'
 import { stateSchema, configSchema, scaleOutSchema, backupSchema, fileSchema } from '../repositories/model'
 import { policySchema, objectSchema, uniqueFiles, type ForecastSnapshot, type BackupPlan, type ForecastFile } from './model'
 import type { Collection } from '../operations/model'
@@ -22,7 +22,7 @@ export async function loadLatestPoint(read:(path:string)=>Promise<unknown>,id:st
 }
 export async function loadForecast(raw: VbrReader, sourceName: string): Promise<ForecastSnapshot> {
   const warnings: string[] = []
-  let revision: '1.3-rev1' | '1.3-rev2' = '1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try { revision = revisionForBuild(z.object({buildVersion: z.string()}).parse(await raw('/api/v1/serverInfo')).buildVersion) }
   catch (error) { if (error instanceof TopologyRequestError && error.status === 401) throw error; warnings.push('Version discovery unavailable; newer policy fields may be missing.') }
   const read = (path: string) => raw(path,revision)

@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../lib/vbr/compatible-fetch'
 // API Route for Veeam Backup Jobs
 // This route proxies requests to the Veeam API to avoid CORS issues
 
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     const fullUrl = `${baseUrl}${endpoint}`;
 
     // Use native fetch with NODE_TLS_REJECT_UNAUTHORIZED=0 from env
-    let response = await fetch(fullUrl, {
+    let response = await fetchVbrCompatible(fullUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       console.log('[JOBS] 401 received, refreshing token...');
       const newToken = await tokenManager.refreshToken(sourceId);
       if (newToken) {
-        response = await fetch(fullUrl, {
+        response = await fetchVbrCompatible(fullUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${newToken}`,
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
     const apiVersion = request.headers.get('x-api-version') || '1.3-rev1';
     const fullUrl = `${baseUrl}/api/v1/jobs`;
 
-    let response = await fetch(fullUrl, {
+    let response = await fetchVbrCompatible(fullUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
       console.log('[JOBS] 401 received on POST, refreshing token...');
       const newToken = await tokenManager.refreshToken(sourceId);
       if (newToken) {
-        response = await fetch(fullUrl, {
+        response = await fetchVbrCompatible(fullUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${newToken}`,

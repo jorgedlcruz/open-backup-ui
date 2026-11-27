@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useI18n } from "@/components/providers/i18n-provider"
 
@@ -197,7 +197,7 @@ export function GlobalSearch({ vbrConfigured, vb365Configured, sourceScope }: Gl
             </Command.List>
             {notices.length > 0 && <details className={s.notices} open={!results.length && !loading}><summary>{t(notices.length === 1 ? "{count} source notice" : "{count} source notices", { count: formatNumber(notices.length) })}</summary>
               {notices.map(({ platform, message }, index) => <p key={`${platform}:${index}`}><strong>{platformLabels[platform]}:</strong> {message}</p>)}
-              <div className={s.noticeActions}><button type="button" onClick={refreshSearch}><RotateCw size={12} />{t("Retry")}</button><Link href="/administration/data-sources" onClick={() => setIsOpen(false)}>{t("Data sources")}</Link></div>
+              <div className={s.noticeActions}><button type="button" onClick={refreshSearch}><RotateCw size={12} />{t("Retry")}</button><Link href="/settings/data-sources" onClick={() => setIsOpen(false)}>{t("Data sources")}</Link></div>
             </details>}
           </div>
           <aside className={s.preview} aria-label={t("Selected result preview")}>

@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../vbr/compatible-fetch'
 import { configStore } from './config-store'
 import { tokenManager } from './token-manager'
 import { sourceBinding, ShareError, type ShareRecord } from './kiosk-shares'
@@ -48,7 +49,7 @@ async function load(record: ShareRecord): Promise<PublicKiosk> {
       if (!token) { authentication ??= tokenManager.getToken(source.id); token = await authentication }
       if (!token) throw new ShareError('The published data source is unavailable.', 503)
       shareSource(record)
-      const send = () => fetch(url, { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision }, redirect: 'error', cache: 'no-store', signal: controller.signal })
+      const send = () => fetchVbrCompatible(url, { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision }, redirect: 'error', cache: 'no-store', signal: controller.signal })
       let response = await send()
       if (response.status === 401) { shareSource(record); token = await tokenManager.refreshToken(source.id); if (token) response = await send() }
       if (!response.ok) throw new Error('Published source could not be read.')

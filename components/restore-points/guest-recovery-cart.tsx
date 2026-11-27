@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, File, Folder, FolderOpen, Loader2, Search, ShoppingCart, X } from 'lucide-react'

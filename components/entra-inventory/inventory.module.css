@@ -1,0 +1,10 @@
+/* Open Backup UI v1.3.0 */
+.metric { cursor: default; overflow-wrap: anywhere; }
+.metric:hover { border-color: var(--border); }
+.metric .detail { font-size: 1.05rem; letter-spacing: -.025em; line-height: 1.45; }
+.search { padding: 0 20px 16px; }
+.table { min-width: 690px; }
+.table td { overflow-wrap: anywhere; }
+.table time { white-space: nowrap; }
+.jobs { display: grid; gap: .35rem; }
+.jobs a { white-space: normal; }

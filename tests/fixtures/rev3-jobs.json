@@ -1,0 +1,1131 @@
+{
+  "RedHatOpenStackBackupJob": {
+    "type": "RedHatOpenStackBackupJob",
+    "name": "OpenStack VM Backup",
+    "description": "Created by .\\veeamadmin.",
+    "objects": {
+      "includes": [
+        {
+          "platform": "RedHatOpenStack",
+          "type": "VirtualMachine",
+          "name": "web-server-01",
+          "objectId": "9f0a1b2c-3d4e-5f60-7182-93a4b5c6d7e8",
+          "clusterId": "b1f0c2a4-3d5e-4f6a-8b9c-0d1e2f3a4b5c",
+          "domainId": "default",
+          "projectId": "ddc238683c2845a4819dfebd932dc36c"
+        }
+      ]
+    },
+    "storage": {
+      "backupRepositoryId": "7a2b1c0d-9e8f-4a3b-8c7d-6e5f4a3b2c1d",
+      "retentionPolicy": {
+        "type": "RestorePoints",
+        "quantity": 7
+      }
+    },
+    "advancedSettings": {
+      "compression": "Optimal",
+      "blockSize": "1MB"
+    }
+  },
+  "VirtuozzoBackupJob": {
+    "type": "VirtuozzoBackupJob",
+    "name": "Virtuozzo VM Backup",
+    "description": "Created by .\\veeamadmin.",
+    "objects": {
+      "includes": [
+        {
+          "platform": "Virtuozzo",
+          "type": "VirtualMachine",
+          "name": "app-server-01",
+          "objectId": "1122aabb-ccdd-eeff-0011-223344556677",
+          "clusterId": "7c2d1e0f-9a8b-4c3d-8e7f-6a5b4c3d2e1f",
+          "domainId": "default",
+          "projectId": "a72f4b19c0e84d33bf1e6d2c5a90714e"
+        }
+      ]
+    },
+    "storage": {
+      "backupRepositoryId": "5b8c1d3e-2a4f-4d6b-9c8e-1f0a2b3c4d5e",
+      "retentionPolicy": {
+        "type": "Days",
+        "quantity": 14
+      }
+    },
+    "advancedSettings": {
+      "compression": "Optimal",
+      "blockSize": "1MB"
+    }
+  },
+  "UnixAgentBackup": {
+    "name": "AIX Servers Backup",
+    "type": "UnixAgentBackup",
+    "description": "Created by ENTERPRISE01\\Administrator",
+    "isHighPriority": false,
+    "agentType": "Server",
+    "computers": [
+      {
+        "platform": "Agent",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "aix-db01.tech.local",
+        "type": "IbmAixComputer",
+        "path": "ProtectionGroup:Unix Servers;IbmAixComputer:aix-db01.tech.local",
+        "parentObjectId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupType": "IndividualComputers"
+      }
+    ],
+    "backupMode": "EntireMachine",
+    "storage": {
+      "backupRepositoryId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "retentionPolicy": {
+        "type": "Days",
+        "quantity": 14
+      },
+      "advancedSettings": {
+        "syntheticFulls": {
+          "isEnabled": true,
+          "weekly": {
+            "isEnabled": true,
+            "days": [
+              "Saturday"
+            ]
+          }
+        },
+        "activeFulls": {
+          "isEnabled": false
+        },
+        "storageData": {
+          "compressionLevel": "Optimal",
+          "storageOptimization": "1MB",
+          "encryption": {
+            "isEnabled": true,
+            "encryptionType": "ByUserPassword",
+            "encryptionPasswordId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        },
+        "notifications": {
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "backup-admins@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings",
+            "sendDailySummary": true,
+            "dailySummaryLocalTime": "08:00"
+          }
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": true,
+        "appSettings": [
+          {
+            "machineObject": {
+              "platform": "Agent",
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "aix-db01.tech.local",
+              "type": "IbmAixComputer",
+              "path": "ProtectionGroup:Unix Servers;IbmAixComputer:aix-db01.tech.local",
+              "parentObjectId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupType": "IndividualComputers"
+            },
+            "scripts": {
+              "isExecutionEnabled": true,
+              "jobScripts": {
+                "preJobScript": "/usr/local/bin/pre-backup.sh",
+                "postJobScript": "/usr/local/bin/post-backup.sh"
+              }
+            }
+          }
+        ]
+      },
+      "guestFSIndexing": {
+        "isEnabled": true,
+        "indexingSettings": [
+          {
+            "machineObject": {
+              "platform": "Agent",
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "aix-db01.tech.local",
+              "type": "IbmAixComputer",
+              "path": "ProtectionGroup:Unix Servers;IbmAixComputer:aix-db01.tech.local",
+              "parentObjectId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupType": "IndividualComputers"
+            },
+            "indexing": {
+              "guestFSIndexingMode": "IndexAll"
+            }
+          }
+        ]
+      }
+    },
+    "schedule": {
+      "runAutomatically": true,
+      "daily": {
+        "isEnabled": true,
+        "localTime": "22:00",
+        "dailyKind": "Everyday"
+      },
+      "retry": {
+        "isEnabled": true,
+        "retryCount": 3,
+        "awaitMinutes": 10
+      }
+    }
+  },
+  "UnixAgentBackupServerPolicy": {
+    "name": "Solaris Servers Backup Policy",
+    "type": "UnixAgentBackupServerPolicy",
+    "description": "Created by ENTERPRISE01\\Administrator",
+    "computers": [
+      {
+        "platform": "Agent",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "Solaris Servers",
+        "type": "ProtectionGroup",
+        "path": "ProtectionGroup:Solaris Servers",
+        "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupType": "PreInstalledAgents"
+      }
+    ],
+    "backupMode": "Custom",
+    "files": {
+      "customFiles": [
+        "/export/home",
+        "/etc"
+      ],
+      "advancedSettings": {
+        "exclusionMask": [
+          {
+            "path": "*.tmp",
+            "type": "Wildcard"
+          },
+          {
+            "path": "/export/home/oracle/diag",
+            "type": "Path"
+          }
+        ]
+      }
+    },
+    "storage": {
+      "destination": {
+        "destinationType": "BackupRepository",
+        "backupServerName": "vbr01.tech.local",
+        "backupRepositoryId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      },
+      "retentionPolicy": {
+        "type": "RestorePoints",
+        "quantity": 14
+      },
+      "advancedSettings": {
+        "syntheticFulls": {
+          "isEnabled": false
+        },
+        "activeFulls": {
+          "isEnabled": true,
+          "weekly": {
+            "isEnabled": false
+          },
+          "monthly": {
+            "isEnabled": true,
+            "dayNumberInMonth": "OnDay",
+            "dayOfMonth": 1
+          }
+        },
+        "storageData": {
+          "compressionLevel": "Optimal",
+          "storageOptimization": "1MB",
+          "encryption": {
+            "isEnabled": false
+          }
+        },
+        "notifications": {
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "backup-admins@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings",
+            "sendDailySummary": true,
+            "dailySummaryLocalTime": "08:00"
+          },
+          "backupMonitoring": {
+            "isEnabled": true,
+            "quantity": 7
+          }
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": false
+      },
+      "guestFSIndexing": {
+        "isEnabled": false
+      }
+    },
+    "schedule": {
+      "runAutomatically": true,
+      "daily": {
+        "isEnabled": true,
+        "localTime": "23:00",
+        "dailyKind": "Everyday"
+      },
+      "retry": {
+        "isEnabled": true,
+        "retryCount": 3,
+        "awaitMinutes": 10
+      }
+    }
+  },
+  "MacAgentBackupServerPolicy": {
+    "name": "Mac Build Servers Backup Policy",
+    "type": "MacAgentBackupServerPolicy",
+    "description": "Created by ENTERPRISE01\\Administrator",
+    "computers": [
+      {
+        "platform": "Agent",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "mac-build01.tech.local",
+        "type": "MacComputer",
+        "path": "ProtectionGroup:Mac Build Servers;MacComputer:mac-build01.tech.local",
+        "parentObjectId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupType": "IndividualComputers"
+      }
+    ],
+    "backupMode": "Custom",
+    "files": {
+      "customFiles": [
+        "/Users",
+        "/opt/ci"
+      ],
+      "advancedSettings": {
+        "exclusionMask": [
+          {
+            "path": "*.tmp",
+            "type": "Wildcard"
+          },
+          {
+            "path": "/Users/builder/Library/Caches",
+            "type": "Path"
+          }
+        ]
+      }
+    },
+    "storage": {
+      "destination": {
+        "destinationType": "SharedFolder",
+        "path": "\\\\nas01.tech.local\\MacBackups",
+        "networkShareType": "SMB",
+        "useNetworkCredentials": true,
+        "networkCredentialsId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      },
+      "retentionPolicy": {
+        "type": "Days",
+        "quantity": 14
+      },
+      "advancedSettings": {
+        "syntheticFulls": {
+          "isEnabled": true,
+          "weekly": {
+            "isEnabled": true,
+            "days": [
+              "Saturday"
+            ]
+          }
+        },
+        "activeFulls": {
+          "isEnabled": false
+        },
+        "storageData": {
+          "compressionLevel": "Optimal",
+          "storageOptimization": "1MB",
+          "encryption": {
+            "isEnabled": false
+          }
+        },
+        "notifications": {
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "backup-admins@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings",
+            "sendDailySummary": true,
+            "dailySummaryLocalTime": "08:00"
+          },
+          "backupMonitoring": {
+            "isEnabled": true,
+            "quantity": 7
+          }
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": true,
+        "appSettings": [
+          {
+            "machineObject": {
+              "platform": "Agent",
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "mac-build01.tech.local",
+              "type": "MacComputer",
+              "path": "ProtectionGroup:Mac Build Servers;MacComputer:mac-build01.tech.local",
+              "parentObjectId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protectionGroupType": "IndividualComputers"
+            },
+            "scripts": {
+              "isExecutionEnabled": true,
+              "jobScripts": {
+                "preJobScript": "/Users/Shared/Scripts/pre-backup.sh",
+                "postJobScript": "/Users/Shared/Scripts/post-backup.sh"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "schedule": {
+      "runAutomatically": true,
+      "daily": {
+        "isEnabled": true,
+        "localTime": "22:00",
+        "dailyKind": "Everyday"
+      },
+      "retry": {
+        "isEnabled": true,
+        "retryCount": 3,
+        "awaitMinutes": 10
+      }
+    }
+  },
+  "MacAgentBackupWorkstationPolicy": {
+    "name": "Mac Workstations Backup Policy",
+    "type": "MacAgentBackupWorkstationPolicy",
+    "description": "Created by ENTERPRISE01\\Administrator",
+    "computers": [
+      {
+        "platform": "Agent",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "Mac Workstations",
+        "type": "ProtectionGroup",
+        "path": "ProtectionGroup:Mac Workstations",
+        "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "protectionGroupType": "PreInstalledAgents"
+      }
+    ],
+    "backupMode": "UserData",
+    "files": {
+      "personalFiles": {
+        "backupPersonalFiles": true,
+        "includes": {
+          "desktop": true,
+          "documents": true,
+          "downloads": true,
+          "pictures": true
+        },
+        "excludes": {
+          "networkStorages": true
+        }
+      }
+    },
+    "storage": {
+      "destination": {
+        "destinationType": "CloudConnectRepository",
+        "backupRepositoryId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      },
+      "retentionPolicy": {
+        "type": "Days",
+        "quantity": 30
+      },
+      "advancedSettings": {
+        "syntheticFulls": {
+          "isEnabled": true,
+          "weekly": {
+            "isEnabled": true,
+            "days": [
+              "Saturday"
+            ]
+          }
+        },
+        "activeFulls": {
+          "isEnabled": false
+        },
+        "storageData": {
+          "compressionLevel": "Optimal",
+          "storageOptimization": "1MB",
+          "encryption": {
+            "isEnabled": true,
+            "encryptionType": "ByUserPassword",
+            "encryptionPasswordId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": false
+      }
+    },
+    "schedule": {
+      "runAutomatically": true,
+      "daily": {
+        "isEnabled": true,
+        "localTime": "12:30",
+        "dailyKind": "WeekDays"
+      }
+    }
+  },
+  "VSphereCdpPolicy": {
+    "name": "SQL CDP Policy",
+    "type": "VSphereCdpPolicy",
+    "description": "Continuous replication of the production SQL Server VM to the DR site",
+    "virtualMachines": {
+      "includes": [
+        {
+          "platform": "VSphere",
+          "hostName": "vcenter01.tech.local",
+          "name": "sql01",
+          "type": "VirtualMachine",
+          "objectId": "vm-1086"
+        }
+      ]
+    },
+    "destination": {
+      "host": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01.tech.local",
+        "type": "Host",
+        "objectId": "host-1008"
+      },
+      "resourcePool": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "ResourcePool",
+        "objectId": "resgroup-1024"
+      },
+      "folder": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "Folder",
+        "objectId": "group-v3001"
+      },
+      "datastore": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01-ds01",
+        "type": "Datastore",
+        "objectId": "datastore-4686"
+      }
+    },
+    "network": [
+      {
+        "sourceNetwork": {
+          "platform": "VSphere",
+          "hostName": "vcenter01.tech.local",
+          "name": "Production Network",
+          "type": "Network",
+          "objectId": "network-1015"
+        },
+        "targetNetwork": {
+          "platform": "VSphere",
+          "hostName": "vcenter01.tech.local",
+          "name": "DR Network",
+          "type": "Network",
+          "objectId": "network-2020"
+        }
+      }
+    ],
+    "policySettings": {
+      "sourceProxies": {
+        "autoSelectEnabled": true
+      },
+      "targetProxies": {
+        "autoSelectEnabled": true
+      },
+      "replicaSuffix": "_replica",
+      "advancedSettings": {
+        "notifications": {
+          "sendSNMPNotifications": false,
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "dradmin@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings"
+          }
+        }
+      }
+    },
+    "schedule": {
+      "rpoOptions": {
+        "period": 15,
+        "kind": "Seconds",
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        },
+        "warningReport": {
+          "isEnabled": true,
+          "period": 30,
+          "kind": "Seconds"
+        },
+        "failedReport": {
+          "isEnabled": true,
+          "period": 5,
+          "kind": "Minutes"
+        }
+      },
+      "shortTermRetention": {
+        "period": 4,
+        "kind": "Hours"
+      },
+      "longTermRetention": {
+        "periodHours": 4,
+        "keepIntervalDays": 7,
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": true,
+        "appSettings": [
+          {
+            "vmObject": {
+              "platform": "VSphere",
+              "hostName": "vcenter01.tech.local",
+              "name": "sql01",
+              "type": "VirtualMachine",
+              "objectId": "vm-1086"
+            },
+            "general": {
+              "applicationSettings": "RequireSuccess",
+              "transactionLogs": "Process"
+            },
+            "sql": {
+              "useGuestCredentials": true,
+              "logsProcessing": "Truncate"
+            }
+          }
+        ]
+      },
+      "guestInteractionProxies": {
+        "autoSelectEnabled": true
+      },
+      "guestCredentials": {
+        "useAgentManagementCredentials": false,
+        "credentials": {
+          "credentialsId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "credentialsType": "Standard"
+        }
+      }
+    }
+  },
+  "WindowsUniversalCdpPolicy": {
+    "name": "SQL Servers Universal CDP",
+    "type": "WindowsUniversalCdpPolicy",
+    "description": "Continuous replication of physical SQL Server hosts to VMware vSphere",
+    "machines": {
+      "includes": [
+        {
+          "platform": "Agent",
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "name": "SQL Servers",
+          "type": "ProtectionGroup",
+          "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        }
+      ],
+      "excludes": [
+        {
+          "platform": "Agent",
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "name": "sql-test01.tech.local",
+          "type": "WindowsComputer",
+          "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        }
+      ]
+    },
+    "destination": {
+      "type": "VSphere",
+      "host": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01.tech.local",
+        "type": "Host",
+        "objectId": "host-1008"
+      },
+      "resourcePool": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "ResourcePool",
+        "objectId": "resgroup-1024"
+      },
+      "folder": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "Folder",
+        "objectId": "group-v3001"
+      },
+      "datastore": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01-ds01",
+        "type": "Datastore",
+        "objectId": "datastore-4686"
+      }
+    },
+    "networkMapping": [
+      {
+        "targetNetwork": {
+          "platform": "VSphere",
+          "hostName": "vcenter01.tech.local",
+          "name": "DR Network",
+          "type": "Network",
+          "objectId": "network-2020"
+        }
+      }
+    ],
+    "policySettings": {
+      "sourceProxies": {
+        "autoSelectEnabled": true
+      },
+      "targetProxies": {
+        "autoSelectEnabled": true
+      },
+      "replicaSuffix": "_replica",
+      "advancedSettings": {
+        "notifications": {
+          "sendSNMPNotifications": false,
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "dradmin@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings"
+          }
+        }
+      }
+    },
+    "schedule": {
+      "rpoOptions": {
+        "period": 15,
+        "kind": "Seconds",
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        },
+        "warningReport": {
+          "isEnabled": true,
+          "period": 30,
+          "kind": "Seconds"
+        },
+        "failedReport": {
+          "isEnabled": true,
+          "period": 5,
+          "kind": "Minutes"
+        }
+      },
+      "shortTermRetention": {
+        "period": 4,
+        "kind": "Hours"
+      },
+      "longTermRetention": {
+        "periodHours": 4,
+        "keepIntervalDays": 7,
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": true,
+        "appSettings": [
+          {
+            "vmObject": {
+              "platform": "Agent",
+              "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "name": "SQL Servers",
+              "type": "ProtectionGroup",
+              "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            },
+            "general": {
+              "applicationSettings": "RequireSuccess",
+              "transactionLogs": "Process"
+            },
+            "sql": {
+              "useGuestCredentials": false,
+              "credentialsId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "logsProcessing": "Truncate"
+            }
+          }
+        ]
+      },
+      "guestInteractionProxies": {
+        "autoSelectEnabled": true
+      }
+    }
+  },
+  "LinuxUniversalCdpPolicy": {
+    "name": "Web Servers Universal CDP",
+    "type": "LinuxUniversalCdpPolicy",
+    "description": "Continuous replication of Linux web servers to VMware vSphere",
+    "machines": {
+      "includes": [
+        {
+          "platform": "Agent",
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "name": "Linux Web Servers",
+          "type": "ProtectionGroup",
+          "protectionGroupId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        }
+      ]
+    },
+    "destination": {
+      "type": "VSphere",
+      "host": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01.tech.local",
+        "type": "Host",
+        "objectId": "host-1008"
+      },
+      "resourcePool": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "ResourcePool",
+        "objectId": "resgroup-1024"
+      },
+      "folder": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "Replicas",
+        "type": "Folder",
+        "objectId": "group-v3001"
+      },
+      "datastore": {
+        "platform": "VSphere",
+        "hostName": "vcenter01.tech.local",
+        "name": "esx-dr01-ds01",
+        "type": "Datastore",
+        "objectId": "datastore-4686"
+      }
+    },
+    "networkMapping": [
+      {
+        "targetNetwork": {
+          "platform": "VSphere",
+          "hostName": "vcenter01.tech.local",
+          "name": "DR Network",
+          "type": "Network",
+          "objectId": "network-2020"
+        }
+      }
+    ],
+    "policySettings": {
+      "sourceProxies": {
+        "autoSelectEnabled": true
+      },
+      "targetProxies": {
+        "autoSelectEnabled": true
+      },
+      "replicaSuffix": "_replica",
+      "advancedSettings": {
+        "notifications": {
+          "sendSNMPNotifications": false,
+          "emailNotifications": {
+            "isEnabled": true,
+            "recipients": [
+              "dradmin@tech.local"
+            ],
+            "notificationType": "UseGlobalNotificationSettings"
+          }
+        }
+      }
+    },
+    "schedule": {
+      "rpoOptions": {
+        "period": 30,
+        "kind": "Seconds",
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        },
+        "warningReport": {
+          "isEnabled": true,
+          "period": 30,
+          "kind": "Seconds"
+        },
+        "failedReport": {
+          "isEnabled": true,
+          "period": 5,
+          "kind": "Minutes"
+        }
+      },
+      "shortTermRetention": {
+        "period": 1,
+        "kind": "Hours"
+      },
+      "longTermRetention": {
+        "periodHours": 6,
+        "keepIntervalDays": 3,
+        "schedule": {
+          "days": [
+            {
+              "day": "Monday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Tuesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Wednesday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Thursday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Friday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Saturday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            },
+            {
+              "day": "Sunday",
+              "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            }
+          ]
+        }
+      }
+    },
+    "guestProcessing": {
+      "appAwareProcessing": {
+        "isEnabled": false
+      }
+    }
+  },
+  "StorageCopy": {
+    "name": "StoreOnce Storage Copy",
+    "type": "StorageCopy",
+    "description": "Copy of StoreOnce Catalyst backups to the DR StoreOnce appliance",
+    "storageMappings": [
+      {
+        "sourceRepositoryId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "targetRepositoryId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+      }
+    ],
+    "maintenance": {
+      "healthCheckEnabled": false,
+      "keepSecondaryCopiesEnabled": true,
+      "keepSecondaryCopiesForDays": 21
+    },
+    "schedule": {
+      "isEnabled": true,
+      "backupWindow": {
+        "days": [
+          {
+            "day": "Monday",
+            "hours": "1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1"
+          },
+          {
+            "day": "Tuesday",
+            "hours": "1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1"
+          },
+          {
+            "day": "Wednesday",
+            "hours": "1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1"
+          },
+          {
+            "day": "Thursday",
+            "hours": "1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1"
+          },
+          {
+            "day": "Friday",
+            "hours": "1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1"
+          },
+          {
+            "day": "Saturday",
+            "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+          },
+          {
+            "day": "Sunday",
+            "hours": "1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+          }
+        ]
+      }
+    },
+    "notifications": {
+      "sendSNMPNotifications": false,
+      "emailNotifications": {
+        "isEnabled": true,
+        "recipients": [
+          "backupadmin@tech.local"
+        ],
+        "notificationType": "UseGlobalNotificationSettings",
+        "notificationsSchedule": "Immediate"
+      }
+    }
+  }
+}

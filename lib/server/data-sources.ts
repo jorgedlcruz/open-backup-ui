@@ -1,12 +1,13 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { configStore, type VBRSource } from './config-store'
+import { CATALOG_BUSY, configStore, SINGLE_VBR_CONFLICT, type VBRSource } from './config-store'
 import { tokenManager } from './token-manager'
 import { getChunkedCookie, setChunkedCookie, deleteChunkedCookie } from '../utils/cookie-manager'
-import { connectInput, editInput, endpoint, normalizePlatform, sourceId, sourceInput, unchecked, type Source, type Row, type Platform } from '../data-sources/model'
+import { connectInput, editInput, endpoint, normalizePlatform, sessionKeys, sourceId, sourceInput, unchecked, type Source, type Row, type Platform } from '../data-sources/model'
 import { probe } from '../data-sources/probe'
+import { vbrLoginRevision } from '../vbr/version-response'
 import { ConnectionChecks } from '../data-sources/connection-summary'
 import { readCacheScope } from './read-cache-scope'
 import { isSameApplicationOrigin, isSecureApplicationRequest } from './request-origin'
@@ -15,12 +16,11 @@ const headers = {'Cache-Control':'private, no-store'}
 const processState = globalThis as typeof globalThis & {sourceConnectionChecks?: ConnectionChecks}
 const connectionChecks = processState.sourceConnectionChecks ??= new ConnectionChecks()
 type Jar = Awaited<ReturnType<typeof cookies>>
-export const sessionKeys: Record<Platform,{id:string;token:string}> = {
-  vbr:{id:'veeam_source_id',token:'veeam_vbr_token'}, vb365:{id:'veeam_vb365_source_id',token:'veeam_vb365_token'},
-  vro:{id:'veeam_vro_source_id',token:'veeam_vro_token'}, one:{id:'veeam_one_source_id',token:'veeam_one_token'}, kasten:{id:'veeam_kasten_source_id',token:'kasten_token'},
-}
-class SourceError extends Error { constructor(message:string, public status=400){super(message)} }
-function safeError(error:unknown) { return NextResponse.json({error:error instanceof SourceError ? error.message:'The data-source request could not be completed. Check the connection details and try again.'},{status:error instanceof SourceError ? error.status:502,headers}) }
+export { sessionKeys }
+export class SourceError extends Error { constructor(message:string, public status=400){super(message)} }
+function safeError(error:unknown) {
+  if(error instanceof Error && (error.message===SINGLE_VBR_CONFLICT || error.message===CATALOG_BUSY))return NextResponse.json({error:error.message},{status:409,headers})
+  return NextResponse.json({error:error instanceof SourceError ? error.message:'The data-source request could not be completed. Check the connection details and try again.'},{status:error instanceof SourceError ? error.status:502,headers}) }
 function sameOrigin(request:NextRequest) { if(!isSameApplicationOrigin(request))throw new SourceError('Data-source changes must originate from this application.',403) }
 function sourceUrl(source:VBRSource) { return endpoint(`${source.protocol}://${source.host}:${source.port}`).url }
 function selected(source:Pick<Source,'id'|'type'|'url'>, jar:Jar) {
@@ -150,7 +150,7 @@ export async function authenticateSource(source:VBRSource,request:NextRequest) {
   const type=normalizePlatform(source.platform),path=type==='vb365' ? '/v7/Token':type==='one' ? '/api/token':type==='kasten' ? '/api/v1/auth':'/api/oauth2/token'
   if(!source.username || !source.password)throw new SourceError('Enter a username and password to connect this source.',401)
   const response=await fetch(new URL(path,sourceUrl(source)),{
-    method:'POST',headers:{Accept:'application/json','Content-Type':type==='kasten' ? 'application/json':'application/x-www-form-urlencoded',...(type==='vbr' ? {'x-api-version':'1.3-rev1'}:{})},
+    method:'POST',headers:{Accept:'application/json','Content-Type':type==='kasten' ? 'application/json':'application/x-www-form-urlencoded',...(type==='vbr' ? {'x-api-version':vbrLoginRevision}:{})},
     body:type==='kasten' ? JSON.stringify({username:source.username,password:source.password}):new URLSearchParams({grant_type:'password',username:source.username,password:source.password}),
     redirect:'error',cache:'no-store',signal:transportSignal(request),
   })
@@ -167,19 +167,23 @@ export async function mutateSource(request:NextRequest,action:'add'|'edit'|'remo
     if(action==='add') {
       const parsed=sourceInput.safeParse(body);if(!parsed.success)throw new SourceError('Enter a valid platform, display name and server URL.')
       const value=parsed.data
-      if(catalog(jar).some(row=>row.type===value.type && row.url===value.url.url))throw new SourceError('This platform and endpoint are already configured.',409)
+      const all=catalog(jar,true)
+      if(value.type==='vbr' && all.some(row=>row.type==='vbr'))throw new SourceError(SINGLE_VBR_CONFLICT,409)
+      if(all.some(row=>row.type===value.type && row.url===value.url.url))throw new SourceError('This platform and endpoint are already configured.',409)
       const source:VBRSource={id:`ds-${randomUUID()}`,platform:value.type,name:value.name,host:value.url.host,port:value.url.port,protocol:value.url.protocol,username:''}
-      configStore.save(source);return NextResponse.json({success:true,id:source.id},{status:201,headers})
+      await configStore.save(source);return NextResponse.json({success:true,id:source.id},{status:201,headers})
     }
     const original=resolve(id || ''),type=normalizePlatform(original.platform),row=catalog(jar).find(row=>row.id===original.id) || {id:original.id,type,url:sourceUrl(original),selected:false} as Source
     if(action==='disconnect') {await clearSession(row,jar);return NextResponse.json({success:true},{headers})}
     if((action==='edit' || action==='remove') && original.id.startsWith('env-'))throw new SourceError('This source is managed by environment configuration. Update it on the server.',409)
-    if(action==='remove') {configStore.delete(original.id);tokenManager.forget(original.id);await clearSession(row,jar);return NextResponse.json({success:true},{headers})}
+    if(action==='remove') {await configStore.delete(original.id);tokenManager.forget(original.id);await clearSession(row,jar);return NextResponse.json({success:true},{headers})}
     if(action==='edit') {
       const parsed=editInput.safeParse(body);if(!parsed.success)throw new SourceError('Enter a valid display name and server URL.')
       const value=parsed.data,changed=value.url.url!==sourceUrl(original)
       if(catalog(jar).some(other=>other.id!==original.id && other.type===type && other.url===value.url.url))throw new SourceError('This platform and endpoint are already configured.',409)
-      configStore.save({...original,name:value.name,host:value.url.host,port:value.url.port,protocol:value.url.protocol,...(changed ? {password:undefined,username:''}:{})})
+      await configStore.save({...original,name:value.name,host:value.url.host,port:value.url.port,protocol:value.url.protocol,...(changed ? {password:undefined,username:''}:{})},async()=>{
+        if(!sameConnection(original,resolve(original.id)))throw new SourceError('Configuration changed during the check. Refresh to retry.',409)
+      })
       if(changed){tokenManager.forget(original.id);await clearSession(row,jar)}
       return NextResponse.json({success:true,requiresAuthentication:changed},{headers})
     }
@@ -188,7 +192,14 @@ export async function mutateSource(request:NextRequest,action:'add'|'edit'|'remo
     const candidate={...original,...parsed.data},result=await authenticateSource(candidate,request),current=resolve(original.id)
     if(!sameConnection(original,current))throw new SourceError('This source changed during authentication. Refresh and reconnect.',409)
     // Failed sign-ins cannot overwrite or remove the saved configuration.
-    if(parsed.data.password)configStore.save({...current,...parsed.data})
+    if(parsed.data.password){
+      const updated={...current,...parsed.data}
+      await configStore.save(updated,async()=>{
+        const latest=resolve(current.id)
+        if(!sameConnection(current,latest))throw new SourceError('This source changed during authentication. Refresh and reconnect.',409)
+        updated.name=latest.name
+      })
+    }
     tokenManager.remember(original.id,result.token,result.expiresIn)
     await bindSession(candidate,result.token,jar,request)
     return NextResponse.json({success:true,id:original.id},{headers})

@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -59,7 +59,7 @@ export function AppStatusFooter() {
   const detail = summary && t('{verified} of {total} connections verified', {verified:formatNumber(summary.verified), total:formatNumber(summary.total)})
   return <footer className={styles.footer}>
     <div className={styles.strip}>
-      <Link href="/administration/data-sources" className={styles.link} title={detail}>
+      <Link href="/settings/data-sources" className={styles.link} title={detail}>
         {t('Data sources')} <span role="status" className={styles.state} data-status={status}><i aria-hidden="true"/>{label}</span>
         {detail && <span className="sr-only"> · {detail}</span>}
       </Link>

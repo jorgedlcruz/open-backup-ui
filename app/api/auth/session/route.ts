@@ -1,8 +1,9 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { getChunkedCookie, deleteChunkedCookie } from "@/lib/utils/cookie-manager"
 import { configStore } from "@/lib/server/config-store"
+import { vbrBrowserToken } from "@/lib/server/vbr-browser-token"
 
 export const dynamic = 'force-dynamic';
 
@@ -23,14 +24,24 @@ export async function GET() {
         const sessions: Record<string, { authenticated: boolean; url?: string }> = {}
 
         for (const [platform, cookieName] of Object.entries(platformTokenCookies)) {
+            if (platform === 'vbr') {
+                const source = configStore.getVbr()
+                const url = source && `${source.protocol}://${source.host}:${source.port}`
+                const selectedId = cookieStore.get('veeam_source_id')?.value
+                sessions.vbr = {
+                    authenticated: Boolean(url && (selectedId
+                        ? configStore.getById(selectedId, false)?.platform === 'vbr'
+                        : vbrBrowserToken(cookieStore, new URL(url)))),
+                    url: url || undefined,
+                }
+                continue
+            }
             let isAuthenticated = !!getChunkedCookie(cookieStore, cookieName)
 
             // Check for Source ID Cookie (Server-Side Auth)
             if (!isAuthenticated) {
                 let cookieId: string;
-                if (platform === 'vbr') {
-                    cookieId = 'veeam_source_id';
-                } else if (platform === 'veeam-one') {
+                if (platform === 'veeam-one') {
                     cookieId = 'veeam_one_source_id';
                 } else {
                     cookieId = `veeam_${platform}_source_id`;

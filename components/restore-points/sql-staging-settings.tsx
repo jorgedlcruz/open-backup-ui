@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Check, Database, KeyRound, Loader2, Search, ServerCog } from 'lucide-react'

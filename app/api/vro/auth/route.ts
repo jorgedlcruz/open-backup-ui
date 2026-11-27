@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 // API Route for Veeam Recovery Orchestrator Authentication
 // This route proxies authentication requests to VRO API
 
