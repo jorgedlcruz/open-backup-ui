@@ -1,9 +1,9 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
-import type { VbrReader } from '../server/vbr-read'
+import type { VbrReader,VbrRevision } from '../server/vbr-read'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
-import { investigationJobSchema, investigationSessionSchema, taskSchema, logSchema, validId, revisionForBuild, linkedAttempts, newestFirst, time, type Evidence, type Logs, type Session, type HistoryRange, type JobInvestigation, type SessionInvestigation, type TaskInvestigation, type RetryChain } from './model'
+import { investigationJobSchema, investigationSessionSchema, taskSchema, logSchema, validId, type LegacyReadRevision, revisionForBuild, linkedAttempts, newestFirst, time, type Evidence, type Logs, type Session, type HistoryRange, type JobInvestigation, type SessionInvestigation, type TaskInvestigation, type RetryChain } from './model'
 
 type Read = (path: string) => Promise<unknown>
 function reason(error: unknown) {
@@ -16,8 +16,9 @@ async function optional<T>(work: Promise<Evidence<T>>): Promise<Evidence<T>> {
     return { data: [], available: false, complete: false, error: reason(error) }
   }
 }
-async function reader(raw: VbrReader) {
-  let revision: '1.3-rev1' | '1.3-rev2' = '1.3-rev1'
+async function reader(raw: VbrReader, negotiated?:VbrRevision) {
+  if(negotiated)return {read:(path:string)=>raw(path,negotiated),revision:negotiated,warnings:[] as string[]}
+  let revision: LegacyReadRevision = '1.3-rev1'
   const warnings: string[] = []
   try {
     const info = z.object({ buildVersion: z.string() }).parse(await raw('/api/v1/serverInfo'))
@@ -43,8 +44,8 @@ export async function loadLogs(read: Read, path: string): Promise<Logs> {
   })())
   return { ...section, total }
 }
-export async function loadJobInvestigation(raw: VbrReader, sourceName: string, jobId: string, range: HistoryRange, now = new Date()): Promise<JobInvestigation> {
-  const { read, revision, warnings } = await reader(raw)
+export async function loadJobInvestigation(raw: VbrReader, sourceName: string, jobId: string, range: HistoryRange, now = new Date(), negotiated?:VbrRevision): Promise<JobInvestigation> {
+  const { read, revision, warnings } = await reader(raw,negotiated)
   const from = new Date(now.getTime() - ({ '7d': 7, '30d': 30, '90d': 90 }[range] * 86400000)).toISOString()
   const [jobs, history] = await Promise.all([
     optional(readOperationsCollection(read, `/api/v1/jobs/states?idFilter=${encodeURIComponent(jobId)}`, investigationJobSchema)),

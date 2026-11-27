@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { createHealthPdf, healthPdfFonts, type HealthPdfOptions } from './health-pdf'
 
 const fontCache = new Map<string, Promise<string>>()

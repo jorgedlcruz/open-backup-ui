@@ -1,10 +1,37 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 
 export const platformSchema = z.enum(['vbr', 'vb365', 'vro', 'one', 'kasten'])
 export type Platform = z.infer<typeof platformSchema>
+export const sessionKeys: Record<Platform, { id: string; token: string }> = {
+  vbr: { id: 'veeam_source_id', token: 'veeam_vbr_token' },
+  vb365: { id: 'veeam_vb365_source_id', token: 'veeam_vb365_token' },
+  vro: { id: 'veeam_vro_source_id', token: 'veeam_vro_token' },
+  one: { id: 'veeam_one_source_id', token: 'veeam_one_token' },
+  kasten: { id: 'veeam_kasten_source_id', token: 'kasten_token' },
+}
+
+/** Navigation availability only. Each API validates the selected connection before serving data. */
+export function workspaceConnections(
+  cookies: { get(name: string): { value: string } | undefined },
+  env: Readonly<Record<string, string | undefined>>,
+  saved: readonly { platform: string }[] = [],
+) {
+  function configured(platform: Platform, url: string | undefined) {
+    const keys = sessionKeys[platform]
+    // A split session token retains its first chunk under the base cookie name.
+    return Boolean(cookies.get(keys.id)?.value || cookies.get(keys.token)?.value || url || saved.some(s => s.platform === platform))
+  }
+  return {
+    vbr: configured('vbr', env.VEEAM_API_URL || env.VBR_API_URL),
+    vb365: configured('vb365', env.VBM_API_URL),
+    vro: configured('vro', env.VRO_API_URL),
+    one: configured('one', env.VEEAM_ONE_API_URL),
+  }
+}
+
 export const platforms: Record<Platform, { name: string; port: number; api: string | null; home: string }> = {
-  vbr: { name: 'Veeam Backup & Replication', port: 9419, api: '1.3-rev2', home: '/vbr/lens' },
+  vbr: { name: 'Veeam Backup & Replication', port: 9419, api: '1.3-rev0–1.3-rev3', home: '/vbr/lens' },
   vb365: { name: 'Microsoft 365', port: 4443, api: 'v8', home: '/vbm/dashboard' },
   vro: { name: 'Recovery Orchestrator', port: 9081, api: 'v7.21', home: '/vro' },
   one: { name: 'Veeam ONE', port: 1239, api: 'v2.3', home: '/analytics/alarms' },

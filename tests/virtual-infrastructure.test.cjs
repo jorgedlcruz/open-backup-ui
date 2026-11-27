@@ -1,9 +1,11 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs=require('node:fs'),ts=require('typescript');
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText,filename);
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {buildVirtualRows,power,sizeOrder,sortVirtual,matchesVirtual,memberVms,membershipIndex,itemKey,canQuickBackup,defaultVirtualFilters:defaults}=require('../lib/virtual-infrastructure/model.ts');
-const {loadVirtualInventory}=require('../lib/virtual-infrastructure/load.ts');
+const {loadVirtualInventory:loadInventory,searchVirtualInventory}=require('../lib/virtual-infrastructure/load.ts');
+const loadVirtualInventory=(read,browse,name)=>loadInventory(read,browse,name,'1.3-rev2');
 const {TopologyRequestError}=require('../lib/topology/load.ts');
 const id=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const vm=(extra={})=>({name:'VM',type:'VirtualMachine',platform:'VSphere',hostName:'vc.example',objectId:'vm-1',urn:'vc:vc.example;datacenter:dc-1;cluster:c-1;hostsystem:h-1;vm:vm-1',powerState:'PoweredOn',size:'8.2 GB',...extra});
@@ -117,6 +119,66 @@ test('host-filter membership uses matching inventory IDs and remains unresolved 
  assert.equal(rows[0].host.name,'host');assert.equal(membershipIndex(rows).get(itemKey(h)).length,1);
  const ambiguous=buildVirtualRows(snap([v,h,h2],[],{hostLinks:ev([...links,{vmKey:itemKey(v),hostKey:itemKey(h2)}])}));
  assert.equal(ambiguous[0].host.name,'Not reported');
+});
+
+test('platform-wide inventory reads are restricted to the negotiated rev3 source',async()=>{
+ const browse=async(host,skip,limit,revision,hierarchy,platformSearch)=>{
+   assert.equal(platformSearch,undefined);assert.equal(revision,'1.3-rev0');
+   return {data:host?[vm()]:[root()]};
+ };
+ const data=await loadInventory(read,browse,'GA','1.3-rev0');
+ assert.deepEqual(data.searchPlatforms,[]);assert.equal(data.apiRevision,'1.3-rev0');
+ let reads=0;
+ await assert.rejects(searchVirtualInventory(async()=>{reads++},'1.3-rev2',new URLSearchParams({platform:'VSphere',name:'sql'})),e=>e.status===400);
+ assert.equal(reads,0);
+});
+
+test('rev3 reads one paged platform across managers, named managers for plugins, and leaves unknown roots visible',async()=>{
+ const calls=[],server=(platform,hostName,type)=>({platform,hostName,name:hostName,type,objectId:hostName});
+ const browse=async(host,skip,limit,revision,hierarchy,global)=>{
+   assert.equal(revision,'1.3-rev3');calls.push({host,skip,global});
+   if(global)return {data:[vm({objectId:'vm-'+skip,hostName:skip?'second-vc':'vc.example'})],pagination:{total:2}};
+   if(host==='ocp')return {data:[vm({platform:'KubeVirt',hostName:'ocp',urn:null})]};
+   if(host)assert.fail('unexpected manager '+host);
+   return {data:[root(),server('VSphere','second-vc','vCenterServer'),server('KubeVirt','ocp','Cluster'),server('Future','future','Thing')]};
+ };
+ const snap=await loadInventory(read,browse,'fixture','1.3-rev3');
+ assert.deepEqual(snap.searchPlatforms,['VSphere']);assert.equal(snap.inventory.complete,true);
+ assert.deepEqual(calls.filter(c=>c.global).map(c=>[c.skip,c.global.platform]),[[0,'VSphere'],[1,'VSphere']]);
+ assert.equal(calls.filter(c=>c.host).length,1);
+ assert.ok(snap.inventory.data.some(i=>i.platform==='Future'));assert.ok(snap.inventory.data.some(i=>i.type==='VirtualMachine'&&i.platform==='KubeVirt'));
+});
+
+test('inventory permissionScope was introduced in rev2 and is omitted from GA host membership queries',async()=>{
+ const {supportsInventoryScope}=require('../lib/virtual-infrastructure/model.ts');
+ assert.deepEqual(['1.3-rev0','1.3-rev1','1.3-rev2','1.3-rev3'].map(supportsInventoryScope),[false,false,true,true]);
+ const calls=[];
+ await loadInventory(async path=>{
+   if(path.startsWith('/api/v1/inventory/vmware/hosts/')){calls.push(path);return {data:[]}}
+   return read(path)
+ },async host=>({data:host?[vm({urn:'vc:vc.example;vm:vm-1'}),container('Host','h-1','host')]:[root()]}),'GA','1.3-rev0');
+ assert.equal(calls.length,1);assert.equal(new URL(calls[0],'https://fixture.invalid').searchParams.has('permissionScope'),false);
+});
+
+test('a restricted platform-wide inventory operation falls back to the existing server browser',async()=>{
+ const calls=[];
+ const browse=async(host,skip,limit,rev,hierarchy,global)=>{
+   calls.push({host,global});if(global)throw new TopologyRequestError('Denied',403);
+   return {data:host?[vm()]:[root()]};
+ };
+ const snap=await loadInventory(read,browse,'fixture','1.3-rev3');
+ assert.deepEqual(snap.searchPlatforms,[]);assert.equal(snap.inventory.complete,true);
+ assert.equal(calls.filter(c=>c.host==='vc.example').length,1);
+});
+
+test('rev3 lookup submits platform/name and actual page offset, rejects unsupported scope and malformed pages',async()=>{
+ const calls=[],params=new URLSearchParams({platform:'VSphere',name:' SQL ',skip:'32'});
+ const browse=async(...args)=>{calls.push(args);return {data:[vm()],pagination:{count:1,total:33,skip:32}}};
+ const page=await searchVirtualInventory(browse,'1.3-rev3',params);
+ assert.deepEqual(calls,[[null,32,50,'1.3-rev3','HostsAndClusters',{platform:'VSphere',name:'SQL'}]]);assert.equal(page.total,33);
+ params.set('platform','Xen');await assert.rejects(searchVirtualInventory(browse,'1.3-rev3',params),e=>e.status===400);
+ params.set('platform','Proxmox');await assert.rejects(searchVirtualInventory(browse,'1.3-rev3',params),e=>e.status===502);
+ params.set('skip','-2');await assert.rejects(searchVirtualInventory(browse,'1.3-rev3',params),e=>e.status===400);
 });
 test('loader uses documented host membership filter and ignores foreign VM identities',async()=>{
  const v=vm({urn:'vc:vc.example;vm:vm-1'}),host=container('Host','h-1','host.example');

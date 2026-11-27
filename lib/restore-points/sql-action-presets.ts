@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type {SqlIntent} from '../recovery/sql-actions'
 
 export type SqlRecoveryPreset={destination:'original'|'another';time:'latest'|'pointInTime'}

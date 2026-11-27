@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .panel{border:1px solid var(--border);border-radius:.65rem;overflow:hidden;background:color-mix(in srgb,var(--card) 35%,transparent);min-width:0}
 .panel>header,.panel>header>div{display:flex;align-items:center;gap:.5rem}
 .panel>header{justify-content:space-between;padding:.65rem .85rem;border-bottom:1px solid var(--border)}

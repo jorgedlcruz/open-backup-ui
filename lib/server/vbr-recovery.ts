@@ -1,7 +1,7 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { createHash } from 'node:crypto'
-import { request as httpRequest } from 'node:http'
-import { request as httpsRequest } from 'node:https'
+import { sendLongRestore } from './long-recovery-request'
+import { fetchVbrCompatible, legacyMutationRevision } from '../vbr/compatible-fetch'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { configStore } from './config-store'
@@ -21,30 +21,6 @@ export type RecoverySend = (path: string, options?: {
   iso?: boolean
   archive?: boolean
 }) => Promise<unknown>
-
-// VBR can perform placement and migration checks before acknowledging a restore.
-// A native request can wait past fetch's response-header timeout without replay.
-function sendLongRestore(url: URL, headers: Record<string,string>, body: string | undefined, signal: AbortSignal): Promise<Response> {
-  return new Promise((resolve, reject) => {
-    const send = url.protocol === 'https:' ? httpsRequest : httpRequest
-    const request = send(url, {method:'POST', headers:{...headers, 'Content-Length':Buffer.byteLength(body || '')}, signal}, response => {
-      const chunks: Buffer[] = []
-      let length = 0
-      response.on('data', (chunk: Buffer) => {
-        length += chunk.length
-        if (length > 1024 * 1024) response.destroy(new Error('Recovery response exceeds maximum size'))
-        else chunks.push(chunk)
-      })
-      response.on('error', reject)
-      response.on('end', () => {
-        const status = response.statusCode || 502
-        resolve(new Response([204,205,304].includes(status) ? null : Buffer.concat(chunks).toString('utf8'), {status}))
-      })
-    })
-    request.on('error', reject)
-    request.end(body)
-  })
-}
 
 export async function withVbrRecovery(request: NextRequest, run: (context: {
   send: RecoverySend
@@ -92,12 +68,15 @@ export async function withVbrRecovery(request: NextRequest, run: (context: {
       const transferSignal = vmMigration || restoreStart ? AbortSignal.timeout(20 * 60_000) : (iso || archive) ? AbortSignal.any([request.signal, connectTimeout.signal])
         : options.backgroundRestore||options.backgroundExplorerStart ? AbortSignal.timeout(mutation?120_000:60_000) : signal
       const timer = (archive||iso) ? setTimeout(() => connectTimeout.abort(), 60000) : undefined
-      const fetchOnce = () => {
+      const fetchOnce = async () => {
         const headers = {Authorization:`Bearer ${token}`, Accept: iso?'application/vnd.efi.iso, application/octet-stream':archive?'application/octet-stream':'application/json',
           'x-api-version':'1.3-rev2', ...(body !== undefined ? {'Content-Type':'application/json'} : {})}
         const payload = body === undefined ? undefined : JSON.stringify(body)
-        return vmMigration || restoreStart ? sendLongRestore(url,headers,payload,transferSignal)
-          : fetch(url,{method,redirect:'error',cache:'no-store',signal:transferSignal,headers,body:payload})
+        if(vmMigration || restoreStart) {
+          headers['x-api-version']=await legacyMutationRevision(url,headers.Authorization,'1.3-rev2',transferSignal)
+          return sendLongRestore(url,headers,payload,transferSignal)
+        }
+        return fetchVbrCompatible(url,{method,redirect:'error',cache:'no-store',signal:transferSignal,headers,body:payload})
       }
       try {
         let response = await fetchOnce()

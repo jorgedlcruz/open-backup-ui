@@ -1,0 +1,25 @@
+/* Open Backup UI v1.3.0 */
+.hexName {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 4.4px;
+  font-weight: 650;
+  line-height: 8px;
+}
+.recovery {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.recovery h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

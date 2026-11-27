@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs')
 const { test } = require('node:test')
@@ -250,6 +250,10 @@ function mockRecoveryTransport(overrides = {}) {
   const originalLoad = Module._load
   const source = { id: 'source', platform: 'vbr', protocol: 'https', host: 'vbr.example', port: 9419, ...overrides }
   const mocks = {
+    '../vbr/compatible-fetch': {
+      fetchVbrCompatible: (...args) => global.fetch(...args),
+      legacyMutationRevision: async (_url, _authorization, requested) => requested,
+    },
     'next/headers': { cookies: async () => ({ get: name => name === 'veeam_source_id' ? { value: 'source' } : undefined }) },
     'next/server': { NextResponse: Response },
     './config-store': { configStore: { getById: () => source } },

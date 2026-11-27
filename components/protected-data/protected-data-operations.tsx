@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans, useI18n } from '@/components/providers/i18n-provider'
 import { inventoryDiagnostic, protectedRepositoryLabel } from '@/lib/protected-data/presentation'
@@ -54,7 +54,8 @@ export function ProtectedDataOperations() {
   function mode(next:'grid'|'hexmap'){setView(next);if(next==='hexmap')setTimesEnabled(true)}
   return <div className={cn(ops.console,styles.page)}>
     <header className={ops.header}><div><h1><Trans>{"Protected Data"}</Trans></h1><p>{t("Find recovery gaps, investigate backup copies, and explore protection in the HexMap.")}</p></div>
-      <div className={ops.headerActions}><div className={styles.toggle} aria-label={t("Protected data view")}><button className={view==='grid' ? styles.selected:''} aria-pressed={view==='grid'} onClick={()=>mode('grid')}><Table2 size={14}/><Trans>{"Grid"}</Trans></button><button className={view==='hexmap' ? styles.selected:''} aria-pressed={view==='hexmap'} onClick={()=>mode('hexmap')}><Hexagon size={14}/><Trans>{"HexMap"}</Trans></button></div>{data && <span className={ops.source}><span className={ops.dot}/>{data.sourceName}</span>}<Button variant="outline" size="sm" disabled={loading} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin':''}/><Trans>{"Refresh"}</Trans></Button></div>
+      <div className={ops.headerActions}><div className={styles.toggle} aria-label={t("Protected data view")}><button className={view==='grid' ? styles.selected:''} aria-pressed={view==='grid'} onClick={()=>mode('grid')}><Table2 size={14}/><Trans>{"Grid"}</Trans></button><button className={view==='hexmap' ? styles.selected:''} aria-pressed={view==='hexmap'} onClick={()=>mode('hexmap')}><Hexagon size={14}/><Trans>{"HexMap"}</Trans></button></div>
+        {data && <span className={ops.source}><span className={ops.dot}/>{data.sourceName}</span>}<Button variant="outline" size="sm" disabled={loading} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin':''}/><Trans>{"Refresh"}</Trans></Button></div>
     </header>
     {error && <Notice error>{inventoryDiagnostic(t,error,formatNumber)}{data && t("Showing the previous snapshot; this refresh failed.")}</Notice>}
     {recoveryError && <Notice error>{t("Recovery times:")}{" "}{inventoryDiagnostic(t,recoveryError,formatNumber)} {" "}{t("Inventory remains available; use Refresh to retry.")}</Notice>}

@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { NextRequest } from 'next/server'
 import { withVbrRead } from '@/lib/server/vbr-read'
 import { loadRepositoryInventory } from '@/lib/repositories/load-inventory'

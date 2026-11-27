@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         console.log('[StorageCapacity] Fetching backups...');
 
         // 1. Fetch Backups directly
-        let backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
+        let backupsRes = await fetchVbrCompatible(`${baseUrl}/api/v1/backups?limit=500`, {
             cache: 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
             const newToken = await tokenManager.refreshToken(sourceId);
             if (newToken) {
                 token = newToken; // Update local token variable used for subsequent calls
-                backupsRes = await fetch(`${baseUrl}/api/v1/backups?limit=500`, {
+                backupsRes = await fetchVbrCompatible(`${baseUrl}/api/v1/backups?limit=500`, {
                     cache: 'no-store',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
             try {
                 // Determine token to use (in case it was refreshed)
                 const currentToken = token as string;
-                const filesRes = await fetch(`${baseUrl}/api/v1/backups/${backup.id}/backupFiles?limit=500`, {
+                const filesRes = await fetchVbrCompatible(`${baseUrl}/api/v1/backups/${backup.id}/backupFiles?limit=500`, {
                     cache: 'no-store',
                     headers: {
                         'Authorization': `Bearer ${currentToken}`,

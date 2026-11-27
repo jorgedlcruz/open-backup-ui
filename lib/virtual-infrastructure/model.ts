@@ -1,15 +1,28 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import { uuid, type Evidence } from '../investigation/model'
 
 const text = z.string().nullish(), flag = z.boolean().nullish()
+// The platform-wide inventory request accepts only these five values in 1.3-rev3.
+export const globalInventoryPlatforms = ['VSphere','HyperV','CloudDirector','Nutanix','Proxmox'] as const
+export const globalPlatformSchema = z.enum(globalInventoryPlatforms)
+export type GlobalInventoryPlatform = z.infer<typeof globalPlatformSchema>
+export const searchPageSize = 50
+export type InventoryLookupPage = {items:InventoryItem[];skip:number;total:number}
+const extendedPlatforms = ['HpeVme','ScaleComputing','OVirtKvm','Platform9','Verge','Xen','KubeVirt','SangforHci','VcfAutomation','RedHatOpenStack','Virtuozzo']
+export const isExtendedPlatform = (platform?:string|null) => extendedPlatforms.includes(platform || '')
+export const supportsInventoryScope = (revision?:string) => revision==='1.3-rev2' || revision==='1.3-rev3'
+export function inventoryHierarchy(platform?:string|null) {
+  return platform==='VSphere' ? 'HostsAndClusters' as const : platform==='HyperV' ? 'HostsAndVms' as const : undefined
+}
 export const inventorySchema = z.object({
   platform: text, type: text, hostName: text, name: text, objectId: text, urn: text, size: text,
   powerState: text, isEnabled: flag, parentObjectId: text, clusterId: text, nodeId: text, prismCentralId: text,
   metadata: z.array(z.object({ field: text, data: text })).nullish(),
 })
 export const backupSchema = z.object({
-  id: z.string().regex(uuid).transform(v=>v.toLowerCase()), name: text, objectId: text, platformName: text,
+  id: z.string().regex(uuid).transform(v=>v.toLowerCase()), name: text, objectId: text, platformName: text.transform(normalizeVbrPlatform),
   path: text, type: text, viType: text, backupId: text, restorePointsCount: z.number().int().nonnegative().nullish(),
   lastRunFailed: flag, size: z.number().finite().nullish(),
 })
@@ -20,6 +33,7 @@ export const backupKey = (b:BackupObject) => `${b.id}|${b.backupId || ''}`
 export type VirtualSnapshot = {
   sourceName: string; fetchedAt: string; apiRevision: string; warnings: string[];
   inventory: Evidence<InventoryItem>; backups: Evidence<BackupObject>;
+  searchPlatforms?: GlobalInventoryPlatform[];
   hostLinks?: Evidence<{vmKey:string;hostKey:string}>;
   unscopedIdentityComplete?: boolean;
 }
@@ -34,7 +48,7 @@ export function meta(item: InventoryItem, fields: string[]) {
   return item.metadata?.find(m=>fields.some(f=>norm(f)===norm(m.field)))?.data || null
 }
 export const isVm = (i: InventoryItem) => i.type === 'VirtualMachine'
-export const isManager = (i: InventoryItem) => ['vCenterServer','VMC','Scvmm','SCVMMServer','CloudDirectorServer','PrismCentral'].includes(i.type || '')
+export const isManager = (i: InventoryItem) => ['vCenterServer','VMC','Scvmm','SCVMMServer','CloudDirectorServer','PrismCentral','Morpheus','VcfAutomationServer','SangforCloudPlatform','OpenStack'].includes(i.type || '')
 export const isHost = (i: InventoryItem) => ['Host','HyperV','Node','ProxmoxNode'].includes(i.type || '')
 export const power = (i: InventoryItem) => i.powerState === 'PoweredOn' ? 'Running' : i.powerState === 'PoweredOff' ? 'Stopped'
   : i.powerState === 'Suspended' ? 'Suspended' : i.powerState || (i.isEnabled === true ? 'Enabled (legacy)' : i.isEnabled === false ? 'Disabled (legacy)' : 'Not reported')
@@ -52,7 +66,7 @@ export type VirtualRow = {
   backups: BackupObject[]; protectionNote: string; backupIssue: boolean; zeroPoints: boolean;
 }
 const absent = ():Location => ({key:'unknown',name:'Not reported'})
-function platformName(i: InventoryItem) { return i.platform === 'VSphere' ? 'VMware':i.platform || '' }
+function platformName(i: InventoryItem) { return i.platform === 'VSphere' ? 'VMware' : i.platform === 'Verge' ? 'VergeIo' : i.platform || '' }
 export function buildVirtualRows(data: VirtualSnapshot): VirtualRow[] {
   const unique = [...new Map(data.inventory.data.map(i=>[itemKey(i),i])).values()]
   const byScope = new Map<string,InventoryItem[]>()
@@ -81,7 +95,7 @@ export function buildVirtualRows(data: VirtualSnapshot): VirtualRow[] {
     const m:Location={key:scope,name:manager(item)}
     // A Hyper-V parent can be a cluster or folder; only infer a host from a resolved host parent.
     const parentHost=item.parentObjectId && (byScope.get(`${scope}|${norm(item.parentObjectId)}`)||[]).some(isHost)
-    const hostRef=urnPart(item.urn,'hostsystem') || urnPart(item.urn,'esx') || urnPart(item.urn,'host') || item.nodeId || (parentHost ? item.parentObjectId:null)
+    const hostRef=urnPart(item.urn,'hostsystem') || urnPart(item.urn,'esx') || urnPart(item.urn,'host') || meta(item,['hostObjectId']) || item.nodeId || (parentHost ? item.parentObjectId:null)
     const hostItem=hostRef ? (byScope.get(`${scope}|${norm(hostRef)}`)||[]).find(i=>isHost(i)):undefined
     const datacenter=find(item,urnPart(item.urn,'datacenter'),['Datacenter'])
     const cluster=find(item,urnPart(item.urn,'cluster') || item.clusterId || urnPart(hostItem?.urn,'cluster'),['Cluster'])
@@ -97,7 +111,7 @@ export function buildVirtualRows(data: VirtualSnapshot): VirtualRow[] {
     const backups=candidates.filter(b=>pathHost(b) ? pathHost(b)===norm(manager(item)) : peers===1 && identityComplete)
     const ambiguous=candidates.some(b=>!pathHost(b) && (peers!==1 || !identityComplete))
     const protection = !isVm(item) ? 'Not applicable' : backups.length ? 'Protected'
-      : !item.objectId || !['VSphere','HyperV','CloudDirector','Nutanix','Proxmox'].includes(item.platform || '') || !data.backups.complete || !data.backups.available || ambiguous ? 'Unknown':'Unprotected'
+      : !item.objectId || !(globalPlatformSchema.safeParse(item.platform).success || (data.apiRevision==='1.3-rev3' && isExtendedPlatform(item.platform) && item.platform!=='VcfAutomation')) || !data.backups.complete || !data.backups.available || ambiguous ? 'Unknown':'Unprotected'
     return {item,key:itemKey(item),manager:m,datacenter,cluster,host,dns:meta(item,['dnsName']) || 'Not reported',
       os:meta(item,['guestOsName','GuestOS']) || 'Not reported',power:power(item),protection,backups,
       protectionNote:backups.length ? 'Matching backup objects exist. This does not establish job coverage or recovery-point freshness.'

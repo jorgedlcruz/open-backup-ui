@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),ts=require('typescript'),vm=require('node:vm'),assert=require('node:assert/strict'),{test}=require('node:test'),{createRequire}=require('node:module')
 require.extensions['.ts']=(mod,file)=>mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,file)
@@ -10,6 +10,7 @@ function harness(options={}) {
  const fakeFs={mkdir:async()=>{},readFile:async f=>{if(!files.has(f))throw Object.assign(new Error('missing'),{code:'ENOENT'});return files.get(f)},writeFile:async(f,data)=>{if(options.statusWriteError)throw Error('private filesystem detail');files.set(f,data)},rename:async(a,b)=>{files.set(b,files.get(a));files.delete(a)},unlink:async f=>{files.delete(f)}}
  const file=require.resolve('../lib/server/capacity-collector.ts'),realRequire=createRequire(file),exports={}
  const dependencies={
+    '../vbr/compatible-fetch': {fetchVbrCompatible: (...args) => context.fetch(...args)},
   'node:fs':{promises:fakeFs},
   './config-store':{configStore:{getAll:()=>[...records.values()],getById:id=>records.get(id)}},
   './token-manager':{tokenManager:{getToken:async()=>{options.onAuth?.(records);return options.noToken?null:'fixture-token'},refreshToken:async id=>{refreshes.push(id);return 'refreshed-fixture-token'}}},

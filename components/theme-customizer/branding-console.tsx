@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useEffect, useState, type ReactNode } from "react"
 import { useTheme } from "next-themes"

@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs=require('node:fs'),ts=require('typescript'),vm=require('node:vm'),assert=require('node:assert/strict'),{test}=require('node:test')
 const compile=file=>ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText
@@ -63,13 +63,16 @@ test('malformed and foreign-origin preference changes do not set cookies',async(
 test('missing or invalid saved preferences read as Overview',async()=>{for(const value of [undefined,'invalid']){const h=preferenceHarness(value);assert.equal((await h.exports.GET()).body.defaultView,'overview')}})
 async function redirectFrom(file,values={},env={},args){
  const exports={};let target
- const deps={'next/headers':{cookies:async()=>({get:name=>values[name]?{value:values[name]}:undefined})},'next/navigation':{redirect:url=>{target=url;throw Error('redirect')}},'@/lib/lens/navigation':navigation,'@/lib/utils/cookie-manager':{getChunkedCookie:(jar,name)=>jar.get(name)?.value}}
+ const deps={'next/headers':{cookies:async()=>({get:name=>values[name]?{value:values[name]}:undefined})},'next/navigation':{redirect:url=>{target=url;throw Error('redirect')}},'@/lib/lens/navigation':navigation,'@/lib/data-sources/model':require('../lib/data-sources/model.ts')}
  vm.runInNewContext(compile(file),{exports,require:name=>deps[name],process:{env}})
  await exports.default(args).catch(e=>{if(e.message!=='redirect')throw e});return target
 }
 test('sign-in landing enters Lens for VBR and preserves other platform fallbacks',async()=>{
  assert.equal(await redirectFrom('app/(app)/dashboard/page.tsx',{veeam_source_id:'source'}),'/vbr/lens')
  assert.equal(await redirectFrom('app/(app)/dashboard/page.tsx',{veeam_vb365_token:'token'}),'/vbm/dashboard')
+ assert.equal(await redirectFrom('app/(app)/dashboard/page.tsx',{veeam_vb365_source_id:'managed-m365'}),'/vbm/dashboard')
+ assert.equal(await redirectFrom('app/(app)/dashboard/page.tsx',{}, {VBR_API_URL:'https://backup.example'}),'/vbr/lens')
+ assert.equal(await redirectFrom('app/page.tsx',{veeam_vb365_source_id:'managed-m365'}),'/dashboard')
  assert.equal(await redirectFrom('app/(app)/dashboard/page.tsx',{}),'/connect')
  assert.equal(await redirectFrom('app/page.tsx',{veeam_source_id:'source'}),'/dashboard')
  assert.equal(await redirectFrom('app/(app)/vbr/lens/page.tsx',{[navigation.lensCookie]:'capacity'}),'/vbr/lens/capacity')

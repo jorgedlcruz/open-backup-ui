@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .header {
   display: none;
 }
@@ -39,6 +39,31 @@
     color: var(--sidebar-foreground);
     background: var(--sidebar);
     border-bottom: 1px solid var(--sidebar-border);
+  }
+
+  .mobileSettings {
+    position: fixed;
+    z-index: 10;
+    inset-inline-start: max(8px, env(safe-area-inset-left));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: var(--radius);
+    color: var(--sidebar-foreground);
+    background: var(--sidebar);
+  }
+  .mobileSettings:focus-visible { outline: 2px solid var(--sidebar-ring); }
+  .navigation[data-mobile="true"] > div {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .navigation[data-mobile="true"] [data-sidebar="content"] {
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .trigger {

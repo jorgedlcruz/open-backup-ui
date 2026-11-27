@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
-import { version } from '../package.json'
+// Open Backup UI v1.3.0
+import packageInfo from '../package.json'
 
-export const APP_VERSION = version
+export const APP_VERSION = packageInfo.version

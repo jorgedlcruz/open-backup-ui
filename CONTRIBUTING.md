@@ -17,7 +17,7 @@ We use GitHub's Issue Tracker to track bugs/feature Requests. Report a bug or fe
 
 ## Release version
 
-The footer, source headers and [file version manifest](docs/file-versions.json) use the version in `package.json`. After changing the release version or staging added, renamed, or removed files, run `npm run version:files` and commit the updated headers and manifest. The manifest covers every tracked file, including formats that cannot carry a source comment.
+The footer, source headers and [file version manifest](docs/file-versions.json) use the version in `package.json`. After changing the release version or adding, renaming, or removing files, run `npm run version:files` and commit the updated headers and manifest. The manifest covers tracked files present in the checkout and new, nonignored files eligible for the source archive, including binary assets. Use `npm run version:files -- --check` to verify it before staging.
 
 ## License
 

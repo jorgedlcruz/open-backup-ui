@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 export type TargetBrowseSession={browseSessionId:string;browseKey:string;serverId:string;serverName?:string;pathSeparator:string;rootPath:string;expiresAt:string}
 export type TargetFolder={name:string;path:string;type:'Drive'|'Folder';isSymbolicLink:boolean}
 export type TargetFolderPage={path:string;items:TargetFolder[];total:number|null;count:number;skip:number}

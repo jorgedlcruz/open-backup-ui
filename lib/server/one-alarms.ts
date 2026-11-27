@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -13,7 +13,7 @@ const baseUrl = (source: VBRSource) => `${source.protocol}://${source.host}:${so
 const sourceKey = (source: VBRSource) => createHash('sha256').update(JSON.stringify([source.id,baseUrl(source),source.username])).digest('hex')
 const sameSource = (a: VBRSource, b: VBRSource | null) => !!b && b.platform === 'one' && sourceKey(a) === sourceKey(b) && a.password === b.password
 
-async function withAlarms(request: NextRequest, load: (execute: Execute, name: string, key: string) => Promise<unknown>, expected?: string) {
+export async function withAlarms(request: NextRequest, load: (execute: Execute, name: string, key: string) => Promise<unknown>, expected?: string) {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(),60000)
   const abort = () => controller.abort(); request.signal.addEventListener('abort',abort,{once:true}); if(request.signal.aborted)abort()
   let mutationSent = false
@@ -47,8 +47,9 @@ async function withAlarms(request: NextRequest, load: (execute: Execute, name: s
       const resource = path.split('?')[0]
       const readQuery = /^\/api\/v2\.3\/alarms\/(triggeredChildAlarms|triggeredAlarmsHistory)$/.test(resource)
       const template = /^\/api\/v2\.3\/alarms\/templates\/\d+$/.test(resource)
+      const serverDirectory = resource === '/api/v2.3/vbr/backupServers' && method === 'GET' && !mutation
       const resolve = resource === '/api/v2.3/alarms/triggeredChildAlarms/resolve'
-      if(!(readQuery && !mutation || template && method==='GET' && !mutation || resolve && method==='POST' && mutation) || path.includes('..') || path.includes('://'))throw new AlarmError('Invalid alarm resource.',400)
+      if(!(readQuery && !mutation || template && method==='GET' && !mutation || serverDirectory || resolve && method==='POST' && mutation) || path.includes('..') || path.includes('://'))throw new AlarmError('Invalid alarm resource.',400)
       const send = () => { ensureSource(); if(mutation)mutationSent=true; return fetch(new URL(path,destination), {method,headers:{Authorization:`Bearer ${token}`,Accept:'application/json',...(body!==undefined ? {'Content-Type':'application/json'}:{})},...(body!==undefined ? {body:JSON.stringify(body)}:{}),signal:controller.signal,redirect:'error',cache:'no-store'}) }
       let response = await send()
       // The two POST query resources are reads. Resolution is never replayed.

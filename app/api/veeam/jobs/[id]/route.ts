@@ -1,10 +1,13 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../lib/vbr/compatible-fetch'
 // API Route for Individual Veeam Backup Job Operations
 // This route proxies requests to the Veeam API for specific job operations
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
+import { withVbrRead } from '@/lib/server/vbr-read';
+import { validId } from '@/lib/investigation/model';
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +17,20 @@ export async function GET(
     const cookieStore = await cookies();
     const sourceId = cookieStore.get('veeam_source_id')?.value;
     const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
-    const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+    const baseUrl = cookieUrl || process.env.VEEAM_API_URL || process.env.VBR_API_URL;
+    const { id } = await params;
+    if (id !== 'states' && !validId(id)) {
+      return NextResponse.json({error: 'Invalid job identifier.'}, {status:400});
+    }
+    const path = `/api/v1/jobs/${id}${id === 'states' ? request.nextUrl.search : ''}`;
+    // Configured sources and the environment endpoint share the same revision as job creation.
+    // Older browser-only connections can still use their original bearer session below.
+    if (sourceId || (!cookieUrl && baseUrl)) {
+      return withVbrRead(request,async(read,_name,_browse,context)=>{
+        const revision=await context.getRevision().catch(()=>undefined);
+        return read(path,revision);
+      });
+    }
 
     if (!baseUrl && !sourceId) {
       return NextResponse.json(
@@ -42,15 +58,8 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
-
-    // Explicit check to prevent treating 'states' as an ID, though Next.js routing should handle this if a parallel route existed.
-    if (id === 'states') {
-      // Pass through to standard API if it exists on backend, otherwise it will 404 from Veeam
-    }
-
-    const url = `${baseUrl}/api/v1/jobs/${id}`;
-    let response = await fetch(url, {
+    const url = `${baseUrl}${path}`;
+    let response = await fetchVbrCompatible(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -65,7 +74,7 @@ export async function GET(
       console.log(`[JOB ${id}] 401 received, refreshing token...`);
       const newToken = await tokenManager.refreshToken(sourceId);
       if (newToken) {
-        response = await fetch(url, {
+        response = await fetchVbrCompatible(url, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${newToken}`,
@@ -105,7 +114,7 @@ export async function POST(
     const cookieStore = await cookies();
     const sourceId = cookieStore.get('veeam_source_id')?.value;
     const cookieUrl = cookieStore.get('veeam_vbr_token_url')?.value;
-    const baseUrl = cookieUrl || process.env.VEEAM_API_URL;
+    const baseUrl = cookieUrl || process.env.VEEAM_API_URL || process.env.VBR_API_URL;
 
     if (!baseUrl && !sourceId) {
       return NextResponse.json(
@@ -145,7 +154,7 @@ export async function POST(
     }
 
     const url = `${baseUrl}/api/v1/jobs/${id}/${action}`;
-    let response = await fetch(url, {
+    let response = await fetchVbrCompatible(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -162,7 +171,7 @@ export async function POST(
       console.log(`[JOB ${id} ACTION] 401 received, refreshing token...`);
       const newToken = await tokenManager.refreshToken(sourceId);
       if (newToken) {
-        response = await fetch(url, {
+        response = await fetchVbrCompatible(url, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${newToken}`,

@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans, useI18n } from '@/components/providers/i18n-provider'
 import { inventoryDiagnostic, virtualContextLabel, virtualFacetLabel } from '@/lib/protected-data/presentation'
@@ -22,6 +22,7 @@ import { buildVirtualRows,canQuickBackup,defaultVirtualFilters,facetValue,inView
 import { ArrowUpRight,Boxes,CircleHelp,Database,Layers,RefreshCw,Server,ShieldCheck,TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { ObjectDetail } from './object-detail'
+import { PlatformInventorySearch } from './platform-inventory-search'
 import { Coverage,FacetPicker,Protection,RowActions,type Option } from './shared'
 import styles from './virtual-operations.module.css'
 
@@ -35,6 +36,7 @@ const issues:{value:VirtualIssue;label:string}[]=[
 ]
 const facetLabels:Record<Facet,string>={protection:'Protection',manager:'vCenter / server',datacenter:'Datacenter',cluster:'Cluster',host:'Host',power:'State',os:'Guest OS',type:'Object type',platform:'Platform'}
 const vmFacets:Facet[]=['protection','manager','datacenter','cluster','host','power','os']
+const platformVmFacets:Facet[]=['platform',...vmFacets]
 const infrastructureFacets:Facet[]=['manager','datacenter','cluster','type','platform']
 const columns=[['protection','Protection'],['dns','DNS name'],['manager','vCenter / server'],['datacenter','Datacenter'],['cluster','Cluster'],['host','Host'],['power','State'],['os','Guest OS'],['size','Size']] as const
 type Column=typeof columns[number][0]
@@ -48,7 +50,7 @@ export function VirtualOperations() {
   const vms=useMemo(()=>rows.filter(r=>isVm(r.item)),[rows]),base=useMemo(()=>rows.filter(r=>inView(r,view)),[rows,view])
   const matching=useMemo(()=>sortVirtual(base.filter(r=>matchesVirtual(r,filters)),order),[base,filters,order]),current=Math.min(page,Math.max(0,Math.ceil(matching.length/15)-1))
   const counts=useMemo(()=>Object.fromEntries(issues.map(i=>[i.value,vms.filter(r=>matchesVirtual(r,{...defaultVirtualFilters,issue:i.value})).length])),[vms])
-  const selectedRow=rows.find(r=>r.key===selected),facets=view==='vms' ? vmFacets:infrastructureFacets
+  const selectedRow=rows.find(r=>r.key===selected),facets=view==='vms' ? (data?.apiRevision==='1.3-rev3' ? platformVmFacets:vmFacets):infrastructureFacets
   const options=useMemo(()=>Object.fromEntries(facets.map(f=>{
     const map=new Map<string,Option>()
     for(const r of base) {const value=facetValue(r,f),old=map.get(value);map.set(value,{value,label:virtualFacetLabel(t,r,f),count:(old?.count||0)+(matchesVirtual(r,filters,f)?1:0)})}
@@ -80,7 +82,7 @@ export function VirtualOperations() {
         <button className={cn(ops.metric,styles.metric)} onClick={()=>quickFilter('unprotected')}><div className={ops.metricLabel}>{t("Unprotected")}<TriangleAlert size={17}/></div><div className={cn(ops.metricValue,counts.unprotected ? ops.warning:ops.neutral)}>{formatNumber(counts.unprotected)}</div><p>{t("{count} running · no backup objects found",{count:formatNumber(counts.runningUnprotected)})}</p></button>
         <button className={cn(ops.metric,styles.metric)} onClick={()=>quickFilter('backupErrors')}><div className={ops.metricLabel}>{t("Backup failures")}<CircleHelp size={17}/></div><div className={cn(ops.metricValue,counts.backupErrors ? ops.danger:ops.neutral)}>{formatNumber(counts.backupErrors)}</div><p>{t("{unknown} unknown protection · {noPoints} without restore points",{unknown:formatNumber(vms.filter(r=>r.protection==='Unknown').length),noPoints:formatNumber(counts.noPoints)})}</p></button>
       </div>
-      <nav className={styles.views} aria-label={t("Inventory views")}>{views.map(v=><button key={v.value} aria-pressed={view===v.value} className={view===v.value ? styles.selected:''} onClick={()=>changeView(v.value)}><v.icon size={15}/>{t(v.label)}<span>{formatNumber(rows.filter(r=>inView(r,v.value)).length)}</span></button>)}</nav>
+      <nav className={styles.views} aria-label={t("Inventory views")}>{views.map(v=><button key={v.value} aria-pressed={view===v.value} className={view===v.value ? styles.selected:''} onClick={()=>changeView(v.value)}><v.icon size={15}/>{t(v.label)}<span>{formatNumber(rows.filter(r=>inView(r,v.value)).length)}</span></button>)}{!!data.searchPlatforms?.length && <PlatformInventorySearch key={JSON.stringify([data.sourceName,data.searchPlatforms])} platforms={data.searchPlatforms}/>}</nav>
       <Panel title={view==='vms' ? t("VM protection inventory"):views.find(v=>v.value===view)!.label} subtitle={view==='vms' ? t("Combine location, protection, power state, and guest OS filters. Select a VM to investigate."):t("Explore production hierarchy and the protection of VMs in each scope.")} action={<span className={ops.smallTag}>{t("{count} matching", { count: formatNumber(matching.length) })}</span>}>
         <FilterWorkspace label={t("VM protection inventory filters")} search={<><SearchBox label={t("Search names, DNS, OS, or IDs")} value={filters.query} onChange={query=>{setFilters(f=>({...f,query}));setPage(0)}}/></>} onClear={()=>{setFilters(defaultVirtualFilters);setPage(0)}} filters={<FilterFields>{view==='vms' && <><FilterCondition>{issues.map(i=><button key={i.value} aria-pressed={filters.issue===i.value} className={cn(styles.chip,filters.issue===i.value && styles.selected)} onClick={()=>{setFilters(f=>({...f,issue:i.value}));setPage(0)}}>{t(i.label)}<span>{formatNumber(counts[i.value])}</span></button>)}</FilterCondition></>}
 {facets.map(f=><FacetPicker key={f} title={t(facetLabels[f])} options={options[f]} defaultOpen={f==='protection'} values={filters.facets[f]||[]} onChange={values=>{setFilters(old=>({...old,facets:{...old.facets,[f]:values}}));setPage(0)}}/>)}</FilterFields>} actions={<><GridViewMenu><select aria-label={t("Inventory sort")} value={order} onChange={e=>{setOrder(e.target.value);setPage(0)}}><option value="name">{t("Name A–Z")}</option><option value="risk">{t("Issues first")}</option><option value="sizeDesc">{t("Size: largest first")}</option><option value="sizeAsc">{t("Size: smallest first")}</option></select>

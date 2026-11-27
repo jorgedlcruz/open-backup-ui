@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import type { Collection } from '../operations/model'
 import { TopologyRequestError } from '../topology/load'
@@ -9,7 +10,7 @@ const text = z.string().nullish()
 const strings = z.array(z.string()).nullish()
 export const pointSchema = z.object({
   id: z.string().min(1), backupId: z.string().min(1), name: text, creationTime: text,
-  type: text, platformName: text, backupFileId: text, malwareStatus: text, allowedOperations: strings,
+  type: text, platformName: text.transform(normalizeVbrPlatform), backupFileId: text, malwareStatus: text, allowedOperations: strings,
   gfsPeriods: strings, originalSize: z.number().nullish(), sessionId: text, guestOsFamily: text,
 })
 

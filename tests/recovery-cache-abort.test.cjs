@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const fs = require('node:fs')
 const ts = require('typescript')
 const {randomUUID} = require('node:crypto')

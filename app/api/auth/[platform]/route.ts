@@ -1,10 +1,13 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { setChunkedCookie, deleteChunkedCookie } from "@/lib/utils/cookie-manager"
-import { configStore, VBRSource } from "@/lib/server/config-store"
+import { CATALOG_BUSY, configStore, SINGLE_VBR_CONFLICT, vbrOrigin, type VBRSource } from "@/lib/server/config-store"
 import { tokenManager } from "@/lib/server/token-manager"
 import { isSecureApplicationRequest } from '@/lib/server/request-origin'
+
+import { authenticateSource, SourceError } from '@/lib/server/data-sources'
+import { endpoint } from '@/lib/data-sources/model'
 
 // Platform-specific auth configurations
 const platformConfigs = {
@@ -85,6 +88,10 @@ export async function POST(
 
         // === ZERO: Server-Side Logic for Stored Credentials (VBR/VB365) ===
         if (sourceId && (platform === "vbr" || platform === "vb365")) {
+            const selected = configStore.getById(sourceId)
+            if (!selected || selected.platform !== platform) {
+                return NextResponse.json({ error: 'This data source no longer exists. Refresh the list.' }, { status: 404 })
+            }
             const token = await tokenManager.authenticate(sourceId)
 
             if (token) {
@@ -102,6 +109,7 @@ export async function POST(
                         sameSite: 'lax'
                     });
 
+                    if (platform === 'vbr') await deleteChunkedCookie(cookieStore, config.tokenCookie)
                     // Set URL cookie for client reference
                     const sourceUrl = `${source.protocol}://${source.host}:${source.port}`
                     cookieStore.set(urlCookieName, sourceUrl, {
@@ -124,40 +132,33 @@ export async function POST(
 
         // === ONE: Server-Side Logic for VBR ===
         if (platform === "vbr") {
-            // Parse host from URL
-            let host = url.replace(/https?:\/\//, '').replace(/\/$/, '');
-            let port = 9419;
-            if (host.includes(':')) {
-                const parts = host.split(':');
-                host = parts[0];
-                port = parseInt(parts[1], 10);
-            }
-
-            const sourceId = `vbr-${host}-${port}`;
-
+            // The connection form supplies the REST port; older callers may omit it.
+            const address = String(url).trim().replace(/\/$/, '')
+            const authority = address.replace(/^https?:\/\//i, '')
+            let target: ReturnType<typeof endpoint>
+            try {
+                const origin = 'https://' + authority
+                target = endpoint(/:\d+$/.test(authority) ? origin : origin + ':9419')
+            } catch { return NextResponse.json({error:'Enter a valid server URL.'},{status:400}) }
+            const configured = configStore.getVbr()
+            if (configured && vbrOrigin(configured) !== target.url)
+                return NextResponse.json({error:SINGLE_VBR_CONFLICT},{status:409})
+            if (configured?.id === 'env-vbr')
+                return NextResponse.json({error:'Environment credentials must be updated on the server.'},{status:409})
+            const sourceId = configured?.id ?? `vbr-${target.host}-${target.port}`
             const source: VBRSource = {
-                id: sourceId,
-                host,
-                port,
-                username,
-                password,
-                protocol: 'https',
-                platform: 'vbr'
-            };
-
-            // Save Credentials
-            configStore.save(source);
-
-            // Attempt Login
-            const token = await tokenManager.authenticate(sourceId);
-
-            if (!token) {
-                configStore.delete(sourceId);
-                return NextResponse.json(
-                    { error: "Authentication failed. Check your data source credentials." },
-                    { status: 401 }
-                )
+                ...configured, id:sourceId, host:target.host, port:target.port, protocol:target.protocol,
+                platform:'vbr', username, password,
             }
+            // A failed login leaves the original credentials intact. Another
+            // request cannot claim the single slot while this one signs in.
+            const login = await configStore.save(source, () => {
+                const current = configStore.getVbr()
+                if (current && vbrOrigin(current) !== target.url) throw new Error(SINGLE_VBR_CONFLICT)
+                return authenticateSource(source, request)
+            })
+            if (!login) throw new Error('The source did not return an authentication token.')
+            tokenManager.remember(sourceId, login.token, login.expiresIn)
 
             // Success: Set Source ID Cookie
             cookieStore.set('veeam_source_id', sourceId, {
@@ -169,7 +170,7 @@ export async function POST(
             });
 
             // Set URL cookie for client reference
-            cookieStore.set('veeam_vbr_token_url', `https://${host}:${port}`, {
+            cookieStore.set('veeam_vbr_token_url', target.url, {
                 secure: isSecureApplicationRequest(request),
                 path: '/',
                 maxAge: 60 * 60 * 24 * 7
@@ -206,13 +207,13 @@ export async function POST(
             };
 
             // Save Credentials
-            configStore.save(source);
+            await configStore.save(source);
 
             // Attempt Login via Token Manager
             const token = await tokenManager.authenticate(sourceId);
 
             if (!token) {
-                configStore.delete(sourceId);
+                await configStore.delete(sourceId);
                 return NextResponse.json(
                     { error: "Authentication failed. Check your VB365 credentials." },
                     { status: 401 }
@@ -306,7 +307,7 @@ export async function POST(
         };
 
         // Save Credentials for future Auto Connect
-        configStore.save(legacySource);
+        await configStore.save(legacySource);
 
         // Set source ID cookie for session tracking
         const sourceIdCookieName = platform === 'veeam-one' ? 'veeam_one_source_id' : `veeam_${platform}_source_id`;
@@ -337,6 +338,10 @@ export async function POST(
         return NextResponse.json({ success: true, sourceId: legacySourceId })
 
     } catch (error) {
+        if (error instanceof SourceError)
+            return NextResponse.json({ error: error.message }, { status: error.status })
+        if (error instanceof Error && (error.message === SINGLE_VBR_CONFLICT || error.message === CATALOG_BUSY))
+            return NextResponse.json({ error: error.message }, { status: 409 })
         console.error("Auth error:", error)
         return NextResponse.json(
             { error: error instanceof Error ? error.message : "Authentication failed" },
@@ -360,14 +365,20 @@ export async function GET(
         if (platform === 'vbr') {
             const sourceId = cookieStore.get('veeam_source_id')?.value;
             if (sourceId) {
-                // Technically we should valid the token here, but existence of sourceId implies "configured"
-                return NextResponse.json({ authenticated: true, url: cookieStore.get('veeam_vbr_token_url')?.value })
+                const source = configStore.getById(sourceId)
+                return NextResponse.json(source?.platform === 'vbr'
+                    ? { authenticated: true, url: vbrOrigin(source) }
+                    : { authenticated: false })
             }
         }
 
         const token = cookieStore.get(config.tokenCookie)?.value
         const url = cookieStore.get(`${config.tokenCookie}_url`)?.value
 
+        if (platform === 'vbr' && token && url) {
+            const active = configStore.getVbr()
+            if (active && new URL(url).origin !== vbrOrigin(active)) return NextResponse.json({authenticated:false})
+        }
         if (!token || !url) {
             return NextResponse.json({ authenticated: false })
         }
@@ -418,16 +429,16 @@ export async function DELETE(
 
         // Remove from server config store
         const sourceId = cookieStore.get(sourceIdCookieName)?.value
-        if (sourceId) {
-            configStore.delete(sourceId)
+        if (sourceId && (platform !== 'vbr' || configStore.getById(sourceId)?.platform === 'vbr')) {
+            await configStore.delete(sourceId)
         }
 
         // Also try to find and delete by platform type from configStore
         const allSources = configStore.getAll()
         const platformName = platform === 'veeam-one' ? 'one' : platform
         const matchingSource = allSources.find(s => s.platform === platformName)
-        if (matchingSource) {
-            configStore.delete(matchingSource.id)
+        if (matchingSource && !(platform === 'vbr' && sourceId)) {
+            await configStore.delete(matchingSource.id)
         }
 
         // Clear cookies

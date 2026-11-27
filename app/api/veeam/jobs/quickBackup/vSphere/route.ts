@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'VEEAM_API_URL not configured' }, { status: 500 });
         }
 
-        const vbrResponse = await fetch(`${vbrUrl}/api/v1/jobs/quickBackup/vSphere`, {
+        const vbrResponse = await fetchVbrCompatible(`${vbrUrl}/api/v1/jobs/quickBackup/vSphere`, {
             method: 'POST',
             headers: {
                 'Authorization': authHeader,

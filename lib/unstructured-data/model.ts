@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import { uuid, validId, type Evidence } from '../investigation/model'
 import { backupSchema as baseBackup, backupKey } from '../virtual-infrastructure/model'
@@ -64,23 +64,27 @@ export type Row={
   issues:{attention:boolean;backup:boolean;jobs:boolean;disabled:boolean;cache:boolean;credentials:boolean;noPoints:boolean;unknown:boolean};
   cacheLabel:string;cacheUsedPercent:number|null;note:string;
 }
-export function buildRows(data:Snapshot):Row[] {
-  const servers=[...new Map(data.servers.data.map(s=>[s.id,s])).values()]
+export function matchServerBackups<S extends {id:string;type?:string|null;hostId?:string|null}, B extends {platformName?:string|null;fileServerId?:string|null;hostId?:string|null}>(servers:S[],backups:B[],inventoryComplete:boolean) {
   const byId=new Map(servers.map(s=>[s.id,s]))
-  const fileHosts=new Map<string,Server[]>()
+  const fileHosts=new Map<string,S[]>()
   for(const s of servers)if(s.type==='FileServer' && validId(s.hostId))fileHosts.set(s.hostId,[...(fileHosts.get(s.hostId)||[]),s])
-  const backupMap=new Map<string,Backup[]>(),ambiguous=new Set<string>()
+  const backupMap=new Map<string,B[]>(),ambiguous=new Set<string>()
   let unidentified=false
-  for(const b of new Map(data.backups.data.map(b=>[backupKey(b),b])).values()) {
+  for(const b of backups) {
     if(b.platformName!=='UnstructuredData')continue
     // fileServerId is the explicit inventory reference. hostId can identify a managed host
     // and is only used as a fallback for a unique FileServer registration, never for sibling shares.
-    const target=validId(b.fileServerId) ? byId.get(b.fileServerId)
-      : validId(b.hostId) ? byId.get(b.hostId) || (data.servers.complete && fileHosts.get(b.hostId)?.length===1 ? fileHosts.get(b.hostId)![0]:undefined):undefined
+    const target=validId(b.fileServerId) ? byId.get(b.fileServerId.toLowerCase())
+      : validId(b.hostId) ? byId.get(b.hostId.toLowerCase()) || (inventoryComplete && fileHosts.get(b.hostId.toLowerCase())?.length===1 ? fileHosts.get(b.hostId.toLowerCase())![0]:undefined):undefined
     if(target) {const list=backupMap.get(target.id)||[];list.push(b);backupMap.set(target.id,list)}
     else if(!validId(b.fileServerId) && !validId(b.hostId))unidentified=true
-    else if(!validId(b.fileServerId) && validId(b.hostId))for(const s of fileHosts.get(b.hostId)||[])ambiguous.add(s.id)
+    else if(!validId(b.fileServerId) && validId(b.hostId))for(const s of fileHosts.get(b.hostId.toLowerCase())||[])ambiguous.add(s.id)
   }
+  return {byId,backupMap,ambiguous,unidentified}
+}
+export function buildRows(data:Snapshot):Row[] {
+  const servers=[...new Map(data.servers.data.map(s=>[s.id,s])).values()]
+  const {byId,backupMap,ambiguous,unidentified}=matchServerBackups(servers,[...new Map(data.backups.data.map(b=>[backupKey(b),b])).values()],data.servers.complete)
   const jobMap=new Map<string,LinkedJob[]>(),states=new Map(data.jobStates.data.map(s=>[s.id,s]))
   for(const job of data.jobs.data)if(['FileBackup','ObjectStorageBackup'].includes(job.type || '')) {
     const scopes=new Map<string,z.infer<typeof scopeSchema>[]>()

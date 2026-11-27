@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 export type Preference = { enabled: boolean | null; source: 'default' | 'saved' | 'unavailable' | 'invalid' }
 export type CaptureSetting = 'enabled' | 'disabled' | 'custom' | 'project-managed' | 'unknown'
 export type Snapshot = {

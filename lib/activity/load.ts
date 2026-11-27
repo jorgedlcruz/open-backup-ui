@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 import type { PublishedRecoveryReader, VbrReader } from '../server/vbr-read'
 import { TopologyRequestError } from '../topology/load'
@@ -63,6 +64,7 @@ async function readHistory(read: VbrReader, query: ActivityQuery, now: Date) {
   // VBR has no platform filter and may include related types (BackupJob also returns PlatformBackupJob).
   // Preserve its offsets while narrowing each page to the operator's exact selection.
   const exactTypes = new Set(types)
+  const platform = normalizeVbrPlatform(query.platform)
   const scan = !!query.platform || exactTypes.size > 0
   const limit = scan ? 500 : historySize
   params.set('limit', String(limit))
@@ -93,7 +95,7 @@ async function readHistory(read: VbrReader, query: ActivityQuery, now: Date) {
     let consumed = 0
     for (const session of page.data) {
       consumed++
-      if ((!query.platform || session.platformName === query.platform) &&
+      if ((!platform || session.platformName === platform) &&
           (!exactTypes.size || !!session.sessionType && exactTypes.has(session.sessionType))) data.push(session)
       if (data.length === historySize) break
     }

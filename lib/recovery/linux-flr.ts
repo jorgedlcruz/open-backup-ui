@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
 import type { LinuxMountOptions, LinuxMountType } from '../restore-points/workflow'

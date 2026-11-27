@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {Clock3} from 'lucide-react'
 import {useRecoveryPresentation} from './use-presentation'
 import type {SqlItem} from './sql-explorer'

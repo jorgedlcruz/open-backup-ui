@@ -1,17 +1,20 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 // API Route for Veeam Authentication
 // This route handles authentication with the Veeam API server-side to avoid CORS issues
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getChunkedCookie } from '@/lib/utils/cookie-manager';
+import { configStore } from '@/lib/server/config-store';
+import { vbrBrowserToken } from '@/lib/server/vbr-browser-token';
 import { tokenManager } from '@/lib/server/token-manager';
+import { vbrLoginRevision } from '@/lib/vbr/version-response';
 
 export const dynamic = 'force-dynamic';
 
-const API_BASE_URL = process.env.VEEAM_API_URL;
-const API_USERNAME = process.env.VEEAM_USERNAME;
-const API_PASSWORD = process.env.VEEAM_PASSWORD;
+const API_BASE_URL = process.env.VEEAM_API_URL || process.env.VBR_API_URL;
+const API_USERNAME = process.env.VEEAM_USERNAME || process.env.VBR_USERNAME;
+const API_PASSWORD = process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD;
 
 interface TokenResponse {
   access_token: string;
@@ -26,11 +29,14 @@ interface TokenResponse {
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const cookieToken = getChunkedCookie(cookieStore, 'veeam_vbr_token');
+    let cookieToken = getChunkedCookie(cookieStore, 'veeam_vbr_token');
     const sourceId = cookieStore.get('veeam_source_id')?.value;
 
     // 1. If we have a sourceId, use TokenManager (Preferred)
     if (sourceId) {
+      const source = configStore.getById(sourceId);
+      if (!source || source.platform !== 'vbr')
+        return NextResponse.json({error:'Reconnect the selected VBR data source.'}, {status:401});
       const token = await tokenManager.getToken(sourceId);
       if (token) {
         console.log('[AUTH] Returning session token from TokenManager');
@@ -44,9 +50,17 @@ export async function POST(request: NextRequest) {
           username: 'SessionUser'
         } as TokenResponse);
       }
+      const target = new URL(`${source.protocol}://${source.host}:${source.port}`);
+      cookieToken = vbrBrowserToken(cookieStore, target, sourceId) || undefined;
+      if (!cookieToken) return NextResponse.json({error:'Reconnect the selected VBR data source.'}, {status:401});
     }
 
     // 2. Fallback: If we have a legacy valid session cookie
+    if (cookieToken && !sourceId && cookieStore.get('veeam_vbr_token_url')?.value) {
+      const active = configStore.getVbr();
+      if (active && !vbrBrowserToken(cookieStore, new URL(`${active.protocol}://${active.host}:${active.port}`)))
+        return NextResponse.json({error:'Reconnect the selected VBR data source.'}, {status:401});
+    }
     if (cookieToken) {
       console.log('[AUTH] Returning existing session token from cookie');
       return NextResponse.json({
@@ -77,7 +91,7 @@ export async function POST(request: NextRequest) {
     const headers: HeadersInit = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Accept': 'application/json',
-      'x-api-version': '1.3-rev1',
+      'x-api-version': vbrLoginRevision,
     };
 
     let requestBody: string;
@@ -91,7 +105,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Initial authentication flow with username/password in body
       const params: Record<string, string> = {
-        grant_type: 'Password',
+        grant_type: 'password',
         username: API_USERNAME || '',
         password: API_PASSWORD || '',
       };

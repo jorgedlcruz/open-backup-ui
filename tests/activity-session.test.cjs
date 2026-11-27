@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const fs = require('node:fs'), ts = require('typescript')
 const test = require('node:test'), assert = require('node:assert/strict')
 require.extensions['.ts'] = (mod, file) => mod._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
@@ -110,9 +110,9 @@ test('application restore child links exclude the parent and unrelated records',
 })
 test('regular sessions use the supported API revision and stay in Sessions', async () => {
   let logRevision
-  const data = await loadActivitySession(provider({'/api/v1/serverInfo':{buildVersion:'13.0.0.123'},[path]:session('BackupJob'),
+  const data = await loadActivitySession(provider({'/api/v1/serverInfo':{buildVersion:'13.0.0.4967'},[path]:session('BackupJob'),
     [path+'/logs']:revision=>{logRevision=revision;return {records:[],totalRecords:0}}}),'vbr',source,sid)
-  assert.equal(logRevision,'1.3-rev1'); assert.equal(data.canStop,false); assert.equal(data.children,null)
+  assert.equal(logRevision,'1.3-rev0'); assert.equal(data.canStop,false); assert.equal(data.children,null)
   assert.deepEqual(breadcrumbsForPath('/vbr/activity/'+sid).slice(1),[{href:'/vbr/activity',label:'Sessions'},{label:'Session Investigation'}])
 })
 test('stop verifies the selected source, exact running session and type immediately before sending', async () => {

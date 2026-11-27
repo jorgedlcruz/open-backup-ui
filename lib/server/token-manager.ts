@@ -1,5 +1,6 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { configStore } from './config-store';
+import { vbrLoginRevision } from '../vbr/version-response';
 
 interface TokenCache {
     accessToken: string;
@@ -30,7 +31,7 @@ const authConfigs = {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json',
-            'x-api-version': '1.3-rev1'
+            'x-api-version': vbrLoginRevision
         }
     },
     vb365: {
@@ -44,7 +45,14 @@ const authConfigs = {
 
 export const tokenManager = {
     // Server-only access; callers must never serialize the token.
-    peek(sourceId: string) { return tokenCache.get(sourceId) || null; },
+    peek(sourceId: string) {
+        const cached = tokenCache.get(sourceId);
+        if (cached && !configStore.getById(sourceId, false)) {
+            tokenCache.delete(sourceId);
+            return null;
+        }
+        return cached || null;
+    },
     forget(sourceId: string) { tokenCache.delete(sourceId); },
     remember(sourceId: string, accessToken: string, expiresIn: number | null) {
         tokenCache.set(sourceId, {accessToken, expiresAt:Date.now()/1000 + (expiresIn !== null && Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn : 300), authenticatedAt:Date.now()/1000, expiryReported:expiresIn !== null});
@@ -55,7 +63,7 @@ export const tokenManager = {
      */
     async getToken(sourceId: string): Promise<string | null> {
         // 1. Check cache
-        const cached = tokenCache.get(sourceId);
+        const cached = this.peek(sourceId);
         const now = Date.now() / 1000;
 
         if (cached && cached.expiresAt > now + 60) {

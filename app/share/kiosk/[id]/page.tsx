@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PublicKiosk } from '@/components/labs/public-kiosk'

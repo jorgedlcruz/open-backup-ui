@@ -1,14 +1,14 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import type { VbrReader } from '../server/vbr-read'
 import { readOperationsCollection } from '../operations/load'
 import { TopologyRequestError } from '../topology/load'
-import { revisionForBuild, type Evidence } from '../investigation/model'
+import { type LegacyReadRevision, revisionForBuild, type Evidence } from '../investigation/model'
 import { proxyConfigSchema, proxyStateSchema, proxyHostSchema, type ProxyInventory } from './model'
 
 export async function loadProxyInventory(raw: VbrReader, sourceName: string, now = new Date()): Promise<ProxyInventory> {
   const warnings: string[] = []
-  let revision: '1.3-rev1' | '1.3-rev2' = '1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try { revision = revisionForBuild(z.object({ buildVersion: z.string() }).parse(await raw('/api/v1/serverInfo')).buildVersion) }
   catch (error) {
     if (error instanceof TopologyRequestError && error.status === 401) throw error

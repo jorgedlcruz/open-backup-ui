@@ -1,11 +1,11 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { cookies } from 'next/headers'
 import { NextRequest,NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { configStore } from './config-store'
 import { tokenManager } from './token-manager'
-import { getChunkedCookie } from '../utils/cookie-manager'
+import { vbrBrowserToken } from './vbr-browser-token'
 import { compileJob,type Draft } from '../job-builder/model'
 import type { VbrRevision } from './vbr-read'
 
@@ -16,16 +16,16 @@ export async function createVbrJob(request:NextRequest,draft:Draft,revision:VbrR
   const fail=(error:string,status:number,uncertain=false)=>NextResponse.json({error,uncertain},{status,headers})
   const jar=await cookies(),sourceId=jar.get('veeam_source_id')?.value,source=sourceId?configStore.getById(sourceId):undefined
   if(sourceId&&(!source||source.platform!=='vbr'))return fail('Select a valid VBR source.',400)
-  const base=source?`${source.protocol}://${source.host}:${source.port}`:process.env.VEEAM_API_URL
+  const base=source?`${source.protocol}://${source.host}:${source.port}`:process.env.VEEAM_API_URL || process.env.VBR_API_URL
   if(!base)return fail('Connect a VBR source.',400)
   const destination=new URL(base)
-  if(!['http:','https:'].includes(destination.protocol))return fail('Invalid VBR source protocol.',400)
+  if(!['http:','https:'].includes(destination.protocol)||destination.username||destination.password)return fail('Invalid VBR source protocol.',400)
   const sourceKey=createHash('sha256').update(JSON.stringify([destination.href,source?.id||'environment'])).digest('hex')
   if(draft.sourceKey!==sourceKey)return fail('The VBR source changed. Reload and validate again.',409)
   let token=sourceId?await tokenManager.getToken(sourceId):null
-  token ||= getChunkedCookie(jar,'veeam_vbr_token')||null
+  token ||= vbrBrowserToken(jar, destination, sourceId)
   if(!token)return fail('Reconnect the VBR data source.',401)
-  const payload=JSON.stringify(compileJob(draft)),signal=AbortSignal.any([request.signal,AbortSignal.timeout(60000)])
+  const payload=JSON.stringify(compileJob(draft,revision)),signal=AbortSignal.any([request.signal,AbortSignal.timeout(60000)])
   try {
     const send=()=>fetch(new URL('/api/v1/jobs',destination),{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',Accept:'application/json','x-api-version':revision},body:payload,redirect:'error',cache:'no-store',signal})
     let response=await send()

@@ -1,5 +1,6 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
+import type { VbrRevision } from '../vbr/revision'
 
 export const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
 export const platforms = ['VSphere','HyperV'] as const
@@ -93,33 +94,40 @@ export function profileSummary(kind:ProfileKind,value:Retention|Guest|Schedule):
 }
 export function issues(value:unknown) {const result=draftSchema.safeParse(value);return result.success?[]:result.error.issues.map(e=>({field:e.path.join('.'),message:e.message}))}
 
-// These fragments follow the supplied VBR 1.3-rev2 JobSpec schemas. Profile IDs,
-// names and revisions never enter the native job payload: settings are snapshots.
-export function compileRetention(v:Retention) {
-  const weekly=(isEnabled:boolean,days:Retention['syntheticDays'])=>({isEnabled,...(isEnabled?{weekly:{isEnabled:true,days:days.map(nativeDay)}}:{})})
+// Rev0 uses lower-camel case for these wire enums. The saved draft has one format across servers.
+function wireEnum(value:string, revision:VbrRevision) {
+  return revision==='1.3-rev0' ? value[0].toLowerCase()+value.slice(1) : value
+}
+function wireDay(value:typeof days[number], revision:VbrRevision) {
+  return revision==='1.3-rev0' ? value : value[0].toUpperCase()+value.slice(1)
+}
+export function compileRetention(v:Retention,revision:VbrRevision='1.3-rev2') {
+  const weekly=(isEnabled:boolean,days:Retention['syntheticDays'])=>({isEnabled,...(isEnabled?{weekly:{isEnabled:true,days:days.map(d=>wireDay(d,revision))}}:{})})
+  // The misspelled property name is the published contract for rev0 and rev1.
+  const syntheticKey=revision==='1.3-rev0'||revision==='1.3-rev1'?'synthenticFulls':'syntheticFulls'
   return {retentionPolicy:{type:v.type,quantity:v.quantity},gfsPolicy:{isEnabled:!!(v.gfsWeeks||v.gfsMonths||v.gfsYears),
-    weekly:{isEnabled:v.gfsWeeks>0,...(v.gfsWeeks?{keepForNumberOfWeeks:v.gfsWeeks,desiredTime:'Sunday'}:{})},
+    weekly:{isEnabled:v.gfsWeeks>0,...(v.gfsWeeks?{keepForNumberOfWeeks:v.gfsWeeks,desiredTime:wireDay('sunday',revision)}:{})},
     monthly:{isEnabled:v.gfsMonths>0,...(v.gfsMonths?{keepForNumberOfMonths:v.gfsMonths,desiredTime:'First'}:{})},
     yearly:{isEnabled:v.gfsYears>0,...(v.gfsYears?{keepForNumberOfYears:v.gfsYears,desiredTime:'January'}:{})}},
-    advancedSettings:{backupModeType:'Incremental',syntheticFulls:weekly(v.synthetic,v.syntheticDays),activeFulls:weekly(v.active,v.activeDays),backupHealth:weekly(v.healthCheck,v.healthDays)}}
+    advancedSettings:{backupModeType:'Incremental',[syntheticKey]:weekly(v.synthetic,v.syntheticDays),activeFulls:weekly(v.active,v.activeDays),backupHealth:weekly(v.healthCheck,v.healthDays)}}
 }
-export function compileSchedule(v:Schedule) {
-  return {runAutomatically:v.mode!=='manual',daily:v.mode==='daily'?{isEnabled:true,localTime:v.time,dailyKind:v.days.length===7?'Everyday':'SelectedDays',days:v.days.map(nativeDay)}:{isEnabled:false},
+export function compileSchedule(v:Schedule,revision:VbrRevision='1.3-rev2') {
+  return {runAutomatically:v.mode!=='manual',daily:v.mode==='daily'?{isEnabled:true,localTime:v.time,dailyKind:v.days.length===7?'Everyday':'SelectedDays',days:v.days.map(d=>wireDay(d,revision))}:{isEnabled:false},
     periodically:v.mode==='periodic'?{isEnabled:true,periodicallyKind:v.unit,frequency:v.interval,startTimeWithinAnHour:0}:{isEnabled:false},
     retry:{isEnabled:v.mode!=='manual'&&v.retry,...(v.retry?{retryCount:v.retryCount,awaitMinutes:v.retryMinutes}:{})}}
 }
-const nativeDay=(value:typeof days[number])=>value[0].toUpperCase()+value.slice(1)
-export function compileGuest(v:Guest,includes:JobObject[]) {
-  return {appAwareProcessing:{isEnabled:v.applicationAware,...(v.applicationAware?{appSettings:includes.map(item=>({vmObject:compileObject(item),vss:v.vss,transactionLogs:'CopyOnly'}))}:{})},
-    guestFSIndexing:{isEnabled:v.indexing,...(v.indexing?{indexingSettings:includes.map(item=>({vmObject:compileObject(item),WindowsIndexing:{guestFSIndexingMode:'IndexAll'},LinuxIndexing:{guestFSIndexingMode:'IndexAll'}}))}:{})},
+export function compileGuest(v:Guest,includes:JobObject[],revision:VbrRevision='1.3-rev2') {
+  const indexing={guestFSIndexingMode:wireEnum('IndexAll',revision)}
+  return {appAwareProcessing:{isEnabled:v.applicationAware,...(v.applicationAware?{appSettings:includes.map(item=>({vmObject:compileObject(item),vss:wireEnum(v.vss,revision),transactionLogs:wireEnum('CopyOnly',revision)}))}:{})},
+    guestFSIndexing:{isEnabled:v.indexing,...(v.indexing?{indexingSettings:includes.map(item=>({vmObject:compileObject(item),WindowsIndexing:indexing,LinuxIndexing:indexing}))}:{})},
     ...((v.applicationAware||v.indexing)?{guestInteractionProxies:{autoSelectEnabled:true,proxyIds:[]},guestCredentials:{useAgentManagementCredentials:false,credentials:{credentialsId:v.credentialId,credentialsType:v.credentialType}}}:{})}
 }
 function compileObject(v:JobObject) {return {platform:v.platform,hostName:v.hostName,type:v.type,name:v.name,objectId:v.objectId,...(v.urn?{urn:v.urn}:{})}}
-export function compileJob(input:unknown) {
-  const v=draftSchema.parse(input),retention=compileRetention(v.retention)
+export function compileJob(input:unknown,revision:VbrRevision='1.3-rev2') {
+  const v=draftSchema.parse(input),retention=compileRetention(v.retention,revision)
   const proxy={autoSelectEnabled:v.proxyMode!=='selected',proxyIds:v.proxyMode==='selected'?v.proxyIds:[]}
   return {name:v.name,description:v.description,type:v.platform==='VSphere'?'VSphereBackup':'HyperVBackup',isHighPriority:v.highPriority,
     virtualMachines:{includes:v.includes.map(compileObject),...(v.excludes.length?{excludes:{vms:v.excludes.map(compileObject)}}:{})},
-    storage:{backupRepositoryId:v.repositoryId,backupProxies:v.platform==='VSphere'?proxy:v.proxyMode==='onHost'?{proxyType:'OnHost'}:{proxyType:'OffHost',offHostSettings:{...proxy,failoverToOnHostBackup:true}},...retention},
-    guestProcessing:compileGuest(v.guest,v.includes),schedule:compileSchedule(v.schedule)}
+    storage:{backupRepositoryId:v.repositoryId,backupProxies:v.platform==='VSphere'?proxy:v.proxyMode==='onHost'?{proxyType:wireEnum('OnHost',revision)}:{proxyType:wireEnum('OffHost',revision),offHostSettings:{...proxy,failoverToOnHostBackup:true}},...retention},
+    guestProcessing:compileGuest(v.guest,v.includes,revision),schedule:compileSchedule(v.schedule,revision)}
 }

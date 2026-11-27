@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { Mount } from '@/lib/activity/model'
 import type { ActivityDetail } from '@/lib/activity/session'
 import type { MigrationReceipt } from '@/lib/activity/migration-receipt'

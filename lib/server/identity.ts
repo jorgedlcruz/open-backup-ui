@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../vbr/compatible-fetch'
 import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -40,7 +41,7 @@ async function withIdentity(request: NextRequest, load: (execute: Execute, name:
         const currentBase = selected ? current && current.platform === 'vbr' ? `${current.protocol}://${current.host}:${current.port}` : '' : process.env.VEEAM_API_URL || process.env.VBR_API_URL
         if (!currentBase || sourceRevision(selected, currentBase) !== sourceKey) throw new IdentityError('The data source changed. Refresh before continuing.', 409)
         if (method !== 'GET') mutationSent = true
-        return fetch(new URL(path, destination), { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}), signal: controller.signal, redirect: 'error', cache: 'no-store' })
+        return fetchVbrCompatible(new URL(path, destination), { method, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}), signal: controller.signal, redirect: 'error', cache: 'no-store' })
       }
       let response = await send()
       if (method === 'GET' && [400,406].includes(response.status) && revision !== '1.3-rev1') { revision = '1.3-rev1'; response = await send() }

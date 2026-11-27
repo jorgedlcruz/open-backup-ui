@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 — Black Friday edition · 27 November 2026
+
+- Added Microsoft 365 Recovery Center for Exchange, OneDrive, SharePoint and Teams, with restore-point selection, a paginated backup explorer, search, a recovery cart and destination review.
+- Added a contained mail reader with Outlook MSG download and inline previews for PDF, PNG, JPEG, GIF, WebP and common text files. Eligible originals remain downloadable.
+- Added short session IDs, a compact Veeam timeline, an expandable history of successful web UI reads and a Restores tab with destination settings, per-item outcomes and unconfirmed request handling.
+- Improved browsing with scoped page caching, background history loading, Exchange folders in the tree and 100-item pages. Browse startup can wait up to 30 minutes for an offline repository proxy. Protected Objects now labels HexMap entries by name.
+- Added Microsoft Entra ID inventory and tenant registration. Added VBR v13.2 readiness for REST API revision `1.3-rev3`, with additional inventory search and job editors enabled when the server confirms that revision.
+- Moved administration into dedicated Settings with a persistent sidebar entry, compatible deep links and connection-aware licensing. The sidebar shows configured products. Update notifications link to stable GitHub release highlights and the full notes.
+- Improved managed HTTPS startup readiness and port checks.
+
+[Full release notes, format list and screenshots](docs/releases/v1.3.0.md)
+
 ## 1.2.0 (release candidate)
 
 - **Recovery Center:** goal-first recovery for machines, files and objects, application items, and disks/volumes; eligible-workload search and type filters; a recovery-only activity grid with pending, running, ready-for-action, attention and completed views.

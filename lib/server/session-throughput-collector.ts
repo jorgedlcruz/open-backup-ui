@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../vbr/compatible-fetch'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -9,7 +10,7 @@ import { configuredScope } from './capacity-collector'
 import { withFileLease } from './file-lease'
 import { recordSessionThroughput, sweepSessionThroughput, throughputRetentionMs as retention } from './session-throughput'
 import { loadLogs } from '../investigation/load'
-import { investigationSessionSchema, revisionForBuild, taskSchema, validId, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
+import { investigationSessionSchema, type LegacyReadRevision, revisionForBuild, taskSchema, validId, type Evidence, type Logs, type Session, type Task } from '../investigation/model'
 
 const interval = 15_000, pageSize = 200
 const root = path.join(process.cwd(), 'data', 'session-sampler')
@@ -153,11 +154,11 @@ export async function collectThroughputSource(source:VBRSource) {
     check()
     let token=await tokenManager.getToken(source.id), refreshed:Promise<string|null>|undefined
     if(!token)return
-    let revision:'1.3-rev1'|'1.3-rev2'='1.3-rev1'
+    let revision: LegacyReadRevision = '1.3-rev1'
     const read:Read=async endpoint=>{
       const url=new URL(endpoint,destination)
       if(url.origin!==destination.origin || !/^\/api\/v1\/(?:serverInfo|sessions(?:\/[0-9a-f-]{36}(?:\/(?:logs|taskSessions))?)?)$/.test(url.pathname))throw new Error('Unsupported session sampler request.')
-      const send=()=>{check();return fetch(url,{method:'GET',headers:{Authorization:'Bearer '+token,Accept:'application/json','x-api-version':revision},cache:'no-store',redirect:'error',signal})}
+      const send=()=>{check();return fetchVbrCompatible(url,{method:'GET',headers:{Authorization:'Bearer '+token,Accept:'application/json','x-api-version':revision},cache:'no-store',redirect:'error',signal})}
       let response=await send()
       if(response.status===401) {
         refreshed ||= tokenManager.refreshToken(source.id)

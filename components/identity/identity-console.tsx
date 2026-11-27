@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans } from '@/components/providers/i18n-provider'
 import { FilterSelect } from '@/components/operations/filter-facet'
@@ -47,7 +47,7 @@ export function IdentityConsole({ mode, initialRole = 'all' }: { mode: 'users' |
 
   return <div className={cn(ops.console, styles.page, 'ph-no-capture')}>
     <header className={ops.header}><div><h1>{mode === 'users' ? 'Users & groups' : 'Roles & permissions'}</h1><p>{mode === 'users' ? 'Investigate account access, MFA and service-account exemptions.' : 'Inspect permission inventories, account assignments and custom access scopes.'}</p></div><div className={styles.actions}><Button variant="outline" disabled={loading || !!action} onClick={() => { setRevision(value => value + 1); setNotice(null); setUser(null); setRole(null) }}><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /><Trans>{"Refresh"}</Trans></Button>{mode === 'users' && <Button disabled={!editable || !data?.roles.complete} onClick={() => setAction({ kind: 'add' })}><Plus size={14} />Add User</Button>}</div></header>
-    <div className={ops.toolbar}><nav className={ops.tabs} aria-label="Identity views"><Link href="/administration/identity/users" className={cn(ops.tab, mode === 'users' && ops.selectedTab)}><Users size={14} />Users & groups</Link><Link href="/administration/identity/roles" className={cn(ops.tab, mode === 'roles' && ops.selectedTab)}><KeyRound size={14} />Roles & permissions</Link></nav><span className={styles.source}>{data ? `${data.sourceName} · ${date(data.fetchedAt)}` : 'VBR source'}</span></div>
+    <div className={ops.toolbar}><nav className={ops.tabs} aria-label="Identity views"><Link href="/settings/identity/users" className={cn(ops.tab, mode === 'users' && ops.selectedTab)}><Users size={14} />Users & groups</Link><Link href="/settings/identity/roles" className={cn(ops.tab, mode === 'roles' && ops.selectedTab)}><KeyRound size={14} />Roles & permissions</Link></nav><span className={styles.source}>{data ? `${data.sourceName} · ${date(data.fetchedAt)}` : 'VBR source'}</span></div>
     {error && <div className={ops.notice} role="alert"><TriangleAlert size={18} /><div>{error}{data && <p>Previously loaded evidence is retained. Refresh successfully before making changes.</p>}</div><Button variant="outline" onClick={() => setRevision(value => value + 1)}><Trans>{"Retry"}</Trans></Button><Link href="/connect">Connect source</Link></div>}
     {notice && <p className={styles.notice} role="status">{notice}</p>}
     {!data ? loading ? <Loading>Reading users, roles and permissions…</Loading> : <div className={ops.empty}>Identity evidence is unavailable. Connect a VBR source and retry.</div> : <>
@@ -82,7 +82,7 @@ export function IdentityConsole({ mode, initialRole = 'all' }: { mode: 'users' |
           {visible.includes('name') && <td><button className={styles.name} onClick={() => setRole(row)}><Shield size={15} />{row.name || 'Unnamed role'}</button><p className={styles.sub}>{row.id}</p></td>}
           {visible.includes('description') && <td className={styles.description}>{row.description || 'Not reported'}</td>}
           {visible.includes('kind') && <td><span className={cn(ops.badge, row.isBuiltIn === null ? ops.warning : ops.neutral)}>{roleKind(row)}</span></td>}
-          {visible.includes('assignments') && <td><Link className={styles.link} href={`/administration/identity/users?role=${row.id}`}>{count(assigned.users.length, assigned.complete)} accounts</Link><p className={styles.sub}>Explicit assignments</p></td>}
+          {visible.includes('assignments') && <td><Link className={styles.link} href={`/settings/identity/users?role=${row.id}`}>{count(assigned.users.length, assigned.complete)} accounts</Link><p className={styles.sub}>Explicit assignments</p></td>}
           {visible.includes('permissions') && <td>{row.permissions.complete ? row.permissions.data.length.toLocaleString() : 'Unknown'}<p className={styles.sub}>{roleIssues(row, data.users).includes('identity-admin') ? 'Includes identity management' : row.permissions.complete ? 'API permission names' : 'Open role to retry'}</p></td>}
           <td><Button variant="outline" size="sm" onClick={() => setRole(row)}><Eye size={14} />View Permissions</Button></td>
         </tr> })}</tbody></table>)}</SortableGrid></div>

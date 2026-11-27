@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import {isAbortedRead} from './catalog-cache'
 import { z } from 'zod'
 import type { RecoverySend } from '../server/vbr-recovery'
@@ -61,7 +62,7 @@ export async function applicationAccess(send:RecoverySend) {
 }
 export function supportedApplications(row:z.infer<typeof applicationObjectSchema>, rights:Set<string>) {
   if (!row.objectId || row.repositoryType?.toLowerCase()==='archivetier' ||
-    !['VMware','HyperV','WindowsPhysical','LinuxPhysical','LinuxPhysicalPpc','Nutanix','Proxmox','UnstructuredData','AWSEC2','GCE','AzureCompute'].includes(row.platformName||'') ||
+    !['VMware','HyperV','WindowsPhysical','LinuxPhysical','LinuxPhysicalPpc','Nutanix','Proxmox','UnstructuredData','AWSEC2','GCE','AzureCompute'].includes(normalizeVbrPlatform(row.platformName)||'') ||
     !['ViewBackupObjects','ViewRestorePoints','ViewTasks'].every(p=>rights.has(p))) return []
   return policies.filter(p=>rights.has(p.permission) && row.operations?.some(op=>op.enabled && op.operation===p.operation))
     .map(p=>({kind:p.kind,objectId:row.objectId!}))

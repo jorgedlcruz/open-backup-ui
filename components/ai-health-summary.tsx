@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
@@ -99,7 +99,7 @@ export function AiHealthSummaryPanel({ completion, isLoading, error, hasGenerate
       {error && <div className={styles.state} data-tone="danger" role="alert"><AlertTriangle size={22} aria-hidden="true" /><div><h3>{t('Analysis Failed')}</h3>
         {problem?.provider && <p className={styles.errorMeta}>{providers[problem.provider].name}{problem.status ? ` · HTTP ${problem.status}` : ''}</p>}
         <p>{healthSummaryError(t, error.message)}</p>
-        <div className={styles.errorActions}><Link href="/administration/ai-settings">{t('AI Integrations')}</Link>{problem?.kind === 'billing' && problem.provider === 'gemini' && <a href="https://ai.studio/projects" target="_blank" rel="noreferrer">{t('Open AI Studio')} ↗</a>}</div>
+        <div className={styles.errorActions}><Link href="/settings/ai-settings">{t('AI Integrations')}</Link>{problem?.kind === 'billing' && problem.provider === 'gemini' && <a href="https://ai.studio/projects" target="_blank" rel="noreferrer">{t('Open AI Studio')} ↗</a>}</div>
       </div></div>}
       {!error && isLoading && !sections.length && <div className={styles.state} role="status"><Loader2 size={22} className={styles.spinner} aria-hidden="true" /><div><h3>{t('Synthesizing telemetry data...')}</h3><p>{t('This may take a few seconds as the AI analyzes your environment.')}</p></div></div>}
       {!error && !isLoading && !sections.length && <div className={styles.state} role="status"><Info size={22} aria-hidden="true" /><div><h3>{t('No insights available')}</h3><p>{t('Click Refresh Insights to generate an AI analysis of your environment.')}</p></div></div>}

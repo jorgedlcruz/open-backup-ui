@@ -1,5 +1,5 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { Trans , useI18n } from '@/components/providers/i18n-provider'
 import { useEffect,useRef,useState } from 'react'
@@ -9,6 +9,7 @@ import { Archive,ArrowLeft,ArrowRight,ArrowUpRight,BookOpen,Check,CheckCircle2,C
 import { applicationRequest } from '@/lib/api/application-request'
 import { compileJob,issues,newDraft,savedDraftSchema,type Draft } from '@/lib/job-builder/model'
 import { InventoryPicker } from './inventory-picker'
+import { SourceSizeEstimate } from './source-estimate'
 import { PolicyCards } from './policies'
 import { Field,Toggle } from './policy-editors'
 import { downloadJson,message,useBuilderResources } from './resources'
@@ -42,7 +43,7 @@ export function JobBuilder({platform}:{platform:Draft['platform']}) {
   useEffect(()=>{page.current?.scrollIntoView({block:'start'})},[step])
   const problems=issues(draft),stepProblems=step<3?problems.filter(p=>stepFields[step].includes(p.field.split('.')[0])):problems
   const repository=options?.repositories.find(r=>r.id===draft.repositoryId),busy=checking||creating
-  const payload=problems.length?null:compileJob(draft)
+  const payload=problems.length?null:compileJob(draft,options?.apiRevision)
   function change(patch:Partial<Draft>) {setDraft(d=>({...d,...patch}));setCheck(null);setFailure('');setNotice('')}
   function move(next:number) {setStep(next);setShowErrors(false);setFailure('')}
   function next() {if(stepProblems.length){setShowErrors(true);return}move(Math.min(3,step+1))}
@@ -83,7 +84,8 @@ export function JobBuilder({platform}:{platform:Draft['platform']}) {
             <div className={s.reviewItem}><h3>{t("Protected scope")}</h3><p>{draft.name||t("Name this job")}<br/>{t('{count} selected objects · {excluded} exclusions',{count:formatNumber(draft.includes.length),excluded:formatNumber(draft.excludes.length)})}</p><details><summary className={s.link}>{t("View objects")}</summary>{draft.includes.map((o,i)=><p key={i}>{o.name} · {enumText(o.type)} · {o.hostName}</p>)}{draft.excludes.map((o,i)=><p key={i}>{t('Exclude: {name}',{name:o.name})} · {enumText(o.type)} · {o.hostName}</p>)}</details><button onClick={()=>move(0)}>{t("Edit workload")}</button></div>
             <div className={s.reviewItem}><h3>{t("Destination")}</h3><p>{repository?.name||t("Choose a repository")}<br/>{draft.proxyMode==='auto'?t("Automatic proxy selection"):draft.proxyMode==='onHost'?t("On-host processing"):t('{count} selected proxies',{count:formatNumber(draft.proxyIds.length)})}</p><button onClick={()=>move(1)}>{t("Edit destination")}</button></div>
             {(['retention','guest','schedule'] as const).map(kind=><div className={s.reviewItem} key={kind}><h3>{kind==='retention'?t("Retention & full backups"):kind==='guest'?t("Guest processing"):t("Schedule & retries")}</h3><p>{profileSummary(kind,draft[kind])}</p>{kind==='guest'&&draft.guest.applicationAware&&<p>{t("Copy-only · transaction logs retained")}</p>}{kind==='schedule'&&draft.schedule.mode!=='manual'&&<p>{draft.schedule.retry?t('{count} retries · {minutes} min apart',{count:formatNumber(draft.schedule.retryCount),minutes:formatNumber(draft.schedule.retryMinutes)}):t("Retries disabled")}  · {t('VBR local time')}</p>}<button onClick={()=>move(2)}>{t("Edit policies")}</button></div>)}
-          </div>{cadenceWarning&&<div className={s.notice}>{cadenceWarning}</div>}<div className={s.policyPreview}><div className={s.actions}><button className={s.button} onClick={()=>setShowJson(!showJson)}><Code2 size={14}/>{t(showJson?'Hide API payload':'Inspect API payload')}</button><button className={s.button} disabled={!payload} onClick={()=>{if(payload)downloadJson('backup-job.json',payload)}}><Download size={14}/>{t("Export JSON")}</button><button className={s.button} disabled={!payload} onClick={()=>{void navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(()=>setNotice(t('API payload copied.'))).catch(()=>setFailure(t('Copy is unavailable in this browser. Use Export JSON instead.')))}}><Copy size={14}/>{t("Copy")}</button></div>{showJson&&<pre className={`${s.code} ${s.section}`}>{payload?JSON.stringify(payload,null,2):t("Complete the required settings to generate the API payload.")}</pre>}</div>
+          </div>{options?.hasSourceSizeEstimate&&payload&&<SourceSizeEstimate key={JSON.stringify([draft.sourceKey,draft.platform,draft.includes,draft.excludes])} draft={draft}/>}
+          {cadenceWarning&&<div className={s.notice}>{cadenceWarning}</div>}<div className={s.policyPreview}><div className={s.actions}><button className={s.button} onClick={()=>setShowJson(!showJson)}><Code2 size={14}/>{t(showJson?'Hide API payload':'Inspect API payload')}</button><button className={s.button} disabled={!payload} onClick={()=>{if(payload)downloadJson('backup-job.json',payload)}}><Download size={14}/>{t("Export JSON")}</button><button className={s.button} disabled={!payload} onClick={()=>{void navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(()=>setNotice(t('API payload copied.'))).catch(()=>setFailure(t('Copy is unavailable in this browser. Use Export JSON instead.')))}}><Copy size={14}/>{t("Copy")}</button></div>{showJson&&<pre className={`${s.code} ${s.section}`}>{payload?JSON.stringify(payload,null,2):t("Complete the required settings to generate the API payload.")}</pre>}</div>
           <div className={s.notice}>{t("Check selections verifies current inventory, repository, proxies, credential references and job names. VBR performs its complete validation when the job is created.")}</div>
           {check&&<div className={check.valid?s.success:s.error} role="status"><strong>{check.valid?t("Selections checked against VBR"):t("Resolve these source issues")}</strong>{check.errors.map(e=><p key={e}>{diagnostic(e)}</p>)}{check.warnings.map(w=><p key={w}>{diagnostic(w)}</p>)}<p>{formatDate(check.checkedAt,{timeStyle:"short"})} · API {check.apiRevision}</p></div>}
           <div className={s.saveBar}><button className={s.button} disabled={!!problems.length||uncertain} onClick={()=>void validate()}><CheckCircle2 size={15}/>{t("Check selections")}</button><button className={s.primary} disabled={!check?.valid||!!problems.length||uncertain} onClick={()=>void create()}><ShieldCheck size={15}/><Trans>{"Create Backup Job"}</Trans></button></div><p className={`${s.muted} ${s.section}`}>{draft.schedule.mode==='manual'?t("The job will be created for manual runs."):t("The job will be created with its automatic schedule enabled.")} {t("This action does not start an immediate backup.")}</p>

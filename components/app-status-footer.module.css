@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .footer {
   position: sticky;
   z-index: 9;
@@ -36,7 +36,7 @@
 .state[data-status=error] i { background: var(--ops-danger); }
 .version { border-inline-start: 1px solid var(--border); padding-inline-start: .8rem; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) {
-  .strip { max-width: 100%; gap: .2rem .5rem; padding-inline: .65rem; }
+  .strip { max-width: calc(100% - 60px); gap: .2rem .5rem; padding-inline: .65rem; }
   .version { padding-inline-start: .5rem; }
 }
 @media print { .footer { display: none; } }

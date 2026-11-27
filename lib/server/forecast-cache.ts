@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../vbr/compatible-fetch'
 import { configStore, type VBRSource } from './config-store'
 import { tokenManager } from './token-manager'
 import { configuredScope, getCollectorStatus } from './capacity-collector'
@@ -81,7 +82,7 @@ export async function loadConfiguredForecast(sourceId: string, scope: string) {
       if (!planningEndpointAllowed(target, destination)) throw new TopologyRequestError('Unsupported collector request.', 400)
       const send = () => {
         check()
-        return fetch(target, {
+        return fetchVbrCompatible(target, {
           method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'x-api-version': revision },
           cache: 'no-store', redirect: 'error', signal: controller.signal,
         })

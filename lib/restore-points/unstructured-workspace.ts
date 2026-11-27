@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 export type StorageView='browse'|'instant'
 export type StorageScope={sourceKey:string;sessionId:string;view:StorageView}
 export type StorageStatus=StorageScope & {actions:string[];name?:string;state?:string;pathSeparator?:string}

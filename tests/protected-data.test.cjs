@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 const fs=require('node:fs'),ts=require('typescript');
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText,filename);
 const {test}=require('node:test'),assert=require('node:assert/strict');
@@ -252,3 +252,21 @@ test('parent memberships require the complete object and backup identity, never 
  }),'VBR',true,now);
  assert.equal(rowsFrom(data)[0].backup,null);assert.deepEqual(data.backupLinks,{});
 });
+
+test('a v13.0.0 server keeps its rev0 snapshot through cached and follow-up reads',async()=>{
+ const revisions=[]
+ const read=async(endpoint,revision)=>{
+  if(endpoint==='/api/v1/serverInfo')return {buildVersion:'13.0.0.4967'}
+  revisions.push(revision)
+  const pathname=new URL(endpoint,'https://vbr.invalid').pathname
+  const data=pathname==='/api/v1/backupObjects' ? [object()] : pathname==='/api/v1/backups' ? [backup()] : []
+  return {data,pagination:{total:data.length}}
+ }
+ const cache=new ProtectedDataCache()
+ const base=await cache.read('source',()=>loadProtectedData(read,'VBR',false,now,false),undefined,{recovery:false})
+ assert.equal(base.apiRevision,'1.3-rev0')
+ assert.equal(cache.apiRevision('source'),'1.3-rev0')
+ await loadProtectedRecoveryTimes(read,base,now)
+ assert.ok(revisions.length>=2)
+ assert.deepEqual([...new Set(revisions)],['1.3-rev0'])
+})

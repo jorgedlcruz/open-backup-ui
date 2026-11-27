@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .explorer {display:grid; gap:.85rem; min-width:0; color:var(--foreground); font-size:.85rem}
 .commandBar, .commandHeading, .commandButtons, .gridBar, .toolbar, .crumbs, .pager, .actions, .selection {display:flex; align-items:center; flex-wrap:wrap; gap:.55rem}
 .commandBar {justify-content:space-between; gap:.65rem 1rem; padding-block:.15rem .75rem; border-bottom:1px solid var(--border)}

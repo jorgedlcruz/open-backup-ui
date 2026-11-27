@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {createHash,randomUUID} from 'node:crypto'
 import {NextRequest,NextResponse} from 'next/server'
 import {cookies} from 'next/headers'

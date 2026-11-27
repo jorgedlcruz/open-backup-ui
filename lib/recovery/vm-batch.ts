@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import {z} from 'zod'
 import {vmBatchKind,vmBatchOperations} from '../restore-points/batch'
 import {sameRecoveryDestination,type RecoveryDestination} from '../restore-points/destination-collision'
@@ -67,7 +68,7 @@ export async function prepareBatchRow(send:RecoverySend,sourceKey:string,row:VmB
   const {draft}=row
   const [vm,prepared]=await Promise.all([resolveBatchObject(send,row),
     prepareRestore(send,sourceKey,draft),verifyMember(send,row)])
-  if(vm.id!==row.objectId||!['vm','virtualmachine'].includes(norm(vm.type))||vm.platformName!==prepared.point.platformName)throw new VbrRecoveryError('Select a current virtual machine on the same VBR platform.',409)
+  if(vm.id!==row.objectId||!['vm','virtualmachine'].includes(norm(vm.type))||normalizeVbrPlatform(vm.platformName)!==normalizeVbrPlatform(prepared.point.platformName))throw new VbrRecoveryError('Select a current virtual machine on the same VBR platform.',409)
   const op=draft.operation
   if(op==='StartEntireVmRestore'&&vm.platformName!=='VMware' || op==='StartEntireVmRestoreHyperV'&&vm.platformName!=='HyperV')throw new VbrRecoveryError('The selected recovery is unavailable for this VM platform.',409)
   const sourceManager=norm(vm.path?.split(/[\\/]/).find(Boolean)),custom=draft.mode==='Customized'

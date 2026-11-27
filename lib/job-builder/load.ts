@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import { readOperationsCollection } from '../operations/load'
 import { inventorySchema, itemKey } from '../virtual-infrastructure/model'
@@ -36,8 +36,8 @@ export function inventoryHosts(data:z.infer<typeof inventorySchema>[]):Host[] {
   return [...new Map(data.filter(i=>['VSphere','HyperV'].includes(i.platform||'') && (i.hostName||i.name))
     .map(i=>{const host={name:(i.hostName||i.name)!,platform:i.platform as Host['platform']};return [`${host.platform}|${host.name.toLowerCase()}`,host] as const})).values()]
 }
-export async function loadOptions(raw:VbrReader,browse:VbrInventoryReader,sourceName:string,sourceKey:string) {
-  const apiRevision=await revision(raw),read=(path:string)=>raw(path,apiRevision),warnings:string[]=[]
+export async function loadOptions(raw:VbrReader,browse:VbrInventoryReader,sourceName:string,sourceKey:string,negotiated?:VbrRevision) {
+  const apiRevision=negotiated??await revision(raw),read=(path:string)=>raw(path,apiRevision),warnings:string[]=[]
   async function optional<T>(label:string,work:Promise<{data:T[];complete:boolean}>) {
     try {const value=await work;if(!value.complete)warnings.push(`${label}: only part of the inventory was returned.`);return value.data}
     catch(e){if(e instanceof TopologyRequestError && e.status===401)throw e;warnings.push(`${label} could not be loaded. Refresh the source or check permissions.`);return [] as T[]}
@@ -56,9 +56,9 @@ export async function loadOptions(raw:VbrReader,browse:VbrInventoryReader,source
     repositories:repositories.filter(r=>!r.scaleOutRepositoryDetails?.scaleOutRepositoryId).map(r=>({id:r.id,name:r.name,type:r.type,isOnline:r.isOnline,capacityGB:r.capacityGB,freeGB:r.freeGB})),
     proxies,credentials:credentials.filter(c=>['Standard','Linux','ManagedService'].includes(c.type)),jobs}
 }
-export type BuilderOptions=Awaited<ReturnType<typeof loadOptions>>
-export async function loadInventory(raw:VbrReader,browse:VbrInventoryReader,host:string,platform:Draft['platform']) {
-  const apiRevision=await revision(raw),roots=await browseObjects(browse,apiRevision,null)
+export type BuilderOptions=Awaited<ReturnType<typeof loadOptions>>&{hasSourceSizeEstimate?:boolean}
+export async function loadInventory(raw:VbrReader,browse:VbrInventoryReader,host:string,platform:Draft['platform'],negotiated?:VbrRevision) {
+  const apiRevision=negotiated??await revision(raw),roots=await browseObjects(browse,apiRevision,null)
   if(!inventoryHosts(roots.data).some(h=>h.name.toLowerCase()===host.toLowerCase()&&h.platform===platform))throw new TopologyRequestError('Select an inventory server from this VBR source.',400)
   const result=await browseObjects(browse,apiRevision,host,platform)
   const objects:JobObject[]=[]
@@ -86,7 +86,7 @@ export async function validateEnvironment(draft:Draft,raw:VbrReader,browse:VbrIn
   if(hosts.length>20)return [...errors,'Limit this job to 20 inventory servers.']
   for(const host of hosts) {
     try {
-      const inventory=await loadInventory(raw,browse,host,draft.platform),keys=new Set(inventory.data.map(objectKey))
+      const inventory=await loadInventory(raw,browse,host,draft.platform,options.apiRevision),keys=new Set(inventory.data.map(objectKey))
       if([...draft.includes,...draft.excludes].filter(i=>i.hostName===host).some(i=>!keys.has(objectKey(i))))errors.push(`Some selected objects on ${host} could not be verified. Re-select them from inventory.`)
     } catch(e){if(e instanceof TopologyRequestError&&e.status===401)throw e;errors.push(`Inventory on ${host} could not be verified. Refresh and try again.`)}
   }

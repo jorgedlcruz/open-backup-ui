@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
 import { useI18n } from '@/components/providers/i18n-provider'
 import { SortableGrid } from '@/components/ui/sortable-grid'
@@ -62,7 +62,7 @@ export function SourcesConsole() {
     ['Response time', detail.health.latencyMs === null ? t('Not measured') : t('{value} ms', { value: formatNumber(detail.health.latencyMs) })],
   ] : []
   return <div className={cn(ops.console, styles.page)}>
-    <header className={ops.header}><div><h1>{t('Data Sources')}</h1><p className={ops.subtitle}>{t('Verify platform access, investigate connection issues and manage the sources behind your operations views.')}</p></div><div className={styles.toolbar}><Button variant="outline" size="sm" disabled={loading || !!checking} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin' : ''} />{t('Check all connections')}</Button><Button size="sm" onClick={() => setAction({ type: 'add' })}><Plus size={14} />{t('Add Data Source')}</Button></div></header>
+    <header className={ops.header}><div><h1>{t('Data Sources')}</h1><p className={ops.subtitle}>{t('Verify platform access, investigate connection issues and manage the sources behind your operations views.')}</p></div><div className={styles.toolbar}><Button variant="outline" size="sm" disabled={loading || !!checking} onClick={refresh}><RefreshCw size={14} className={loading ? 'animate-spin' : ''} />{t('Check all connections')}</Button><Button size="sm" disabled={!data || loading || !!error} onClick={() => setAction({ type: 'add' })}><Plus size={14} />{t('Add Data Source')}</Button></div></header>
     {(error || checkError) && <Notice error>{sourceMessage(t, error || checkError || '')}{data && ` ${t('Previous evidence remains visible.')}`}</Notice>}
     {loading && data && <p className={shared.refreshing} role="status">{t('Checking connections · previous evidence remains visible.')}</p>}
     {!data && loading ? <Loading>{t('Checking configured endpoints and API access…')}</Loading> : <>
@@ -93,6 +93,6 @@ export function SourcesConsole() {
       {all.some(row => row.managed === 'environment') && <Notice>{t('Environment-managed sources remain visible and can be checked or connected. Edit their endpoint and credentials in the server environment.')}</Notice>}
     </>}
     <footer className={ops.footer}><span><span className={ops.dot} />{t('Inventory')} {date(data?.fetchedAt)} · {t('{count} configured sources', { count: formatNumber(all.length) })}</span><Link className={ops.textLink} href="/connect">{t('Connection portal')}<ExternalLink size={12} /></Link></footer>
-    {action && <SourceActionDialog action={action} onClose={() => setAction(null)} onComplete={refresh} />}
+    {action && <SourceActionDialog action={action} vbrConfigured={all.some(source => source.type === 'vbr')} onClose={() => setAction(null)} onComplete={refresh} />}
   </div>
 }

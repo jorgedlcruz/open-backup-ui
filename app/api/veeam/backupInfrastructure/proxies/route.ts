@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { fetchVbrCompatible } from '../../../../../lib/vbr/compatible-fetch'
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { tokenManager } from '@/lib/server/token-manager';
@@ -57,7 +58,7 @@ async function proxy(request: NextRequest) {
             }
         }
 
-        let response = await fetch(fullUrl, options);
+        let response = await fetchVbrCompatible(fullUrl, options);
 
         // Auto-refresh mechanism
         if (response.status === 401 && sourceId) {
@@ -68,7 +69,7 @@ async function proxy(request: NextRequest) {
                     ...options.headers,
                     'Authorization': `Bearer ${newToken}`
                 };
-                response = await fetch(fullUrl, options);
+                response = await fetchVbrCompatible(fullUrl, options);
             }
         }
 

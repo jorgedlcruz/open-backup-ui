@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { ContactRound, File, Folder, FolderCog, FolderGit2, FolderTree, Globe2, MapPin, Monitor, Network, Printer, Router, ScrollText, Server, Settings2, ShieldUser, UserRound, UserRoundCog, UsersRound } from 'lucide-react'
 import type { AdEntry } from '@/lib/restore-points/ad-client'
 import { directoryIconKind } from '@/lib/restore-points/ad-item-icon'

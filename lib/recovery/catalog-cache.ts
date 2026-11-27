@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 export const recoveryCatalogCacheMs = 30 * 60_000
 export const isAuthorizationError = (error: unknown) => error instanceof Error && 'status' in error && (error.status === 401 || error.status === 403)
 export const isAbortedRead = (error: unknown) => error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')

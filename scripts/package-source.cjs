@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 // Distribute the application source and its assets without copying local state.
 // Uses only Node built-ins, so it also works before npm ci.
@@ -32,6 +32,13 @@ function excluded(name, directory) {
   if (name.startsWith('.')) return true
   if (directory) return EXCLUDED_DIRECTORIES.has(name)
   return /(?:\.(?:zip|tar|gz|7z|log|tmp|bak|pem|key|pfx|p12|tsbuildinfo|swp|swo)|~)$/i.test(name)
+}
+
+function isSourcePackageFile(relative) {
+  const [root, ...parts] = relative.split('/')
+  if (!parts.length) return ROOT_FILES.includes(root)
+  return SOURCE_DIRECTORIES.includes(root) && parts.every((name, index) =>
+    name.length > 0 && !excluded(name, index < parts.length - 1))
 }
 
 function collectSourceFiles(root) {
@@ -155,4 +162,4 @@ if (require.main === module) {
   } catch (error) { console.error(error.message); process.exitCode = 1 }
 }
 
-module.exports = { collectSourceFiles, buildZip, verifyZip, packageSource }
+module.exports = { isSourcePackageFile, collectSourceFiles, buildZip, verifyZip, packageSource }

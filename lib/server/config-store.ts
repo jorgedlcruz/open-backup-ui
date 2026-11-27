@@ -1,5 +1,8 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import fs from 'fs';
+import { randomUUID } from 'node:crypto';
+import { withFileLease } from './file-lease';
+import { replaceFile } from './atomic-file';
 import path from 'path';
 import { encrypt, decrypt, ENCRYPTION_KEY, LEGACY_DEFAULT_KEY } from './encryption';
 
@@ -27,6 +30,66 @@ export interface VBRSource {
 
 interface StoredSource extends Omit<VBRSource, 'password'> {
     encryptedPassword?: string;
+    retiredVbr?: boolean;
+}
+
+
+export const SINGLE_VBR_CONFLICT = 'Only one Veeam Backup & Replication server can be configured.';
+export const CATALOG_BUSY = 'This source changed during authentication. Refresh and reconnect.';
+function environmentVbr(): VBRSource | null {
+    const urlStr = process.env.VEEAM_API_URL || process.env.VBR_API_URL;
+    if (!urlStr) return null;
+    try {
+        const url = new URL(urlStr);
+        return {
+            id: 'env-vbr',
+            host: url.hostname,
+            port: parseInt(url.port) || 9419,
+            protocol: url.protocol.replace(':', ''),
+            username: process.env.VEEAM_USERNAME || process.env.VBR_USERNAME || 'Administrator',
+            password: process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD,
+            platform: 'vbr',
+            hasCredentials: !!(process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD)
+        };
+    } catch { return null; }
+}
+
+type Address = Pick<VBRSource, 'host' | 'port' | 'protocol'>;
+export function vbrOrigin(source: Address) {
+    return new URL(`${source.protocol}://${source.host}:${source.port}`).origin;
+}
+function activeStoredVbr(stored: StoredSource[], env: VBRSource | null) {
+    return stored.find(source => source.platform === 'vbr' && !source.retiredVbr &&
+        (!env || vbrOrigin(source) === vbrOrigin(env)));
+}
+function publicSource(source: StoredSource): VBRSource {
+    const { encryptedPassword, ...rest } = source;
+    delete rest.retiredVbr;
+    return { ...rest, hasCredentials: !!encryptedPassword };
+}
+function storedSources(): StoredSource[] {
+    return fs.existsSync(CONFIG_FILE) ? JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) : [];
+}
+// Each writer rechecks the slot under the same lock, including legacy sign-in.
+async function updateCatalog<T>(modify: (stored: StoredSource[]) => Promise<T> | T) {
+    const write = () => withFileLease(CONFIG_FILE + '.lock', 30_000, async () => {
+        const stored = storedSources();
+        const value = await modify(stored);
+        const temp = CONFIG_FILE + '.' + randomUUID() + '.tmp';
+        try {
+            await fs.promises.writeFile(temp, JSON.stringify(stored, null, 2), { flag: 'wx', mode: 0o600 });
+            await replaceFile(temp, CONFIG_FILE);
+        } finally { await fs.promises.unlink(temp).catch(() => {}); }
+        return { value };
+    });
+    // A password grant can keep the slot reserved for its 15-second request timeout.
+    const deadline = Date.now() + 17_000;
+    for (let delay = 25; Date.now() < deadline; delay = Math.min(delay * 2, 400)) {
+        const result = await write();
+        if (result) return result.value;
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    throw new Error(CATALOG_BUSY);
 }
 
 // --- Migration Logic ---
@@ -40,35 +103,32 @@ function migrateLegacyPasswords() {
     try {
         const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
         const stored: StoredSource[] = JSON.parse(data);
-        let modified = false;
-
-        const updated = stored.map(source => {
-            if (!source.encryptedPassword) return source;
+        const replacements = new Map<string, string>();
+        for (const source of stored) {
+            if (!source.encryptedPassword) continue;
 
             // Try decrypting with current (new) key first
             try {
                 decrypt(source.encryptedPassword, ENCRYPTION_KEY);
-                return source; // Already encrypted with new key
             } catch {
                 // Decryption failed, likely using legacy key. Try migrating.
                 try {
                     const plain = decrypt(source.encryptedPassword, LEGACY_DEFAULT_KEY);
-                    // Re-encrypt with new key
-                    const reEncrypted = encrypt(plain, ENCRYPTION_KEY);
-                    console.log(`[ConfigStore] Migrated password for source ${source.host}`);
-                    modified = true;
-                    return { ...source, encryptedPassword: reEncrypted };
+                    replacements.set(source.encryptedPassword, encrypt(plain, ENCRYPTION_KEY));
                 } catch (legacyErr) {
                     console.error(`[ConfigStore] Failed to migrate password for ${source.host}:`, legacyErr);
-                    return source; // Leave as is if both fail
                 }
             }
-        });
-
-        if (modified) {
-            fs.writeFileSync(CONFIG_FILE, JSON.stringify(updated, null, 2));
-            console.log('[ConfigStore] Migration complete: All passwords re-encrypted with machine key.');
         }
+
+        // Read again under the catalog lock so startup in another process
+        // cannot overwrite concurrent registrations or credential changes.
+        if (replacements.size) void updateCatalog(current => {
+            for (const source of current) {
+                const replacement = source.encryptedPassword && replacements.get(source.encryptedPassword);
+                if (replacement) source.encryptedPassword = replacement;
+            }
+        }).catch(error => console.error('[ConfigStore] Password migration failed:', error));
     } catch (e) {
         console.error('[ConfigStore] Migration check failed:', e);
     }
@@ -85,16 +145,9 @@ export const configStore = {
             return [];
         }
         try {
-            const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
-            const stored: StoredSource[] = JSON.parse(data);
-            return stored.map(s => {
-                // Return without password for safety but indicate if present
-                const { encryptedPassword, ...rest } = s;
-                return {
-                    ...rest,
-                    hasCredentials: !!encryptedPassword
-                } as VBRSource;
-            });
+            const stored = storedSources();
+            const active = activeStoredVbr(stored, environmentVbr());
+            return stored.filter(s => s.platform !== 'vbr' || s === active).map(publicSource);
         } catch (e) {
             console.error('Failed to read config store:', e);
             if (strict) throw new Error('Data-source configuration is unreadable.');
@@ -102,24 +155,16 @@ export const configStore = {
         }
     },
 
-    getById(id: string): VBRSource | null {
+    getVbr(): VBRSource | null {
+        const env = environmentVbr();
+        const saved = activeStoredVbr(storedSources(), env);
+        return saved ? publicSource(saved) : env;
+    },
+
+    getById(id: string, includePassword = true): VBRSource | null {
         // Handle Environment Variable Sources
         if (id === 'env-vbr') {
-            const urlStr = process.env.VEEAM_API_URL || process.env.VBR_API_URL;
-            if (!urlStr) return null;
-            try {
-                const url = new URL(urlStr);
-                return {
-                    id: 'env-vbr',
-                    host: url.hostname,
-                    port: parseInt(url.port) || 9419,
-                    protocol: url.protocol.replace(':', ''),
-                    username: process.env.VEEAM_USERNAME || process.env.VBR_USERNAME || 'Administrator',
-                    password: process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD,
-                    platform: 'vbr',
-                    hasCredentials: !!(process.env.VEEAM_PASSWORD || process.env.VBR_PASSWORD)
-                };
-            } catch { return null; }
+            return environmentVbr();
         }
         if (id === 'env-vb365') {
             const urlStr = process.env.VBM_API_URL;
@@ -152,7 +197,8 @@ export const configStore = {
         const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
         const stored: StoredSource[] = JSON.parse(data);
         const found = stored.find(s => s.id === id);
-        if (!found) return null;
+        if (!found || (found.platform === 'vbr' && found !== activeStoredVbr(stored, environmentVbr()))) return null;
+        if (!includePassword) return publicSource(found);
 
         const { encryptedPassword, ...rest } = found;
         let decryptedPassword;
@@ -178,40 +224,52 @@ export const configStore = {
         } as VBRSource;
     },
 
-    save(source: VBRSource) {
-        let stored: StoredSource[] = [];
-        if (fs.existsSync(CONFIG_FILE)) {
-            stored = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-        }
+    async save<T = void>(source: VBRSource, validate?: () => Promise<T>) {
+        return updateCatalog(async stored => {
+            if (source.platform === 'vbr') {
+                const env = environmentVbr(), active = activeStoredVbr(stored, env);
+                if ((env && (!active || vbrOrigin(source) !== vbrOrigin(env))) ||
+                    (active && source.id !== active.id)) throw new Error(SINGLE_VBR_CONFLICT);
+                // An explicit registration can reuse a retired ID only when the slot is free.
+            }
+            const result = await validate?.();
+            const encryptedPassword = source.password ? encrypt(source.password) : undefined;
 
-        const encryptedPassword = source.password ? encrypt(source.password) : undefined;
+            // Remove existing if update
+            const index = stored.findIndex(s => s.id === source.id);
+            const newEntry: StoredSource = {
+                id: source.id,
+                host: source.host,
+                port: source.port,
+                username: source.username,
+                protocol: source.protocol || 'https',
+                platform: source.platform,
+                ...(source.name ? {name:source.name} : {}),
+                encryptedPassword
+            };
 
-        // Remove existing if update
-        const index = stored.findIndex(s => s.id === source.id);
-        const newEntry: StoredSource = {
-            id: source.id,
-            host: source.host,
-            port: source.port,
-            username: source.username,
-            protocol: source.protocol || 'https',
-            platform: source.platform,
-            ...(source.name ? {name:source.name} : {}),
-            encryptedPassword
-        };
+            if (index >= 0) {
+                stored[index] = newEntry;
+            } else {
+                stored.push(newEntry);
+            }
 
-        if (index >= 0) {
-            stored[index] = newEntry;
-        } else {
-            stored.push(newEntry);
-        }
-
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(stored, null, 2));
+            return result;
+        });
     },
 
-    delete(id: string) {
-        if (!fs.existsSync(CONFIG_FILE)) return;
-        let stored: StoredSource[] = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-        stored = stored.filter(s => s.id !== id);
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(stored, null, 2));
+    async delete(id: string) {
+        await updateCatalog(stored => {
+            const index = stored.findIndex(source => source.id === id);
+            if (index < 0) return;
+            if (stored[index].platform === 'vbr') {
+                const active = activeStoredVbr(stored, environmentVbr());
+                if (stored[index] !== active) return;
+                // Removing the active source must leave the VBR slot empty. Keep
+                // encrypted historical records on disk without promoting one.
+                for (const row of stored) if (row.platform === 'vbr' && row !== active) row.retiredVbr = true;
+            }
+            stored.splice(index, 1);
+        });
     }
 };

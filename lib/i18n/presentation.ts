@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import type { MessageValues } from './model'
 
 export type Translator = (source: string, values?: MessageValues) => string
@@ -54,9 +54,9 @@ export function enumLabel(t: Translator, value: string): string {
     case 'ApplicationBackupRepository': return t('Application backup repository')
     case 'Tape': return t('Tape')
     case 'MongoDb': return 'MongoDB'
-    case 'AWSEC2': return 'Amazon EC2'
+    case 'AWSEC2': case 'AWS': case 'EC2': return 'Amazon EC2'
     case 'AzureCompute': return 'Microsoft Azure'
-    case 'GCE': return 'Google Compute Engine'
+    case 'GCE': case 'GoogleCloud': return 'Google Compute Engine'
     case 'Directory': return t('Directory')
     case 'File': return t('File')
     case 'FileServerRoot': return t('File server root')

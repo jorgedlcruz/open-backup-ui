@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { promises as fs } from 'node:fs'
 
 const delays = [25, 50, 100, 200, 400, 800]

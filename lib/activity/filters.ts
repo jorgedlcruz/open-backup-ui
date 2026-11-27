@@ -1,4 +1,5 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
+import { normalizeVbrPlatform } from '../vbr/platform'
 import { z } from 'zod'
 
 // VBR 1.3-rev2 ESessionType. The group is an app filter; each value sent to VBR is an exact sessionType.
@@ -50,7 +51,7 @@ export const activityQuerySchema = z.object({
   group: optionalChoice(Object.keys(sessionGroups)),
   types: z.array(z.string().refine(value => sessionTypes.includes(value))).max(sessionTypes.length).default([]),
   results: z.array(z.string().refine(value => sessionResults.includes(value))).max(sessionResults.length).default([]),
-  platform: optionalChoice(sessionPlatforms),
+  platform: z.string().transform(value => normalizeVbrPlatform(value)).refine(value => !value || sessionPlatforms.includes(value)).default(''),
   window: optionalChoice(Object.keys(dateWindows)),
 }).refine(query => !query.group || query.types.every(type => sessionGroups[query.group].includes(type)))
 

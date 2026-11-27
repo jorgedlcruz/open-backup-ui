@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { JobBuilder } from '@/components/job-builder/job-builder'
 
 export default async function CreateJobPage(props: { searchParams: Promise<{ platform?: string }> }) {

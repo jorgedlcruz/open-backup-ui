@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { NextRequest,NextResponse } from 'next/server'
 import { draftSchema,compileJob } from '@/lib/job-builder/model'
 import { loadOptions,validateEnvironment } from '@/lib/job-builder/load'
@@ -10,7 +10,8 @@ export async function POST(request:NextRequest) {
   const parsed=draftSchema.safeParse(await request.json().catch(()=>null))
   if(!parsed.success)return NextResponse.json({error:parsed.error.issues.map(e=>`${e.path.join('.')}: ${e.message}`).join(' ')},{status:400})
   return withVbrRead(request,async(read,name,browse,context)=>{
-    const options=await loadOptions(read,browse,name,context.sourceKey),errors=await validateEnvironment(parsed.data,read,browse,options)
-    return {valid:!errors.length,errors,warnings:options.warnings,checkedAt:new Date().toISOString(),apiRevision:options.apiRevision,payload:compileJob(parsed.data)}
+    const revision=await context.getRevision().catch(()=>undefined)
+    const options=await loadOptions(read,browse,name,context.sourceKey,revision),errors=await validateEnvironment(parsed.data,read,browse,options)
+    return {valid:!errors.length,errors,warnings:options.warnings,checkedAt:new Date().toISOString(),apiRevision:options.apiRevision,payload:compileJob(parsed.data,options.apiRevision)}
   })
 }

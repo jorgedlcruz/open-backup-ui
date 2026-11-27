@@ -1,4 +1,4 @@
-/* Open Backup UI v1.2.0 */
+/* Open Backup UI v1.3.0 */
 .toolbar,.toolbar h3,.actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .toolbar{justify-content:space-between;gap:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
 .toolbar h3{font-size:.9rem;font-weight:650}

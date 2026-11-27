@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { after, NextRequest } from 'next/server'
 import { adExplorerSchema, runAdExplorer } from '@/lib/recovery/ad-explorer'
 import { verifyExplorerPoint } from '@/lib/recovery/application-eligibility'

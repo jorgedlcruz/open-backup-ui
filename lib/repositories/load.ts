@@ -1,15 +1,15 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import type { VbrReader } from '../server/vbr-read'
 import { TopologyRequestError } from '../topology/load'
 import { readOperationsCollection } from '../operations/load'
-import { revisionForBuild, validId, type Evidence } from '../investigation/model'
+import { type LegacyReadRevision, revisionForBuild, validId, type Evidence } from '../investigation/model'
 import { configSchema, stateSchema, scaleOutSchema, backupSchema, fileSchema, repositoryJobSchema,
   extentReferences, affectedJobs, summarizeFiles, type File, type BackupConsumption, type RepositorySnapshot, type RepositoryConfig } from './model'
 
 export async function loadRepository(raw: VbrReader, sourceName: string, id: string, now = new Date()): Promise<RepositorySnapshot> {
   const warnings: string[] = []
-  let revision: '1.3-rev1' | '1.3-rev2' = '1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try {
     revision = revisionForBuild(z.object({ buildVersion: z.string() }).parse(await raw('/api/v1/serverInfo')).buildVersion)
   } catch (error) {

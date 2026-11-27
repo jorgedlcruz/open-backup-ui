@@ -1,25 +1,26 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { lenses } from '../lens/navigation'
+import { recoverySessionReference } from '../vbm-recovery/presentation'
 
 export const navigationLabels: Record<string,string> = {
   '/vbr/activity':'Sessions',
   '/vbr/recovery-center':'Recovery Center',
-  '/administration/settings':'Settings',
+  '/settings':'Settings', '/settings/updates':'Updates',
   '/vbr/lens':'Protection Lens', '/vbr/topology':'Protection Topology', '/vbr/threat-center':'Ransomware Detection',
   '/vbr/jobs':'Jobs & Policies', '/vbr/jobs/profiles':'Policy Profiles', '/vbr/policies':'Policy Profiles', '/vbr/protected-data':'Protected Data',
   '/vbr/inventory/virtual':'Virtual Infrastructure', '/vbr/inventory/protection-groups':'Physical and Cloud',
   '/vbr/inventory/unstructured':'Unstructured Data', '/vbr/inventory/entra':'Microsoft Entra ID',
   '/vbr/infrastructure/repositories':'Backup Repositories', '/vbr/infrastructure/proxies':'Backup Proxies', '/vbr/infrastructure/managed-servers':'Managed Servers',
-  '/vbm/dashboard':'Dashboard', '/vbm/jobs':'Backup Jobs', '/vbm/protected-items':'Protected Objects', '/vbm/organizations':'Organizations',
+  '/vbm/dashboard':'Dashboard', '/vbm/jobs':'Backup Jobs', '/vbm/protected-items':'Protected Objects', '/vbm/organizations':'Organizations', '/vbm/recovery-center':'Recovery Center',
   '/vbm/infrastructure/repositories':'Backup Repositories', '/vbm/infrastructure/proxies':'Backup Proxies',
   '/analytics/threat-center':'Threat Center', '/analytics/alarms':'Alarms Overview', '/analytics/dashboards':'Dashboards',
   '/analytics/reports':'Report Catalog', '/analytics/saved-reports':'Saved Reports',
-  '/administration/licensing':'Licensing', '/administration/data-sources':'Data Sources', '/administration/branding':'Branding',
-  '/administration/ai-settings':'AI Integrations', '/administration/telemetry':'Telemetry',
-  '/administration/identity/users':'Users', '/administration/identity/roles':'Roles',
+  '/settings/licensing':'Licensing', '/settings/data-sources':'Data Sources', '/settings/branding':'Branding',
+  '/settings/ai-settings':'AI Integrations', '/settings/telemetry':'Telemetry',
+  '/settings/identity/users':'Users', '/settings/identity/roles':'Roles',
   '/vro':'Recovery Plans', '/k10':'Overview',
 }
-export type Breadcrumb = { label:string; href?:string }
+export type Breadcrumb = { label:string; href?:string; reference?:string }
 type Section = 'vbr'|'vbm'|'analytics'|'administration'|'vro'|'k10'
 const defaults:Record<Section,string>={vbr:'Veeam Backup & Replication',vbm:'Veeam Backup for Microsoft 365',analytics:'Veeam ONE',administration:'Administration',vro:'Veeam Recovery Orchestrator',k10:'Kasten K10'}
 const detailLabels:Record<string,string>={
@@ -34,6 +35,14 @@ const detailLabels:Record<string,string>={
 
 export function breadcrumbsForPath(pathname:string,sectionNames:Partial<Record<Section,string>>={}):Breadcrumb[] {
   const path=pathname.replace(/\/$/,'') || '/'
+  if(path==='/settings')return [{label:'Settings'}]
+  if(path.startsWith('/settings/')){
+    const label=navigationLabels[path]
+    if(!label)return []
+    const trail:Breadcrumb[]=[{label:'Settings',href:'/settings'}]
+    if(path.startsWith('/settings/identity/'))trail.push({label:'Identity'})
+    return [...trail,{label}]
+  }
   const section=path.split('/')[1] as Section
   if(!defaults[section])return []
   const trail:Breadcrumb[]=[{label:sectionNames[section] || defaults[section]}]
@@ -43,6 +52,7 @@ export function breadcrumbsForPath(pathname:string,sectionNames:Partial<Record<S
   if(path.startsWith('/vbr/workloads/'))return [...trail,parent('/vbr/protected-data'),{label:'Workload Inspection'}]
   if(path.startsWith('/vbr/sessions/'))return [...trail,parent('/vbr/jobs'),{label:'Session Investigation'}]
   if(path==='/vbr/activity/preparing')return [...trail,parent('/vbr/activity'),{label:'Start restore'}]
+  if(path==='/vbr/inventory/entra/add')return [...trail,{label:'Inventory'},parent('/vbr/inventory/entra'),{label:'Add tenant'}]
   if(path==='/vbr/recovery-center/preparing')return [...trail,parent('/vbr/recovery-center'),{label:'Start restore'}]
   if(path.startsWith('/vbr/recovery-center/batches/'))return [...trail,parent('/vbr/recovery-center'),{label:'VM recovery group'}]
   if(path==='/vbr/jobs/profiles' || path==='/vbr/policies')return [...trail,parent('/vbr/jobs'),{label:navigationLabels['/vbr/jobs/profiles']}]
@@ -53,6 +63,10 @@ export function breadcrumbsForPath(pathname:string,sectionNames:Partial<Record<S
   }
   const route=Object.keys(navigationLabels).sort((a,b)=>b.length-a.length).find(href=>path===href || path.startsWith(href+'/'))
   if(!route)return []
+  if(route==='/vbm/recovery-center' && path!==route) {
+    const reference=recoverySessionReference(path.slice(route.length+1))
+    return reference ? [...trail,parent(route),{label:'Recovery session',reference}] : []
+  }
   if(route.includes('/infrastructure/'))trail.push({label:'Backup Infrastructure'})
   if(route.includes('/inventory/'))trail.push({label:'Inventory'})
   if(route.includes('/identity/'))trail.push({label:'Identity'})

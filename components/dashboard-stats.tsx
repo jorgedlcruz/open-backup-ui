@@ -1,6 +1,7 @@
 "use client"
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 
+import Link from "next/link"
 import { useI18n } from "@/components/providers/i18n-provider"
 import { enumLabel } from "@/lib/i18n/presentation"
 import { Activity, ShieldAlert, Key, Server } from "lucide-react"
@@ -96,7 +97,7 @@ export function DashboardStats({
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                        {t('License Usage')}
+                        <Link href="/settings/licensing" className="hover:underline">{t('License Usage')}</Link>
                     </CardTitle>
                     <Key className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>

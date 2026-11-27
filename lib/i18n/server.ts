@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { cookies, headers } from 'next/headers'
 import { catalogs } from './catalogs'
 import { LOCALE_COOKIE, resolveLocale, translate, type MessageValues } from './model'

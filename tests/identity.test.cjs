@@ -1,4 +1,4 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs'), ts = require('typescript'), vm = require('node:vm')
 const compile = filename => ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true } }).outputText
@@ -133,6 +133,8 @@ function harness(options = {}) {
   const calls = [], cookies = { veeam_source_id: 'source-one', ...options.cookies }
   class Response { constructor(body, init = {}) { this.body = body; this.status = init.status || 200; this.headers = init.headers } static json(body, init) { return new Response(body, init) } }
   const exports = {}, deps = { 'node:crypto': require('node:crypto'), 'next/server': { NextResponse: Response }, 'next/headers': { cookies: async () => ({ get: key => cookies[key] ? { value: cookies[key] } : undefined }) }, './config-store': { configStore: { getById: value => source && value === source.id ? source : null } }, './token-manager': { tokenManager: { getToken: async () => options.noToken ? null : 'bound-token', refreshToken: async () => { refreshes++; return 'refreshed-token' } } }, '../utils/cookie-manager': { getChunkedCookie: (_, name) => cookies[name] }, '../identity/actions': a, '../identity/load': l, '../identity/model': m }
+  const fixtureFetch = async (url, init) => { calls.push({ url: String(url), ...init }); return options.fetch ? options.fetch(url, init, mock) : mock(url, init) }
+  deps['../vbr/compatible-fetch'] = {fetchVbrCompatible: fixtureFetch}
   const mock = async (url, init) => {
     const path = url.pathname
     if (init.method !== 'GET') return reply(200, { private: 'secret mutation body' })
@@ -143,7 +145,7 @@ function harness(options = {}) {
     if (path.endsWith('/roles')) return reply(200, { data: [role()] })
     return reply(200, { mfaEnabled: true })
   }
-  vm.runInNewContext(compile(require.resolve('../lib/server/identity.ts')), { exports, require: name => { if (!(name in deps)) throw Error(name); return deps[name] }, process: { env: options.env || {} }, URL, AbortController, setTimeout, clearTimeout, fetch: async (url, init) => { calls.push({ url: String(url), ...init }); return options.fetch ? options.fetch(url, init, mock) : mock(url, init) } })
+  vm.runInNewContext(compile(require.resolve('../lib/server/identity.ts')), { exports, require: name => { if (!(name in deps)) throw Error(name); return deps[name] }, process: { env: options.env || {} }, URL, AbortController, setTimeout, clearTimeout, fetch: fixtureFetch })
   const sourceKey = createHash('sha256').update(JSON.stringify(['source-one', 'https://vbr.test:9419'])).digest('hex')
   const request = (body = {}, headers = {}, query = '') => ({ nextUrl: new URL(`http://localhost:3000/api/vbr/identity${query}`), signal: new AbortController().signal, headers: new Headers({ origin: 'http://localhost:3000', ...headers }), json: async () => ({ sourceKey, ...body }) })
   return { exports, calls, request, sourceKey, refreshes: () => refreshes, changeSource: patch => { source = patch === null ? null : { ...source, ...patch } } }

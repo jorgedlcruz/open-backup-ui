@@ -1,14 +1,14 @@
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import { z } from 'zod'
 import type { VbrReader } from '../server/vbr-read'
 import { TopologyRequestError } from '../topology/load'
-import { revisionForBuild, validId, type Evidence } from '../investigation/model'
+import { type LegacyReadRevision, revisionForBuild, validId, type Evidence } from '../investigation/model'
 import { readOperationsCollection } from '../operations/load'
 import { serverSchema, backupSchema, backupKey, credentialRef, credentialSchema, repositorySchema, repositoryStateSchema, jobSchema, jobStateSchema, type Snapshot, type Job } from './model'
 
 export async function loadUnstructured(read:VbrReader,sourceName:string,now=new Date()):Promise<Snapshot> {
   const warnings:string[]=[]
-  let revision:'1.3-rev1'|'1.3-rev2'='1.3-rev1'
+  let revision: LegacyReadRevision = '1.3-rev1'
   try {revision=revisionForBuild(z.object({buildVersion:z.string()}).parse(await read('/api/v1/serverInfo')).buildVersion)}
   catch(error){if(error instanceof TopologyRequestError && error.status===401)throw error;warnings.push('Server version unavailable. Using API 1.3-rev1.')}
   const get=(path:string)=>read(path,revision)

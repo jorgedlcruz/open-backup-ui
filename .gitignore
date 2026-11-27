@@ -1,4 +1,4 @@
-# Open Backup UI v1.2.0
+# Open Backup UI v1.3.0
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -41,6 +41,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+/.m365-*.log
 
 # env files (can opt-in for committing if needed)
 .env*

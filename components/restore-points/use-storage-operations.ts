@@ -1,5 +1,5 @@
 'use client'
-// Open Backup UI v1.2.0
+// Open Backup UI v1.3.0
 import {useCallback,useEffect,useState} from 'react'
 import {ApplicationRequestError} from '@/lib/api/application-request'
 import type {StorageScope} from '@/lib/restore-points/unstructured-workspace'
